@@ -8,12 +8,18 @@ const options = {
 const API = axios.create(options);
 
 API.interceptors.response.use(
-  (response: AxiosResponse) => response.data,
+  (response: AxiosResponse) => response,
   (error: AxiosError) => {
     if (error.response) {
       const { status, data } = error.response;
-      return Promise.reject({ status, ...(typeof data === "object" && data !== null ? data : { message: data }) });
+      return Promise.reject({
+        status,
+        ...(typeof data === "object" && data !== null
+          ? data
+          : { message: data }),
+      });
     }
+    return Promise.reject(error);
   }
 );
 

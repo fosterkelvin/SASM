@@ -6,7 +6,9 @@ export interface UserDocument extends mongoose.Document {
   lastname: string;
   email: string;
   password: string;
+  role: "student" | "hr" | "office";
   verified: boolean;
+  pendingEmail?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(val: string): Promise<boolean>;
@@ -16,7 +18,9 @@ export interface UserDocument extends mongoose.Document {
     | "firstname"
     | "lastname"
     | "email"
+    | "role"
     | "verified"
+    | "pendingEmail"
     | "createdAt"
     | "updatedAt"
   >;
@@ -45,6 +49,16 @@ const userSchema = new mongoose.Schema<UserDocument>(
       type: String,
       required: true,
     },
+    role: {
+      type: String,
+      enum: ["student", "hr", "office"],
+      default: "student",
+      required: true,
+    },
+    pendingEmail: {
+      type: String,
+      required: false,
+    },
   },
   {
     timestamps: true,
@@ -68,7 +82,7 @@ userSchema.methods.omitPassword = function () {
   const user = this.toObject();
   delete user.password;
   return user;
-}
+};
 
 const UserModel = mongoose.model<UserDocument>("User", userSchema);
 export default UserModel;

@@ -9,7 +9,7 @@ import {
 import { Sun, Moon, Menu, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
-const StudentNav = () => {
+const HRNav = () => {
   const { logout } = useAuth();
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const toggleButtonRef = useRef<HTMLButtonElement>(null);
@@ -216,4 +216,4 @@ const StudentNav = () => {
   );
 };
 
-export default StudentNav;
+export default HRNav;

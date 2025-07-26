@@ -1,57 +1,60 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Signin from "./pages/SigninPage";
 import Signup from "./pages/SignupPage";
 import StudentDashboard from "./pages/Roles/Student/StudentDashboard";
+import HRDashboard from "./pages/Roles/HR/HRDashboard";
+import OfficeDashboard from "./pages/Roles/Office/OfficeDashboard";
 import Home from "./pages/home";
-import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 import PublicRoute from "./routes/PublicRoute";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import NotFound from "@/pages/NotFound";
 import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import AppContainer from "./components/AppContainer";
+import { ReactElement } from "react";
 
-function App() {
+const withPublic = (element: ReactElement): ReactElement => (
+  <PublicRoute>{element}</PublicRoute>
+);
+
+const withProtected = (element: ReactElement): ReactElement => (
+  <ProtectedRoute>{element}</ProtectedRoute>
+);
+
+function App(): ReactElement {
   return (
     <Routes>
+      {/* Public Routes */}
       <Route
         path="/"
-        element={
-          <PublicRoute>
+        element={withPublic(
+          <>
+            <AppContainer />
             <Home />
-          </PublicRoute>
-        }
+          </>
+        )}
       />
-      <Route
-        path="/signin"
-        element={
-          <PublicRoute>
-            <Signin />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/signup"
-        element={
-          <PublicRoute>
-            <Signup />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/student-dashboard" element={<StudentDashboard />} />
-      <Route path="/email/verify/:code" element={<VerifyEmail />} />
-      <Route path="/password/forgot" element={<ForgotPassword />} />
-      <Route path="/password/reset" element={<PublicRoute><ResetPassword /></PublicRoute>} />
+      <Route path="/signin" element={withPublic(<Signin />)} />
+      <Route path="/signup" element={withPublic(<Signup />)} />
+      <Route path="/password/forgot" element={withPublic(<ForgotPassword />)} />
+      <Route path="/password/reset" element={withPublic(<ResetPassword />)} />
 
-      {/* catch-all route */}
+      {/* Protected Routes */}
+      <Route
+        path="/student-dashboard"
+        element={withProtected(<StudentDashboard />)}
+      />
+      <Route path="/HR-dashboard" element={withProtected(<HRDashboard />)} />
+      <Route
+        path="/office-dashboard"
+        element={withProtected(<OfficeDashboard />)}
+      />
+      <Route path="/profile" element={withProtected(<Profile />)} />
+
+      {/* Standalone Routes */}
+      <Route path="/email/verify/:code" element={<VerifyEmail />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

@@ -17,6 +17,7 @@ import {
   NOT_FOUND,
   TOO_MANY_REQUESTS,
   UNAUTHORIZED,
+  BAD_REQUEST,
 } from "../constants/http";
 import {
   RefreshTokenPayload,
@@ -31,6 +32,7 @@ import {
   getVerifyEmailTemplate,
 } from "../utils/emailTemplate";
 import { hashValue } from "../utils/bcrypt";
+import { getRoleBasedRedirect } from "../utils/roleRedirect";
 
 type signupParams = {
   firstname: string;
@@ -74,25 +76,49 @@ export const signup = async (data: signupParams) => {
     console.log(error);
   }
 
-  //create session
-  const session = await SessionModel.create({
-    userID,
-    userAgent: data.userAgent,
-  });
-
-  //refresh token and access token
-  const refreshToken = signToken(
-    { sessionID: session._id },
-    refreshTokenSignOptions
-  );
-
-  const accessToken = signToken({ userID, sessionID: session._id });
+  // Don't create session or tokens - user needs to verify email first
+  // Session and tokens will be created after email verification
 
   //return response
   return {
+    message:
+      "Account created successfully. Please check your email to verify your account.",
     user: user.omitPassword(),
-    refreshToken,
-    accessToken,
+  };
+};
+
+// Resend verification email======================================================
+export const resendVerificationEmail = async (email: string) => {
+  const user = await UserModel.findOne({ email });
+  appAssert(user, NOT_FOUND, "User not found.");
+
+  // Check if user is already verified
+  appAssert(!user.verified, CONFLICT, "Email is already verified.");
+
+  // Delete any existing verification codes for this user
+  await VerificationCodeModel.deleteMany({
+    userID: user._id,
+    type: VerificationCodeType.EmailVerification,
+  });
+
+  // Create new verification code
+  const verificationCode = await VerificationCodeModel.create({
+    userID: user._id,
+    type: VerificationCodeType.EmailVerification,
+    expiresAt: fifteenMinutesFromNow(),
+  });
+
+  const url = `${APP_ORIGIN}/email/verify/${verificationCode._id}`;
+
+  // Send verification email
+  const emailTemplate = getVerifyEmailTemplate(url);
+  await sendMail({
+    to: user.email,
+    ...emailTemplate,
+  });
+
+  return {
+    message: "Verification email sent successfully",
   };
 };
 
@@ -113,6 +139,8 @@ export const signinUser = async ({
   const isValid = await user.comparePassword(password);
   appAssert(isValid, UNAUTHORIZED, "Invalid email or password.");
 
+  // Note: Email verification check removed - users can sign in without verification
+
   const userID = user._id;
 
   const session = await SessionModel.create({
@@ -131,10 +159,13 @@ export const signinUser = async ({
     userID: user._id,
   });
 
+  const redirectUrl = getRoleBasedRedirect(user.role);
+
   return {
     user: user.omitPassword(),
     refreshToken,
     accessToken,
+    redirectUrl,
   };
 };
 
@@ -187,22 +218,69 @@ export const verifyEmail = async (code: string) => {
   });
   appAssert(validCode, NOT_FOUND, "Invalid or expired verification code");
 
-  const updatedUser = await UserModel.findByIdAndUpdate(
-    validCode.userID,
-    {
-      verified: true,
-    },
-    {
-      new: true,
-    }
-  );
-  appAssert(updatedUser, INTERNAL_SERVER_ERROR, "Failed to verify email");
+  const user = await UserModel.findById(validCode.userID);
+  appAssert(user, NOT_FOUND, "User not found");
 
-  await validCode.deleteOne();
+  // Check if this is an email change verification
+  if (user.pendingEmail) {
+    // This is an email change verification
+    user.email = user.pendingEmail;
+    user.pendingEmail = undefined;
+    user.verified = true;
+    await user.save();
 
-  return {
-    user: updatedUser.omitPassword(),
-  };
+    await validCode.deleteOne();
+
+    // For email change, return the role-based redirect URL
+    const redirectUrl = getRoleBasedRedirect(user.role);
+
+    return {
+      message: "Email changed and verified successfully",
+      user: user.omitPassword(),
+      accessToken: null,
+      refreshToken: null,
+      redirectUrl,
+    };
+  } else {
+    // This is a regular email verification (new user)
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      validCode.userID,
+      {
+        verified: true,
+      },
+      {
+        new: true,
+      }
+    );
+    appAssert(updatedUser, INTERNAL_SERVER_ERROR, "Failed to verify email");
+
+    await validCode.deleteOne();
+
+    // Create session and tokens after successful email verification
+    const session = await SessionModel.create({
+      userID: updatedUser._id,
+      userAgent: "Email verification", // Default user agent for email verification
+    });
+
+    const refreshToken = signToken(
+      { sessionID: session._id },
+      refreshTokenSignOptions
+    );
+
+    const accessToken = signToken({
+      userID: updatedUser._id,
+      sessionID: session._id,
+    });
+
+    const redirectUrl = getRoleBasedRedirect(updatedUser.role);
+
+    return {
+      user: updatedUser.omitPassword(),
+      accessToken,
+      refreshToken,
+      redirectUrl,
+    };
+  }
 };
 
 export const sendPasswordResetEmail = async (email: string) => {
@@ -272,17 +350,137 @@ export const resetPassword = async ({
   });
   appAssert(validCode, NOT_FOUND, "Invalid or expired verification code");
 
-  const updatedUser = await UserModel.findByIdAndUpdate(validCode.userID, {
-    password: await hashValue(password),
-  });
-  appAssert(updatedUser, INTERNAL_SERVER_ERROR, "Failed to reset password");
+  const user = await UserModel.findById(validCode.userID);
+  appAssert(user, NOT_FOUND, "User not found");
+
+  const isSame = await user.comparePassword(password);
+  appAssert(
+    !isSame,
+    CONFLICT,
+    "New password must be different from old password"
+  );
+
+  user.password = await hashValue(password);
+  await user.save();
 
   await validCode.deleteOne();
   await SessionModel.deleteMany({
-    userID: updatedUser._id,
+    userID: user._id,
   });
 
   return {
-    user: updatedUser.omitPassword(),
+    user: user.omitPassword(),
+  };
+};
+
+type ChangePasswordParams = {
+  currentPassword: string;
+  newPassword: string;
+  userID: string;
+};
+
+export const changePassword = async ({
+  currentPassword,
+  newPassword,
+  userID,
+}: ChangePasswordParams) => {
+  const user = await UserModel.findById(userID);
+  appAssert(user, NOT_FOUND, "User not found");
+
+  const isValidCurrentPassword = await user.comparePassword(currentPassword);
+  appAssert(
+    isValidCurrentPassword,
+    UNAUTHORIZED,
+    "Current password is incorrect"
+  );
+
+  const isSamePassword = await user.comparePassword(newPassword);
+  appAssert(
+    !isSamePassword,
+    CONFLICT,
+    "New password must be different from current password"
+  );
+
+  user.password = newPassword;
+  await user.save();
+
+  return {
+    user: user.omitPassword(),
+  };
+};
+
+// Change Email======================================================
+type ChangeEmailParams = {
+  newEmail: string;
+  userID: string;
+};
+
+export const changeEmail = async ({ newEmail, userID }: ChangeEmailParams) => {
+  // Check if the user exists
+  const user = await UserModel.findById(userID);
+  appAssert(user, NOT_FOUND, "User not found");
+
+  // Check if the new email is already in use by another user
+  const existingUser = await UserModel.findOne({
+    email: newEmail,
+    _id: { $ne: userID },
+  });
+  appAssert(!existingUser, CONFLICT, "Email is already in use");
+
+  // Check if the new email is the same as current email
+  appAssert(
+    user.email !== newEmail,
+    CONFLICT,
+    "New email must be different from current email"
+  );
+
+  // Delete any existing verification codes for this user
+  await VerificationCodeModel.deleteMany({
+    userID,
+    type: VerificationCodeType.EmailVerification,
+  });
+
+  // Create a new verification code for email change
+  const verificationCode = await VerificationCodeModel.create({
+    userID,
+    type: VerificationCodeType.EmailVerification,
+    expiresAt: fifteenMinutesFromNow(),
+  });
+
+  // Store the new email temporarily (we'll update it after verification)
+  user.pendingEmail = newEmail;
+  await user.save();
+
+  // Send verification email to the new email address
+  const url = `${APP_ORIGIN}/email/verify/${verificationCode._id}`;
+  await sendMail({
+    to: newEmail,
+    ...getVerifyEmailTemplate(url),
+  });
+
+  return {
+    message: "Verification email sent to your new email address",
+  };
+};
+
+// Cancel Email Change=====================================================
+export const cancelEmailChange = async (userID: string) => {
+  const user = await UserModel.findById(userID);
+
+  appAssert(user, NOT_FOUND, "User not found");
+  appAssert(user.pendingEmail, BAD_REQUEST, "No pending email change found");
+
+  // Clear the pending email
+  user.pendingEmail = undefined;
+  await user.save();
+
+  // Delete any verification codes for email change
+  await VerificationCodeModel.deleteMany({
+    userId: userID,
+    type: VerificationCodeType.EmailVerification,
+  });
+
+  return {
+    message: "Email change cancelled successfully",
   };
 };

@@ -1,17 +1,52 @@
 import { verifyEmail } from "@/lib/api";
 import DefNav from "@/navbar/DefNav";
-import { useQuery } from "@tanstack/react-query";
-import { useParams, Link } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { useMutation } from "@tanstack/react-query";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const VerifyEmail = () => {
-  document.title = "Sign In | SASM";
+  document.title = "Email Verification | SASM";
 
   const { code } = useParams();
+  const { refreshUser } = useAuth();
+  const navigate = useNavigate();
 
-  const { isPending, isError, isSuccess } = useQuery({
-    queryKey: ["emailVerification", code],
-    queryFn: () => verifyEmail(code),
+  const {
+    mutate: verifyEmailMutate,
+    isPending,
+    isError,
+    isSuccess,
+  } = useMutation({
+    mutationFn: () => verifyEmail(code!),
+    onSuccess: async (response) => {
+      console.log("Email verified successfully:", response);
+      console.log("Redirect URL from response:", response.redirectUrl);
+      // Refresh auth context to get the authenticated user
+      try {
+        await refreshUser();
+        // Redirect to dashboard after successful verification
+        const redirectUrl = response.redirectUrl || "/student-dashboard"; // Better fallback
+        console.log("Redirecting to:", redirectUrl);
+        setTimeout(() => {
+          navigate(redirectUrl, {
+            replace: true,
+          });
+        }, 2000);
+      } catch (error) {
+        console.error("Error refreshing user data:", error);
+      }
+    },
+    onError: (error) => {
+      console.error("Email verification failed:", error);
+    },
   });
+
+  useEffect(() => {
+    if (code) {
+      verifyEmailMutate();
+    }
+  }, [code, verifyEmailMutate]);
 
   return (
     <div>
@@ -62,9 +97,14 @@ const VerifyEmail = () => {
             )}
 
             {isSuccess && (
-              <p className="text-green-500 dark:text-green-400 mb-4">
-                Email verified successfully!
-              </p>
+              <div className="space-y-2">
+                <p className="text-green-500 dark:text-green-400 mb-4">
+                  Email verified successfully!
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  You will be redirected to your dashboard in a few seconds...
+                </p>
+              </div>
             )}
 
             {/* Always show this link */}
