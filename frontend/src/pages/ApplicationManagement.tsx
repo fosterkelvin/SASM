@@ -13,9 +13,11 @@ import {
   Clock,
   Calendar,
   Search,
+  Mail,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllApplications, updateApplicationStatus } from "@/lib/api";
+import { useNotificationUpdater } from "@/hooks/useNotificationUpdater";
 import StudentSidebar from "@/components/StudentSidebar";
 import HRSidebar from "@/components/HRSidebar";
 import OfficeSidebar from "@/components/OfficeSidebar";
@@ -23,6 +25,7 @@ import OfficeSidebar from "@/components/OfficeSidebar";
 const ApplicationManagement = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { triggerNotificationUpdate } = useNotificationUpdater();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Filters and pagination
@@ -39,6 +42,10 @@ const ApplicationManagement = () => {
   const [statusUpdateData, setStatusUpdateData] = useState({
     status: "",
     hrComments: "",
+    interviewDate: "",
+    interviewTime: "",
+    interviewLocation: "",
+    interviewNotes: "",
   });
 
   useEffect(() => {
@@ -58,9 +65,18 @@ const ApplicationManagement = () => {
       updateApplicationStatus(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
+      // Trigger notification update since status changes create notifications
+      triggerNotificationUpdate();
       setShowStatusUpdate(false);
       setSelectedApplication(null);
-      setStatusUpdateData({ status: "", hrComments: "" });
+      setStatusUpdateData({
+        status: "",
+        hrComments: "",
+        interviewDate: "",
+        interviewTime: "",
+        interviewLocation: "",
+        interviewNotes: "",
+      });
     },
     onError: (error: any) => {
       console.error("Failed to update application status:", error);
@@ -77,15 +93,67 @@ const ApplicationManagement = () => {
 
   const handleStatusUpdate = (application: any) => {
     setSelectedApplication(application);
+
+    // For failed, rejected, or withdrawn applications, show in view-only mode
+    if (
+      application.status === "failed_interview" ||
+      application.status === "rejected" ||
+      application.status === "withdrawn"
+    ) {
+      setStatusUpdateData({
+        status: application.status,
+        hrComments: application.hrComments || "",
+        interviewDate: application.interviewDate || "",
+        interviewTime: application.interviewTime || "",
+        interviewLocation: application.interviewLocation || "",
+        interviewNotes: application.interviewNotes || "",
+      });
+      setShowStatusUpdate(true);
+      return; // Don't auto-update or allow changes
+    }
+
+    // Automatically set status to "under_review" if application is currently "pending"
+    const initialStatus =
+      application.status === "pending" ? "under_review" : application.status;
+
     setStatusUpdateData({
-      status: application.status,
+      status: initialStatus,
       hrComments: application.hrComments || "",
+      interviewDate: application.interviewDate || "",
+      interviewTime: application.interviewTime || "",
+      interviewLocation: application.interviewLocation || "",
+      interviewNotes: application.interviewNotes || "",
     });
     setShowStatusUpdate(true);
+
+    // Auto-update pending applications to under_review when HR opens them
+    if (application.status === "pending") {
+      updateStatusMutation.mutate({
+        id: application._id,
+        data: {
+          status: "under_review",
+          hrComments: "Application opened for review by HR",
+        },
+      });
+    }
   };
 
   const submitStatusUpdate = () => {
     if (selectedApplication && statusUpdateData.status) {
+      // Validate interview scheduling fields if status is interview_scheduled
+      if (statusUpdateData.status === "interview_scheduled") {
+        if (
+          !statusUpdateData.interviewDate ||
+          !statusUpdateData.interviewTime ||
+          !statusUpdateData.interviewLocation
+        ) {
+          alert(
+            "Please fill in all required interview scheduling fields (Date, Time, and Location)."
+          );
+          return;
+        }
+      }
+
       updateStatusMutation.mutate({
         id: selectedApplication._id,
         data: statusUpdateData,
@@ -99,12 +167,22 @@ const ApplicationManagement = () => {
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "under_review":
         return "bg-blue-100 text-blue-800 border-blue-200";
-      case "approved":
+      case "interview_scheduled":
+        return "bg-purple-100 text-purple-800 border-purple-200";
+      case "passed_interview":
+        return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      case "hours_completed":
+        return "bg-teal-100 text-teal-800 border-teal-200";
+      case "failed_interview":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "hired":
         return "bg-green-100 text-green-800 border-green-200";
       case "rejected":
         return "bg-red-100 text-red-800 border-red-200";
-      case "interview_scheduled":
-        return "bg-purple-100 text-purple-800 border-purple-200";
+      case "withdrawn":
+        return "bg-gray-100 text-gray-800 border-gray-200";
+      case "on_hold":
+        return "bg-indigo-100 text-indigo-800 border-indigo-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -112,13 +190,21 @@ const ApplicationManagement = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "approved":
+      case "hired":
         return <CheckCircle className="h-4 w-4" />;
+      case "passed_interview":
+        return <CheckCircle className="h-4 w-4" />;
+      case "hours_completed":
+        return <Clock className="h-4 w-4" />;
       case "rejected":
+      case "failed_interview":
         return <XCircle className="h-4 w-4" />;
       case "under_review":
       case "interview_scheduled":
+      case "on_hold":
         return <Clock className="h-4 w-4" />;
+      case "withdrawn":
+        return <XCircle className="h-4 w-4" />;
       default:
         return <FileText className="h-4 w-4" />;
     }
@@ -130,6 +216,13 @@ const ApplicationManagement = () => {
       month: "short",
       day: "numeric",
     });
+  };
+
+  // Helper function to extract filename from path (handles both Windows and Unix paths)
+  const getFilenameFromPath = (filePath: string) => {
+    if (!filePath) return "";
+    // Handle both forward slashes and backslashes
+    return filePath.split(/[/\\]/).pop() || "";
   };
 
   // Determine which sidebar to show based on user role
@@ -222,12 +315,9 @@ const ApplicationManagement = () => {
       >
         {/* Header */}
         <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold text-white dark:text-white">
             Application Management
           </h1>
-          <p className="text-red-100 mt-1">
-            Manage student assistant and student marshal applications
-          </p>
         </div>
 
         {/* Main Content */}
@@ -271,12 +361,17 @@ const ApplicationManagement = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   >
                     <option value="">All Statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="under_review">Under Review</option>
+                    <option value="pending">New Applications</option>
+                    <option value="under_review">Being Reviewed</option>
                     <option value="interview_scheduled">
                       Interview Scheduled
                     </option>
-                    <option value="approved">Approved</option>
+                    <option value="passed_interview">Interview Passed</option>
+                    <option value="hours_completed">Hours Completed</option>
+                    <option value="failed_interview">Interview Failed</option>
+                    <option value="hired">Hired</option>
+                    <option value="on_hold">Put On Hold</option>
+                    <option value="withdrawn">Withdrawn by Applicant</option>
                     <option value="rejected">Rejected</option>
                   </select>
                 </div>
@@ -350,9 +445,40 @@ const ApplicationManagement = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 h-10 w-10">
-                                  <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                                    <User className="h-5 w-5 text-red-600 dark:text-red-400" />
-                                  </div>
+                                  {application.profilePhoto ? (
+                                    <img
+                                      src={`${
+                                        import.meta.env.VITE_API_URL
+                                      }/uploads/profiles/${getFilenameFromPath(
+                                        application.profilePhoto
+                                      )}`}
+                                      alt="Profile Photo"
+                                      className="h-10 w-10 rounded-full object-cover border-2 border-red-100 dark:border-red-800"
+                                      onError={(e) => {
+                                        e.currentTarget.src =
+                                          "/placeholder-image.png";
+                                      }}
+                                    />
+                                  ) : application.certificates &&
+                                    application.certificates.length > 0 ? (
+                                    <img
+                                      src={`${
+                                        import.meta.env.VITE_API_URL
+                                      }/uploads/certificates/${getFilenameFromPath(
+                                        application.certificates[0]
+                                      )}`}
+                                      alt="2x2 Photo"
+                                      className="h-10 w-10 rounded-full object-cover border-2 border-blue-100 dark:border-blue-800"
+                                      onError={(e) => {
+                                        e.currentTarget.src =
+                                          "/placeholder-image.png";
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                      <User className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="ml-4">
                                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -392,17 +518,33 @@ const ApplicationManagement = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <div className="flex items-center gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    handleStatusUpdate(application)
-                                  }
-                                  className="text-red-600 border-red-300 hover:bg-red-50"
-                                >
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  Review
-                                </Button>
+                                {application.status === "failed_interview" ||
+                                application.status === "rejected" ||
+                                application.status === "withdrawn" ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      handleStatusUpdate(application)
+                                    }
+                                    className="text-gray-600 border-gray-300 hover:bg-gray-50"
+                                  >
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    View Only
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      handleStatusUpdate(application)
+                                    }
+                                    className="text-red-600 border-red-300 hover:bg-red-50"
+                                  >
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    Review
+                                  </Button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -454,79 +596,541 @@ const ApplicationManagement = () => {
 
       {/* Status Update Modal */}
       {showStatusUpdate && selectedApplication && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Review Application - {selectedApplication.firstName}{" "}
-              {selectedApplication.lastName}
-            </h3>
-            {/* Application Details Summary */}
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">Position:</span>{" "}
-                  {selectedApplication.position === "student_assistant"
-                    ? "Student Assistant"
-                    : "Student Marshal"}
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 md:p-6 w-full max-w-7xl mx-2 md:mx-4 max-h-[98vh] md:max-h-[95vh] overflow-y-auto">
+            {/* Header Section with Profile Photo */}
+            <div className="flex flex-col sm:flex-row items-start gap-4 md:gap-6 mb-6 pb-6 border-b border-gray-200 dark:border-gray-600">
+              <div className="flex-shrink-0 self-center sm:self-start">
+                {/* Display profile photo - prioritize actual profile photo, fallback to 2x2 from certificates */}
+                {selectedApplication.profilePhoto ? (
+                  <div className="relative">
+                    <img
+                      src={`${
+                        import.meta.env.VITE_API_URL
+                      }/uploads/profiles/${getFilenameFromPath(
+                        selectedApplication.profilePhoto
+                      )}`}
+                      alt="Profile Photo"
+                      className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                      onClick={() =>
+                        window.open(
+                          `${
+                            import.meta.env.VITE_API_URL
+                          }/uploads/profiles/${getFilenameFromPath(
+                            selectedApplication.profilePhoto
+                          )}`,
+                          "_blank"
+                        )
+                      }
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder-image.png";
+                      }}
+                    />
+                    <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-1">
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div className="absolute -top-2 -left-2 bg-green-500 text-white rounded-full px-2 py-1 text-xs font-bold shadow-md">
+                      PROFILE
+                    </div>
+                  </div>
+                ) : selectedApplication.certificates &&
+                  selectedApplication.certificates.length > 0 ? (
+                  <div className="relative">
+                    <img
+                      src={`${
+                        import.meta.env.VITE_API_URL
+                      }/uploads/certificates/${getFilenameFromPath(
+                        selectedApplication.certificates[0]
+                      )}`}
+                      alt="2x2 Profile Photo"
+                      className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                      onClick={() =>
+                        window.open(
+                          `${
+                            import.meta.env.VITE_API_URL
+                          }/uploads/certificates/${getFilenameFromPath(
+                            selectedApplication.certificates[0]
+                          )}`,
+                          "_blank"
+                        )
+                      }
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder-image.png";
+                      }}
+                    />
+                    <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-1">
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div className="absolute -top-2 -left-2 bg-blue-500 text-white rounded-full px-2 py-1 text-xs font-bold shadow-md">
+                      2x2
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900 dark:to-red-800 rounded-xl flex items-center justify-center border-4 border-red-100 dark:border-red-800 shadow-lg">
+                    <User className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 text-red-600 dark:text-red-400" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                  {selectedApplication.firstName} {selectedApplication.lastName}
+                </h3>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4">
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getStatusColor(
+                      selectedApplication.status
+                    )}`}
+                  >
+                    {getStatusIcon(selectedApplication.status)}
+                    {selectedApplication.status.replace("_", " ").toUpperCase()}
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
+                    {selectedApplication.position === "student_assistant"
+                      ? "Student Assistant"
+                      : "Student Marshal"}
+                  </span>
                 </div>
-                <div>
-                  <span className="font-medium">Age:</span>{" "}
-                  {selectedApplication.age}
-                </div>
-                <div>
-                  <span className="font-medium">Email:</span>{" "}
-                  {selectedApplication.email}
-                </div>
-                <div>
-                  <span className="font-medium">Contact:</span>{" "}
-                  {selectedApplication.homeContact}
-                </div>
-                <div className="md:col-span-2">
-                  <span className="font-medium">Home Address:</span>{" "}
-                  {selectedApplication.homeAddress},{" "}
-                  {selectedApplication.homeBarangay},{" "}
-                  {selectedApplication.homeCity},{" "}
-                  {selectedApplication.homeProvince}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                    <span className="truncate">
+                      {selectedApplication.email}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                    <span className="truncate">
+                      Applied: {formatDate(selectedApplication.submittedAt)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Personal Information */}
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 border border-gray-200 dark:border-gray-600">
+              <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 sm:mb-4 flex items-center gap-2">
+                <User className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
+                Personal Information
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                    Age
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedApplication.age}
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                    Citizenship
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedApplication.citizenship}
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                    Home Contact
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-all">
+                    {selectedApplication.homeContact}
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                    Baguio Contact
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-all">
+                    {selectedApplication.baguioContact}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Address Information */}
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 border border-blue-200 dark:border-blue-800">
+              <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 sm:mb-4 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Address Information
+              </h4>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
+                    Home Address
+                  </div>
+                  <div className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed">
+                    {selectedApplication.homeAddress}
+                    {selectedApplication.homeStreet &&
+                      `, ${selectedApplication.homeStreet}`}
+                    <br />
+                    {selectedApplication.homeBarangay},{" "}
+                    {selectedApplication.homeCity},{" "}
+                    {selectedApplication.homeProvince}
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
+                    Baguio/Benguet Address
+                  </div>
+                  <div className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed">
+                    {selectedApplication.baguioAddress}
+                    {selectedApplication.baguioStreet &&
+                      `, ${selectedApplication.baguioStreet}`}
+                    <br />
+                    {selectedApplication.baguioBarangay},{" "}
+                    {selectedApplication.baguioCity}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Parents Information */}
+            <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 border border-green-200 dark:border-green-800">
+              <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 sm:mb-4 flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-green-600"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Parents Information
+              </h4>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">
+                    Father's Information
+                  </div>
+                  <div className="space-y-2">
+                    <div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Name
+                      </div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {selectedApplication.fatherName}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Occupation
+                      </div>
+                      <div className="text-sm text-gray-700 dark:text-gray-300">
+                        {selectedApplication.fatherOccupation}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">
+                    Mother's Information
+                  </div>
+                  <div className="space-y-2">
+                    <div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Name
+                      </div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {selectedApplication.motherName}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Occupation
+                      </div>
+                      <div className="text-sm text-gray-700 dark:text-gray-300">
+                        {selectedApplication.motherOccupation}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Emergency Contact */}
+            <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-6 mb-6 border border-orange-200 dark:border-orange-800">
+              <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                <svg
+                  className="w-5 h-5 text-orange-600"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                </svg>
+                Emergency Contact
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                    Contact Person
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedApplication.emergencyContact}
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                    Contact Number
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedApplication.emergencyContactNumber}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Relative Information */}
+            {selectedApplication.hasRelativeWorking && (
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-3">
+                  Relative Working at University
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">Name:</span>{" "}
+                    {selectedApplication.relativeName}
+                  </div>
+                  <div>
+                    <span className="font-medium">Department:</span>{" "}
+                    {selectedApplication.relativeDepartment}
+                  </div>
+                  <div>
+                    <span className="font-medium">Relationship:</span>{" "}
+                    {selectedApplication.relativeRelationship}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Educational Background */}
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+              <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-3">
+                Educational Background
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                {selectedApplication.elementary && (
+                  <div>
+                    <span className="font-medium">Elementary:</span>{" "}
+                    {selectedApplication.elementary}
+                    {selectedApplication.elementaryYears &&
+                      ` (${selectedApplication.elementaryYears})`}
+                  </div>
+                )}
+                {selectedApplication.highSchool && (
+                  <div>
+                    <span className="font-medium">High School:</span>{" "}
+                    {selectedApplication.highSchool}
+                    {selectedApplication.highSchoolYears &&
+                      ` (${selectedApplication.highSchoolYears})`}
+                  </div>
+                )}
+                {selectedApplication.college && (
+                  <div>
+                    <span className="font-medium">College:</span>{" "}
+                    {selectedApplication.college}
+                    {selectedApplication.collegeYears &&
+                      ` (${selectedApplication.collegeYears})`}
+                  </div>
+                )}
+                {selectedApplication.others && (
+                  <div>
+                    <span className="font-medium">Others:</span>{" "}
+                    {selectedApplication.others}
+                    {selectedApplication.othersYears &&
+                      ` (${selectedApplication.othersYears})`}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Seminars/Trainings */}
+            {selectedApplication.seminars &&
+              selectedApplication.seminars.length > 0 && (
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                  <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-3">
+                    Seminars/Trainings Attended
+                  </h4>
+                  <div className="space-y-3">
+                    {selectedApplication.seminars.map(
+                      (seminar: any, index: number) => (
+                        <div
+                          key={index}
+                          className="border-l-2 border-red-300 pl-3"
+                        >
+                          <div className="text-sm">
+                            <div>
+                              <span className="font-medium">Title:</span>{" "}
+                              {seminar.title}
+                            </div>
+                            <div>
+                              <span className="font-medium">
+                                Sponsoring Agency:
+                              </span>{" "}
+                              {seminar.sponsoringAgency}
+                            </div>
+                            <div>
+                              <span className="font-medium">Date:</span>{" "}
+                              {seminar.inclusiveDate}
+                            </div>
+                            <div>
+                              <span className="font-medium">Place:</span>{" "}
+                              {seminar.place}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
             {/* Uploaded Documents */}
             {(selectedApplication.profilePhoto ||
               selectedApplication.idDocument ||
               (selectedApplication.certificates &&
                 selectedApplication.certificates.length > 0)) && (
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
-                <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-3">
+              <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 border border-purple-200 dark:border-purple-800">
+                <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 sm:mb-6 flex items-center gap-2">
+                  <svg
+                    className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
                   Uploaded Documents
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {selectedApplication.profilePhoto && (
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                        Profile Photo
-                      </label>
-                      <div className="mt-1">
-                        <img
-                          src={`${
-                            import.meta.env.VITE_API_URL
-                          }/uploads/${selectedApplication.profilePhoto
-                            .split("/")
-                            .pop()}`}
-                          alt="Profile"
-                          className="w-full h-32 object-cover rounded-lg border"
-                          onError={(e) => {
-                            e.currentTarget.src = "/placeholder-image.png";
-                          }}
-                        />
+
+                <div className="space-y-4 sm:space-y-6">
+                  {/* 2x2 Profile Photo - Display from certificates if different from profile photo */}
+                  {selectedApplication.certificates &&
+                    selectedApplication.certificates.length > 0 && (
+                      <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-3">
+                          <h5 className="text-xs sm:text-sm font-medium text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                            <svg
+                              className="w-3 h-3 sm:w-4 sm:h-4"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M4 3a2 2 0 00-2 2v1.816a.5.5 0 00.166.374L5 8.058V15a2 2 0 002 2h6a2 2 0 002-2V8.058l.834-.668A.5.5 0 0016 6.816V5a2 2 0 00-2-2H4zm6 9a3 3 0 100-6 3 3 0 000 6z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <span className="hidden sm:inline">
+                              2x2 ID Photo (From Certificates)
+                            </span>
+                            <span className="sm:hidden">2x2 Photo</span>
+                          </h5>
+                          <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                            <span className="hidden sm:inline">
+                              Click to enlarge
+                            </span>
+                            <span className="sm:hidden">Tap</span>
+                          </span>
+                        </div>
+                        <div className="flex justify-center">
+                          <div className="relative">
+                            <img
+                              src={`${
+                                import.meta.env.VITE_API_URL
+                              }/uploads/certificates/${getFilenameFromPath(
+                                selectedApplication.certificates[0]
+                              )}`}
+                              alt="2x2 Profile Photo"
+                              className="h-32 sm:h-48 w-auto object-cover rounded-lg border-2 border-purple-200 dark:border-purple-700 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+                              onClick={() =>
+                                window.open(
+                                  `${
+                                    import.meta.env.VITE_API_URL
+                                  }/uploads/certificates/${getFilenameFromPath(
+                                    selectedApplication.certificates[0]
+                                  )}`,
+                                  "_blank"
+                                )
+                              }
+                              onError={(e) => {
+                                e.currentTarget.src = "/placeholder-image.png";
+                              }}
+                            />
+                            <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-1.5 shadow-lg">
+                              <svg
+                                className="w-4 h-4"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </div>
+                            <div className="absolute -top-2 -left-2 bg-blue-500 text-white rounded-full px-2 py-1 text-xs font-bold shadow-md">
+                              2x2
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-3">
+                          Passport-style 2x2 photograph as required for
+                          application
+                        </p>
                       </div>
-                    </div>
-                  )}
-                  {selectedApplication.idDocument && (
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                        ID Document
-                      </label>
-                      <div className="mt-1">
+                    )}
+
+                  {/* ID Document and Certificates */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
+                    {selectedApplication.idDocument && (
+                      <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-3">
+                          <h5 className="text-xs sm:text-sm font-medium text-purple-600 dark:text-purple-400">
+                            ID Document
+                          </h5>
+                          <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                            <span className="hidden sm:inline">
+                              Click to view
+                            </span>
+                            <span className="sm:hidden">Tap</span>
+                          </span>
+                        </div>
                         <img
                           src={`${
                             import.meta.env.VITE_API_URL
@@ -534,119 +1138,841 @@ const ApplicationManagement = () => {
                             .split("/")
                             .pop()}`}
                           alt="ID Document"
-                          className="w-full h-32 object-cover rounded-lg border"
+                          className="w-full h-32 sm:h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+                          onClick={() =>
+                            window.open(
+                              `${
+                                import.meta.env.VITE_API_URL
+                              }/uploads/${selectedApplication.idDocument
+                                .split("/")
+                                .pop()}`,
+                              "_blank"
+                            )
+                          }
                           onError={(e) => {
                             e.currentTarget.src = "/placeholder-image.png";
                           }}
                         />
                       </div>
-                    </div>
-                  )}
-                  {selectedApplication.certificates &&
-                    selectedApplication.certificates.length > 0 && (
-                      <div>
-                        <label className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                          Certificates (
-                          {selectedApplication.certificates.length})
-                        </label>
-                        <div className="mt-1 grid grid-cols-2 gap-2">
-                          {selectedApplication.certificates
-                            .slice(0, 4)
-                            .map((cert: string, index: number) => (
-                              <img
-                                key={index}
-                                src={`${
-                                  import.meta.env.VITE_API_URL
-                                }/uploads/${cert.split("/").pop()}`}
-                                alt={`Certificate ${index + 1}`}
-                                className="w-full h-16 object-cover rounded border"
-                                onError={(e) => {
-                                  e.currentTarget.src =
-                                    "/placeholder-image.png";
-                                }}
-                              />
-                            ))}
-                        </div>
-                        {selectedApplication.certificates.length > 4 && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            +{selectedApplication.certificates.length - 4} more
-                          </p>
-                        )}
-                      </div>
                     )}
+
+                    {selectedApplication.certificates &&
+                      selectedApplication.certificates.length > 1 && (
+                        <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center justify-between mb-3">
+                            <h5 className="text-xs sm:text-sm font-medium text-purple-600 dark:text-purple-400">
+                              <span className="hidden sm:inline">
+                                Additional Certificates (
+                                {selectedApplication.certificates.length - 1})
+                              </span>
+                              <span className="sm:hidden">
+                                Certificates (
+                                {selectedApplication.certificates.length - 1})
+                              </span>
+                            </h5>
+                            <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                              <span className="hidden sm:inline">
+                                Click any to view
+                              </span>
+                              <span className="sm:hidden">Tap</span>
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                            {selectedApplication.certificates
+                              .slice(1, 5) // Skip the first one (2x2 photo) and show up to 4 additional
+                              .map((cert: string, index: number) => (
+                                <div key={index} className="relative group">
+                                  <img
+                                    src={`${
+                                      import.meta.env.VITE_API_URL
+                                    }/uploads/certificates/${getFilenameFromPath(
+                                      cert
+                                    )}`}
+                                    alt={`Certificate ${index + 1}`}
+                                    className="w-full h-20 sm:h-24 object-cover rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:shadow-lg transition-all duration-200 group-hover:scale-105"
+                                    onClick={() =>
+                                      window.open(
+                                        `${
+                                          import.meta.env.VITE_API_URL
+                                        }/uploads/certificates/${getFilenameFromPath(
+                                          cert
+                                        )}`,
+                                        "_blank"
+                                      )
+                                    }
+                                    onError={(e) => {
+                                      e.currentTarget.src =
+                                        "/placeholder-image.png";
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded flex items-center justify-center">
+                                    <svg
+                                      className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                      />
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                      />
+                                    </svg>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
+                          {selectedApplication.certificates.length > 5 && (
+                            <div className="mt-3 text-center">
+                              <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
+                                +{selectedApplication.certificates.length - 5}{" "}
+                                more certificates
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                  </div>
                 </div>
               </div>
-            )}{" "}
-            <div className="space-y-4">
-              <div>
-                <Label
-                  htmlFor="newStatus"
-                  className="text-gray-700 dark:text-gray-300"
-                >
-                  Update Status
-                </Label>
-                <select
-                  id="newStatus"
-                  value={statusUpdateData.status}
-                  onChange={(e) =>
-                    setStatusUpdateData((prev) => ({
-                      ...prev,
-                      status: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="under_review">Under Review</option>
-                  <option value="interview_scheduled">
-                    Interview Scheduled
-                  </option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
+            )}
 
-              <div>
-                <Label
-                  htmlFor="hrComments"
-                  className="text-gray-700 dark:text-gray-300"
-                >
-                  HR Comments (Optional)
-                </Label>
-                <textarea
-                  id="hrComments"
-                  rows={4}
-                  value={statusUpdateData.hrComments}
-                  onChange={(e) =>
-                    setStatusUpdateData((prev) => ({
-                      ...prev,
-                      hrComments: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  placeholder="Add any comments or notes about this application..."
-                />
+            {/* Electronic Signature */}
+            {selectedApplication.signature && (
+              <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 rounded-xl p-6 mb-6 border border-emerald-200 dark:border-emerald-800">
+                <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                  <svg
+                    className="w-5 h-5 text-emerald-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Electronic Signature
+                  <span className="ml-auto text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full">
+                    Verified
+                  </span>
+                </h4>
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                  <div className="flex flex-col items-center">
+                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 mb-4">
+                      <img
+                        src={selectedApplication.signature}
+                        alt="Electronic Signature"
+                        className="max-h-20 mx-auto"
+                        style={{ imageRendering: "pixelated" }}
+                      />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Digitally signed by {selectedApplication.firstName}{" "}
+                        {selectedApplication.lastName}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Signed on {formatDate(selectedApplication.submittedAt)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
+            )}
+
+            {/* Status Update Section - Only show for non-failed applications */}
+            {selectedApplication.status === "failed_interview" ||
+            selectedApplication.status === "rejected" ||
+            selectedApplication.status === "withdrawn" ? (
+              /* Read-only view for final status applications */
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20 rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-600">
+                <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                  <svg
+                    className="w-5 h-5 text-gray-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Application Status - Final Decision
+                </h4>
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-center p-8">
+                    <div className="text-center space-y-4">
+                      <div className="w-16 h-16 mx-auto bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                        {selectedApplication.status === "failed_interview" ? (
+                          <svg
+                            className="w-8 h-8 text-orange-500"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        ) : selectedApplication.status === "rejected" ? (
+                          <svg
+                            className="w-8 h-8 text-red-500"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            className="w-8 h-8 text-gray-500"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                          {selectedApplication.status === "failed_interview"
+                            ? "Interview Failed"
+                            : selectedApplication.status === "rejected"
+                            ? "Application Rejected"
+                            : "Application Withdrawn"}
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                          This application has reached a final decision and
+                          cannot be modified further. All information is
+                          displayed in read-only mode for record-keeping
+                          purposes.
+                        </p>
+                      </div>
+                      {statusUpdateData.hrComments && (
+                        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            HR Comments:
+                          </div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            {statusUpdateData.hrComments}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Status Update Section for active applications */
+              <div className="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-xl p-6 mb-6 border border-red-200 dark:border-red-800">
+                <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                  <svg
+                    className="w-5 h-5 text-red-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Application Status Management
+                </h4>
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                  <div className="space-y-6">
+                    <div>
+                      <Label
+                        htmlFor="newStatus"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                      >
+                        Update Status
+                      </Label>
+                      <select
+                        id="newStatus"
+                        value={statusUpdateData.status}
+                        onChange={(e) => {
+                          const newStatus = e.target.value;
+                          setStatusUpdateData((prev) => ({
+                            ...prev,
+                            status: newStatus,
+                            // Clear interview fields if status is not interview_scheduled
+                            ...(newStatus !== "interview_scheduled" && {
+                              interviewDate: "",
+                              interviewTime: "",
+                              interviewLocation: "",
+                              interviewNotes: "",
+                            }),
+                          }));
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-800 dark:text-gray-100"
+                      >
+                        {/* Only show pending option if the current status is pending */}
+                        {selectedApplication.status === "pending" && (
+                          <option value="pending">
+                            Keep as New Application
+                          </option>
+                        )}
+                        {/* Only show under_review if current status is pending or under_review */}
+                        {(selectedApplication.status === "pending" ||
+                          selectedApplication.status === "under_review") && (
+                          <option value="under_review">Continue Review</option>
+                        )}
+                        {/* Only show Schedule Interview if not already scheduled */}
+                        {selectedApplication.status !== "interview_scheduled" &&
+                          !selectedApplication.interviewDate &&
+                          !selectedApplication.interviewTime &&
+                          !selectedApplication.interviewLocation && (
+                            <option value="interview_scheduled">
+                              Schedule Interview
+                            </option>
+                          )}
+                        <option value="passed_interview">
+                          Mark Interview as Passed
+                        </option>
+                        <option value="hours_completed">
+                          Mark Required Hours as Completed
+                        </option>
+                        <option value="failed_interview">
+                          Mark Interview as Failed
+                        </option>
+                        <option value="hired">Hire Applicant</option>
+                        <option value="on_hold">Put on Hold</option>
+                        <option value="rejected">Reject Application</option>
+                      </select>
+
+                      {/* Show info message if application has progressed beyond initial statuses */}
+                      {selectedApplication.status !== "pending" &&
+                        selectedApplication.status !== "under_review" && (
+                          <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <svg
+                                className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              <div className="text-sm text-amber-700 dark:text-amber-300">
+                                <p className="font-medium">
+                                  Status Progression Notice
+                                </p>
+                                <p className="mt-1">
+                                  This application has progressed beyond the
+                                  initial review stages and cannot be reverted
+                                  back to "Pending" or "Under Review" status.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      {/* Show specific message for under_review status */}
+                      {selectedApplication.status === "under_review" && (
+                        <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <svg
+                              className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <div className="text-sm text-blue-700 dark:text-blue-300">
+                              <p className="font-medium">
+                                Review Status Information
+                              </p>
+                              <p className="mt-1">
+                                This application is currently under review. Once
+                                moved to the next stage, it cannot be reverted
+                                back to "Pending" or "Under Review".
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label
+                        htmlFor="hrComments"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                      >
+                        HR Comments (Optional)
+                      </Label>
+                      <textarea
+                        id="hrComments"
+                        rows={4}
+                        value={statusUpdateData.hrComments}
+                        onChange={(e) =>
+                          setStatusUpdateData((prev) => ({
+                            ...prev,
+                            hrComments: e.target.value,
+                          }))
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-800 dark:text-gray-100"
+                        placeholder="Add any comments or notes about this application..."
+                      />
+                    </div>
+
+                    {/* Show message when interview is already scheduled */}
+                    {(selectedApplication.interviewDate ||
+                      selectedApplication.interviewTime ||
+                      selectedApplication.interviewLocation) && (
+                      <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-6 border border-green-200 dark:border-green-800">
+                        <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                          <svg
+                            className="w-5 h-5 text-green-600"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          Interview Already Scheduled
+                        </h5>
+                        <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                          <div className="space-y-3">
+                            {selectedApplication.interviewDate && (
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-gray-700 dark:text-gray-300">
+                                  📅 Date:
+                                </span>
+                                <span className="text-gray-900 dark:text-gray-100">
+                                  {new Date(
+                                    selectedApplication.interviewDate
+                                  ).toLocaleDateString("en-US", {
+                                    weekday: "long",
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                  })}
+                                </span>
+                              </div>
+                            )}
+                            {selectedApplication.interviewTime && (
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-gray-700 dark:text-gray-300">
+                                  🕐 Time:
+                                </span>
+                                <span className="text-gray-900 dark:text-gray-100">
+                                  {new Date(
+                                    `2000-01-01T${selectedApplication.interviewTime}`
+                                  ).toLocaleTimeString("en-US", {
+                                    hour: "numeric",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  })}
+                                </span>
+                              </div>
+                            )}
+                            {selectedApplication.interviewLocation && (
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-gray-700 dark:text-gray-300">
+                                  📍 Location:
+                                </span>
+                                <span className="text-gray-900 dark:text-gray-100">
+                                  {selectedApplication.interviewLocation}
+                                </span>
+                              </div>
+                            )}
+                            {selectedApplication.interviewNotes && (
+                              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                                <span className="font-medium text-gray-700 dark:text-gray-300">
+                                  📝 Instructions:
+                                </span>
+                                <p className="text-gray-900 dark:text-gray-100 mt-1">
+                                  {selectedApplication.interviewNotes}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <svg
+                                className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              <div className="text-sm text-blue-700 dark:text-blue-300">
+                                <p className="font-medium">
+                                  Interview Information
+                                </p>
+                                <p className="mt-1">
+                                  An interview has already been scheduled for
+                                  this application. The interview notification
+                                  email has been sent to the applicant.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Interview Scheduling Section - Only show when interview_scheduled is selected AND no interview is already scheduled */}
+                    {statusUpdateData.status === "interview_scheduled" &&
+                      !selectedApplication.interviewDate &&
+                      !selectedApplication.interviewTime &&
+                      !selectedApplication.interviewLocation && (
+                        <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-6 border border-purple-200 dark:border-purple-800">
+                          <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                            <svg
+                              className="w-5 h-5 text-purple-600"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            Interview Scheduling Details
+                          </h5>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                              <Label
+                                htmlFor="interviewDate"
+                                className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                              >
+                                Interview Date *
+                              </Label>
+                              <input
+                                type="date"
+                                id="interviewDate"
+                                value={statusUpdateData.interviewDate}
+                                min={new Date().toISOString().split("T")[0]}
+                                onChange={(e) =>
+                                  setStatusUpdateData((prev) => ({
+                                    ...prev,
+                                    interviewDate: e.target.value,
+                                  }))
+                                }
+                                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
+                                required
+                              />
+                            </div>
+
+                            <div>
+                              <Label
+                                htmlFor="interviewTime"
+                                className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                              >
+                                Interview Time *
+                              </Label>
+                              <input
+                                type="time"
+                                id="interviewTime"
+                                value={statusUpdateData.interviewTime}
+                                onChange={(e) =>
+                                  setStatusUpdateData((prev) => ({
+                                    ...prev,
+                                    interviewTime: e.target.value,
+                                  }))
+                                }
+                                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div className="mb-4">
+                            <Label
+                              htmlFor="interviewLocation"
+                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                            >
+                              Interview Location *
+                            </Label>
+                            <input
+                              type="text"
+                              id="interviewLocation"
+                              value={statusUpdateData.interviewLocation}
+                              onChange={(e) =>
+                                setStatusUpdateData((prev) => ({
+                                  ...prev,
+                                  interviewLocation: e.target.value,
+                                }))
+                              }
+                              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
+                              placeholder="e.g., HR Office, Room 201, Administration Building"
+                              required
+                            />
+                          </div>
+
+                          <div className="mb-4">
+                            <Label
+                              htmlFor="interviewNotes"
+                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                            >
+                              Additional Interview Instructions
+                            </Label>
+                            <textarea
+                              id="interviewNotes"
+                              rows={3}
+                              value={statusUpdateData.interviewNotes}
+                              onChange={(e) =>
+                                setStatusUpdateData((prev) => ({
+                                  ...prev,
+                                  interviewNotes: e.target.value,
+                                }))
+                              }
+                              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
+                              placeholder="e.g., Please bring a valid ID, Come 15 minutes early, Prepare for technical questions..."
+                            />
+                          </div>
+
+                          {/* Interview Email Preview */}
+                          <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                            <h6 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                              <svg
+                                className="w-4 h-4 text-purple-600"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                              </svg>
+                              Email Preview - Interview Notification
+                            </h6>
+                            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                              <div className="text-sm">
+                                <p className="font-semibold text-gray-800 dark:text-gray-200">
+                                  Subject: Interview Scheduled -{" "}
+                                  {selectedApplication?.position ===
+                                  "student_assistant"
+                                    ? "Student Assistant"
+                                    : "Student Marshal"}{" "}
+                                  Position
+                                </p>
+                                <div className="mt-3 text-gray-700 dark:text-gray-300 leading-relaxed">
+                                  <p>
+                                    Dear {selectedApplication?.firstName}{" "}
+                                    {selectedApplication?.lastName},
+                                  </p>
+                                  <p className="mt-2">
+                                    Congratulations! Your application for the{" "}
+                                    {selectedApplication?.position ===
+                                    "student_assistant"
+                                      ? "Student Assistant"
+                                      : "Student Marshal"}{" "}
+                                    position has been reviewed and we would like
+                                    to invite you for an interview.
+                                  </p>
+
+                                  <div className="mt-4 bg-blue-50 dark:bg-blue-900/30 p-4 rounded border-l-4 border-blue-400">
+                                    <p className="font-semibold text-blue-800 dark:text-blue-200 text-lg mb-3">
+                                      📅 Interview Details:
+                                    </p>
+                                    <div className="space-y-2">
+                                      <p>
+                                        <strong>📆 Date:</strong>{" "}
+                                        {statusUpdateData.interviewDate
+                                          ? new Date(
+                                              statusUpdateData.interviewDate
+                                            ).toLocaleDateString("en-US", {
+                                              weekday: "long",
+                                              year: "numeric",
+                                              month: "long",
+                                              day: "numeric",
+                                            })
+                                          : "[Date not set]"}
+                                      </p>
+                                      <p>
+                                        <strong>🕐 Time:</strong>{" "}
+                                        {statusUpdateData.interviewTime
+                                          ? new Date(
+                                              `2000-01-01T${statusUpdateData.interviewTime}`
+                                            ).toLocaleTimeString("en-US", {
+                                              hour: "numeric",
+                                              minute: "2-digit",
+                                              hour12: true,
+                                            })
+                                          : "[Time not set]"}
+                                      </p>
+                                      <p>
+                                        <strong>📍 Location:</strong>{" "}
+                                        {statusUpdateData.interviewLocation ||
+                                          "[Location not set]"}
+                                      </p>
+                                      <p>
+                                        <strong>👤 Position:</strong>{" "}
+                                        {selectedApplication?.position ===
+                                        "student_assistant"
+                                          ? "Student Assistant"
+                                          : "Student Marshal"}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {statusUpdateData.interviewNotes && (
+                                    <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded border-l-4 border-yellow-400">
+                                      <p className="font-semibold text-yellow-800 dark:text-yellow-200">
+                                        📝 Important Instructions:
+                                      </p>
+                                      <p className="mt-1">
+                                        {statusUpdateData.interviewNotes}
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  <div className="mt-4 bg-green-50 dark:bg-green-900/30 p-3 rounded border-l-4 border-green-400">
+                                    <p className="font-semibold text-green-800 dark:text-green-200">
+                                      💼 What to Bring:
+                                    </p>
+                                    <ul className="mt-1 space-y-1 text-sm">
+                                      <li>• Valid government-issued ID</li>
+                                      <li>
+                                        • Original documents and certificates
+                                        (if not previously submitted)
+                                      </li>
+                                      <li>• Pen and notepad</li>
+                                      <li>
+                                        • This email confirmation (printed or on
+                                        your phone)
+                                      </li>
+                                    </ul>
+                                  </div>
+
+                                  <div className="mt-4 bg-purple-50 dark:bg-purple-900/30 p-3 rounded border-l-4 border-purple-400">
+                                    <p className="font-semibold text-purple-800 dark:text-purple-200">
+                                      ℹ️ Interview Information:
+                                    </p>
+                                    <ul className="mt-1 space-y-1 text-sm">
+                                      <li>• Please arrive 15 minutes early</li>
+                                      <li>
+                                        • The interview will last approximately
+                                        30-45 minutes
+                                      </li>
+                                      <li>
+                                        • Dress code: Business casual or formal
+                                        attire
+                                      </li>
+                                      <li>
+                                        • Be prepared to discuss your
+                                        qualifications and motivation for the
+                                        position
+                                      </li>
+                                    </ul>
+                                  </div>
+
+                                  <p className="mt-3">
+                                    We look forward to meeting with you at the
+                                    scheduled time. If you have any questions or
+                                    need to reschedule, please contact our HR
+                                    Department immediately at hr@ub.edu.ph or
+                                    call us during business hours.
+                                  </p>
+
+                                  <p className="mt-4">
+                                    Best regards,
+                                    <br />
+                                    <strong>HR Department</strong>
+                                    <br />
+                                    University of Baguio
+                                    <br />
+                                    📞 Phone: [Contact Number]
+                                    <br />
+                                    📧 Email: hr@ub.edu.ph
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-600">
               <Button
                 variant="outline"
                 onClick={() => {
                   setShowStatusUpdate(false);
                   setSelectedApplication(null);
                 }}
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
               >
                 Cancel
               </Button>
-              <Button
-                onClick={submitStatusUpdate}
-                disabled={updateStatusMutation.isPending}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                {updateStatusMutation.isPending
-                  ? "Updating..."
-                  : "Update Status"}
-              </Button>
+              {/* Only show Update Status button for non-failed applications */}
+              {!(
+                selectedApplication.status === "failed_interview" ||
+                selectedApplication.status === "rejected" ||
+                selectedApplication.status === "withdrawn"
+              ) && (
+                <Button
+                  onClick={submitStatusUpdate}
+                  disabled={updateStatusMutation.isPending}
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  {updateStatusMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <svg
+                        className="animate-spin h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
+                      </svg>
+                      Updating...
+                    </div>
+                  ) : statusUpdateData.status === "interview_scheduled" ? (
+                    "Schedule Interview & Update Status"
+                  ) : (
+                    "Update Status"
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </div>

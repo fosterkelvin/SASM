@@ -126,3 +126,48 @@ export const getApplicationStats = async () => {
   const response = await API.get("/applications/stats");
   return response.data;
 };
+
+// Notification API
+export const getUserNotifications = async (params?: {
+  isRead?: boolean;
+  limit?: number;
+  skip?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.isRead !== undefined)
+    searchParams.append("isRead", params.isRead.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+  if (params?.skip) searchParams.append("skip", params.skip.toString());
+
+  const response = await API.get(`/notifications?${searchParams.toString()}`);
+  return response.data;
+};
+
+export const markNotificationAsRead = async (id: string) => {
+  const response = await API.put(`/notifications/${id}/read`);
+  return response.data;
+};
+
+export const markAllNotificationsAsRead = async () => {
+  const response = await API.put("/notifications/mark-all-read");
+  return response.data;
+};
+
+export const deleteNotification = async (id: string) => {
+  const response = await API.delete(`/notifications/${id}`);
+  return response.data;
+};
+
+export const deleteMultipleNotifications = async (
+  notificationIDs: string[]
+) => {
+  const response = await API.delete("/notifications/bulk", {
+    data: { notificationIDs },
+  });
+  return response.data;
+};
+
+export const getUnreadNotificationCount = async () => {
+  const response = await API.get("/notifications/unread-count");
+  return response.data;
+};

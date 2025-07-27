@@ -8,6 +8,7 @@ import Home from "./pages/home";
 import Profile from "./pages/Profile";
 import Application from "./pages/Application";
 import ApplicationManagement from "./pages/ApplicationManagement";
+import Notifications from "./pages/Notifications";
 import PublicRoute from "./routes/PublicRoute";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import NotFound from "@/pages/NotFound";
@@ -54,6 +55,7 @@ function App(): ReactElement {
         element={withProtected(<OfficeDashboard />)}
       />
       <Route path="/profile" element={withProtected(<Profile />)} />
+      <Route path="/notifications" element={withProtected(<Notifications />)} />
       <Route path="/application" element={withProtected(<Application />)} />
       <Route
         path="/applications"

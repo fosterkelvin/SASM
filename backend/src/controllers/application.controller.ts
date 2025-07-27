@@ -15,6 +15,12 @@ import {
   updateApplicationStatusSchema,
   getApplicationsSchema,
 } from "./application.schemas";
+import {
+  createApplicationStatusNotification,
+  createNotification,
+} from "../services/notification.service";
+import { sendMail } from "../utils/sendMail";
+import { getApplicationStatusEmailTemplate } from "../utils/emailTemplate";
 
 // Create a new application
 export const createApplicationHandler = catchErrors(
@@ -100,6 +106,48 @@ export const createApplicationHandler = catchErrors(
 
     // Populate user information
     await application.populate("userID", "firstname lastname email role");
+
+    // Create application submission notification
+    try {
+      const positionTitle =
+        application.position === "student_assistant"
+          ? "Student Assistant"
+          : "Student Marshal";
+
+      await createNotification({
+        userID: userID,
+        title: "Application Submitted Successfully! ✅",
+        message: `Your application for ${positionTitle} position has been submitted successfully. You will be notified of any updates via this system and email.`,
+        type: "success",
+        relatedApplicationID: (application as any)._id.toString(),
+      });
+
+      // Send confirmation email to the student
+      const applicantName = `${user.firstname} ${user.lastname}`;
+      const emailTemplate = getApplicationStatusEmailTemplate(
+        applicantName,
+        positionTitle,
+        "submitted",
+        `Your application for ${positionTitle} position has been submitted successfully. You will be notified of any updates via this system and email.`
+      );
+
+      await sendMail({
+        to: user.email,
+        subject: emailTemplate.subject,
+        text: emailTemplate.text,
+        html: emailTemplate.html,
+      });
+
+      console.log(
+        `Application submission confirmation email sent to ${user.email}`
+      );
+    } catch (error) {
+      console.error(
+        "Failed to create application submission notification or send email:",
+        error
+      );
+      // Don't fail the request if notification or email creation fails
+    }
 
     return res.status(CREATED).json({
       message: "Application submitted successfully",
@@ -211,6 +259,12 @@ export const updateApplicationStatusHandler = catchErrors(
       "Access denied. Only HR and Office staff can update applications."
     );
 
+    // Get the current application to check if status is changing
+    const currentApplication = await ApplicationModel.findById(applicationId);
+    appAssert(currentApplication, NOT_FOUND, "Application not found");
+
+    const statusChanged = currentApplication.status !== updateData.status;
+
     // Find and update the application
     const application = await ApplicationModel.findByIdAndUpdate(
       applicationId,
@@ -225,6 +279,41 @@ export const updateApplicationStatusHandler = catchErrors(
       .populate("reviewedBy", "firstname lastname email role");
 
     appAssert(application, NOT_FOUND, "Application not found");
+
+    // Create notification if status changed and not from pending to under_review
+    // (skip notification for the initial status change when HR first reviews)
+    if (
+      statusChanged &&
+      !(
+        currentApplication.status === "pending" &&
+        updateData.status === "under_review"
+      )
+    ) {
+      try {
+        // Prepare interview details if status is interview_scheduled
+        const interviewDetails =
+          updateData.status === "interview_scheduled"
+            ? {
+                interviewDate: updateData.interviewDate,
+                interviewTime: updateData.interviewTime,
+                interviewLocation: updateData.interviewLocation,
+                interviewNotes: updateData.interviewNotes,
+              }
+            : undefined;
+
+        await createApplicationStatusNotification(
+          (application.userID as any)._id,
+          applicationId,
+          updateData.status,
+          application.position,
+          updateData.hrComments,
+          interviewDetails
+        );
+      } catch (error) {
+        console.error("Failed to create notification:", error);
+        // Don't fail the request if notification creation fails
+      }
+    }
 
     return res.status(OK).json({
       message: "Application status updated successfully",

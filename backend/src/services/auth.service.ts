@@ -33,6 +33,7 @@ import {
 } from "../utils/emailTemplate";
 import { hashValue } from "../utils/bcrypt";
 import { getRoleBasedRedirect } from "../utils/roleRedirect";
+import { createNotification } from "./notification.service";
 
 type signupParams = {
   firstname: string;
@@ -255,6 +256,20 @@ export const verifyEmail = async (code: string) => {
     appAssert(updatedUser, INTERNAL_SERVER_ERROR, "Failed to verify email");
 
     await validCode.deleteOne();
+
+    // Create welcome notification for new user
+    try {
+      await createNotification({
+        userID: (updatedUser as any)._id.toString(),
+        title: "Welcome to SASM-IMS! 🎉",
+        message:
+          "Welcome to the Student Assistant and Student Marshal Information Management System. Get started by completing your profile and submitting your application.",
+        type: "info",
+      });
+    } catch (error) {
+      console.error("Failed to create welcome notification:", error);
+      // Don't fail the verification if notification creation fails
+    }
 
     // Create session and tokens after successful email verification
     const session = await SessionModel.create({

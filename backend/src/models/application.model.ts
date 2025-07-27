@@ -67,9 +67,14 @@ export interface ApplicationDocument extends mongoose.Document {
   status:
     | "pending"
     | "under_review"
-    | "approved"
+    | "interview_scheduled"
+    | "passed_interview"
+    | "failed_interview"
+    | "hours_completed"
+    | "hired"
     | "rejected"
-    | "interview_scheduled";
+    | "withdrawn"
+    | "on_hold";
 
   // Agreement
   agreedToTerms: boolean;
@@ -78,6 +83,7 @@ export interface ApplicationDocument extends mongoose.Document {
   profilePhoto?: string;
   idDocument?: string;
   certificates?: string[];
+  signature?: string;
 
   // Timestamps
   submittedAt: Date;
@@ -86,6 +92,12 @@ export interface ApplicationDocument extends mongoose.Document {
 
   // Comments/Notes from HR
   hrComments?: string;
+
+  // Interview Information
+  interviewDate?: string;
+  interviewTime?: string;
+  interviewLocation?: string;
+  interviewNotes?: string;
 
   createdAt: Date;
   updatedAt: Date;
@@ -309,9 +321,14 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
       enum: [
         "pending",
         "under_review",
-        "approved",
-        "rejected",
         "interview_scheduled",
+        "passed_interview",
+        "failed_interview",
+        "hours_completed",
+        "hired",
+        "rejected",
+        "withdrawn",
+        "on_hold",
       ],
       default: "pending",
       required: true,
@@ -343,6 +360,10 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
         type: String,
       },
     ],
+    signature: {
+      type: String,
+      default: null,
+    },
 
     // Timestamps
     submittedAt: {
@@ -360,6 +381,24 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
 
     // Comments/Notes from HR
     hrComments: {
+      type: String,
+      trim: true,
+    },
+
+    // Interview Information
+    interviewDate: {
+      type: String,
+      trim: true,
+    },
+    interviewTime: {
+      type: String,
+      trim: true,
+    },
+    interviewLocation: {
+      type: String,
+      trim: true,
+    },
+    interviewNotes: {
       type: String,
       trim: true,
     },

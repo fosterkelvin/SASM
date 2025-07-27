@@ -98,6 +98,9 @@ export const createApplicationSchema = z.object({
   agreedToTerms: z.boolean().refine((val) => val === true, {
     message: "You must agree to the terms and conditions",
   }),
+
+  // E-Signature
+  signature: z.string().min(1, "Electronic signature is required"),
 });
 
 // Schema for updating application status (HR use)
@@ -105,11 +108,20 @@ export const updateApplicationStatusSchema = z.object({
   status: z.enum([
     "pending",
     "under_review",
-    "approved",
-    "rejected",
     "interview_scheduled",
+    "passed_interview",
+    "failed_interview",
+    "hours_completed",
+    "hired",
+    "rejected",
+    "withdrawn",
+    "on_hold",
   ]),
   hrComments: z.string().max(1000).optional(),
+  interviewDate: z.string().optional(),
+  interviewTime: z.string().optional(),
+  interviewLocation: z.string().optional(),
+  interviewNotes: z.string().max(1000).optional(),
 });
 
 // Schema for getting applications with filters
@@ -118,9 +130,14 @@ export const getApplicationsSchema = z.object({
     .enum([
       "pending",
       "under_review",
-      "approved",
-      "rejected",
       "interview_scheduled",
+      "passed_interview",
+      "failed_interview",
+      "hours_completed",
+      "hired",
+      "rejected",
+      "withdrawn",
+      "on_hold",
     ])
     .optional(),
   position: z.enum(["student_assistant", "student_marshal"]).optional(),

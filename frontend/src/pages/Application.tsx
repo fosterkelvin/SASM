@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useNotificationUpdater } from "@/hooks/useNotificationUpdater";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,9 +18,15 @@ import {
   X,
   Image,
   PenTool,
+  Clock,
 } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
-import { createApplication } from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  createApplication,
+  getUserApplications,
+  deleteApplication,
+  resendVerificationEmail,
+} from "@/lib/api";
 import { z } from "zod";
 import StudentSidebar from "@/components/StudentSidebar";
 import HRSidebar from "@/components/HRSidebar";
@@ -110,18 +117,101 @@ const applicationSchema = z.object({
   signature: z.string().min(1, "Electronic signature is required"),
 
   // File uploads (required 2x2 picture)
-  profilePhoto: z.any().optional(),
-  idDocument: z.any().optional(),
-  certificates: z.any().refine((file) => file !== null && file !== undefined, {
+  profilePhoto: z.any().refine((file) => file !== null && file !== undefined, {
     message: "2x2 picture is required",
   }),
+  idDocument: z.any().optional(),
+  certificates: z.any().optional(),
 });
 
 type ApplicationFormData = z.infer<typeof applicationSchema>;
 
+// ResendVerificationButton component
+const ResendVerificationButton = ({ email }: { email: string }) => {
+  const [isResending, setIsResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+
+  const resendMutation = useMutation({
+    mutationFn: () => resendVerificationEmail({ email }),
+    onSuccess: () => {
+      setResendMessage(
+        "Verification email sent successfully! Please check your inbox."
+      );
+      setTimeout(() => setResendMessage(""), 5000);
+    },
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message || "Failed to send verification email";
+      setResendMessage(message);
+      setTimeout(() => setResendMessage(""), 5000);
+    },
+    onSettled: () => {
+      setIsResending(false);
+    },
+  });
+
+  const handleResend = () => {
+    setIsResending(true);
+    setResendMessage("");
+    resendMutation.mutate();
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Button
+        onClick={handleResend}
+        disabled={isResending}
+        className="bg-red-600 hover:bg-red-700 text-white"
+      >
+        {isResending ? (
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            Sending...
+          </div>
+        ) : (
+          "Resend Verification Email"
+        )}
+      </Button>
+      {resendMessage && (
+        <p
+          className={`text-sm ${
+            resendMessage.includes("successfully")
+              ? "text-green-600 dark:text-green-400"
+              : "text-red-600 dark:text-red-400"
+          }`}
+        >
+          {resendMessage}
+        </p>
+      )}
+    </div>
+  );
+};
+
 const Application = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { triggerNotificationUpdate } = useNotificationUpdater();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Fetch user applications to check if they already have an active application
+  const { data: userApplicationsData, isLoading: isLoadingApplications } =
+    useQuery({
+      queryKey: ["userApplications"],
+      queryFn: getUserApplications,
+      enabled: !!user,
+    });
+
+  // Check if user has any active application (excluding failed/rejected applications)
+  const hasActiveApplication = userApplicationsData?.applications?.some(
+    (app: any) =>
+      !["failed_interview", "rejected", "withdrawn"].includes(app.status)
+  );
+
+  // Get the latest active application (excluding failed/rejected applications)
+  const activeApplication = userApplicationsData?.applications?.find(
+    (app: any) =>
+      !["failed_interview", "rejected", "withdrawn"].includes(app.status)
+  );
 
   // Form state
   const [formData, setFormData] = useState<Partial<ApplicationFormData>>({
@@ -141,24 +231,25 @@ const Application = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
+  const [withdrawSuccess, setWithdrawSuccess] = useState(false);
 
   // Seminars state
   const [seminars, setSeminars] = useState([
     { title: "", sponsoringAgency: "", inclusiveDate: "", place: "" },
   ]);
 
-  // File upload state - simplified to just use certificates array for all images
+  // File upload state - use profilePhoto for 2x2 picture
   const [uploadedFiles, setUploadedFiles] = useState<{
-    certificates: File[] | null;
+    profilePhoto: File | null;
   }>({
-    certificates: null,
+    profilePhoto: null,
   });
 
   // File upload preview URLs
   const [filePreviewUrls, setFilePreviewUrls] = useState<{
-    certificates: string[];
+    profilePhoto: string;
   }>({
-    certificates: [],
+    profilePhoto: "",
   });
 
   // E-Signature state
@@ -171,6 +262,9 @@ const Application = () => {
   const [uploadedSignature, setUploadedSignature] = useState<File | null>(null);
   const [signaturePreviewUrl, setSignaturePreviewUrl] = useState<string>("");
 
+  // Withdraw confirmation modal state
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+
   useEffect(() => {
     document.title = "Application | SASM-IMS";
 
@@ -181,6 +275,28 @@ const Application = () => {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Handle escape key to close withdraw modal
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && showWithdrawModal) {
+        setShowWithdrawModal(false);
+        document.body.style.overflow = "unset";
+      }
+    };
+
+    if (showWithdrawModal) {
+      document.addEventListener("keydown", handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscapeKey);
+      // Clean up body scroll on unmount
+      if (showWithdrawModal) {
+        document.body.style.overflow = "unset";
+      }
+    };
+  }, [showWithdrawModal]);
 
   const handleInputChange = (field: keyof ApplicationFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -217,22 +333,22 @@ const Application = () => {
     const file = files[0];
 
     if (file) {
-      setUploadedFiles((prev) => ({ ...prev, certificates: [file] }));
+      setUploadedFiles((prev) => ({ ...prev, profilePhoto: file }));
 
       // Create preview URL for the single image
       const url = URL.createObjectURL(file);
-      setFilePreviewUrls((prev) => ({ ...prev, certificates: [url] }));
+      setFilePreviewUrls((prev) => ({ ...prev, profilePhoto: url }));
     }
   };
 
   const removeFile = () => {
     setUploadedFiles((prev) => ({
       ...prev,
-      certificates: null,
+      profilePhoto: null,
     }));
     setFilePreviewUrls((prev) => ({
       ...prev,
-      certificates: [],
+      profilePhoto: "",
     }));
   };
 
@@ -385,6 +501,54 @@ const Application = () => {
     }
   }, [signatureMethod, isSignaturePadReady]);
 
+  // Withdraw application mutation
+  const withdrawApplicationMutation = useMutation({
+    mutationFn: (applicationId: string) => deleteApplication(applicationId),
+    onSuccess: () => {
+      // Invalidate user applications query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["userApplications"] });
+      setShowWithdrawModal(false);
+      // Restore body scroll
+      document.body.style.overflow = "unset";
+
+      // Show withdrawal success message
+      setWithdrawSuccess(true);
+      setSubmitMessage("Your application has been withdrawn successfully.");
+    },
+    onError: (error: any) => {
+      console.error("Failed to withdraw application:", error);
+      setShowWithdrawModal(false);
+      // Restore body scroll
+      document.body.style.overflow = "unset";
+
+      // Show error message
+      setSubmitMessage(
+        error?.response?.data?.message ||
+          "An error occurred while withdrawing your application. Please try again."
+      );
+    },
+  });
+
+  // Withdraw application functions
+  const handleWithdrawClick = () => {
+    console.log("Withdraw button clicked"); // Debug log
+    setShowWithdrawModal(true);
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = "hidden";
+  };
+
+  const handleWithdrawCancel = () => {
+    setShowWithdrawModal(false);
+    // Restore body scroll
+    document.body.style.overflow = "unset";
+  };
+
+  const handleWithdrawConfirm = () => {
+    if (activeApplication?._id) {
+      withdrawApplicationMutation.mutate(activeApplication._id);
+    }
+  };
+
   // Create application mutation
   const createApplicationMutation = useMutation({
     mutationFn: createApplication,
@@ -392,8 +556,14 @@ const Application = () => {
       setSubmitSuccess(true);
       setSubmitMessage(
         data.message ||
-          "Your application has been submitted successfully! You will receive a confirmation email shortly."
+          "Your application has been submitted successfully! You will receive a confirmation email and will be notified of any status updates via email and in-app notifications."
       );
+
+      // Invalidate user applications query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["userApplications"] });
+
+      // Trigger notification update
+      triggerNotificationUpdate();
 
       // Reset form
       setFormData({
@@ -409,10 +579,10 @@ const Application = () => {
         { title: "", sponsoringAgency: "", inclusiveDate: "", place: "" },
       ]);
       setUploadedFiles({
-        certificates: null,
+        profilePhoto: null,
       });
       setFilePreviewUrls({
-        certificates: [],
+        profilePhoto: "",
       });
       // Reset signature
       setSignatureData("");
@@ -446,10 +616,7 @@ const Application = () => {
         ),
         age: formData.age ? Number(formData.age) : undefined,
         signature: signatureData || formData.signature || "",
-        certificates:
-          uploadedFiles.certificates && uploadedFiles.certificates.length > 0
-            ? uploadedFiles.certificates[0]
-            : null,
+        profilePhoto: uploadedFiles.profilePhoto || null,
       };
 
       // Validate form data
@@ -478,9 +645,9 @@ const Application = () => {
       });
 
       // Add files if they exist
-      if (uploadedFiles.certificates && uploadedFiles.certificates.length > 0) {
-        // For single file, just append the one file
-        formDataToSubmit.append(`certificates`, uploadedFiles.certificates[0]);
+      if (uploadedFiles.profilePhoto) {
+        // Append the 2x2 picture as profilePhoto
+        formDataToSubmit.append(`profilePhoto`, uploadedFiles.profilePhoto);
       }
 
       // Submit to backend API
@@ -535,15 +702,23 @@ const Application = () => {
     return (
       <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
         {renderSidebar()}
+        {/* Main content area with dynamic margin based on sidebar state */}
         <div
           className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
             isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
           }`}
         >
+          {/* Top header bar - only visible on desktop */}
+          <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
+            <h1 className="text-2xl font-bold text-white dark:text-white">
+              Application Submitted Successfully
+            </h1>
+          </div>
+
           {/* Success Page */}
-          <div className="p-6 md:p-10 flex items-center justify-center min-h-screen">
-            <Card className="max-w-2xl w-full">
-              <CardContent className="p-8 text-center">
+          <div className="p-4 md:p-10 flex items-center justify-center min-h-screen">
+            <Card className="max-w-2xl w-full mx-4">
+              <CardContent className="p-6 md:p-8 text-center">
                 <div className="flex flex-col items-center gap-6">
                   <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
                     <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
@@ -559,11 +734,14 @@ const Application = () => {
                       <p className="text-sm text-blue-800 dark:text-blue-200">
                         <strong>Next Steps:</strong>
                         <br />
-                        1. Check your email for confirmation
+                        1. Check your email for a confirmation message
                         <br />
                         2. Wait for HR to review your application
                         <br />
-                        3. You will be contacted if selected for an interview
+                        3. You will receive email notifications for any status
+                        updates
+                        <br />
+                        4. You will be contacted if selected for an interview
                       </p>
                     </div>
                   </div>
@@ -574,8 +752,517 @@ const Application = () => {
                     }}
                     className="bg-red-600 hover:bg-red-700 text-white"
                   >
-                    Submit Another Application
+                    Okay
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (withdrawSuccess) {
+    return (
+      <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
+        {renderSidebar()}
+        {/* Main content area with dynamic margin based on sidebar state */}
+        <div
+          className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
+            isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          {/* Top header bar - only visible on desktop */}
+          <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
+            <h1 className="text-2xl font-bold text-white dark:text-white">
+              Application Withdrawn Successfully
+            </h1>
+          </div>
+
+          {/* Withdrawal Success Page */}
+          <div className="p-4 md:p-10 flex items-center justify-center min-h-screen">
+            <Card className="max-w-2xl w-full mx-4">
+              <CardContent className="p-6 md:p-8 text-center">
+                <div className="flex flex-col items-center gap-6">
+                  <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="space-y-4">
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+                      Application Withdrawn Successfully!
+                    </h1>
+                    <p className="text-lg text-gray-600 dark:text-gray-400 max-w-md">
+                      {submitMessage}
+                    </p>
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                      <p className="text-sm text-green-800 dark:text-green-200">
+                        Your application has been completely removed from our
+                        system. If you change your mind, you can submit a new
+                        application at any time.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      setWithdrawSuccess(false);
+                      setSubmitMessage("");
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Okay
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while checking for existing applications
+  if (isLoadingApplications) {
+    return (
+      <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
+        {renderSidebar()}
+        {/* Main content area with dynamic margin based on sidebar state */}
+        <div
+          className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
+            isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          {/* Top header bar - only visible on desktop */}
+          <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
+            <h1 className="text-2xl font-bold text-white dark:text-white">
+              Loading Application Status
+            </h1>
+          </div>
+
+          <div className="p-4 md:p-10 flex items-center justify-center min-h-screen">
+            <Card className="max-w-2xl w-full mx-4">
+              <CardContent className="p-6 md:p-8 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Loading your application status...
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show existing application status if user already has an active application
+  if (hasActiveApplication && activeApplication) {
+    const getStatusColor = (status: string) => {
+      switch (status) {
+        case "pending":
+          return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800";
+        case "under_review":
+          return "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800";
+        case "approved":
+          return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800";
+        case "interview_scheduled":
+          return "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800";
+        case "passed_interview":
+          return "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800";
+        case "hours_completed":
+          return "bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800";
+        case "hired":
+          return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800";
+        case "on_hold":
+          return "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800";
+        default:
+          return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800";
+      }
+    };
+
+    const getStatusIcon = (status: string) => {
+      switch (status) {
+        case "approved":
+          return <CheckCircle className="h-6 w-6" />;
+        case "hired":
+          return <CheckCircle className="h-6 w-6" />;
+        case "passed_interview":
+          return <CheckCircle className="h-6 w-6" />;
+        case "hours_completed":
+          return <Clock className="h-6 w-6" />;
+        case "pending":
+          return <Clock className="h-6 w-6" />;
+        case "under_review":
+          return <FileText className="h-6 w-6" />;
+        case "interview_scheduled":
+          return <User className="h-6 w-6" />;
+        case "on_hold":
+          return <Clock className="h-6 w-6" />;
+        default:
+          return <FileText className="h-6 w-6" />;
+      }
+    };
+
+    const formatDate = (dateString: string) => {
+      return new Date(dateString).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    };
+
+    return (
+      <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
+        {renderSidebar()}
+        {/* Main content area with dynamic margin based on sidebar state */}
+        <div
+          className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
+            isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          {/* Top header bar - only visible on desktop */}
+          <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
+            <h1 className="text-2xl font-bold text-white dark:text-white">
+              Your Application Status
+            </h1>
+          </div>
+
+          {/* Existing Application Status */}
+          <div className="p-4 md:p-10 flex items-center justify-center min-h-screen">
+            <Card className="max-w-4xl w-full mx-4">
+              <CardContent className="p-6 md:p-8">
+                <div className="text-center mb-8">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
+                    <img
+                      src="/UBLogo.svg"
+                      alt="University of Baguio Logo"
+                      className="h-12 sm:h-16 w-auto"
+                    />
+                    <div className="text-center sm:text-left">
+                      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-200">
+                        UNIVERSITY OF BAGUIO
+                      </h2>
+                      <h3 className="text-base sm:text-lg font-semibold text-red-600 dark:text-red-400">
+                        Application Status
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Current Status */}
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+                    <div className="flex items-center justify-center gap-4 mb-6">
+                      <div
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full border text-lg font-medium ${getStatusColor(
+                          activeApplication.status
+                        )}`}
+                      >
+                        {getStatusIcon(activeApplication.status)}
+                        {activeApplication.status
+                          .replace("_", " ")
+                          .toUpperCase()}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                          Application Details
+                        </h3>
+                        <div className="space-y-2 text-sm">
+                          <div>
+                            <span className="font-medium text-gray-600 dark:text-gray-400">
+                              Position:
+                            </span>
+                            <span className="ml-2 text-gray-800 dark:text-gray-200">
+                              {activeApplication.position ===
+                              "student_assistant"
+                                ? "Student Assistant"
+                                : "Student Marshal"}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-600 dark:text-gray-400">
+                              Submitted:
+                            </span>
+                            <span className="ml-2 text-gray-800 dark:text-gray-200">
+                              {formatDate(activeApplication.submittedAt)}
+                            </span>
+                          </div>
+                          {activeApplication.reviewedAt && (
+                            <div>
+                              <span className="font-medium text-gray-600 dark:text-gray-400">
+                                Last Reviewed:
+                              </span>
+                              <span className="ml-2 text-gray-800 dark:text-gray-200">
+                                {formatDate(activeApplication.reviewedAt)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                          What's Next?
+                        </h3>
+                        <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                          {activeApplication.status === "pending" && (
+                            <>
+                              <p>
+                                • Your application is in the queue for review
+                              </p>
+                              <p>• HR will review your application soon</p>
+                              <p>
+                                • You will be notified of any updates via email
+                                and in-app notifications
+                              </p>
+                            </>
+                          )}
+                          {activeApplication.status === "under_review" && (
+                            <>
+                              <p>
+                                • HR is currently reviewing your application
+                              </p>
+                              <p>
+                                • Please be patient while we process your
+                                documents
+                              </p>
+                              <p>
+                                • You will be contacted soon with an update via
+                                email
+                              </p>
+                            </>
+                          )}
+                          {activeApplication.status === "approved" && (
+                            <>
+                              <p>
+                                • Congratulations! Your application has been
+                                approved
+                              </p>
+                              <p>
+                                • Please check your email for further
+                                instructions
+                              </p>
+                              <p>• Contact HR if you have any questions</p>
+                            </>
+                          )}
+                          {activeApplication.status ===
+                            "interview_scheduled" && (
+                            <>
+                              <p>• An interview has been scheduled for you</p>
+                              <p>
+                                • Please check your email for interview details
+                              </p>
+                              <p>• Prepare for your interview and be on time</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {activeApplication.hrComments && (
+                      <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <h4 className="text-sm font-medium text-blue-800 dark:text-blue-400 mb-2">
+                          HR Comments:
+                        </h4>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          {activeApplication.hrComments}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Contact Information */}
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                      Need Help?
+                    </h3>
+                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                      <p>
+                        If you have any questions about your application status,
+                        please contact:
+                      </p>
+                      <p>• HR Office: [Contact information]</p>
+                      <p>• Email: hr@ub.edu.ph</p>
+                      <p>• Office Hours: Monday - Friday, 8:00 AM - 5:00 PM</p>
+                    </div>
+                  </div>
+
+                  {/* Only allow deletion of pending applications */}
+                  {activeApplication.status === "pending" && (
+                    <div className="flex justify-center">
+                      <Button
+                        variant="outline"
+                        className="text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        onClick={handleWithdrawClick}
+                      >
+                        Withdraw Application
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Withdraw Application Confirmation Modal */}
+        {showWithdrawModal && (
+          <div
+            className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
+            onClick={handleWithdrawCancel}
+          >
+            <div
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 animate-in slide-in-from-bottom-4 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                    <AlertTriangle
+                      size={24}
+                      className="text-red-600 dark:text-red-400"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                      Withdraw Application
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      This action cannot be undone
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Are you sure you want to withdraw your application for{" "}
+                    <span className="font-medium text-gray-800 dark:text-gray-200">
+                      {activeApplication.position === "student_assistant"
+                        ? "Student Assistant"
+                        : "Student Marshal"}
+                    </span>
+                    ?
+                  </p>
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle
+                        size={16}
+                        className="text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0"
+                      />
+                      <div className="text-sm text-red-700 dark:text-red-300">
+                        <p className="font-medium mb-1">Warning:</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>Your application will be permanently deleted</li>
+                          <li>All submitted documents will be removed</li>
+                          <li>
+                            You'll need to start over if you want to reapply
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={handleWithdrawCancel}
+                    className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Keep Application
+                  </Button>
+                  <Button
+                    onClick={handleWithdrawConfirm}
+                    disabled={withdrawApplicationMutation.isPending}
+                    className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white shadow-lg hover:shadow-red-200 dark:hover:shadow-red-900/20"
+                  >
+                    {withdrawApplicationMutation.isPending ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                        Withdrawing...
+                      </div>
+                    ) : (
+                      "Yes, Withdraw"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Check if user email is verified before showing the form
+  if (user && !user.verified) {
+    return (
+      <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
+        {renderSidebar()}
+        {/* Main content area with dynamic margin based on sidebar state */}
+        <div
+          className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
+            isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
+          }`}
+        >
+          {/* Top header bar - only visible on desktop */}
+          <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
+            <h1 className="text-2xl font-bold text-white dark:text-white">
+              Email Verification Required
+            </h1>
+          </div>
+
+          {/* Email Verification Required Message */}
+          <div className="p-4 md:p-10 flex items-center justify-center min-h-screen">
+            <Card className="max-w-2xl w-full mx-4">
+              <CardContent className="p-6 md:p-8 text-center">
+                <div className="flex flex-col items-center gap-6">
+                  <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="w-10 h-10 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <div className="space-y-4">
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+                      Verify Your Email First
+                    </h1>
+                    <p className="text-lg text-gray-600 dark:text-gray-400 max-w-md">
+                      You need to verify your email address before you can
+                      submit an application.
+                    </p>
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                      <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                        <strong>Current Email:</strong> {user.email}
+                        <br />
+                        <br />
+                        Please check your inbox for a verification email and
+                        click the verification link.
+                        <br />
+                        <br />
+                        <strong>Next Steps:</strong>
+                        <br />
+                        1. Check your email inbox (and spam folder)
+                        <br />
+                        2. Click the verification link in the email
+                        <br />
+                        3. Return here to complete your application
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full">
+                    <ResendVerificationButton email={user.email} />
+                    <Button
+                      onClick={() => window.location.reload()}
+                      variant="outline"
+                      className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      Refresh Page
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -588,52 +1275,53 @@ const Application = () => {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
       {renderSidebar()}
+      {/* Main content area with dynamic margin based on sidebar state */}
       <div
         className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
           isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
         }`}
       >
-        {/* Header */}
+        {/* Top header bar - only visible on desktop */}
         <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold text-white dark:text-white">
             Student Assistant and Student Marshal Scholarship Application
           </h1>
         </div>
 
         {/* Main Content */}
-        <div className="p-6 md:p-10">
+        <div className="p-4 md:p-10">
           <Card className="max-w-4xl mx-auto">
-            <CardContent className="p-8">
+            <CardContent className="p-4 md:p-8">
               {/* University Header */}
-              <div className="text-center mb-8 border-b pb-6">
-                <div className="flex items-center justify-center gap-4 mb-4">
+              <div className="text-center mb-6 md:mb-8 border-b pb-4 md:pb-6">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 mb-4">
                   <img
                     src="/UBLogo.svg"
                     alt="University of Baguio Logo"
-                    className="h-16 w-auto"
+                    className="h-12 sm:h-14 md:h-16 w-auto"
                   />
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
+                  <div className="text-center sm:text-left">
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200">
                       UNIVERSITY OF BAGUIO
                     </h2>
-                    <h3 className="text-lg font-semibold text-red-600 dark:text-red-400">
+                    <h3 className="text-sm sm:text-base md:text-lg font-semibold text-red-600 dark:text-red-400">
                       Application Form
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       Student Assistant and Student Marshal Scholarship
                     </p>
                   </div>
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-8">
+              <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
                 {/* Position Selection */}
-                <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg border border-red-200 dark:border-red-800">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                    <Users className="h-5 w-5 text-red-600" />
+                <div className="bg-red-50 dark:bg-red-900/20 p-4 md:p-6 rounded-lg border border-red-200 dark:border-red-800">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                    <Users className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
                     Position Applied For
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-3 md:gap-4">
                     <div className="flex items-center space-x-3">
                       <input
                         type="radio"
@@ -648,7 +1336,7 @@ const Application = () => {
                       />
                       <Label
                         htmlFor="student_assistant"
-                        className="text-gray-700 dark:text-gray-300"
+                        className="text-sm md:text-base text-gray-700 dark:text-gray-300"
                       >
                         Student Assistant
                       </Label>
@@ -667,7 +1355,7 @@ const Application = () => {
                       />
                       <Label
                         htmlFor="student_marshal"
-                        className="text-gray-700 dark:text-gray-300"
+                        className="text-sm md:text-base text-gray-700 dark:text-gray-300"
                       >
                         Student Marshal / Lady Marshal (Security Office)
                       </Label>
@@ -681,9 +1369,9 @@ const Application = () => {
                 </div>
 
                 {/* Personal Information */}
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
-                    <User className="h-5 w-5 text-red-600" />
+                <div className="space-y-4 md:space-y-6">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
+                    <User className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
                     Personal Information
                   </h3>
 
@@ -691,7 +1379,7 @@ const Application = () => {
                     <div>
                       <Label
                         htmlFor="firstName"
-                        className="text-gray-700 dark:text-gray-300"
+                        className="text-sm md:text-base text-gray-700 dark:text-gray-300"
                       >
                         First Name *
                       </Label>
@@ -763,9 +1451,9 @@ const Application = () => {
                 </div>
 
                 {/* Address Information */}
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
-                    <MapPin className="h-5 w-5 text-red-600" />
+                <div className="space-y-4 md:space-y-6">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
+                    <MapPin className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
                     Address Information
                   </h3>
 
@@ -1438,14 +2126,15 @@ const Application = () => {
                 </div>
 
                 {/* Seminars/Trainings/Conferences */}
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
-                    <FileText className="h-5 w-5 text-red-600" />
+                <div className="space-y-4 md:space-y-6">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
+                    <FileText className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
                     Seminars/Trainings/Conferences Attended
                   </h3>
 
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {/* Mobile: Stack fields vertically, Desktop: Grid layout */}
+                    <div className="hidden md:grid md:grid-cols-4 gap-4">
                       <div className="font-medium text-gray-700 dark:text-gray-300">
                         Title
                       </div>
@@ -1463,9 +2152,12 @@ const Application = () => {
                     {seminars.map((seminar, index) => (
                       <div
                         key={index}
-                        className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start"
+                        className="space-y-3 md:space-y-0 md:grid md:grid-cols-4 md:gap-4 md:items-start p-3 md:p-0 border md:border-0 rounded-lg md:rounded-none border-gray-200 dark:border-gray-700"
                       >
                         <div>
+                          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 md:hidden mb-1 block">
+                            Title
+                          </Label>
                           <Input
                             value={seminar.title}
                             onChange={(e) =>
@@ -1475,6 +2167,9 @@ const Application = () => {
                           />
                         </div>
                         <div>
+                          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 md:hidden mb-1 block">
+                            Sponsoring Agency
+                          </Label>
                           <Input
                             value={seminar.sponsoringAgency}
                             onChange={(e) =>
@@ -1488,6 +2183,9 @@ const Application = () => {
                           />
                         </div>
                         <div>
+                          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 md:hidden mb-1 block">
+                            Inclusive Date
+                          </Label>
                           <Input
                             value={seminar.inclusiveDate}
                             onChange={(e) =>
@@ -1500,21 +2198,26 @@ const Application = () => {
                             placeholder="e.g., Jan 1-3, 2024"
                           />
                         </div>
-                        <div className="flex gap-2">
-                          <Input
-                            value={seminar.place}
-                            onChange={(e) =>
-                              updateSeminar(index, "place", e.target.value)
-                            }
-                            placeholder="Location"
-                          />
+                        <div className="flex flex-col md:flex-row gap-2">
+                          <div className="flex-1">
+                            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 md:hidden mb-1 block">
+                              Place
+                            </Label>
+                            <Input
+                              value={seminar.place}
+                              onChange={(e) =>
+                                updateSeminar(index, "place", e.target.value)
+                              }
+                              placeholder="Location"
+                            />
+                          </div>
                           {seminars.length > 1 && (
                             <Button
                               type="button"
                               onClick={() => removeSeminar(index)}
                               variant="outline"
                               size="sm"
-                              className="text-red-600 hover:text-red-700"
+                              className="text-red-600 hover:text-red-700 w-full md:w-auto"
                             >
                               Remove
                             </Button>
@@ -1546,11 +2249,11 @@ const Application = () => {
                       Upload 2x2 Picture *
                     </Label>
                     <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center hover:border-red-400 transition-colors">
-                      {filePreviewUrls.certificates.length > 0 ? (
+                      {filePreviewUrls.profilePhoto ? (
                         <div className="space-y-3">
                           <div className="max-w-xs mx-auto">
                             <img
-                              src={filePreviewUrls.certificates[0]}
+                              src={filePreviewUrls.profilePhoto}
                               alt="2x2 Picture"
                               className="w-32 h-32 object-cover rounded border mx-auto"
                             />
@@ -1568,7 +2271,7 @@ const Application = () => {
                         </div>
                       ) : (
                         <label
-                          htmlFor="certificates"
+                          htmlFor="profilePhoto"
                           className="cursor-pointer w-full h-full min-h-[120px] flex flex-col items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors rounded"
                         >
                           <Image className="h-8 w-8 text-gray-400 mb-2" />
@@ -1577,7 +2280,7 @@ const Application = () => {
                             accept="image/*"
                             onChange={(e) => handleFileUpload(e.target.files)}
                             className="hidden"
-                            id="certificates"
+                            id="profilePhoto"
                           />
                           <span className="text-red-600 hover:text-red-700 font-medium">
                             Upload 2x2 Picture *
@@ -1588,6 +2291,11 @@ const Application = () => {
                         </label>
                       )}
                     </div>
+                    {errors.profilePhoto && (
+                      <p className="text-red-600 text-sm mt-2">
+                        {errors.profilePhoto}
+                      </p>
+                    )}
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Please upload a 2x2 passport-style photograph. This is
                       required for your application.
@@ -1922,13 +2630,13 @@ const Application = () => {
                 </div>
 
                 {/* Submit Button */}
-                <div className="flex justify-end">
+                <div className="flex justify-center md:justify-end">
                   <Button
                     type="submit"
                     disabled={
                       isSubmitting || createApplicationMutation.isPending
                     }
-                    className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg"
+                    className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-6 md:px-8 py-3 text-base md:text-lg"
                   >
                     {isSubmitting || createApplicationMutation.isPending ? (
                       <div className="flex items-center gap-2">
@@ -1957,6 +2665,92 @@ const Application = () => {
           </Card>
         </div>
       </div>
+
+      {/* Withdraw Application Confirmation Modal */}
+      {showWithdrawModal && (
+        <div
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
+          onClick={handleWithdrawCancel}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 md:p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle
+                    size={20}
+                    className="text-red-600 dark:text-red-400 md:w-6 md:h-6"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200">
+                    Withdraw Application
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    This action cannot be undone
+                  </p>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mb-4">
+                  Are you sure you want to withdraw your application for{" "}
+                  <span className="font-medium text-gray-800 dark:text-gray-200">
+                    {activeApplication.position === "student_assistant"
+                      ? "Student Assistant"
+                      : "Student Marshal"}
+                  </span>
+                  ?
+                </p>
+                <div className="p-3 md:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle
+                      size={16}
+                      className="text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0"
+                    />
+                    <div className="text-sm text-red-700 dark:text-red-300">
+                      <p className="font-medium mb-1">Warning:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Your application will be permanently deleted</li>
+                        <li>All submitted documents will be removed</li>
+                        <li>
+                          You'll need to start over if you want to reapply
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={handleWithdrawCancel}
+                  className="order-2 sm:order-1 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  Keep Application
+                </Button>
+                <Button
+                  onClick={handleWithdrawConfirm}
+                  disabled={withdrawApplicationMutation.isPending}
+                  className="order-1 sm:order-2 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white shadow-lg hover:shadow-red-200 dark:hover:shadow-red-900/20"
+                >
+                  {withdrawApplicationMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      Withdrawing...
+                    </div>
+                  ) : (
+                    "Yes, Withdraw"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

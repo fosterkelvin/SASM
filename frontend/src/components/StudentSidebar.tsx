@@ -10,10 +10,12 @@ import {
   FileText,
   ChevronDown,
   ChevronRight,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { getRoleBasedRedirect } from "@/lib/roleUtils";
+import { useUnreadNotificationCount } from "@/hooks/useUnreadNotificationCount";
 
 interface StudentSidebarProps {
   currentPage?: string;
@@ -26,6 +28,8 @@ const StudentSidebar = ({
 }: StudentSidebarProps) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const { data: unreadCountData } = useUnreadNotificationCount();
+  const unreadCount = unreadCountData?.unreadCount || 0;
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
@@ -98,6 +102,11 @@ const StudentSidebar = ({
     setIsOpen(false);
   };
 
+  const handleNotificationsClick = () => {
+    navigate("/notifications");
+    setIsOpen(false);
+  };
+
   const handleApplyClick = () => {
     navigate("/application");
     setIsOpen(false);
@@ -129,6 +138,10 @@ const StudentSidebar = ({
     navigate("/profile");
   };
 
+  const handleCollapsedNotificationsClick = () => {
+    navigate("/notifications");
+  };
+
   const handleCollapsedApplyClick = () => {
     navigate("/application");
   };
@@ -154,10 +167,10 @@ const StudentSidebar = ({
     <>
       {/* Mobile Header Bar with Toggle Button */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-red-600 dark:bg-red-700 shadow-md z-50 h-16">
-        <div className="flex items-center justify-between px-4 h-full">
+        <div className="flex items-center h-full">
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2 rounded-lg text-white hover:bg-red-700 dark:hover:bg-red-800 transition-colors duration-200"
+            className="p-2 rounded-lg text-white hover:bg-red-700 dark:hover:bg-red-800 transition-colors duration-200 ml-4 mr-2"
             aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
           >
             <div className="relative w-6 h-6">
@@ -175,14 +188,13 @@ const StudentSidebar = ({
               />
             </div>
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 pl-6">
             <img src="/UBLogo.svg" alt="Logo" className="h-6 w-auto" />
             <div className="flex flex-col">
               <span className="text-sm font-medium text-white">SASM-IMS</span>
               <span className="text-xs text-red-200">{currentPage}</span>
             </div>
           </div>
-          <div className="w-10"></div> {/* Spacer for centering */}
         </div>
       </div>
 
@@ -295,6 +307,32 @@ const StudentSidebar = ({
                 <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
                 </div>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={handleNotificationsClick}
+                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+              >
+                <div className="relative">
+                  <Bell
+                    size={20}
+                    className="group-hover:scale-110 transition-transform duration-200"
+                  />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </div>
+                <span className="font-medium">Notifications</span>
+                {unreadCount > 0 && (
+                  <div className="ml-auto">
+                    <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 font-medium">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  </div>
+                )}
               </button>
             </li>
             <li>
@@ -419,6 +457,28 @@ const StudentSidebar = ({
                 </button>
                 <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                   Profile
+                </div>
+              </div>
+
+              <div className="group relative">
+                <button
+                  onClick={handleCollapsedNotificationsClick}
+                  className="relative p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                >
+                  <Bell size={16} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
+                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                  Notifications
+                  {unreadCount > 0 && (
+                    <span className="ml-1 bg-red-500 text-white rounded-full px-1">
+                      {unreadCount}
+                    </span>
+                  )}
                 </div>
               </div>
 

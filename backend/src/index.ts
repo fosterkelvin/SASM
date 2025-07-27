@@ -13,6 +13,7 @@ import authenticate from "./middleware/authenticate";
 import userRoutes from "./routes/user.route";
 import sessionRoutes from "./routes/session.route";
 import applicationRoutes from "./routes/application.route";
+import notificationRoutes from "./routes/notification.route";
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use("/auth", authRoutes);
 app.use("/user", authenticate, userRoutes);
 app.use("/sessions", authenticate, sessionRoutes);
 app.use("/applications", applicationRoutes);
+app.use("/notifications", authenticate, notificationRoutes);
 
 app.use(errorHandler);
 
