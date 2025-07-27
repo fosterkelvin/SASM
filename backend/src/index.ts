@@ -20,7 +20,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const allowedOrigins = [
+const allowedOrigins = APP_ORIGIN?.split(",") || [
   "http://localhost:5173",
   "https://sasm-hresd3wls-fosterkelvins-projects.vercel.app",
 ];
