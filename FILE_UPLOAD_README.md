@@ -81,7 +81,7 @@ backend/
 
 ## Environment Variables
 
-- `VITE_API_URL` - Frontend API base URL for file serving
+- `VITE_API` - Frontend API base URL for file serving
 
 ## Dependencies Added
 

@@ -111,4 +111,4 @@ npm run preview
 
 ### Frontend (.env)
 
-- `VITE_API_URL`: Backend API URL (default: http://localhost:4004)
+- `VITE_API`: Backend API URL (default: http://localhost:4004)

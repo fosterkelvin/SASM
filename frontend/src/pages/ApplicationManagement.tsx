@@ -448,7 +448,7 @@ const ApplicationManagement = () => {
                                   {application.profilePhoto ? (
                                     <img
                                       src={`${
-                                        import.meta.env.VITE_API_URL
+                                        import.meta.env.VITE_API
                                       }/uploads/profiles/${getFilenameFromPath(
                                         application.profilePhoto
                                       )}`}
@@ -463,7 +463,7 @@ const ApplicationManagement = () => {
                                     application.certificates.length > 0 ? (
                                     <img
                                       src={`${
-                                        import.meta.env.VITE_API_URL
+                                        import.meta.env.VITE_API
                                       }/uploads/certificates/${getFilenameFromPath(
                                         application.certificates[0]
                                       )}`}
@@ -606,7 +606,7 @@ const ApplicationManagement = () => {
                   <div className="relative">
                     <img
                       src={`${
-                        import.meta.env.VITE_API_URL
+                        import.meta.env.VITE_API
                       }/uploads/profiles/${getFilenameFromPath(
                         selectedApplication.profilePhoto
                       )}`}
@@ -615,7 +615,7 @@ const ApplicationManagement = () => {
                       onClick={() =>
                         window.open(
                           `${
-                            import.meta.env.VITE_API_URL
+                            import.meta.env.VITE_API
                           }/uploads/profiles/${getFilenameFromPath(
                             selectedApplication.profilePhoto
                           )}`,
@@ -648,7 +648,7 @@ const ApplicationManagement = () => {
                   <div className="relative">
                     <img
                       src={`${
-                        import.meta.env.VITE_API_URL
+                        import.meta.env.VITE_API
                       }/uploads/certificates/${getFilenameFromPath(
                         selectedApplication.certificates[0]
                       )}`}
@@ -657,7 +657,7 @@ const ApplicationManagement = () => {
                       onClick={() =>
                         window.open(
                           `${
-                            import.meta.env.VITE_API_URL
+                            import.meta.env.VITE_API
                           }/uploads/certificates/${getFilenameFromPath(
                             selectedApplication.certificates[0]
                           )}`,
@@ -1071,7 +1071,7 @@ const ApplicationManagement = () => {
                           <div className="relative">
                             <img
                               src={`${
-                                import.meta.env.VITE_API_URL
+                                import.meta.env.VITE_API
                               }/uploads/certificates/${getFilenameFromPath(
                                 selectedApplication.certificates[0]
                               )}`}
@@ -1080,7 +1080,7 @@ const ApplicationManagement = () => {
                               onClick={() =>
                                 window.open(
                                   `${
-                                    import.meta.env.VITE_API_URL
+                                    import.meta.env.VITE_API
                                   }/uploads/certificates/${getFilenameFromPath(
                                     selectedApplication.certificates[0]
                                   )}`,
@@ -1133,7 +1133,7 @@ const ApplicationManagement = () => {
                         </div>
                         <img
                           src={`${
-                            import.meta.env.VITE_API_URL
+                            import.meta.env.VITE_API
                           }/uploads/${selectedApplication.idDocument
                             .split("/")
                             .pop()}`}
@@ -1142,7 +1142,7 @@ const ApplicationManagement = () => {
                           onClick={() =>
                             window.open(
                               `${
-                                import.meta.env.VITE_API_URL
+                                import.meta.env.VITE_API
                               }/uploads/${selectedApplication.idDocument
                                 .split("/")
                                 .pop()}`,
@@ -1184,7 +1184,7 @@ const ApplicationManagement = () => {
                                 <div key={index} className="relative group">
                                   <img
                                     src={`${
-                                      import.meta.env.VITE_API_URL
+                                      import.meta.env.VITE_API
                                     }/uploads/certificates/${getFilenameFromPath(
                                       cert
                                     )}`}
@@ -1193,7 +1193,7 @@ const ApplicationManagement = () => {
                                     onClick={() =>
                                       window.open(
                                         `${
-                                          import.meta.env.VITE_API_URL
+                                          import.meta.env.VITE_API
                                         }/uploads/certificates/${getFilenameFromPath(
                                           cert
                                         )}`,
