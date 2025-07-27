@@ -23,24 +23,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       .then((userData) => {
         setUser(userData.data);
       })
-      .catch((err) => {
-        console.groupCollapsed(
-          "%c🔴 User Load Error",
-          "color: red; font-weight: bold"
-        );
-
-        if (err.response) {
-          console.log("🔸 Status:", err.response.status);
-          console.log("🔸 Message:", err.response.data?.message);
-          console.log("🔸 Full Response:", err.response);
-        } else if (err.request) {
-          console.warn("⚠️ No response received:", err.request);
-        } else {
-          console.error("❌ Error setting up request:", err.message);
-        }
-
-        console.groupEnd();
-
+      .catch(() => {
+        // Error is already handled by the API interceptor
         setUser(null);
       })
       .finally(() => {
@@ -86,7 +70,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const userData = await getUser();
       setUser(userData.data);
     } catch (error) {
-      console.error("Failed to refresh user data:", error);
+      // Error is already handled by the API interceptor
       setUser(null);
     }
   };

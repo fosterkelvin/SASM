@@ -27,6 +27,8 @@ import {
 } from "@/lib/api";
 import { z } from "zod";
 import StudentSidebar from "@/components/StudentSidebar";
+import HRSidebar from "@/components/HRSidebar";
+import OfficeSidebar from "@/components/OfficeSidebar";
 
 // Validation schema for password change
 const changePasswordSchema = z
@@ -93,6 +95,35 @@ const Profile = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [emailSuccessMessage, setEmailSuccessMessage] = useState("");
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
+
+  // Function to render the appropriate sidebar based on user role
+  const renderSidebar = () => {
+    const sidebarProps = {
+      currentPage: "Profile Settings",
+      onCollapseChange: setIsSidebarCollapsed,
+    };
+
+    switch (user?.role) {
+      case "hr":
+        return <HRSidebar {...sidebarProps} />;
+      case "office":
+        return <OfficeSidebar {...sidebarProps} />;
+      case "student":
+      default:
+        return <StudentSidebar {...sidebarProps} />;
+    }
+  };
+
+  // Function to get the red color scheme for all user roles
+  const getColorScheme = () => {
+    return {
+      background:
+        "from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20",
+      header: "from-red-600 to-red-700 dark:from-red-800 dark:to-red-900",
+      border: "border-red-200 dark:border-red-800",
+      cardBorder: "border-red-100 dark:border-red-800/30",
+    };
+  };
 
   // Handle escape key to close modal
   useEffect(() => {
@@ -184,6 +215,7 @@ const Profile = () => {
   const { data: sessionsResponse, refetch: refetchSessions } = useQuery({
     queryKey: ["sessions"],
     queryFn: getSessions,
+    enabled: !!user, // Only run this query if user is authenticated
   });
 
   const sessions = sessionsResponse?.data || [];
@@ -324,8 +356,12 @@ const Profile = () => {
     );
   }
 
+  const colorScheme = getColorScheme();
+
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
+    <div
+      className={`flex min-h-screen bg-gradient-to-br ${colorScheme.background}`}
+    >
       {/* Cancel Email Change Confirmation Modal */}
       {showCancelConfirmModal && (
         <div
@@ -389,10 +425,7 @@ const Profile = () => {
         </div>
       )}
 
-      <StudentSidebar
-        currentPage="Profile Settings"
-        onCollapseChange={setIsSidebarCollapsed}
-      />
+      {renderSidebar()}
       {/* Main content area with dynamic margin based on sidebar state */}
       <div
         className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
@@ -400,7 +433,9 @@ const Profile = () => {
         }`}
       >
         {/* Top header bar - only visible on desktop */}
-        <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
+        <div
+          className={`hidden md:block bg-gradient-to-r ${colorScheme.header} shadow-lg ${colorScheme.border} p-4 md:p-6`}
+        >
           <h1 className="text-2xl font-bold text-white dark:text-white">
             Profile Settings
           </h1>
@@ -412,7 +447,7 @@ const Profile = () => {
             {/* Top Row - User Info and Email Management */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Personal Information Card - Compact */}
-              <Card className="shadow-lg border-red-100 dark:border-red-800/30">
+              <Card className={`shadow-lg ${colorScheme.cardBorder}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
@@ -478,7 +513,9 @@ const Profile = () => {
               </Card>
 
               {/* Email Management Card - Expanded */}
-              <Card className="lg:col-span-2 shadow-lg border-red-100 dark:border-red-800/30">
+              <Card
+                className={`lg:col-span-2 shadow-lg ${colorScheme.cardBorder}`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
@@ -648,7 +685,7 @@ const Profile = () => {
             {/* Bottom Row - Password and Sessions */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Change Password Card */}
-              <Card className="shadow-lg border-red-100 dark:border-red-800/30">
+              <Card className={`shadow-lg ${colorScheme.cardBorder}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
@@ -830,7 +867,7 @@ const Profile = () => {
               </Card>
 
               {/* Active Sessions Card */}
-              <Card className="shadow-lg border-red-100 dark:border-red-800/30">
+              <Card className={`shadow-lg ${colorScheme.cardBorder}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
