@@ -23,6 +23,7 @@ app.use(express.urlencoded({ extended: true }));
 const allowedOrigins = APP_ORIGIN?.split(",") || [
   "http://localhost:5173",
   "https://sasm-hresd3wls-fosterkelvins-projects.vercel.app",
+  "https://sasm-one.vercel.app",
 ];
 
 app.use(
