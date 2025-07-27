@@ -22,17 +22,26 @@ app.use(express.urlencoded({ extended: true }));
 
 const allowedOrigins = APP_ORIGIN?.split(",") || [
   "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000",
   "https://sasm-hresd3wls-fosterkelvins-projects.vercel.app",
   "https://sasm-one.vercel.app",
   "https://sasm.onrender.com",
 ];
 
+console.log("APP_ORIGIN from env:", APP_ORIGIN);
+console.log("Allowed CORS origins:", allowedOrigins);
+
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.log("CORS blocked origin:", origin);
         callback(new Error("Not allowed by CORS"));
       }
     },

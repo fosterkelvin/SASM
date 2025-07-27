@@ -4,19 +4,19 @@ import { fifteenMinutesFromNow, oneWeekFromNow } from "./date";
 export const REFRESH_PATH = "/auth/refresh";
 const secure = process.env.NODE_ENV !== "development";
 
-const deafaults: CookieOptions = {
+const defaults: CookieOptions = {
   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   httpOnly: true,
   secure,
 };
 
 export const getAccessTokenCookieOptions = (): CookieOptions => ({
-  ...deafaults,
+  ...defaults,
   expires: fifteenMinutesFromNow(),
 });
 
 export const getRefreshTokenCookieOptions = (): CookieOptions => ({
-  ...deafaults,
+  ...defaults,
   expires: oneWeekFromNow(),
   path: REFRESH_PATH,
 });
