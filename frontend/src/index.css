@@ -122,3 +122,55 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Signature Canvas Styles */
+.signature-canvas {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  cursor: crosshair !important;
+  touch-action: none;
+}
+
+.signature-canvas:hover {
+  border-color: #d1d5db;
+  cursor: crosshair !important;
+}
+
+/* Ensure touch devices work properly */
+.signature-canvas:active {
+  cursor: crosshair !important;
+}
+
+/* Override any conflicting cursor styles */
+canvas.signature-canvas {
+  cursor: crosshair !important;
+}
+
+/* Force crosshair cursor on all canvas elements */
+canvas[class*="signature"] {
+  cursor: crosshair !important;
+}
+
+/* Additional specificity for signature canvas */
+div[class*="border"] canvas {
+  cursor: crosshair !important;
+}
+
+/* More specific selectors for signature canvas */
+.signature-canvas,
+.signature-canvas * {
+  cursor: crosshair !important;
+}
+
+/* Ensure canvas elements inside signature areas have proper cursor */
+canvas:where(.signature-canvas),
+canvas:is(.signature-canvas) {
+  cursor: crosshair !important;
+}
+
+/* Force cursor on any canvas that might be in a signature container */
+div:has(> canvas.signature-canvas) canvas,
+[data-signature] canvas,
+[id*="signature"] canvas {
+  cursor: crosshair !important;
+}

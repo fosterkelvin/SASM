@@ -67,3 +67,62 @@ export const cancelEmailChange = async () => {
 export const getSessions = async () => API.get("/sessions");
 export const deleteSession = async (sessionId: string) =>
   API.delete(`/sessions/${sessionId}`);
+
+// Application management
+export const createApplication = async (applicationData: any) => {
+  const response = await API.post("/applications", applicationData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
+
+export const getUserApplications = async () => {
+  const response = await API.get("/applications/my-applications");
+  return response.data;
+};
+
+export const getApplicationById = async (id: string) => {
+  const response = await API.get(`/applications/my-applications/${id}`);
+  return response.data;
+};
+
+export const getAllApplications = async (params?: {
+  status?: string;
+  position?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.status) searchParams.append("status", params.status);
+  if (params?.position) searchParams.append("position", params.position);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+
+  const response = await API.get(
+    `/applications/all?${searchParams.toString()}`
+  );
+  return response.data;
+};
+
+export const updateApplicationStatus = async (
+  id: string,
+  data: {
+    status: string;
+    hrComments?: string;
+  }
+) => {
+  const response = await API.put(`/applications/${id}/status`, data);
+  return response.data;
+};
+
+export const deleteApplication = async (id: string) => {
+  const response = await API.delete(`/applications/${id}`);
+  return response.data;
+};
+
+export const getApplicationStats = async () => {
+  const response = await API.get("/applications/stats");
+  return response.data;
+};

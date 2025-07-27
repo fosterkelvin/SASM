@@ -58,6 +58,7 @@ export function SignupForm({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [apiError, setApiError] = useState("");
 
   const { register } = useAuth();
 
@@ -70,10 +71,22 @@ export function SignupForm({
         data.message ||
           "Account created successfully! Please check your email to verify your account."
       );
+      setApiError(""); // Clear any previous API errors
     },
     onError: (error: any) => {
       console.error("Signup failed:", error);
       setSignupSuccess(false);
+
+      // Handle specific error cases
+      if (error.status === 409 && error.message === "User already in use.") {
+        setApiError(
+          "An account with this email address already exists. Please use a different email or try signing in."
+        );
+      } else if (error.message) {
+        setApiError(error.message);
+      } else {
+        setApiError("An unexpected error occurred. Please try again.");
+      }
     },
   });
 
@@ -133,6 +146,9 @@ export function SignupForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Clear any previous API errors
+    setApiError("");
 
     // Validate form data with Zod
     try {
@@ -340,29 +356,35 @@ export function SignupForm({
                     placeholder="john.doe@example.com"
                     autoComplete="email"
                     value={formData.email}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setFormData((prev) => ({
                         ...prev,
                         email: e.target.value.trim(),
-                      }))
-                    }
+                      }));
+                      // Clear API error when user starts typing in email field
+                      if (apiError) {
+                        setApiError("");
+                      }
+                    }}
                     onKeyDown={(e) => normalPrevent(e, "email")}
-                    aria-invalid={!!errors.email}
-                    aria-describedby={errors.email ? "email-error" : undefined}
+                    aria-invalid={!!(errors.email || apiError)}
+                    aria-describedby={
+                      errors.email || apiError ? "email-error" : undefined
+                    }
                     className={`bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder:text-gray-500 dark:placeholder:text-slate-500 transition-colors focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 ${
-                      errors.email
+                      errors.email || apiError
                         ? "border-red-500 dark:border-red-400"
                         : "border-gray-300 dark:border-slate-600"
                     }`}
                   />
-                  {errors.email && (
+                  {(errors.email || apiError) && (
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-2">
                       <p
                         id="email-error"
                         className="text-xs text-red-600 dark:text-red-400"
                         aria-live="polite"
                       >
-                        {errors.email}
+                        {errors.email || apiError}
                       </p>
                     </div>
                   )}

@@ -1,6 +1,8 @@
 // src/context/AuthContext.tsx
 import { createContext, useContext, useEffect, useState } from "react";
 import { getUser, signin, signout, signup } from "@/lib/api";
+import { useInactivityTimer } from "@/hooks/useInactivityTimer";
+import { useToast } from "./ToastContext";
 
 interface AuthContextProps {
   user: any;
@@ -17,6 +19,35 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { addToast } = useToast();
+
+  // Auto-signout timeout: 1 hour (60 minutes)
+  const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 1 hour in milliseconds
+  const WARNING_TIME = 5 * 60 * 1000; // Show warning 5 minutes before timeout
+
+  const handleInactivityTimeout = () => {
+    console.log("Auto-signout due to inactivity");
+    addToast("You have been signed out due to inactivity.", "warning", 5000);
+    logout();
+  };
+
+  const handleInactivityWarning = () => {
+    console.log("Warning: Session will expire in 5 minutes due to inactivity");
+    addToast(
+      "Your session will expire in 5 minutes due to inactivity. Please interact with the page to stay logged in.",
+      "warning",
+      10000 // Show for 10 seconds
+    );
+  };
+
+  // Use the inactivity timer hook
+  useInactivityTimer({
+    timeout: INACTIVITY_TIMEOUT,
+    onTimeout: handleInactivityTimeout,
+    enabled: !!user && !isLoading,
+    warningTime: WARNING_TIME,
+    onWarning: handleInactivityWarning,
+  });
 
   useEffect(() => {
     getUser()
@@ -55,6 +86,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         console.error("Signout error:", error.message);
       }
+      // Set user to null even if signout fails to ensure UI updates
+      setUser(null);
     }
   };
 

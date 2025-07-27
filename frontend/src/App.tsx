@@ -6,6 +6,8 @@ import HRDashboard from "./pages/Roles/HR/HRDashboard";
 import OfficeDashboard from "./pages/Roles/Office/OfficeDashboard";
 import Home from "./pages/home";
 import Profile from "./pages/Profile";
+import Application from "./pages/Application";
+import ApplicationManagement from "./pages/ApplicationManagement";
 import PublicRoute from "./routes/PublicRoute";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import NotFound from "@/pages/NotFound";
@@ -52,6 +54,11 @@ function App(): ReactElement {
         element={withProtected(<OfficeDashboard />)}
       />
       <Route path="/profile" element={withProtected(<Profile />)} />
+      <Route path="/application" element={withProtected(<Application />)} />
+      <Route
+        path="/applications"
+        element={withProtected(<ApplicationManagement />)}
+      />
 
       {/* Standalone Routes */}
       <Route path="/email/verify/:code" element={<VerifyEmail />} />

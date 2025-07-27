@@ -1,5 +1,16 @@
 import { useState, useEffect } from "react";
-import { User, LogOut, Sun, Moon, Menu, X, Home } from "lucide-react";
+import {
+  User,
+  LogOut,
+  Sun,
+  Moon,
+  Menu,
+  X,
+  Home,
+  FileText,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { getRoleBasedRedirect } from "@/lib/roleUtils";
@@ -22,6 +33,7 @@ const StudentSidebar = ({
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(
     localStorage.getItem("sidebarCollapsed") === "true"
   );
+  const [isFormsExpanded, setIsFormsExpanded] = useState(false);
 
   // Notify parent component when collapse state changes
   useEffect(() => {
@@ -86,6 +98,21 @@ const StudentSidebar = ({
     setIsOpen(false);
   };
 
+  const handleApplyClick = () => {
+    navigate("/application");
+    setIsOpen(false);
+  };
+
+  const handleReapplyClick = () => {
+    navigate("/reapply");
+    setIsOpen(false);
+  };
+
+  const handleLeaveClick = () => {
+    navigate("/leave");
+    setIsOpen(false);
+  };
+
   const handleDashboardClick = () => {
     const dashboardRoute = getRoleBasedRedirect(user?.role || "student");
     navigate(dashboardRoute);
@@ -100,6 +127,18 @@ const StudentSidebar = ({
   // Handlers for collapsed sidebar that don't expand the sidebar
   const handleCollapsedProfileClick = () => {
     navigate("/profile");
+  };
+
+  const handleCollapsedApplyClick = () => {
+    navigate("/application");
+  };
+
+  const handleCollapsedReapplyClick = () => {
+    navigate("/reapply");
+  };
+
+  const handleCollapsedLeaveClick = () => {
+    navigate("/leave");
   };
 
   const handleCollapsedDashboardClick = () => {
@@ -259,6 +298,67 @@ const StudentSidebar = ({
               </button>
             </li>
             <li>
+              {/* Forms Menu Item with Submenu */}
+              <div>
+                <button
+                  onClick={() => setIsFormsExpanded(!isFormsExpanded)}
+                  className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                >
+                  <FileText
+                    size={20}
+                    className="group-hover:scale-110 transition-transform duration-200"
+                  />
+                  <span className="font-medium">Forms</span>
+                  <div className="ml-auto flex items-center gap-2">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                    </div>
+                    {isFormsExpanded ? (
+                      <ChevronDown
+                        size={16}
+                        className="transition-transform duration-200"
+                      />
+                    ) : (
+                      <ChevronRight
+                        size={16}
+                        className="transition-transform duration-200"
+                      />
+                    )}
+                  </div>
+                </button>
+
+                {/* Submenu */}
+                <div
+                  className={`overflow-hidden transition-all duration-300 ${
+                    isFormsExpanded
+                      ? "max-h-48 opacity-100"
+                      : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <div className="pl-8 pr-4 py-2 space-y-1">
+                    <button
+                      onClick={handleApplyClick}
+                      className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
+                    >
+                      <span className="text-sm font-medium">Apply</span>
+                    </button>
+                    <button
+                      onClick={handleReapplyClick}
+                      className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
+                    >
+                      <span className="text-sm font-medium">Re-apply</span>
+                    </button>
+                    <button
+                      onClick={handleLeaveClick}
+                      className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
+                    >
+                      <span className="text-sm font-medium">Leave</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </li>
+            <li>
               <button
                 onClick={handleSignout}
                 className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-red-600 dark:text-red-400 hover:bg-gradient-to-r hover:from-red-100 hover:to-red-200 dark:hover:from-red-900/30 dark:hover:to-red-800/30 hover:text-red-700 dark:hover:text-red-300 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-300 dark:hover:border-red-700"
@@ -319,6 +419,45 @@ const StudentSidebar = ({
                 </button>
                 <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                   Profile
+                </div>
+              </div>
+
+              <div className="group relative">
+                <button
+                  onClick={() => setIsFormsExpanded(!isFormsExpanded)}
+                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                >
+                  <FileText size={16} />
+                </button>
+                {/* Collapsed Forms Submenu */}
+                <div
+                  className={`absolute left-full ml-2 top-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 ${
+                    isFormsExpanded ? "opacity-100" : ""
+                  }`}
+                >
+                  <div className="p-1 space-y-1">
+                    <div className="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600">
+                      Forms
+                    </div>
+                    <button
+                      onClick={handleCollapsedApplyClick}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
+                    >
+                      Apply
+                    </button>
+                    <button
+                      onClick={handleCollapsedReapplyClick}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
+                    >
+                      Re-apply
+                    </button>
+                    <button
+                      onClick={handleCollapsedLeaveClick}
+                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
+                    >
+                      Leave
+                    </button>
+                  </div>
                 </div>
               </div>
 
