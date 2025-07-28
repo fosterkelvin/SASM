@@ -68,10 +68,33 @@ export const signinHandler = catchErrors(async (req, res) => {
 // Signout=====================================================
 export const signoutHandler = catchErrors(async (req, res) => {
   const accessToken = req.cookies.accessToken as string | undefined;
-  const { payload } = verifyToken(accessToken || "");
+  const refreshToken = req.cookies.refreshToken as string | undefined;
 
-  if (payload) {
-    await SessionModel.findByIdAndDelete(payload.sessionID);
+  // Try to get session from access token first, then refresh token
+  let sessionID: string | undefined;
+
+  if (accessToken) {
+    const { payload, error } = verifyToken(accessToken);
+    if (!error && payload) {
+      sessionID = (payload as any).sessionID;
+    }
+  }
+
+  if (!sessionID && refreshToken) {
+    const { payload, error } = verifyToken(refreshToken);
+    if (!error && payload) {
+      sessionID = (payload as any).sessionID;
+    }
+  }
+
+  // Delete session from database if we found a session ID
+  if (sessionID) {
+    try {
+      await SessionModel.findByIdAndDelete(sessionID);
+    } catch (error) {
+      console.error("Error deleting session:", error);
+      // Continue with signout even if session deletion fails
+    }
   }
 
   return clearAuthCookies(res)

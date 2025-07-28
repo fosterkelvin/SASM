@@ -72,12 +72,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = async () => {
     try {
+      // Always clear user state first to update UI immediately
+      setUser(null);
+
+      // Then attempt to call signout endpoint
       const response = await signout();
       console.log(
         "Signout successful:",
         response.data?.message ?? "No message returned"
       );
-      setUser(null);
     } catch (error: any) {
       if (error.response) {
         console.error("Signout failed with response:", error.response.data);
@@ -86,8 +89,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         console.error("Signout error:", error.message);
       }
-      // Set user to null even if signout fails to ensure UI updates
-      setUser(null);
+      // User is already set to null above
+    }
+
+    // Force a page reload to clear any remaining state and ensure cookies are cleared
+    if (typeof window !== "undefined") {
+      window.location.href = "/signin";
     }
   };
 

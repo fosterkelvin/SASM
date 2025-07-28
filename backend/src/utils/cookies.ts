@@ -1,5 +1,6 @@
 import { CookieOptions, Response } from "express";
 import { fifteenMinutesFromNow, oneWeekFromNow } from "./date";
+import { COOKIE_DOMAIN } from "../constants/env";
 
 export const REFRESH_PATH = "/auth/refresh";
 const secure = process.env.NODE_ENV !== "development";
@@ -8,6 +9,7 @@ const defaults: CookieOptions = {
   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   httpOnly: true,
   secure,
+  ...(COOKIE_DOMAIN && { domain: COOKIE_DOMAIN }),
 };
 
 export const getAccessTokenCookieOptions = (): CookieOptions => ({
@@ -33,6 +35,11 @@ export const setAuthCookies = ({ res, accessToken, refreshToken }: Params) =>
     .cookie("refreshToken", refreshToken, getRefreshTokenCookieOptions());
 
 export const clearAuthCookies = (res: Response) =>
-  res.clearCookie("accessToken").clearCookie("refreshToken", {
-    path: REFRESH_PATH,
-  });
+  res
+    .clearCookie("accessToken", {
+      ...defaults,
+    })
+    .clearCookie("refreshToken", {
+      ...defaults,
+      path: REFRESH_PATH,
+    });
