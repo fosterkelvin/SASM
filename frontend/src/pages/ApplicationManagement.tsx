@@ -21,6 +21,7 @@ import { useNotificationUpdater } from "@/hooks/useNotificationUpdater";
 import StudentSidebar from "@/components/StudentSidebar";
 import HRSidebar from "@/components/HRSidebar";
 import OfficeSidebar from "@/components/OfficeSidebar";
+import React from "react";
 
 const ApplicationManagement = () => {
   const { user } = useAuth();
@@ -235,6 +236,17 @@ const ApplicationManagement = () => {
     });
     return filename;
   };
+
+  // Debug environment variables
+  React.useEffect(() => {
+    console.log("Environment Debug:", {
+      VITE_API: import.meta.env.VITE_API,
+      MODE: import.meta.env.MODE,
+      DEV: import.meta.env.DEV,
+      PROD: import.meta.env.PROD,
+      allEnv: import.meta.env,
+    });
+  }, []);
 
   // Determine which sidebar to show based on user role
   const renderSidebar = () => {
@@ -771,7 +783,30 @@ const ApplicationManagement = () => {
                         )
                       }
                       onError={(e) => {
+                        console.error("Profile image failed to load:", {
+                          src: e.currentTarget.src,
+                          originalPath: selectedApplication.profilePhoto,
+                          extractedFilename: getFilenameFromPath(
+                            selectedApplication.profilePhoto
+                          ),
+                          viteApi: import.meta.env.VITE_API,
+                          fullUrl: `${
+                            import.meta.env.VITE_API
+                          }/uploads/profiles/${getFilenameFromPath(
+                            selectedApplication.profilePhoto
+                          )}`,
+                        });
                         e.currentTarget.src = "/placeholder-image.png";
+                      }}
+                      onLoad={() => {
+                        console.log("Profile image loaded successfully:", {
+                          src: `${
+                            import.meta.env.VITE_API
+                          }/uploads/profiles/${getFilenameFromPath(
+                            selectedApplication.profilePhoto
+                          )}`,
+                          originalPath: selectedApplication.profilePhoto,
+                        });
                       }}
                     />
                     <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-1">
@@ -1185,6 +1220,25 @@ const ApplicationManagement = () => {
                   Uploaded Documents
                 </h4>
 
+                {/* Debug Information */}
+                <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                    <strong>Debug Info:</strong>
+                    Profile Photo:{" "}
+                    {selectedApplication.profilePhoto ? "Yes" : "No"} | ID
+                    Document: {selectedApplication.idDocument ? "Yes" : "No"} |
+                    Certificates:{" "}
+                    {selectedApplication.certificates?.length || 0}
+                  </p>
+                  {selectedApplication.certificates &&
+                    selectedApplication.certificates.length > 0 && (
+                      <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
+                        <strong>Certificate Paths:</strong>{" "}
+                        {selectedApplication.certificates.join(", ")}
+                      </p>
+                    )}
+                </div>
+
                 <div className="space-y-4 sm:space-y-6">
                   {/* 2x2 Profile Photo - Display from certificates if different from profile photo */}
                   {selectedApplication.certificates &&
@@ -1572,70 +1626,137 @@ const ApplicationManagement = () => {
                         }}
                         className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-800 dark:text-gray-100"
                       >
-                        {/* Only show pending option if the current status is pending */}
+                        {/* Status workflow based on current status */}
                         {selectedApplication.status === "pending" && (
-                          <option value="pending">
-                            Keep as New Application
-                          </option>
+                          <>
+                            <option value="pending">
+                              Keep as New Application
+                            </option>
+                            <option value="under_review">
+                              Continue Review
+                            </option>
+                            <option value="on_hold">Put on Hold</option>
+                            <option value="rejected">Reject Application</option>
+                          </>
                         )}
-                        {/* Only show under_review if current status is pending or under_review */}
-                        {(selectedApplication.status === "pending" ||
-                          selectedApplication.status === "under_review") && (
-                          <option value="under_review">Continue Review</option>
-                        )}
-                        {/* Only show Schedule Interview if not already scheduled */}
-                        {selectedApplication.status !== "interview_scheduled" &&
-                          !selectedApplication.interviewDate &&
-                          !selectedApplication.interviewTime &&
-                          !selectedApplication.interviewLocation && (
+
+                        {selectedApplication.status === "under_review" && (
+                          <>
+                            <option value="under_review">
+                              Continue Review
+                            </option>
                             <option value="interview_scheduled">
                               Schedule Interview
                             </option>
-                          )}
-                        <option value="passed_interview">
-                          Mark Interview as Passed
-                        </option>
-                        <option value="hours_completed">
-                          Mark Required Hours as Completed
-                        </option>
-                        <option value="failed_interview">
-                          Mark Interview as Failed
-                        </option>
-                        <option value="hired">Hire Applicant</option>
-                        <option value="on_hold">Put on Hold</option>
-                        <option value="rejected">Reject Application</option>
+                            <option value="on_hold">Put on Hold</option>
+                            <option value="rejected">Reject Application</option>
+                          </>
+                        )}
+
+                        {selectedApplication.status ===
+                          "interview_scheduled" && (
+                          <>
+                            <option value="interview_scheduled">
+                              Keep Interview Scheduled
+                            </option>
+                            <option value="passed_interview">
+                              Mark Interview as Passed
+                            </option>
+                            <option value="failed_interview">
+                              Mark Interview as Failed
+                            </option>
+                            <option value="on_hold">Put on Hold</option>
+                            <option value="rejected">Reject Application</option>
+                          </>
+                        )}
+
+                        {selectedApplication.status === "passed_interview" && (
+                          <>
+                            <option value="passed_interview">
+                              Keep as Interview Passed
+                            </option>
+                            <option value="hours_completed">
+                              Mark Required Hours as Completed
+                            </option>
+                            <option value="on_hold">Put on Hold</option>
+                            <option value="rejected">Reject Application</option>
+                          </>
+                        )}
+
+                        {selectedApplication.status === "hours_completed" && (
+                          <>
+                            <option value="hours_completed">
+                              Keep as Hours Completed
+                            </option>
+                            <option value="hired">Hire Applicant</option>
+                            <option value="on_hold">Put on Hold</option>
+                            <option value="rejected">Reject Application</option>
+                          </>
+                        )}
+
+                        {selectedApplication.status === "failed_interview" && (
+                          <>
+                            <option value="failed_interview">
+                              Keep as Interview Failed
+                            </option>
+                            <option value="interview_scheduled">
+                              Reschedule Interview
+                            </option>
+                            <option value="rejected">Reject Application</option>
+                          </>
+                        )}
+
+                        {selectedApplication.status === "hired" && (
+                          <option value="hired">Already Hired</option>
+                        )}
+
+                        {selectedApplication.status === "on_hold" && (
+                          <>
+                            <option value="on_hold">Keep on Hold</option>
+                            <option value="under_review">Resume Review</option>
+                            <option value="interview_scheduled">
+                              Schedule Interview
+                            </option>
+                            <option value="rejected">Reject Application</option>
+                          </>
+                        )}
+
+                        {(selectedApplication.status === "rejected" ||
+                          selectedApplication.status === "withdrawn") && (
+                          <option value={selectedApplication.status}>
+                            {selectedApplication.status === "rejected"
+                              ? "Already Rejected"
+                              : "Withdrawn by Applicant"}
+                          </option>
+                        )}
                       </select>
 
-                      {/* Show info message if application has progressed beyond initial statuses */}
-                      {selectedApplication.status !== "pending" &&
-                        selectedApplication.status !== "under_review" && (
-                          <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                            <div className="flex items-start gap-2">
-                              <svg
-                                className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                              <div className="text-sm text-amber-700 dark:text-amber-300">
-                                <p className="font-medium">
-                                  Status Progression Notice
-                                </p>
-                                <p className="mt-1">
-                                  This application has progressed beyond the
-                                  initial review stages and cannot be reverted
-                                  back to "Pending" or "Under Review" status.
-                                </p>
-                              </div>
+                      {/* Show specific guidance messages based on current status */}
+                      {selectedApplication.status === "pending" && (
+                        <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <svg
+                              className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <div className="text-sm text-blue-700 dark:text-blue-300">
+                              <p className="font-medium">New Application</p>
+                              <p className="mt-1">
+                                Review the application details and move to
+                                "Continue Review" when ready to proceed.
+                              </p>
                             </div>
                           </div>
-                        )}
-                      {/* Show specific message for under_review status */}
+                        </div>
+                      )}
+
                       {selectedApplication.status === "under_review" && (
                         <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                           <div className="flex items-start gap-2">
@@ -1651,13 +1772,162 @@ const ApplicationManagement = () => {
                               />
                             </svg>
                             <div className="text-sm text-blue-700 dark:text-blue-300">
-                              <p className="font-medium">
-                                Review Status Information
-                              </p>
+                              <p className="font-medium">Under Review</p>
                               <p className="mt-1">
-                                This application is currently under review. Once
-                                moved to the next stage, it cannot be reverted
-                                back to "Pending" or "Under Review".
+                                If the application meets requirements, schedule
+                                an interview. Otherwise, put on hold or reject.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedApplication.status === "interview_scheduled" && (
+                        <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <svg
+                              className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <div className="text-sm text-green-700 dark:text-green-300">
+                              <p className="font-medium">Interview Scheduled</p>
+                              <p className="mt-1">
+                                After conducting the interview, mark as passed
+                                or failed based on performance.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedApplication.status === "passed_interview" && (
+                        <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <svg
+                              className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <div className="text-sm text-green-700 dark:text-green-300">
+                              <p className="font-medium">Interview Passed</p>
+                              <p className="mt-1">
+                                Student can now begin their required hours. Mark
+                                as completed when they finish.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedApplication.status === "hours_completed" && (
+                        <div className="mt-2 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <svg
+                              className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <div className="text-sm text-purple-700 dark:text-purple-300">
+                              <p className="font-medium">Hours Completed</p>
+                              <p className="mt-1">
+                                Student has completed their required hours and
+                                is ready to be hired.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedApplication.status === "failed_interview" && (
+                        <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <svg
+                              className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <div className="text-sm text-red-700 dark:text-red-300">
+                              <p className="font-medium">Interview Failed</p>
+                              <p className="mt-1">
+                                You can give the applicant another chance by
+                                rescheduling or reject the application.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedApplication.status === "on_hold" && (
+                        <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <svg
+                              className="w-4 h-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <div className="text-sm text-yellow-700 dark:text-yellow-300">
+                              <p className="font-medium">Application On Hold</p>
+                              <p className="mt-1">
+                                Resume review when ready or proceed to schedule
+                                interview if already reviewed.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {(selectedApplication.status === "hired" ||
+                        selectedApplication.status === "rejected" ||
+                        selectedApplication.status === "withdrawn") && (
+                        <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <svg
+                              className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <div className="text-sm text-gray-700 dark:text-gray-300">
+                              <p className="font-medium">Final Status</p>
+                              <p className="mt-1">
+                                This application has reached its final status
+                                and cannot be modified further.
                               </p>
                             </div>
                           </div>
