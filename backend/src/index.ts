@@ -25,7 +25,7 @@ const allowedOrigins = APP_ORIGIN?.split(",") || [
   "http://localhost:5174",
   "http://localhost:3000",
   "https://sasm-hresd3wls-fosterkelvins-projects.vercel.app",
-  "https://sasm-one.vercel.app",
+  "https://sasmims.vercel.app",
   "https://sasm.onrender.com",
 ];
 

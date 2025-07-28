@@ -11,9 +11,11 @@ import appAssert from "../utils/appAssert";
 import AppErrorCode from "../constants/appErrorCode";
 import { UNAUTHORIZED } from "../constants/http";
 import { verifyToken } from "../utils/jwt";
+import SessionModel from "../models/session.model";
+import catchErrors from "../utils/catchErrors";
 
 // wrap with catchErrors() if you need this to be async
-const authenticate: RequestHandler = (req, res, next) => {
+const authenticate: RequestHandler = catchErrors(async (req, res, next) => {
   const accessToken = req.cookies.accessToken as string | undefined;
   appAssert(
     accessToken,
@@ -30,9 +32,21 @@ const authenticate: RequestHandler = (req, res, next) => {
     AppErrorCode.InvalidAccessToken
   );
 
+  // Verify that the session still exists and is valid
+  if (payload.sessionID) {
+    const session = await SessionModel.findById(payload.sessionID);
+    const now = Date.now();
+    appAssert(
+      session && session.expiresAt.getTime() > now,
+      UNAUTHORIZED,
+      "Session expired or invalid",
+      AppErrorCode.InvalidAccessToken
+    );
+  }
+
   req.userID = payload.userID as string;
   req.sessionID = payload.sessionID as string | undefined;
   next();
-};
+});
 
 export default authenticate;

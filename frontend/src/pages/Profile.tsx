@@ -94,6 +94,7 @@ const Profile = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState("");
   const [emailSuccessMessage, setEmailSuccessMessage] = useState("");
+  const [sessionMessage, setSessionMessage] = useState("");
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
 
   // Function to render the appropriate sidebar based on user role
@@ -223,10 +224,20 @@ const Profile = () => {
   const deleteSessionMutation = useMutation({
     mutationFn: deleteSession,
     onSuccess: () => {
+      // Show success message
+      setSessionMessage("Session ended successfully");
+      // Clear the message after 3 seconds
+      setTimeout(() => setSessionMessage(""), 3000);
       refetchSessions();
     },
     onError: (error: any) => {
       console.error("Failed to delete session:", error);
+      setSessionMessage(
+        error.response?.data?.message ||
+          "Failed to end session. Please try again."
+      );
+      // Clear the error message after 5 seconds
+      setTimeout(() => setSessionMessage(""), 5000);
     },
   });
 
@@ -886,6 +897,27 @@ const Profile = () => {
                       </p>
                     </div>
                   </div>
+
+                  {/* Session Success/Error Message */}
+                  {sessionMessage && (
+                    <div
+                      className={`p-3 mb-4 border rounded-lg ${
+                        sessionMessage.includes("successfully")
+                          ? "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-800"
+                          : "bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-800"
+                      }`}
+                    >
+                      <p
+                        className={`text-sm ${
+                          sessionMessage.includes("successfully")
+                            ? "text-green-700 dark:text-green-300"
+                            : "text-red-700 dark:text-red-300"
+                        }`}
+                      >
+                        {sessionMessage}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="space-y-3 max-h-80 overflow-y-auto">
                     {sessions.length > 0 ? (
