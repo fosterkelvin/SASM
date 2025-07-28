@@ -222,7 +222,9 @@ const ApplicationManagement = () => {
   const getFilenameFromPath = (filePath: string) => {
     if (!filePath) return "";
     // Handle both forward slashes and backslashes
-    return filePath.split(/[/\\]/).pop() || "";
+    const filename = filePath.split(/[/\\]/).pop() || "";
+    console.log("getFilenameFromPath:", { filePath, filename });
+    return filename;
   };
 
   // Determine which sidebar to show based on user role
@@ -445,40 +447,111 @@ const ApplicationManagement = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 h-10 w-10">
-                                  {application.profilePhoto ? (
-                                    <img
-                                      src={`${
-                                        import.meta.env.VITE_API
-                                      }/uploads/profiles/${getFilenameFromPath(
+                                  {(() => {
+                                    // Debug logging
+                                    console.log("Application:", {
+                                      firstName: application.firstName,
+                                      lastName: application.lastName,
+                                      profilePhoto: application.profilePhoto,
+                                      certificates: application.certificates,
+                                    });
+
+                                    // Check if we have a profile photo
+                                    if (application.profilePhoto) {
+                                      const filename = getFilenameFromPath(
                                         application.profilePhoto
-                                      )}`}
-                                      alt="Profile Photo"
-                                      className="h-10 w-10 rounded-full object-cover border-2 border-red-100 dark:border-red-800"
-                                      onError={(e) => {
-                                        e.currentTarget.src =
-                                          "/placeholder-image.png";
-                                      }}
-                                    />
-                                  ) : application.certificates &&
-                                    application.certificates.length > 0 ? (
-                                    <img
-                                      src={`${
+                                      );
+                                      const profileUrl = `${
                                         import.meta.env.VITE_API
-                                      }/uploads/certificates/${getFilenameFromPath(
+                                      }/uploads/profiles/${filename}`;
+                                      console.log("Profile URL:", profileUrl);
+
+                                      return (
+                                        <img
+                                          src={profileUrl}
+                                          alt="Profile Photo"
+                                          className="h-10 w-10 rounded-full object-cover border-2 border-red-100 dark:border-red-800"
+                                          onError={(e) => {
+                                            console.error(
+                                              "Profile image failed to load:",
+                                              profileUrl
+                                            );
+                                            // Try fallback to certificate
+                                            if (
+                                              application.certificates &&
+                                              application.certificates.length >
+                                                0
+                                            ) {
+                                              const certFilename =
+                                                getFilenameFromPath(
+                                                  application.certificates[0]
+                                                );
+                                              const certUrl = `${
+                                                import.meta.env.VITE_API
+                                              }/uploads/certificates/${certFilename}`;
+                                              console.log(
+                                                "Trying certificate fallback:",
+                                                certUrl
+                                              );
+                                              e.currentTarget.src = certUrl;
+                                            } else {
+                                              e.currentTarget.src =
+                                                "/placeholder-image.png";
+                                            }
+                                          }}
+                                          onLoad={() => {
+                                            console.log(
+                                              "Profile image loaded successfully:",
+                                              profileUrl
+                                            );
+                                          }}
+                                        />
+                                      );
+                                    }
+
+                                    // Fallback to certificate image
+                                    if (
+                                      application.certificates &&
+                                      application.certificates.length > 0
+                                    ) {
+                                      const filename = getFilenameFromPath(
                                         application.certificates[0]
-                                      )}`}
-                                      alt="2x2 Photo"
-                                      className="h-10 w-10 rounded-full object-cover border-2 border-blue-100 dark:border-blue-800"
-                                      onError={(e) => {
-                                        e.currentTarget.src =
-                                          "/placeholder-image.png";
-                                      }}
-                                    />
-                                  ) : (
-                                    <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                                      <User className="h-5 w-5 text-red-600 dark:text-red-400" />
-                                    </div>
-                                  )}
+                                      );
+                                      const certUrl = `${
+                                        import.meta.env.VITE_API
+                                      }/uploads/certificates/${filename}`;
+                                      console.log("Certificate URL:", certUrl);
+
+                                      return (
+                                        <img
+                                          src={certUrl}
+                                          alt="Certificate Photo"
+                                          className="h-10 w-10 rounded-full object-cover border-2 border-blue-100 dark:border-blue-800"
+                                          onError={(e) => {
+                                            console.error(
+                                              "Certificate image failed to load:",
+                                              certUrl
+                                            );
+                                            e.currentTarget.src =
+                                              "/placeholder-image.png";
+                                          }}
+                                          onLoad={() => {
+                                            console.log(
+                                              "Certificate image loaded successfully:",
+                                              certUrl
+                                            );
+                                          }}
+                                        />
+                                      );
+                                    }
+
+                                    // Default avatar
+                                    return (
+                                      <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                                        <User className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                                 <div className="ml-4">
                                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
