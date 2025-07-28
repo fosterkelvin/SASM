@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import path from "path";
 import catchErrors from "../utils/catchErrors";
 import ApplicationModel from "../models/application.model";
 import UserModel from "../models/user.model";
@@ -85,13 +86,28 @@ export const createApplicationHandler = catchErrors(
 
     if (files) {
       if (files.profilePhoto && files.profilePhoto[0]) {
-        profilePhoto = files.profilePhoto[0].path;
+        // Store relative path instead of absolute path
+        const relativePath = path.relative(
+          path.join(__dirname, "../../"),
+          files.profilePhoto[0].path
+        );
+        profilePhoto = relativePath.replace(/\\/g, "/"); // Normalize to forward slashes
       }
       if (files.idDocument && files.idDocument[0]) {
-        idDocument = files.idDocument[0].path;
+        const relativePath = path.relative(
+          path.join(__dirname, "../../"),
+          files.idDocument[0].path
+        );
+        idDocument = relativePath.replace(/\\/g, "/");
       }
       if (files.certificates) {
-        certificates = files.certificates.map((file) => file.path);
+        certificates = files.certificates.map((file) => {
+          const relativePath = path.relative(
+            path.join(__dirname, "../../"),
+            file.path
+          );
+          return relativePath.replace(/\\/g, "/");
+        });
       }
     }
 

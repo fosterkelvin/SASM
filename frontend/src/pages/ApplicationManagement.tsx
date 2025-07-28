@@ -220,10 +220,19 @@ const ApplicationManagement = () => {
 
   // Helper function to extract filename from path (handles both Windows and Unix paths)
   const getFilenameFromPath = (filePath: string) => {
-    if (!filePath) return "";
+    if (!filePath) {
+      console.log("getFilenameFromPath: empty filePath");
+      return "";
+    }
+
     // Handle both forward slashes and backslashes
     const filename = filePath.split(/[/\\]/).pop() || "";
-    console.log("getFilenameFromPath:", { filePath, filename });
+    console.log("getFilenameFromPath:", {
+      filePath,
+      filename,
+      splitResult: filePath.split(/[/\\]/),
+      lastElement: filePath.split(/[/\\]/).pop(),
+    });
     return filename;
   };
 
@@ -449,22 +458,43 @@ const ApplicationManagement = () => {
                                 <div className="flex-shrink-0 h-10 w-10">
                                   {(() => {
                                     // Debug logging
-                                    console.log("Application:", {
+                                    console.log("Application Debug:", {
                                       firstName: application.firstName,
                                       lastName: application.lastName,
                                       profilePhoto: application.profilePhoto,
                                       certificates: application.certificates,
+                                      hasProfilePhoto:
+                                        !!application.profilePhoto,
+                                      profilePhotoType:
+                                        typeof application.profilePhoto,
+                                      VITE_API: import.meta.env.VITE_API,
                                     });
 
                                     // Check if we have a profile photo
                                     if (application.profilePhoto) {
-                                      const filename = getFilenameFromPath(
-                                        application.profilePhoto
-                                      );
-                                      const profileUrl = `${
-                                        import.meta.env.VITE_API
-                                      }/uploads/profiles/${filename}`;
-                                      console.log("Profile URL:", profileUrl);
+                                      // If profilePhoto contains a relative path (new format)
+                                      let profileUrl;
+                                      if (
+                                        application.profilePhoto.includes("/")
+                                      ) {
+                                        // New format: relative path like "uploads/profiles/filename.jpg"
+                                        profileUrl = `${
+                                          import.meta.env.VITE_API
+                                        }/${application.profilePhoto}`;
+                                      } else {
+                                        // Old format: just filename, extract it from path
+                                        const filename = getFilenameFromPath(
+                                          application.profilePhoto
+                                        );
+                                        profileUrl = `${
+                                          import.meta.env.VITE_API
+                                        }/uploads/profiles/${filename}`;
+                                      }
+
+                                      console.log("Profile URL constructed:", {
+                                        originalPath: application.profilePhoto,
+                                        constructedUrl: profileUrl,
+                                      });
 
                                       return (
                                         <img
@@ -474,7 +504,12 @@ const ApplicationManagement = () => {
                                           onError={(e) => {
                                             console.error(
                                               "Profile image failed to load:",
-                                              profileUrl
+                                              {
+                                                profileUrl,
+                                                originalPath:
+                                                  application.profilePhoto,
+                                                currentSrc: e.currentTarget.src,
+                                              }
                                             );
                                             // Try fallback to certificate
                                             if (
@@ -482,13 +517,20 @@ const ApplicationManagement = () => {
                                               application.certificates.length >
                                                 0
                                             ) {
-                                              const certFilename =
-                                                getFilenameFromPath(
-                                                  application.certificates[0]
-                                                );
-                                              const certUrl = `${
-                                                import.meta.env.VITE_API
-                                              }/uploads/certificates/${certFilename}`;
+                                              let certUrl;
+                                              const certPath =
+                                                application.certificates[0];
+                                              if (certPath.includes("/")) {
+                                                certUrl = `${
+                                                  import.meta.env.VITE_API
+                                                }/${certPath}`;
+                                              } else {
+                                                const certFilename =
+                                                  getFilenameFromPath(certPath);
+                                                certUrl = `${
+                                                  import.meta.env.VITE_API
+                                                }/uploads/certificates/${certFilename}`;
+                                              }
                                               console.log(
                                                 "Trying certificate fallback:",
                                                 certUrl
@@ -514,35 +556,68 @@ const ApplicationManagement = () => {
                                       application.certificates &&
                                       application.certificates.length > 0
                                     ) {
-                                      const filename = getFilenameFromPath(
-                                        application.certificates[0]
-                                      );
-                                      const certUrl = `${
-                                        import.meta.env.VITE_API
-                                      }/uploads/certificates/${filename}`;
-                                      console.log("Certificate URL:", certUrl);
+                                      const certPath =
+                                        application.certificates[0];
+                                      let certUrl;
 
-                                      return (
-                                        <img
-                                          src={certUrl}
-                                          alt="Certificate Photo"
-                                          className="h-10 w-10 rounded-full object-cover border-2 border-blue-100 dark:border-blue-800"
-                                          onError={(e) => {
-                                            console.error(
-                                              "Certificate image failed to load:",
-                                              certUrl
-                                            );
-                                            e.currentTarget.src =
-                                              "/placeholder-image.png";
-                                          }}
-                                          onLoad={() => {
-                                            console.log(
-                                              "Certificate image loaded successfully:",
-                                              certUrl
-                                            );
-                                          }}
-                                        />
-                                      );
+                                      if (certPath.includes("/")) {
+                                        // New format: relative path like "uploads/certificates/filename.jpg"
+                                        certUrl = `${
+                                          import.meta.env.VITE_API
+                                        }/${certPath}`;
+                                      } else {
+                                        // Old format: extract filename from path
+                                        const filename =
+                                          getFilenameFromPath(certPath);
+                                        if (!filename) {
+                                          console.error(
+                                            "No filename extracted from certificate path:",
+                                            certPath
+                                          );
+                                          // Continue to default avatar
+                                        } else {
+                                          certUrl = `${
+                                            import.meta.env.VITE_API
+                                          }/uploads/certificates/${filename}`;
+                                        }
+                                      }
+
+                                      if (certUrl) {
+                                        console.log(
+                                          "Certificate URL constructed:",
+                                          {
+                                            originalPath: certPath,
+                                            constructedUrl: certUrl,
+                                          }
+                                        );
+
+                                        return (
+                                          <img
+                                            src={certUrl}
+                                            alt="Certificate Photo"
+                                            className="h-10 w-10 rounded-full object-cover border-2 border-blue-100 dark:border-blue-800"
+                                            onError={(e) => {
+                                              console.error(
+                                                "Certificate image failed to load:",
+                                                {
+                                                  certUrl,
+                                                  originalPath: certPath,
+                                                  currentSrc:
+                                                    e.currentTarget.src,
+                                                }
+                                              );
+                                              e.currentTarget.src =
+                                                "/placeholder-image.png";
+                                            }}
+                                            onLoad={() => {
+                                              console.log(
+                                                "Certificate image loaded successfully:",
+                                                certUrl
+                                              );
+                                            }}
+                                          />
+                                        );
+                                      }
                                     }
 
                                     // Default avatar
