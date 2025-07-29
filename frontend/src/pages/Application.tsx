@@ -19,6 +19,7 @@ import {
   Image,
   PenTool,
   Clock,
+  RefreshCw,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -161,7 +162,8 @@ const ResendVerificationButton = ({ email }: { email: string }) => {
       <Button
         onClick={handleResend}
         disabled={isResending}
-        className="bg-red-600 hover:bg-red-700 text-white"
+        className="bg-yellow-600 hover:bg-yellow-700 text-white dark:bg-yellow-700 dark:hover:bg-yellow-800 dark:text-yellow-100 shadow-md"
+        size="sm"
       >
         {isResending ? (
           <div className="flex items-center gap-2">
@@ -169,7 +171,10 @@ const ResendVerificationButton = ({ email }: { email: string }) => {
             Sending...
           </div>
         ) : (
-          "Resend Verification Email"
+          <>
+            <AlertTriangle className="w-4 h-4 mr-2" />
+            Resend Verification
+          </>
         )}
       </Button>
       {resendMessage && (
@@ -700,7 +705,7 @@ const Application = () => {
 
   if (submitSuccess) {
     return (
-      <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
+      <div className="flex min-h-screen bg-gradient-to-br from-gray-100 via-white to-gray-200 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
         {renderSidebar()}
         {/* Main content area with dynamic margin based on sidebar state */}
         <div
@@ -709,7 +714,7 @@ const Application = () => {
           }`}
         >
           {/* Top header bar - only visible on desktop */}
-          <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
+          <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-700/60 p-4 md:p-6">
             <h1 className="text-2xl font-bold text-white dark:text-white">
               Application Submitted Successfully
             </h1>
@@ -717,7 +722,7 @@ const Application = () => {
 
           {/* Success Page */}
           <div className="p-4 md:p-10 flex items-center justify-center min-h-screen">
-            <Card className="max-w-2xl w-full mx-4">
+            <Card className="bg-gradient-to-br from-green-50 via-white to-green-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 max-w-2xl w-full mx-4 border border-green-100 dark:border-green-700/60 shadow-lg">
               <CardContent className="p-6 md:p-8 text-center">
                 <div className="flex flex-col items-center gap-6">
                   <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
@@ -765,7 +770,7 @@ const Application = () => {
 
   if (withdrawSuccess) {
     return (
-      <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
+      <div className="flex min-h-screen bg-gradient-to-br from-gray-100 via-white to-gray-200 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
         {renderSidebar()}
         {/* Main content area with dynamic margin based on sidebar state */}
         <div
@@ -774,7 +779,7 @@ const Application = () => {
           }`}
         >
           {/* Top header bar - only visible on desktop */}
-          <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
+          <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-700/60 p-4 md:p-6">
             <h1 className="text-2xl font-bold text-white dark:text-white">
               Application Withdrawn Successfully
             </h1>
@@ -782,21 +787,21 @@ const Application = () => {
 
           {/* Withdrawal Success Page */}
           <div className="p-4 md:p-10 flex items-center justify-center min-h-screen">
-            <Card className="max-w-2xl w-full mx-4">
+            <Card className="bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 max-w-2xl w-full mx-4 border border-red-700/60 shadow-lg">
               <CardContent className="p-6 md:p-8 text-center">
                 <div className="flex flex-col items-center gap-6">
-                  <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
+                  <div className="w-20 h-20 bg-red-900 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-10 h-10 text-red-400 dark:text-red-400" />
                   </div>
                   <div className="space-y-4">
-                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+                    <h1 className="text-3xl font-bold text-white dark:text-red-200">
                       Application Withdrawn Successfully!
                     </h1>
-                    <p className="text-lg text-gray-600 dark:text-gray-400 max-w-md">
+                    <p className="text-lg text-gray-300 dark:text-gray-400 max-w-md">
                       {submitMessage}
                     </p>
-                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                      <p className="text-sm text-green-800 dark:text-green-200">
+                    <div className="bg-gradient-to-br from-red-900 via-gray-900 to-gray-950 border border-red-700/60 rounded-lg p-4">
+                      <p className="text-sm text-red-200 dark:text-red-200">
                         Your application has been completely removed from our
                         system. If you change your mind, you can submit a new
                         application at any time.
@@ -824,7 +829,7 @@ const Application = () => {
   // Show loading state while checking for existing applications
   if (isLoadingApplications) {
     return (
-      <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
+      <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">
         {renderSidebar()}
         {/* Main content area with dynamic margin based on sidebar state */}
         <div
@@ -932,7 +937,7 @@ const Application = () => {
 
           {/* Existing Application Status */}
           <div className="p-4 md:p-10 flex items-center justify-center min-h-screen">
-            <Card className="max-w-4xl w-full mx-4">
+            <Card className="bg-gradient-to-br from-gray-100 via-white to-gray-200 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 max-w-4xl w-full mx-4 border border-red-100 dark:border-red-700/60 shadow-lg">
               <CardContent className="p-6 md:p-8">
                 <div className="text-center mb-8">
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
@@ -1277,12 +1282,18 @@ const Application = () => {
       {renderSidebar()}
       {/* Main content area with dynamic margin based on sidebar state */}
       <div
-        className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
+        className={`flex-1 pt-0 md:pt-0 transition-all duration-300 ${
           isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
         }`}
+        style={{ marginTop: "72px" }}
       >
         {/* Top header bar - only visible on desktop */}
-        <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
+        <div
+          className={`hidden md:block fixed top-0 md:left-0 w-full md:w-[calc(100%-${
+            isSidebarCollapsed ? "80px" : "256px"
+          })] z-40 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6 transition-all duration-300`}
+          style={{ marginLeft: isSidebarCollapsed ? "80px" : "256px" }}
+        >
           <h1 className="text-2xl font-bold text-white dark:text-white">
             Student Assistant and Student Marshal Scholarship Application
           </h1>

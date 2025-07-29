@@ -17,6 +17,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AppContainer from "./components/AppContainer";
 import { ReactElement } from "react";
+import { useState, useEffect } from "react";
 
 const withPublic = (element: ReactElement): ReactElement => (
   <PublicRoute>{element}</PublicRoute>
@@ -27,6 +28,75 @@ const withProtected = (element: ReactElement): ReactElement => (
 );
 
 function App(): ReactElement {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulate loading for demonstration, replace with actual logic if needed
+    const timer = setTimeout(() => setLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          background: "linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)",
+          animation: "fadeIn 0.7s",
+        }}
+      >
+        <img
+          src={"/UBLogo.svg"}
+          alt="UB Logo"
+          style={{ width: "90px", height: "90px", marginBottom: "32px" }}
+        />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            marginBottom: "24px",
+          }}
+        >
+          <div
+            style={{
+              width: "64px",
+              height: "64px",
+              border: "8px solid #e0e7ff",
+              borderTop: "8px solid #6366f1",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+            }}
+          />
+        </div>
+        <div
+          style={{
+            fontSize: "1.25rem",
+            color: "#6366f1",
+            fontWeight: 500,
+            letterSpacing: "0.05em",
+          }}
+        >
+          Loading, please wait...
+        </div>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <Routes>
       {/* Public Routes */}

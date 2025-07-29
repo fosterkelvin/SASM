@@ -16,6 +16,7 @@ import {
   Trash2,
   X,
   AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -119,10 +120,10 @@ const Profile = () => {
   const getColorScheme = () => {
     return {
       background:
-        "from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20",
+        "from-gray-100 via-white to-gray-200 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900",
       header: "from-red-600 to-red-700 dark:from-red-800 dark:to-red-900",
-      border: "border-red-200 dark:border-red-800",
-      cardBorder: "border-red-100 dark:border-red-800/30",
+      border: "border-red-200 dark:border-red-700/60",
+      cardBorder: "border-red-100 dark:border-red-700/60",
     };
   };
 
@@ -458,16 +459,15 @@ const Profile = () => {
             {/* Top Row - User Info and Email Management */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Personal Information Card - Compact */}
-              <Card className={`shadow-lg ${colorScheme.cardBorder}`}>
+              <Card
+                className={`bg-gradient-to-br ${colorScheme.background} shadow-lg ${colorScheme.cardBorder}`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                      <User
-                        size={20}
-                        className="text-red-600 dark:text-red-400"
-                      />
+                    <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-red-700 dark:from-red-700 dark:to-red-900 rounded-lg flex items-center justify-center">
+                      <User size={22} className="text-white" />
                     </div>
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-red-200">
                       Personal Info
                     </h2>
                   </div>
@@ -525,17 +525,14 @@ const Profile = () => {
 
               {/* Email Management Card - Expanded */}
               <Card
-                className={`lg:col-span-2 shadow-lg ${colorScheme.cardBorder}`}
+                className={`lg:col-span-2 bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 shadow-lg border border-blue-100 dark:border-blue-700/60`}
               >
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                      <Mail
-                        size={20}
-                        className="text-blue-600 dark:text-blue-400"
-                      />
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-700 dark:from-blue-700 dark:to-blue-900 rounded-lg flex items-center justify-center">
+                      <Mail size={22} className="text-white" />
                     </div>
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-blue-200">
                       Email Management
                     </h2>
                   </div>
@@ -696,16 +693,15 @@ const Profile = () => {
             {/* Bottom Row - Password and Sessions */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Change Password Card */}
-              <Card className={`shadow-lg ${colorScheme.cardBorder}`}>
+              <Card
+                className={`bg-gradient-to-br from-orange-50 via-white to-orange-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 shadow-lg border border-orange-100 dark:border-orange-700/60`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-                      <Key
-                        size={20}
-                        className="text-orange-600 dark:text-orange-400"
-                      />
+                    <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-orange-700 dark:from-orange-700 dark:to-orange-900 rounded-lg flex items-center justify-center">
+                      <Key size={22} className="text-white" />
                     </div>
-                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-orange-200">
                       Change Password
                     </h2>
                   </div>
@@ -878,17 +874,16 @@ const Profile = () => {
               </Card>
 
               {/* Active Sessions Card */}
-              <Card className={`shadow-lg ${colorScheme.cardBorder}`}>
+              <Card
+                className={`bg-gradient-to-br from-green-50 via-white to-green-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 shadow-lg border border-green-100 dark:border-green-700/60`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                      <Monitor
-                        size={20}
-                        className="text-green-600 dark:text-green-400"
-                      />
+                    <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-green-700 dark:from-green-700 dark:to-green-900 rounded-lg flex items-center justify-center">
+                      <Monitor size={22} className="text-white" />
                     </div>
                     <div className="flex-1">
-                      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                      <h2 className="text-lg font-semibold text-gray-800 dark:text-green-200">
                         Active Sessions
                       </h2>
                       <p className="text-sm text-gray-600 dark:text-gray-400">

@@ -8,6 +8,14 @@ import { resendVerificationEmail } from "@/lib/api";
 import StudentSidebar from "@/components/StudentSidebar";
 
 // ResendVerificationButton component for Student Dashboard
+import {
+  Loader2,
+  RefreshCw,
+  BookOpen,
+  ClipboardList,
+  GraduationCap,
+  BarChart2,
+} from "lucide-react";
 const ResendVerificationButton = ({ email }: { email: string }) => {
   const [isResending, setIsResending] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
@@ -42,12 +50,12 @@ const ResendVerificationButton = ({ email }: { email: string }) => {
       <Button
         onClick={handleResend}
         disabled={isResending}
-        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+        className="bg-yellow-600 hover:bg-yellow-700 text-white dark:bg-yellow-700 dark:hover:bg-yellow-800 dark:text-yellow-100 shadow-md"
         size="sm"
       >
         {isResending ? (
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <Loader2 className="w-4 h-4 animate-spin" />
             Sending...
           </div>
         ) : (
@@ -77,7 +85,7 @@ const StudentDashboard = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
+    <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">
       <StudentSidebar
         currentPage="Student Dashboard"
         onCollapseChange={setIsSidebarCollapsed}
@@ -98,13 +106,13 @@ const StudentDashboard = () => {
         {/* Main content */}
         <div className="p-6 md:p-10">
           {/* Welcome Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-red-100 dark:border-red-800/30 p-6 mb-8">
+          <div className="bg-gradient-to-br from-gray-100 via-white to-gray-200 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 rounded-xl shadow-lg border border-red-100 dark:border-red-700/60 p-6 mb-8">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">📚</span>
+              <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-700 dark:from-red-700 dark:to-red-900 rounded-lg flex items-center justify-center">
+                <BookOpen className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-red-200">
                   Welcome to SASM-IMS
                 </h2>
                 <p className="text-red-600 dark:text-red-400 font-medium">
@@ -112,7 +120,7 @@ const StudentDashboard = () => {
                 </p>
               </div>
             </div>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
               Your comprehensive academic portal for managing courses,
               assignments, grades, and academic progress. Navigate through your
               educational journey with ease and stay connected with your
@@ -122,7 +130,7 @@ const StudentDashboard = () => {
 
           {/* Email Verification Alert - Show only if not verified */}
           {user && !user.verified && (
-            <Card className="mb-8 border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20">
+            <Card className="mb-8 border-yellow-200 dark:border-yellow-700 bg-yellow-50 dark:bg-gray-950/80">
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -157,12 +165,10 @@ const StudentDashboard = () => {
           {/* Quick Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {/* Courses Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-red-100 dark:border-red-800/30 p-6 hover:shadow-lg transition-shadow duration-200">
+            <div className="bg-gradient-to-br from-gray-100 via-white to-gray-200 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 rounded-xl shadow-md border border-red-100 dark:border-red-700/60 p-6 hover:shadow-lg transition-shadow duration-200">
               <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                  <span className="text-red-600 dark:text-red-400 text-lg">
-                    📖
-                  </span>
+                <div className="w-10 h-10 bg-red-600 dark:bg-red-700 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-red-600 dark:text-red-400">
                   6
@@ -177,12 +183,10 @@ const StudentDashboard = () => {
             </div>
 
             {/* Assignments Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-red-100 dark:border-red-800/30 p-6 hover:shadow-lg transition-shadow duration-200">
+            <div className="bg-gradient-to-br from-orange-50 via-white to-orange-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 rounded-xl shadow-md border border-orange-100 dark:border-orange-700/60 p-6 hover:shadow-lg transition-shadow duration-200">
               <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-                  <span className="text-orange-600 dark:text-orange-400 text-lg">
-                    📝
-                  </span>
+                <div className="w-10 h-10 bg-orange-500 dark:bg-orange-700 rounded-lg flex items-center justify-center">
+                  <ClipboardList className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                   12
@@ -197,12 +201,10 @@ const StudentDashboard = () => {
             </div>
 
             {/* GPA Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-red-100 dark:border-red-800/30 p-6 hover:shadow-lg transition-shadow duration-200">
+            <div className="bg-gradient-to-br from-green-50 via-white to-green-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 rounded-xl shadow-md border border-green-100 dark:border-green-700/60 p-6 hover:shadow-lg transition-shadow duration-200">
               <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                  <span className="text-green-600 dark:text-green-400 text-lg">
-                    🎯
-                  </span>
+                <div className="w-10 h-10 bg-green-600 dark:bg-green-700 rounded-lg flex items-center justify-center">
+                  <GraduationCap className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-green-600 dark:text-green-400">
                   3.8
@@ -217,12 +219,10 @@ const StudentDashboard = () => {
             </div>
 
             {/* Attendance Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-red-100 dark:border-red-800/30 p-6 hover:shadow-lg transition-shadow duration-200">
+            <div className="bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 rounded-xl shadow-md border border-blue-100 dark:border-blue-700/60 p-6 hover:shadow-lg transition-shadow duration-200">
               <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                  <span className="text-blue-600 dark:text-blue-400 text-lg">
-                    📊
-                  </span>
+                <div className="w-10 h-10 bg-blue-600 dark:bg-blue-700 rounded-lg flex items-center justify-center">
+                  <BarChart2 className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   94%
@@ -238,35 +238,35 @@ const StudentDashboard = () => {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-red-100 dark:border-red-800/30 p-6">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-              <span className="text-red-600 dark:text-red-400">⚡</span>
+          <div className="bg-gradient-to-br from-gray-100 via-white to-gray-200 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 rounded-xl shadow-lg border border-red-100 dark:border-red-700/60 p-6">
+            <h3 className="text-lg font-bold text-gray-800 dark:text-red-200 mb-4 flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-red-600 dark:text-red-400" />
               Quick Actions
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <button className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors duration-200 border border-red-200 dark:border-red-800/50">
-                <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">📚</span>
+              <button className="flex items-center gap-3 p-4 bg-red-50 dark:bg-gray-900 hover:bg-red-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200 border border-red-200 dark:border-red-700/60 shadow">
+                <div className="w-8 h-8 bg-red-600 dark:bg-red-700 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-medium text-red-700 dark:text-red-300">
+                <span className="font-medium text-red-700 dark:text-gray-200">
                   View Courses
                 </span>
               </button>
 
-              <button className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors duration-200 border border-red-200 dark:border-red-800/50">
-                <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">📝</span>
+              <button className="flex items-center gap-3 p-4 bg-orange-50 dark:bg-gray-900 hover:bg-orange-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200 border border-orange-200 dark:border-orange-700/60 shadow">
+                <div className="w-8 h-8 bg-orange-500 dark:bg-orange-700 rounded-lg flex items-center justify-center">
+                  <ClipboardList className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-medium text-red-700 dark:text-red-300">
+                <span className="font-medium text-orange-700 dark:text-gray-200">
                   Assignments
                 </span>
               </button>
 
-              <button className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors duration-200 border border-red-200 dark:border-red-800/50">
-                <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">📊</span>
+              <button className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-gray-900 hover:bg-blue-100 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200 border border-blue-200 dark:border-blue-700/60 shadow">
+                <div className="w-8 h-8 bg-blue-600 dark:bg-blue-700 rounded-lg flex items-center justify-center">
+                  <BarChart2 className="w-5 h-5 text-white" />
                 </div>
-                <span className="font-medium text-red-700 dark:text-red-300">
+                <span className="font-medium text-blue-700 dark:text-gray-200">
                   View Grades
                 </span>
               </button>
