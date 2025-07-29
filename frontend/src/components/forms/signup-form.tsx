@@ -146,39 +146,16 @@ export function SignupForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Clear any previous API errors
     setApiError("");
-
-    // Validate form data with Zod
     try {
-      userSchema.parse(formData); // This will throw an error if validation fails
-      setErrors({}); // Clear errors if validation passes
+      userSchema.parse(formData);
+      setErrors({});
       setLoading(true);
-      // Continue with form submission logic (e.g., API call)
-      console.log("Form submitted successfully", formData);
-      // Reset form data
-      setFormData({
-        firstname: "",
-        lastname: "",
-        email: "",
-        password: "",
-        confirm_password: "",
+      signupMutate(formData, {
+        onSettled: () => {
+          setLoading(false);
+        },
       });
-      signupMutate(formData);
-      // Reset loading state
-      setLoading(false);
-
-      // Axios call to your API endpoint
-      // axios.post("/api/signup", formData)
-      //   .then((response) => {
-      //     console.log("User created successfully", response.data);
-      //     // Handle success (e.g., redirect to login page)
-      //   })
-      //   .catch((error) => {
-      //     console.error("Error creating user", error);
-      //     // Handle error (e.g., show error message)
-      //   })
     } catch (err) {
       if (err instanceof z.ZodError) {
         const newErrors: Partial<SignupData> = {};
@@ -187,7 +164,6 @@ export function SignupForm({
         });
         setErrors(newErrors);
       }
-    } finally {
       setLoading(false);
     }
   };
@@ -600,24 +576,26 @@ export function SignupForm({
         </CardContent>
       </Card>
 
-      {/* Terms & Privacy */}
-      <div className="text-center text-xs text-gray-600 dark:text-slate-400">
-        By clicking continue, you agree to our{" "}
-        <a
-          href="#"
-          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition-colors duration-200"
-        >
-          Terms of Service
-        </a>{" "}
-        and{" "}
-        <a
-          href="#"
-          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition-colors duration-200"
-        >
-          Privacy Policy
-        </a>
-        .
-      </div>
+      {/* Terms & Privacy - only show when not success */}
+      {!signupSuccess && (
+        <div className="text-center text-xs text-gray-600 dark:text-slate-400">
+          By clicking continue, you agree to our{" "}
+          <a
+            href="#"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition-colors duration-200"
+          >
+            Terms of Service
+          </a>{" "}
+          and{" "}
+          <a
+            href="#"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline transition-colors duration-200"
+          >
+            Privacy Policy
+          </a>
+          .
+        </div>
+      )}
     </div>
   );
 }
