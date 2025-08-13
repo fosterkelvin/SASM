@@ -24,9 +24,7 @@ let allowedOrigins = APP_ORIGIN?.split(",") || [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
-  "https://sasm-hresd3wls-fosterkelvins-projects.vercel.app",
-  "https://sasmims.vercel.app",
-  "https://sasm.onrender.com",
+  "https://sasm.onrender.com", // keep only if still used for backend
   "https://sasm.site",
   "https://www.sasm.site",
 ];
