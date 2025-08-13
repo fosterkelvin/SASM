@@ -27,6 +27,7 @@ const allowedOrigins = APP_ORIGIN?.split(",") || [
   "https://sasm-hresd3wls-fosterkelvins-projects.vercel.app",
   "https://sasmims.vercel.app",
   "https://sasm.onrender.com",
+  "https://sasm.site",
 ];
 
 console.log("APP_ORIGIN from env:", APP_ORIGIN);
