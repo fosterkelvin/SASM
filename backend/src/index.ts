@@ -20,7 +20,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const allowedOrigins = APP_ORIGIN?.split(",") || [
+let allowedOrigins = APP_ORIGIN?.split(",") || [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
@@ -30,6 +30,11 @@ const allowedOrigins = APP_ORIGIN?.split(",") || [
   "https://sasm.site",
   "https://www.sasm.site",
 ];
+
+// Always ensure https://www.sasm.site is included
+if (!allowedOrigins.includes("https://www.sasm.site")) {
+  allowedOrigins.push("https://www.sasm.site");
+}
 
 console.log("APP_ORIGIN from env:", APP_ORIGIN);
 console.log("Allowed CORS origins:", allowedOrigins);
