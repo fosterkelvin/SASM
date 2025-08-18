@@ -21,6 +21,13 @@ notificationRoutes.get("/unread-count", getUnreadNotificationCountHandler);
 // PUT /notifications/mark-all-read - Mark all notifications as read
 notificationRoutes.put("/mark-all-read", markAllNotificationsAsReadHandler);
 
+// PUT /notifications/bulk-read - Mark multiple notifications as read
+notificationRoutes.put(
+  "/bulk-read",
+  require("../controllers/notification.controller")
+    .markMultipleNotificationsAsReadHandler
+);
+
 // PUT /notifications/:id/read - Mark specific notification as read
 notificationRoutes.put("/:id/read", markNotificationAsReadHandler);
 

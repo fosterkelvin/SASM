@@ -1,3 +1,11 @@
+export const markMultipleNotificationsAsRead = async (
+  notificationIDs: string[]
+) => {
+  const response = await API.put("/notifications/bulk-read", {
+    notificationIDs,
+  });
+  return response.data;
+};
 import API from "@/config/apiClient";
 
 export const signin = async (data: any) => {

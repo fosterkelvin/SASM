@@ -19,7 +19,6 @@ import {
   Image,
   PenTool,
   Clock,
-  RefreshCw,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -447,17 +446,19 @@ const Application = () => {
         const rect = container.getBoundingClientRect();
         canvas.width = rect.width - 4; // Account for border
         canvas.height = 200;
-        // Force cursor style with important
-        canvas.style.setProperty("cursor", "crosshair", "important");
-        canvas.style.touchAction = "none";
       }
+      // Always set cursor and touch-action directly
+      canvas.style.setProperty("cursor", "crosshair", "important");
+      canvas.style.setProperty("touch-action", "none", "important");
     }
   };
 
   // Handle canvas ready state
   useEffect(() => {
     if (isSignaturePadReady) {
-      const timer = setTimeout(resizeSignatureCanvas, 50);
+      const timer = setTimeout(() => {
+        resizeSignatureCanvas();
+      }, 50);
       return () => clearTimeout(timer);
     }
   }, [isSignaturePadReady]);
@@ -467,40 +468,6 @@ const Application = () => {
     if (signatureMethod === "draw" && isSignaturePadReady) {
       const timer = setTimeout(() => {
         resizeSignatureCanvas();
-        // Additional cursor enforcement with mutation observer
-        if (signatureRef.current) {
-          const canvas = signatureRef.current.getCanvas();
-          canvas.style.setProperty("cursor", "crosshair", "important");
-          canvas.style.touchAction = "none";
-
-          // Create a mutation observer to watch for style changes
-          const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-              if (
-                mutation.type === "attributes" &&
-                mutation.attributeName === "style"
-              ) {
-                const target = mutation.target as HTMLElement;
-                if (
-                  target.tagName === "CANVAS" &&
-                  target.classList.contains("signature-canvas")
-                ) {
-                  target.style.setProperty("cursor", "crosshair", "important");
-                  target.style.touchAction = "none";
-                }
-              }
-            });
-          });
-
-          // Start observing
-          observer.observe(canvas, {
-            attributes: true,
-            attributeFilter: ["style", "class"],
-          });
-
-          // Clean up observer when component unmounts or method changes
-          return () => observer.disconnect();
-        }
       }, 100);
       return () => clearTimeout(timer);
     }
@@ -770,7 +737,7 @@ const Application = () => {
 
   if (withdrawSuccess) {
     return (
-      <div className="flex min-h-screen bg-gradient-to-br from-gray-100 via-white to-gray-200 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
+      <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
         {renderSidebar()}
         {/* Main content area with dynamic margin based on sidebar state */}
         <div
@@ -787,21 +754,21 @@ const Application = () => {
 
           {/* Withdrawal Success Page */}
           <div className="p-4 md:p-10 flex items-center justify-center min-h-screen">
-            <Card className="bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 max-w-2xl w-full mx-4 border border-red-700/60 shadow-lg">
+            <Card className="bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 max-w-2xl w-full mx-4 border border-red-200 dark:border-red-700/60 shadow-lg">
               <CardContent className="p-6 md:p-8 text-center">
                 <div className="flex flex-col items-center gap-6">
-                  <div className="w-20 h-20 bg-red-900 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-10 h-10 text-red-400 dark:text-red-400" />
+                  <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-10 h-10 text-red-600 dark:text-red-400" />
                   </div>
                   <div className="space-y-4">
-                    <h1 className="text-3xl font-bold text-white dark:text-red-200">
+                    <h1 className="text-3xl font-bold text-red-800 dark:text-red-200">
                       Application Withdrawn Successfully!
                     </h1>
-                    <p className="text-lg text-gray-300 dark:text-gray-400 max-w-md">
+                    <p className="text-lg text-gray-700 dark:text-gray-400 max-w-md">
                       {submitMessage}
                     </p>
-                    <div className="bg-gradient-to-br from-red-900 via-gray-900 to-gray-950 border border-red-700/60 rounded-lg p-4">
-                      <p className="text-sm text-red-200 dark:text-red-200">
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/60 rounded-lg p-4">
+                      <p className="text-sm text-red-800 dark:text-red-200">
                         Your application has been completely removed from our
                         system. If you change your mind, you can submit a new
                         application at any time.
@@ -1327,10 +1294,10 @@ const Application = () => {
 
               <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
                 {/* Position Selection */}
-                <div className="bg-red-50 dark:bg-red-900/20 p-4 md:p-6 rounded-lg border border-red-200 dark:border-red-800">
+                <div className=" p-4 md:p-6 rounded-lg border ">
                   <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
                     <Users className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
-                    Position Applied For
+                    Position
                   </h3>
                   <div className="grid grid-cols-1 gap-3 md:gap-4">
                     <div className="flex items-center space-x-3">
@@ -1380,13 +1347,13 @@ const Application = () => {
                 </div>
 
                 {/* Personal Information */}
-                <div className="space-y-4 md:space-y-6">
+                <div className="space-y-4 md:space-y-6 p-4 rounded-lg border">
                   <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
                     <User className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
                     Personal Information
                   </h3>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ">
                     <div>
                       <Label
                         htmlFor="firstName"
@@ -1462,14 +1429,14 @@ const Application = () => {
                 </div>
 
                 {/* Address Information */}
-                <div className="space-y-4 md:space-y-6">
+                <div className="space-y-4 md:space-y-6 p-4 rounded-lg border">
                   <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
                     <MapPin className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
                     Address Information
                   </h3>
 
                   {/* Home Address */}
-                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                  <div className="p-4 rounded-lg border">
                     <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-4">
                       Home Address
                     </h4>
@@ -1500,24 +1467,24 @@ const Application = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label
-                          htmlFor="homeBarangay"
+                          htmlFor="homeProvince"
                           className="text-gray-700 dark:text-gray-300"
                         >
-                          Barangay *
+                          Province/State *
                         </Label>
                         <Input
-                          id="homeBarangay"
-                          value={formData.homeBarangay || ""}
+                          id="homeProvince"
+                          value={formData.homeProvince || ""}
                           onChange={(e) =>
-                            handleInputChange("homeBarangay", e.target.value)
+                            handleInputChange("homeProvince", e.target.value)
                           }
                           className={
-                            errors.homeBarangay ? "border-red-500" : ""
+                            errors.homeProvince ? "border-red-500" : ""
                           }
                         />
-                        {errors.homeBarangay && (
+                        {errors.homeProvince && (
                           <p className="text-red-600 text-sm mt-1">
-                            {errors.homeBarangay}
+                            {errors.homeProvince}
                           </p>
                         )}
                       </div>
@@ -1544,24 +1511,24 @@ const Application = () => {
                       </div>
                       <div>
                         <Label
-                          htmlFor="homeProvince"
+                          htmlFor="homeBarangay"
                           className="text-gray-700 dark:text-gray-300"
                         >
-                          Province/State *
+                          Barangay *
                         </Label>
                         <Input
-                          id="homeProvince"
-                          value={formData.homeProvince || ""}
+                          id="homeBarangay"
+                          value={formData.homeBarangay || ""}
                           onChange={(e) =>
-                            handleInputChange("homeProvince", e.target.value)
+                            handleInputChange("homeBarangay", e.target.value)
                           }
                           className={
-                            errors.homeProvince ? "border-red-500" : ""
+                            errors.homeBarangay ? "border-red-500" : ""
                           }
                         />
-                        {errors.homeProvince && (
+                        {errors.homeBarangay && (
                           <p className="text-red-600 text-sm mt-1">
-                            {errors.homeProvince}
+                            {errors.homeBarangay}
                           </p>
                         )}
                       </div>
@@ -1569,7 +1536,7 @@ const Application = () => {
                   </div>
 
                   {/* Baguio/Benguet Address */}
-                  <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                  <div className="p-4 rounded-lg border">
                     <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-4">
                       Baguio/Benguet Address
                     </h4>
@@ -1649,7 +1616,7 @@ const Application = () => {
                 </div>
 
                 {/* Contact Information */}
-                <div className="space-y-6">
+                <div className="space-y-6 p-4 rounded-lg border">
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
                     <Phone className="h-5 w-5 text-red-600" />
                     Contact Information
@@ -1752,7 +1719,7 @@ const Application = () => {
                 </div>
 
                 {/* Parents Information */}
-                <div className="space-y-6">
+                <div className="space-y-6 p-4 rounded-lg border">
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
                     <Users className="h-5 w-5 text-red-600" />
                     Parents Information
@@ -1853,7 +1820,7 @@ const Application = () => {
                   </div>
 
                   {/* Emergency Contact */}
-                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <div className=" p-4 rounded-lg border">
                     <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-4">
                       Emergency Contact
                     </h4>
@@ -1919,13 +1886,13 @@ const Application = () => {
                 </div>
 
                 {/* Relative Information */}
-                <div className="space-y-6">
+                <div className="space-y-6 p-4 rounded-lg border">
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
                     <Users className="h-5 w-5 text-red-600" />
                     Relative Information
                   </h3>
 
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className=" p-4 rounded-lg border ">
                     <div className="mb-4">
                       <label className="flex items-center space-x-3">
                         <input
@@ -2007,7 +1974,7 @@ const Application = () => {
                 </div>
 
                 {/* Educational Background */}
-                <div className="space-y-6">
+                <div className="space-y-6 p-4 rounded-lg border">
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
                     <GraduationCap className="h-5 w-5 text-red-600" />
                     Educational Background
@@ -2137,7 +2104,7 @@ const Application = () => {
                 </div>
 
                 {/* Seminars/Trainings/Conferences */}
-                <div className="space-y-4 md:space-y-6">
+                <div className="space-y-4 md:space-y-6 p-4 rounded-lg border">
                   <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
                     <FileText className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
                     Seminars/Trainings/Conferences Attended
@@ -2249,7 +2216,7 @@ const Application = () => {
                 </div>
 
                 {/* File Uploads */}
-                <div className="space-y-6">
+                <div className="space-y-6 p-4 rounded-lg border">
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
                     <Upload className="h-5 w-5 text-red-600" />
                     2x2 Picture (Required)
@@ -2307,8 +2274,8 @@ const Application = () => {
                         {errors.profilePhoto}
                       </p>
                     )}
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Please upload a 2x2 passport-style photograph. This is
+                    <p className="text-sm text-blue-600 dark:text-blue-400">
+                      Please upload a 2x2 passport-style photograph with a white background. This is
                       required for your application.
                     </p>
                   </div>
@@ -2367,7 +2334,7 @@ const Application = () => {
                 </div>
 
                 {/* Electronic Signature */}
-                <div className="space-y-6">
+                <div className="space-y-6 p-4 rounded-lg border">
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
                     <PenTool className="h-5 w-5 text-red-600" />
                     Electronic Signature

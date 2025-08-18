@@ -1,3 +1,18 @@
+export const markMultipleNotificationsAsRead = async (
+  notificationIDs: string[],
+  userID: string
+) => {
+  try {
+    const result = await NotificationModel.updateMany(
+      { _id: { $in: notificationIDs }, userID, isRead: false },
+      { isRead: true }
+    );
+    return result;
+  } catch (error) {
+    console.error("Error marking multiple notifications as read:", error);
+    throw error;
+  }
+};
 import NotificationModel from "../models/notification.model";
 import UserModel from "../models/user.model";
 import { Types } from "mongoose";

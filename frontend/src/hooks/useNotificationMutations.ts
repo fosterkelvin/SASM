@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  markMultipleNotificationsAsRead,
   deleteNotification,
   deleteMultipleNotifications,
 } from "@/lib/api";
@@ -29,6 +30,11 @@ export const useNotificationMutations = () => {
     onSuccess: invalidateNotificationQueries,
   });
 
+  const markMultipleAsReadMutation = useMutation({
+    mutationFn: markMultipleNotificationsAsRead,
+    onSuccess: invalidateNotificationQueries,
+  });
+
   const deleteMultipleNotificationsMutation = useMutation({
     mutationFn: deleteMultipleNotifications,
     onSuccess: invalidateNotificationQueries,
@@ -37,6 +43,7 @@ export const useNotificationMutations = () => {
   return {
     markAsReadMutation,
     markAllAsReadMutation,
+    markMultipleAsReadMutation,
     deleteNotificationMutation,
     deleteMultipleNotificationsMutation,
   };

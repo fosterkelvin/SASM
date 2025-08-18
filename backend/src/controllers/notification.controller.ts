@@ -8,7 +8,32 @@ import {
   deleteNotification,
   deleteMultipleNotifications,
   getUnreadNotificationCount,
+  markMultipleNotificationsAsRead,
 } from "../services/notification.service";
+
+// Mark multiple notifications as read
+export const markMultipleNotificationsAsReadHandler = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+
+    const schema = z.object({
+      notificationIDs: z
+        .array(z.string().min(1))
+        .min(1, "At least one notification ID is required"),
+    });
+    const { notificationIDs } = schema.parse(req.body);
+
+    const result = await markMultipleNotificationsAsRead(
+      notificationIDs,
+      userID
+    );
+
+    return res.status(OK).json({
+      message: `${result.modifiedCount} notification(s) marked as read`,
+      modifiedCount: result.modifiedCount,
+    });
+  }
+);
 import appAssert from "../utils/appAssert";
 import { z } from "zod";
 

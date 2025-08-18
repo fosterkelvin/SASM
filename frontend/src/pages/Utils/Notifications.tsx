@@ -32,9 +32,17 @@ const Notifications = () => {
   const {
     markAsReadMutation,
     markAllAsReadMutation,
+    markMultipleAsReadMutation,
     deleteNotificationMutation,
     deleteMultipleNotificationsMutation,
   } = useNotificationMutations();
+  const markSelectedAsRead = () => {
+    if (selectedNotifications.length > 0) {
+      markMultipleAsReadMutation.mutate(selectedNotifications);
+      setSelectedNotifications([]);
+      setIsSelectionMode(false);
+    }
+  };
 
   // Use real-time notifications hook
   const {
@@ -308,6 +316,24 @@ const Notifications = () => {
                       >
                         Clear
                       </Button>
+
+                      {/* Only show Mark as Read if at least one selected notification is unread */}
+                      {selectedNotifications.some((id) => {
+                        const notif = notifications.find(
+                          (n: any) => n._id === id
+                        );
+                        return notif && !notif.isRead;
+                      }) && (
+                        <Button
+                          variant="outline"
+                          onClick={markSelectedAsRead}
+                          className="text-green-600 border-green-300 hover:bg-green-50 dark:hover:bg-green-900/20"
+                          disabled={markMultipleAsReadMutation?.isPending}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Mark as Read ({selectedNotifications.length})
+                        </Button>
+                      )}
 
                       <Button
                         variant="outline"
