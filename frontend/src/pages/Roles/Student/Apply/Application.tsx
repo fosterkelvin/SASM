@@ -212,6 +212,34 @@ function Application() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // Validate seminars: if any field is filled, all must be filled
+    const seminarErrors: string[] = [];
+    seminars.forEach((s, idx) => {
+      const filled = [
+        s.title,
+        s.sponsoringAgency,
+        s.inclusiveDate,
+        s.place,
+      ].some((v) => v.trim());
+      const allFilled = [
+        s.title,
+        s.sponsoringAgency,
+        s.inclusiveDate,
+        s.place,
+      ].every((v) => v.trim());
+      if (filled && !allFilled) {
+        seminarErrors.push(
+          `Seminar #${
+            idx + 1
+          }: Please fill in all fields (Title, Sponsoring Agency, Inclusive Date, Place).`
+        );
+      }
+    });
+    if (seminarErrors.length > 0) {
+      setSubmitMessage(seminarErrors.join(" "));
+      setIsSubmitting(false);
+      return;
+    }
     setIsSubmitting(true);
     setSubmitMessage("");
     setErrors({});
@@ -250,9 +278,13 @@ function Application() {
     }
 
     try {
-      // Validate form data using Zod schema
+      // Always use latest seminars state for validation and submission
+      const seminarsToSubmit = seminars.filter(
+        (s) => s.title || s.sponsoringAgency || s.inclusiveDate || s.place
+      );
       const parsed = applicationSchema.safeParse({
         ...formData,
+        seminars: seminarsToSubmit,
         age: formData.age ? Number(formData.age) : undefined,
         profilePhoto: uploadedFiles.profilePhoto,
         relatives: hasRelativeWorking ? relatives : [],
@@ -274,7 +306,8 @@ function Application() {
       const formDataToSubmit = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
         if (key === "seminars") {
-          formDataToSubmit.append(key, JSON.stringify(value));
+          // Always use latest seminars state
+          formDataToSubmit.append(key, JSON.stringify(seminarsToSubmit));
         } else if (key === "age") {
           if (value !== undefined && value !== null) {
             formDataToSubmit.append(key, Number(value).toString());
