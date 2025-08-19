@@ -73,6 +73,62 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           <p className="text-red-600 text-sm mt-1">{errors.age}</p>
         )}
       </div>
+      <div>
+        <Label htmlFor="gender" className="text-gray-700 dark:text-gray-300">
+          Gender *
+        </Label>
+        <select
+          id="gender"
+          value={formData.gender || ""}
+          onChange={(e) =>
+            handleInputChange(
+              "gender",
+              e.target.value === "" ? undefined : e.target.value
+            )
+          }
+          className={`w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            errors.gender ? "border-red-500" : ""
+          }`}
+        >
+          <option value="">Select Gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+        {errors.gender && (
+          <p className="text-red-600 text-sm mt-1">{errors.gender}</p>
+        )}
+      </div>
+      <div>
+        <Label
+          htmlFor="civilStatus"
+          className="text-gray-700 dark:text-gray-300"
+        >
+          Civil Status *
+        </Label>
+        <select
+          id="civilStatus"
+          value={formData.civilStatus || ""}
+          onChange={(e) =>
+            handleInputChange(
+              "civilStatus",
+              e.target.value === "" ? undefined : e.target.value
+            )
+          }
+          className={`w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            errors.civilStatus ? "border-red-500" : ""
+          }`}
+        >
+          <option value="">Select Civil Status</option>
+          <option value="Single">Single</option>
+          <option value="Married">Married</option>
+          <option value="Widowed">Widowed</option>
+          <option value="Separated">Separated</option>
+        </select>
+        {errors.civilStatus && (
+          <p className="text-red-600 text-sm mt-1">{errors.civilStatus}</p>
+        )}
+      </div>
     </div>
   </div>
 );

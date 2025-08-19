@@ -10,6 +10,12 @@ export const applicationSchema = z.object({
     .number()
     .min(15, "Age must be at least 15")
     .max(30, "Age must be under 30"),
+  gender: z.enum(["Male", "Female", "Other"], {
+    required_error: "Gender is required",
+  }),
+  civilStatus: z.enum(["Single", "Married", "Widowed", "Separated"], {
+    required_error: "Civil status is required",
+  }),
   homeAddress: z.string().min(5, "Home address is required"),
   homeStreet: z.string().optional(),
   homeBarangay: z.string().min(2, "Barangay is required"),

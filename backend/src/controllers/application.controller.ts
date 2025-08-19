@@ -28,13 +28,20 @@ export const createApplicationHandler = catchErrors(
   async (req: Request, res: Response) => {
     const userID = req.userID!;
 
-    // Parse form data - seminars might be JSON string
+    // Parse form data - seminars and relatives might be JSON string
     const requestBody = { ...req.body };
     if (requestBody.seminars && typeof requestBody.seminars === "string") {
       try {
         requestBody.seminars = JSON.parse(requestBody.seminars);
       } catch (error) {
         requestBody.seminars = [];
+      }
+    }
+    if (requestBody.relatives && typeof requestBody.relatives === "string") {
+      try {
+        requestBody.relatives = JSON.parse(requestBody.relatives);
+      } catch (error) {
+        requestBody.relatives = [];
       }
     }
 

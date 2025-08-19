@@ -28,6 +28,12 @@ export const createApplicationSchema = z.object({
     .number()
     .min(15, "Age must be at least 15")
     .max(30, "Age must be under 30"),
+  gender: z.enum(["Male", "Female", "Other"], {
+    required_error: "Gender is required",
+  }),
+  civilStatus: z.enum(["Single", "Married", "Widowed", "Separated"], {
+    required_error: "Civil status is required",
+  }),
 
   // Address
   homeAddress: z.string().min(5, "Home address is required").max(200),
@@ -77,9 +83,15 @@ export const createApplicationSchema = z.object({
 
   // Relative Information
   hasRelativeWorking: z.boolean(),
-  relativeName: z.string().max(100).optional(),
-  relativeDepartment: z.string().max(100).optional(),
-  relativeRelationship: z.string().max(50).optional(),
+  relatives: z
+    .array(
+      z.object({
+        name: z.string().max(100),
+        department: z.string().max(100),
+        relationship: z.string().max(50),
+      })
+    )
+    .optional(),
 
   // Educational Background
   elementary: z.string().max(200).optional(),

@@ -20,7 +20,7 @@ import PersonalInfoSection from "./components/PersonalInfoSection";
 import AddressInfoSection from "./components/AddressInfoSection";
 import ContactInfoSection from "./components/ContactInfoSection";
 import ParentsInfoSection from "./components/ParentsInfoSection";
-import RelativeInfoSection from "./components/RelativeInfoSection";
+import RelativeSection from "./components/RelativeSection";
 import EducationInfoSection from "./components/EducationInfoSection";
 import SeminarsSection from "./components/SeminarsSection";
 import FileUploadSection from "./components/FileUploadSection";
@@ -44,6 +44,11 @@ function Application() {
   );
 
   // Form state
+
+  const [hasRelativeWorking, setHasRelativeWorking] = useState(false);
+  const [relatives, setRelatives] = useState([
+    { name: "", department: "", relationship: "" },
+  ]);
   const [formData, setFormData] = useState<Partial<ApplicationFormData>>({
     // Pre-fill with user data
     firstName: user?.firstname || "",
@@ -115,12 +120,39 @@ function Application() {
   };
 
   // Handlers
+
   const handleInputChange = (field: keyof ApplicationFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field === "hasRelativeWorking") {
+      setHasRelativeWorking(value);
+      if (value && relatives.length === 0) {
+        setRelatives([{ name: "", department: "", relationship: "" }]);
+      }
+    }
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
+  };
+
+  // Relative handlers
+  const addRelative = () => {
+    setRelatives((prev) => [
+      ...prev,
+      { name: "", department: "", relationship: "" },
+    ]);
+  };
+  const removeRelative = (index: number) => {
+    setRelatives((prev) => prev.filter((_, i) => i !== index));
+  };
+  const updateRelative = (
+    index: number,
+    field: "name" | "department" | "relationship",
+    value: string
+  ) => {
+    setRelatives((prev) =>
+      prev.map((rel, i) => (i === index ? { ...rel, [field]: value } : rel))
+    );
   };
 
   const queryClient = useQueryClient();
@@ -190,6 +222,7 @@ function Application() {
         ...formData,
         age: formData.age ? Number(formData.age) : undefined,
         profilePhoto: uploadedFiles.profilePhoto,
+        relatives: hasRelativeWorking ? relatives : [],
       });
       if (!parsed.success) {
         // Collect errors
@@ -217,10 +250,19 @@ function Application() {
           if (value !== undefined && value !== null) {
             formDataToSubmit.append(key, Boolean(value).toString());
           }
+        } else if (key === "gender" || key === "civilStatus") {
+          if (value) {
+            formDataToSubmit.append(key, value.toString());
+          }
         } else if (value !== undefined && value !== null) {
           formDataToSubmit.append(key, value.toString());
         }
       });
+      // Add relatives array to formDataToSubmit
+      formDataToSubmit.append(
+        "relatives",
+        JSON.stringify(hasRelativeWorking ? relatives : [])
+      );
 
       if (uploadedFiles.profilePhoto) {
         formDataToSubmit.append(`profilePhoto`, uploadedFiles.profilePhoto);
@@ -384,14 +426,13 @@ function Application() {
         >
           {/* Top header bar - only visible on desktop */}
           <div
-            className={`hidden md:flex items-center gap-4 fixed top-0 z-30 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 h-[73px] px-8 ${
+            className={`hidden md:flex items-center gap-4 fixed top-0 left-0 z-30 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 h-[81px] ${
               isSidebarCollapsed
-                ? "md:ml-20 md:w-[calc(100%-5rem)]"
-                : "md:ml-64 md:w-[calc(100%-16rem)]"
+                ? "md:w-[calc(100%-5rem)] md:ml-20"
+                : "md:w-[calc(100%-16rem)] md:ml-64"
             }`}
           >
-            <img src="/UBLogo.svg" alt="Logo" className="h-10 w-auto" />
-            <h1 className="text-2xl font-bold text-white dark:text-white">
+            <h1 className="text-2xl font-bold text-white dark:text-white ml-4">
               Application Status
             </h1>
           </div>
@@ -671,9 +712,13 @@ function Application() {
                     errors={errors}
                     handleInputChange={handleInputChange}
                   />
-                  <RelativeInfoSection
-                    formData={formData}
-                    errors={errors}
+                  <RelativeSection
+                    hasRelativeWorking={hasRelativeWorking}
+                    relatives={relatives}
+                    setHasRelativeWorking={setHasRelativeWorking}
+                    updateRelative={updateRelative}
+                    addRelative={addRelative}
+                    removeRelative={removeRelative}
                     handleInputChange={handleInputChange}
                   />
                   <EducationInfoSection

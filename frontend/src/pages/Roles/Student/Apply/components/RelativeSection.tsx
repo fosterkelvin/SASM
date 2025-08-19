@@ -3,15 +3,29 @@ import { Label } from "@/components/ui/label";
 import React from "react";
 import { ApplicationFormData } from "../applicationSchema";
 
+interface Relative {
+  name: string;
+  department: string;
+  relationship: string;
+}
+
 interface RelativeSectionProps {
-  formData: Partial<ApplicationFormData>;
-  errors: Partial<Record<keyof ApplicationFormData, string>>;
+  hasRelativeWorking: boolean;
+  relatives: Relative[];
+  setHasRelativeWorking: (value: boolean) => void;
+  updateRelative: (index: number, field: keyof Relative, value: string) => void;
+  addRelative: () => void;
+  removeRelative: (index: number) => void;
   handleInputChange: (field: keyof ApplicationFormData, value: any) => void;
 }
 
 const RelativeSection: React.FC<RelativeSectionProps> = ({
-  formData,
-  errors,
+  hasRelativeWorking,
+  relatives,
+  setHasRelativeWorking,
+  updateRelative,
+  addRelative,
+  removeRelative,
   handleInputChange,
 }) => (
   <div className="space-y-6 p-4 rounded-lg border">
@@ -23,10 +37,11 @@ const RelativeSection: React.FC<RelativeSectionProps> = ({
         <label className="flex items-center space-x-3">
           <input
             type="checkbox"
-            checked={formData.hasRelativeWorking || false}
-            onChange={(e) =>
-              handleInputChange("hasRelativeWorking", e.target.checked)
-            }
+            checked={hasRelativeWorking}
+            onChange={(e) => {
+              setHasRelativeWorking(e.target.checked);
+              handleInputChange("hasRelativeWorking", e.target.checked);
+            }}
             className="h-4 w-4 text-red-600"
           />
           <span className="text-gray-700 dark:text-gray-300">
@@ -35,53 +50,80 @@ const RelativeSection: React.FC<RelativeSectionProps> = ({
           </span>
         </label>
       </div>
-      {formData.hasRelativeWorking && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <div>
-            <Label
-              htmlFor="relativeName"
-              className="text-gray-700 dark:text-gray-300"
-            >
+      {hasRelativeWorking && (
+        <div className="space-y-4">
+          <div className="hidden md:grid md:grid-cols-3 gap-4">
+            <div className="font-medium text-gray-700 dark:text-gray-300">
               Name
-            </Label>
-            <Input
-              id="relativeName"
-              value={formData.relativeName || ""}
-              onChange={(e) =>
-                handleInputChange("relativeName", e.target.value)
-              }
-            />
-          </div>
-          <div>
-            <Label
-              htmlFor="relativeDepartment"
-              className="text-gray-700 dark:text-gray-300"
-            >
+            </div>
+            <div className="font-medium text-gray-700 dark:text-gray-300">
               Department
-            </Label>
-            <Input
-              id="relativeDepartment"
-              value={formData.relativeDepartment || ""}
-              onChange={(e) =>
-                handleInputChange("relativeDepartment", e.target.value)
-              }
-            />
-          </div>
-          <div>
-            <Label
-              htmlFor="relativeRelationship"
-              className="text-gray-700 dark:text-gray-300"
-            >
+            </div>
+            <div className="font-medium text-gray-700 dark:text-gray-300">
               Relationship
-            </Label>
-            <Input
-              id="relativeRelationship"
-              value={formData.relativeRelationship || ""}
-              onChange={(e) =>
-                handleInputChange("relativeRelationship", e.target.value)
-              }
-            />
+            </div>
           </div>
+          {relatives.map((relative, index) => (
+            <div
+              key={index}
+              className="space-y-3 md:space-y-0 md:grid md:grid-cols-3 md:gap-4 md:items-start p-3 md:p-0 border md:border-0 rounded-lg md:rounded-none border-gray-200 dark:border-gray-700"
+            >
+              <div>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 md:hidden mb-1 block">
+                  Name
+                </Label>
+                <Input
+                  value={relative.name}
+                  onChange={(e) =>
+                    updateRelative(index, "name", e.target.value)
+                  }
+                  placeholder="Relative's name"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 md:hidden mb-1 block">
+                  Department
+                </Label>
+                <Input
+                  value={relative.department}
+                  onChange={(e) =>
+                    updateRelative(index, "department", e.target.value)
+                  }
+                  placeholder="Department"
+                />
+              </div>
+              <div className="flex flex-col md:flex-row gap-2">
+                <div className="flex-1">
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 md:hidden mb-1 block">
+                    Relationship
+                  </Label>
+                  <Input
+                    value={relative.relationship}
+                    onChange={(e) =>
+                      updateRelative(index, "relationship", e.target.value)
+                    }
+                    placeholder="Relationship"
+                  />
+                </div>
+                {relatives.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeRelative(index)}
+                    className="text-red-600 hover:text-red-700 w-full md:w-auto border rounded px-2 py-1 border-red-300 bg-white"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addRelative}
+            className="text-red-600 border-red-300 hover:bg-red-50 border rounded px-3 py-2 mt-2"
+          >
+            + Add Another Relative
+          </button>
         </div>
       )}
     </div>
