@@ -13,6 +13,7 @@ import StudentSidebar from "@/components/sidebar/StudentSidebar";
 import useSeminars from "./hooks/useSeminars";
 import useFileUpload from "./hooks/useFileUpload";
 import useSignaturePad from "./hooks/useSignaturePad";
+import useCertificatesUpload from "./hooks/useCertificatesUpload";
 import { ApplicationFormData } from "./applicationSchema";
 import { applicationSchema } from "./applicationSchema";
 import PositionSection from "./components/PositionSection";
@@ -27,6 +28,7 @@ import FileUploadSection from "./components/FileUploadSection";
 import AgreementSection from "./components/AgreementSection";
 import SignaturePad from "./components/SignaturePad";
 import { CheckCircle, AlertTriangle, Upload, X, PenTool } from "lucide-react";
+import CertificatesSection from "./components/CertificatesSection";
 
 function Application() {
   // Fetch user applications to check if they already have an active application
@@ -72,6 +74,14 @@ function Application() {
   const { seminars, addSeminar, removeSeminar, updateSeminar } = useSeminars();
   const { uploadedFiles, filePreviewUrls, handleFileUpload, removeFile } =
     useFileUpload();
+
+  // Certificates upload hook (like profile photo)
+  const {
+    uploadedCertificates,
+    certificatePreviewUrls,
+    handleCertificatesUpload,
+    removeCertificate,
+  } = useCertificatesUpload();
 
   // Clear profilePhoto error when a new image is uploaded
   useEffect(() => {
@@ -289,6 +299,13 @@ function Application() {
 
       if (uploadedFiles.profilePhoto) {
         formDataToSubmit.append(`profilePhoto`, uploadedFiles.profilePhoto);
+      }
+
+      // Append certificates to FormData
+      if (uploadedCertificates.certificates.length > 0) {
+        uploadedCertificates.certificates.forEach((file) => {
+          formDataToSubmit.append("certificates", file);
+        });
       }
 
       createApplicationMutation.mutate(formDataToSubmit);
@@ -754,6 +771,13 @@ function Application() {
                     updateSeminar={updateSeminar}
                     addSeminar={addSeminar}
                     removeSeminar={removeSeminar}
+                  />
+                  {/* Certificates Section (Optional) */}
+                  <CertificatesSection
+                    certificateFiles={uploadedCertificates.certificates}
+                    certificatePreviewUrls={certificatePreviewUrls.certificates}
+                    handleCertificateUpload={handleCertificatesUpload}
+                    removeCertificate={removeCertificate}
                   />
                   <FileUploadSection
                     filePreviewUrl={filePreviewUrls?.profilePhoto}
