@@ -27,9 +27,9 @@ import {
   cancelEmailChange as cancelEmailChangeAPI,
 } from "@/lib/api";
 import { z } from "zod";
-import StudentSidebar from "@/components/StudentSidebar";
-import HRSidebar from "@/components/HRSidebar";
-import OfficeSidebar from "@/components/OfficeSidebar";
+import StudentSidebar from "@/components/sidebar/StudentSidebar";
+import HRSidebar from "@/components/sidebar/HRSidebar";
+import OfficeSidebar from "@/components/sidebar/OfficeSidebar";
 
 // Validation schema for password change
 const changePasswordSchema = z

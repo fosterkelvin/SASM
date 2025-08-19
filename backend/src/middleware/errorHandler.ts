@@ -5,13 +5,16 @@ import AppError from "../utils/appError";
 import { clearAuthCookies, REFRESH_PATH } from "../utils/cookies";
 
 const handleZodError = (res: Response, error: z.ZodError) => {
-  const errors = error.issues.map((err) => ({
-    path: err.path.join("."),
-    message: err.message,
-  }));
+  // Convert Zod errors to { field: message } format for frontend
+  const fieldErrors: Record<string, string> = {};
+  error.issues.forEach((err) => {
+    if (err.path && err.path.length > 0) {
+      fieldErrors[err.path[0]] = err.message;
+    }
+  });
   res.status(BAD_REQUEST).json({
     message: error.message,
-    errors,
+    errors: fieldErrors,
   });
 };
 
