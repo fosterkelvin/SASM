@@ -216,6 +216,29 @@ function Application() {
       setIsSubmitting(false);
       return;
     }
+
+    // Custom validation for relatives
+    if (hasRelativeWorking) {
+      if (
+        relatives.length === 0 ||
+        !relatives[0].name.trim() ||
+        !relatives[0].department.trim() ||
+        !relatives[0].relationship.trim()
+      ) {
+        setErrors((prev) => ({
+          ...prev,
+          relativeName: "Relative's name is required",
+          relativeDepartment: "Relative's department is required",
+          relativeRelationship: "Relative's relationship is required",
+        }));
+        setSubmitMessage(
+          "Please provide at least one relative with all fields filled."
+        );
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     try {
       // Validate form data using Zod schema
       const parsed = applicationSchema.safeParse({
