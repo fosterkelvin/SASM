@@ -16,8 +16,8 @@ export default function ParentsInfoSection({
   return (
     <div className="space-y-6 p-4 rounded-lg border">
       <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
-        <Users className="h-5 w-5 text-red-600" />
-        Parents Information
+        <Users className="h-5 w-5 text-green-600" />
+        Parents Information<span className="text-red-600"> *</span>
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -25,7 +25,7 @@ export default function ParentsInfoSection({
             htmlFor="fatherName"
             className="text-gray-700 dark:text-gray-300"
           >
-            Father's Name *
+            Father's Name
           </Label>
           <Input
             id="fatherName"
@@ -42,7 +42,7 @@ export default function ParentsInfoSection({
             htmlFor="fatherOccupation"
             className="text-gray-700 dark:text-gray-300"
           >
-            Father's Occupation *
+            Father's Occupation
           </Label>
           <Input
             id="fatherOccupation"
@@ -63,7 +63,7 @@ export default function ParentsInfoSection({
             htmlFor="motherName"
             className="text-gray-700 dark:text-gray-300"
           >
-            Mother's Name *
+            Mother's Name
           </Label>
           <Input
             id="motherName"
@@ -80,7 +80,7 @@ export default function ParentsInfoSection({
             htmlFor="motherOccupation"
             className="text-gray-700 dark:text-gray-300"
           >
-            Mother's Occupation *
+            Mother's Occupation
           </Label>
           <Input
             id="motherOccupation"
@@ -100,15 +100,16 @@ export default function ParentsInfoSection({
       {/* Emergency Contact */}
       <div className="p-4 rounded-lg border">
         <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-4">
-          Emergency Contact
+          Emergency Contact<span className="text-red-600"> *</span>
         </h4>
+        <hr className="my-4 border-t border-gray-300 dark:border-gray-700" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label
               htmlFor="emergencyContact"
               className="text-gray-700 dark:text-gray-300"
             >
-              Person to Contact in case of Emergency *
+              Person to Contact in case of Emergency
             </Label>
             <Input
               id="emergencyContact"
@@ -129,7 +130,7 @@ export default function ParentsInfoSection({
               htmlFor="emergencyContactNumber"
               className="text-gray-700 dark:text-gray-300"
             >
-              Contact No. *
+              Contact No.
             </Label>
             <Input
               id="emergencyContactNumber"

@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import React from "react";
 import { ApplicationFormData } from "../applicationSchema";
+import { Users } from "lucide-react";
 
 interface PersonalInfoSectionProps {
   formData: Partial<ApplicationFormData>;
@@ -17,7 +18,8 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
   <div className="space-y-4 md:space-y-6 p-4 rounded-lg border">
     <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
       {/* Icon can be added here if needed */}
-      Personal Information
+      <Users className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
+      Personal Information <p className="text-red-600">*</p>
     </h3>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ">
       <div>
@@ -25,7 +27,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           htmlFor="firstName"
           className="text-sm md:text-base text-gray-700 dark:text-gray-300"
         >
-          First Name *
+          First Name
         </Label>
         <Input
           id="firstName"
@@ -39,7 +41,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
       </div>
       <div>
         <Label htmlFor="lastName" className="text-gray-700 dark:text-gray-300">
-          Last Name *
+          Last Name
         </Label>
         <Input
           id="lastName"
@@ -53,7 +55,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
       </div>
       <div>
         <Label htmlFor="age" className="text-gray-700 dark:text-gray-300">
-          Age *
+          Age
         </Label>
         <Input
           id="age"
@@ -75,7 +77,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
       </div>
       <div>
         <Label htmlFor="gender" className="text-gray-700 dark:text-gray-300">
-          Gender *
+          Gender
         </Label>
         <select
           id="gender"
@@ -88,7 +90,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           }
           className={`w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.gender ? "border-red-500" : ""
-          }`}
+          } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
         >
           <option value="">Select Gender</option>
           <option value="Male">Male</option>
@@ -104,7 +106,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           htmlFor="civilStatus"
           className="text-gray-700 dark:text-gray-300"
         >
-          Civil Status *
+          Civil Status
         </Label>
         <select
           id="civilStatus"
@@ -116,8 +118,8 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
             )
           }
           className={`w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.civilStatus ? "border-red-500" : ""
-          }`}
+            errors.gender ? "border-red-500" : ""
+          } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
         >
           <option value="">Select Civil Status</option>
           <option value="Single">Single</option>

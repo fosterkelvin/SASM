@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import React from "react";
 import { ApplicationFormData } from "../applicationSchema";
+import { Button } from "@/components/ui/button";
 
 interface Relative {
   name: string;
@@ -106,24 +107,28 @@ const RelativeSection: React.FC<RelativeSectionProps> = ({
                   />
                 </div>
                 {relatives.length > 1 && (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => removeRelative(index)}
-                    className="text-red-600 hover:text-red-700 w-full md:w-auto border rounded px-2 py-1 border-red-300 bg-white"
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 w-full md:w-auto"
                   >
                     Remove
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
           ))}
-          <button
+          <Button
             type="button"
             onClick={addRelative}
-            className="text-red-600 border-red-300 hover:bg-red-50 border rounded px-3 py-2 mt-2"
+            variant="outline"
+            size="sm"
+            className="text-red-600 hover:bg-green-200 hover:dark:bg-green-500 border rounded px-3 py-2 mt-2"
           >
             + Add Another Relative
-          </button>
+          </Button>
         </div>
       )}
     </div>

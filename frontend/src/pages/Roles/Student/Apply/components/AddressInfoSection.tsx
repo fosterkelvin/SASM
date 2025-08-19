@@ -17,21 +17,22 @@ export default function AddressInfoSection({
   return (
     <div className="space-y-4 md:space-y-6 p-4 rounded-lg border">
       <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
-        <MapPin className="h-4 w-4 md:h-5 md:w-5 text-red-600" />
-        Address Information
+        <MapPin className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
+        Address Information<p className="text-red-600">*</p>
       </h3>
       {/* Home Address */}
       <div className="p-4 rounded-lg border">
-        <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-4">
-          Home Address
+        <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-1">
+          Home Address <span className="text-red-600"> *</span>
         </h4>
+        <hr className="my-4 border-t border-gray-300 dark:border-gray-700" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="md:col-span-2">
             <Label
               htmlFor="homeAddress"
               className="text-gray-700 dark:text-gray-300"
             >
-              Complete Address *
+              Complete Address
             </Label>
             <Input
               id="homeAddress"
@@ -51,7 +52,7 @@ export default function AddressInfoSection({
               htmlFor="homeProvince"
               className="text-gray-700 dark:text-gray-300"
             >
-              Province/State *
+              Province/State
             </Label>
             <Input
               id="homeProvince"
@@ -70,7 +71,7 @@ export default function AddressInfoSection({
               htmlFor="homeCity"
               className="text-gray-700 dark:text-gray-300"
             >
-              City/Municipality *
+              City/Municipality
             </Label>
             <Input
               id="homeCity"
@@ -87,7 +88,7 @@ export default function AddressInfoSection({
               htmlFor="homeBarangay"
               className="text-gray-700 dark:text-gray-300"
             >
-              Barangay *
+              Barangay
             </Label>
             <Input
               id="homeBarangay"
@@ -106,15 +107,16 @@ export default function AddressInfoSection({
       {/* Baguio/Benguet Address */}
       <div className="p-4 rounded-lg border">
         <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-4">
-          Baguio/Benguet Address
+          Baguio/Benguet Address<span className="text-red-600"> *</span>
         </h4>
+        <hr className="my-4 border-t border-gray-300 dark:border-gray-700" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="md:col-span-2">
             <Label
               htmlFor="baguioAddress"
               className="text-gray-700 dark:text-gray-300"
             >
-              Complete Address *
+              Complete Address 
             </Label>
             <Input
               id="baguioAddress"
@@ -138,7 +140,7 @@ export default function AddressInfoSection({
               htmlFor="baguioBarangay"
               className="text-gray-700 dark:text-gray-300"
             >
-              Barangay *
+              Barangay 
             </Label>
             <Input
               id="baguioBarangay"
@@ -159,7 +161,7 @@ export default function AddressInfoSection({
               htmlFor="baguioCity"
               className="text-gray-700 dark:text-gray-300"
             >
-              City/Municipality *
+              City/Municipality 
             </Label>
             <Input
               id="baguioCity"

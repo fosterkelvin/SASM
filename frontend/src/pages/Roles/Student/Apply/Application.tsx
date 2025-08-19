@@ -71,7 +71,8 @@ function Application() {
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
 
   // Modular hooks
-  const { seminars, addSeminar, removeSeminar, updateSeminar } = useSeminars();
+  const { seminars, addSeminar, removeSeminar, updateSeminar, setSeminars } =
+    useSeminars();
   const { uploadedFiles, filePreviewUrls, handleFileUpload, removeFile } =
     useFileUpload();
 
@@ -175,7 +176,33 @@ function Application() {
           "Your application has been submitted successfully! You will receive a confirmation email and will be notified of any status updates via email and in-app notifications."
       );
       queryClient.invalidateQueries({ queryKey: ["userApplications"] });
-      // Optionally reset form fields here
+      // Reset form fields after successful submission
+      setFormData({
+        firstName: user?.firstname || "",
+        lastName: user?.lastname || "",
+        email: user?.email || "",
+        hasRelativeWorking: false,
+        seminars: [],
+        agreedToTerms: false,
+        signature: "",
+      });
+      // Reset seminars state
+      setSeminars([
+        { title: "", sponsoringAgency: "", inclusiveDate: "", place: "" },
+      ]);
+      setRelatives([{ name: "", department: "", relationship: "" }]);
+      setHasRelativeWorking(false);
+      setErrors({});
+      setSignatureData("");
+      clearSignature();
+      // Clear uploaded files and certificates
+      if (uploadedFiles.profilePhoto) {
+        removeFile();
+      }
+      // Remove all certificates
+      while (uploadedCertificates.certificates.length > 0) {
+        removeCertificate(0);
+      }
     },
     onError: (error) => {
       // Try to extract field errors from backend response
@@ -826,8 +853,9 @@ function Application() {
                   {/* Electronic Signature */}
                   <div className="space-y-6 p-4 rounded-lg border">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
-                      <PenTool className="h-5 w-5 text-red-600" />
+                      <PenTool className="h-5 w-5 text-green-600" />
                       Electronic Signature
+                      <span className="text-red-600"> *</span>
                     </h3>
 
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
@@ -939,7 +967,7 @@ function Application() {
                                   setSignatureData("");
                                   handleInputChange("signature", "");
                                 }}
-                                className="text-red-600 border-red-300 hover:bg-red-50"
+                                className="text-red-600 hover:bg-green-200 hover:dark:bg-green-500 border rounded px-3 py-2 mt-2"
                               >
                                 Clear Signature
                               </Button>
@@ -1053,11 +1081,34 @@ function Application() {
                     <Button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-6 md:px-8 py-3 text-base md:text-lg flex items-center justify-center"
+                      className={`w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-6 md:px-8 py-3 text-base md:text-lg flex items-center justify-center transition-all duration-200 ${
+                        isSubmitting ? "opacity-80 cursor-not-allowed" : ""
+                      }`}
                     >
                       {isSubmitting ? (
                         <>
-                          <span className="animate-spin h-5 w-5 mr-2 border-2 border-white border-t-transparent rounded-full"></span>
+                          <span className="inline-block mr-2">
+                            <svg
+                              className="h-5 w-5 text-white"
+                              viewBox="0 0 24 24"
+                              style={{ animation: "spin 1s linear infinite" }}
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                                fill="none"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8v4l3 3-3 3V4a8 8 0 01-8 8z"
+                              />
+                            </svg>
+                          </span>
                           Submitting...
                         </>
                       ) : (

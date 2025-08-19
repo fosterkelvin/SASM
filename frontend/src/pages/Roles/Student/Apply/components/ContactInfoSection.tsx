@@ -17,8 +17,8 @@ export default function ContactInfoSection({
   return (
     <div className="space-y-6 p-4 rounded-lg border">
       <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
-        <Phone className="h-5 w-5 text-red-600" />
-        Contact Information
+        <Phone className="h-5 w-5 text-green-600" />
+        Contact Information <span className="text-red-600"> *</span>
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -26,7 +26,7 @@ export default function ContactInfoSection({
             htmlFor="homeContact"
             className="text-gray-700 dark:text-gray-300"
           >
-            Home Contact No. *
+            Home Contact No.
           </Label>
           <Input
             id="homeContact"
@@ -44,7 +44,7 @@ export default function ContactInfoSection({
             htmlFor="baguioContact"
             className="text-gray-700 dark:text-gray-300"
           >
-            Baguio/Benguet Contact No. *
+            Baguio/Benguet Contact No.
           </Label>
           <Input
             id="baguioContact"
@@ -59,7 +59,7 @@ export default function ContactInfoSection({
         </div>
         <div>
           <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
-            E-mail Address *
+            E-mail Address
           </Label>
           <Input
             id="email"
@@ -78,7 +78,7 @@ export default function ContactInfoSection({
             htmlFor="citizenship"
             className="text-gray-700 dark:text-gray-300"
           >
-            Citizenship *
+            Citizenship
           </Label>
           <Input
             id="citizenship"

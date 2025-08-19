@@ -12,7 +12,7 @@ export default function EducationInfoSection({ formData, handleInputChange }: Ad
   return (
     <div className="space-y-6 p-4 rounded-lg border">
       <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
-        <GraduationCap className="h-5 w-5 text-red-600" />
+        <GraduationCap className="h-5 w-5 text-green-600" />
         Educational Background
       </h3>
       <div className="space-y-4">

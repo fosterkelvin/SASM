@@ -108,7 +108,7 @@ const SeminarsSection: React.FC<SeminarsSectionProps> = ({
         type="button"
         onClick={addSeminar}
         variant="outline"
-        className="text-red-600 border-red-300 hover:bg-red-50"
+        className="text-red-600 hover:bg-green-200 hover:dark:bg-green-500 border rounded px-3 py-2 mt-2"
       >
         + Add Another Seminar/Training
       </Button>
