@@ -5,6 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  createApplication,
+  getUserApplications,
+  deleteApplication,
+} from "@/lib/api";
+import StudentSidebar from "@/components/StudentSidebar";
+import HRSidebar from "@/components/HRSidebar";
+import OfficeSidebar from "@/components/OfficeSidebar";
+import {
+  applicationSchema,
+  ApplicationFormData,
+} from "./Apply/applicationSchema";
+import ResendVerificationButton from "./Apply/components/ResendVerificationButton";
+import SignaturePad from "./Apply/components/SignaturePad";
+import { z } from "zod";
 import {
   FileText,
   User,
@@ -20,176 +36,8 @@ import {
   PenTool,
   Clock,
 } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  createApplication,
-  getUserApplications,
-  deleteApplication,
-  resendVerificationEmail,
-} from "@/lib/api";
-import { z } from "zod";
-import StudentSidebar from "@/components/StudentSidebar";
-import HRSidebar from "@/components/HRSidebar";
-import OfficeSidebar from "@/components/OfficeSidebar";
-import SignatureCanvas from "react-signature-canvas";
 
-// Application form validation schema
-const applicationSchema = z.object({
-  // Position
-  position: z.enum(["student_assistant", "student_marshal"], {
-    required_error: "Please select a position",
-  }),
-
-  // Personal Information
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
-  age: z
-    .number()
-    .min(15, "Age must be at least 15")
-    .max(30, "Age must be under 30"),
-
-  // Address
-  homeAddress: z.string().min(5, "Home address is required"),
-  homeStreet: z.string().optional(),
-  homeBarangay: z.string().min(2, "Barangay is required"),
-  homeCity: z.string().min(2, "City/Municipality is required"),
-  homeProvince: z.string().min(2, "Province/State is required"),
-
-  baguioAddress: z.string().min(5, "Baguio/Benguet address is required"),
-  baguioStreet: z.string().optional(),
-  baguioBarangay: z.string().min(2, "Barangay is required"),
-  baguioCity: z.string().min(2, "City/Municipality is required"),
-
-  // Contact Information
-  homeContact: z.string().min(10, "Home contact number is required"),
-  baguioContact: z
-    .string()
-    .min(10, "Baguio/Benguet contact number is required"),
-  email: z.string().email("Valid email is required"),
-  citizenship: z.string().min(2, "Citizenship is required"),
-
-  // Parents Information
-  fatherName: z.string().min(2, "Father's name is required"),
-  fatherOccupation: z.string().min(2, "Father's occupation is required"),
-  motherName: z.string().min(2, "Mother's name is required"),
-  motherOccupation: z.string().min(2, "Mother's occupation is required"),
-
-  // Emergency Contact
-  emergencyContact: z.string().min(2, "Emergency contact name is required"),
-  emergencyContactNumber: z
-    .string()
-    .min(10, "Emergency contact number is required"),
-
-  // Relative Information
-  hasRelativeWorking: z.boolean(),
-  relativeName: z.string().optional(),
-  relativeDepartment: z.string().optional(),
-  relativeRelationship: z.string().optional(),
-
-  // Educational Background
-  elementary: z.string().optional(),
-  elementaryYears: z.string().optional(),
-  highSchool: z.string().optional(),
-  highSchoolYears: z.string().optional(),
-  college: z.string().optional(),
-  collegeYears: z.string().optional(),
-  others: z.string().optional(),
-  othersYears: z.string().optional(),
-
-  // Seminars/Trainings (dynamic array)
-  seminars: z
-    .array(
-      z.object({
-        title: z.string(),
-        sponsoringAgency: z.string(),
-        inclusiveDate: z.string(),
-        place: z.string(),
-      })
-    )
-    .optional(),
-
-  // Agreement
-  agreedToTerms: z.boolean().refine((val) => val === true, {
-    message: "You must agree to the terms and conditions",
-  }),
-
-  // E-Signature
-  signature: z.string().min(1, "Electronic signature is required"),
-
-  // File uploads (required 2x2 picture)
-  profilePhoto: z.any().refine((file) => file !== null && file !== undefined, {
-    message: "2x2 picture is required",
-  }),
-  idDocument: z.any().optional(),
-  certificates: z.any().optional(),
-});
-
-type ApplicationFormData = z.infer<typeof applicationSchema>;
-
-// ResendVerificationButton component
-const ResendVerificationButton = ({ email }: { email: string }) => {
-  const [isResending, setIsResending] = useState(false);
-  const [resendMessage, setResendMessage] = useState("");
-
-  const resendMutation = useMutation({
-    mutationFn: () => resendVerificationEmail({ email }),
-    onSuccess: () => {
-      setResendMessage(
-        "Verification email sent successfully! Please check your inbox."
-      );
-      setTimeout(() => setResendMessage(""), 5000);
-    },
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message || "Failed to send verification email";
-      setResendMessage(message);
-      setTimeout(() => setResendMessage(""), 5000);
-    },
-    onSettled: () => {
-      setIsResending(false);
-    },
-  });
-
-  const handleResend = () => {
-    setIsResending(true);
-    setResendMessage("");
-    resendMutation.mutate();
-  };
-
-  return (
-    <div className="flex flex-col gap-2">
-      <Button
-        onClick={handleResend}
-        disabled={isResending}
-        className="bg-yellow-600 hover:bg-yellow-700 text-white dark:bg-yellow-700 dark:hover:bg-yellow-800 dark:text-yellow-100 shadow-md"
-        size="sm"
-      >
-        {isResending ? (
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            Sending...
-          </div>
-        ) : (
-          <>
-            <AlertTriangle className="w-4 h-4 mr-2" />
-            Resend Verification
-          </>
-        )}
-      </Button>
-      {resendMessage && (
-        <p
-          className={`text-sm ${
-            resendMessage.includes("successfully")
-              ? "text-green-600 dark:text-green-400"
-              : "text-red-600 dark:text-red-400"
-          }`}
-        >
-          {resendMessage}
-        </p>
-      )}
-    </div>
-  );
-};
+// ...existing code...
 
 const Application = () => {
   const { user } = useAuth();
@@ -257,7 +105,8 @@ const Application = () => {
   });
 
   // E-Signature state
-  const signatureRef = useRef<SignatureCanvas>(null);
+  // SignaturePad now handled by component, but keep ref for legacy code if needed
+  const signatureRef = useRef<any>(null);
   const [signatureData, setSignatureData] = useState<string>("");
   const [isSignaturePadReady, setIsSignaturePadReady] = useState(false);
   const [signatureMethod, setSignatureMethod] = useState<"draw" | "upload">(
@@ -365,14 +214,6 @@ const Application = () => {
       if (errors.signature) {
         setErrors((prev) => ({ ...prev, signature: "" }));
       }
-    }
-  };
-
-  const saveSignature = () => {
-    if (signatureRef.current) {
-      const signatureDataURL = signatureRef.current.toDataURL();
-      setSignatureData(signatureDataURL);
-      handleInputChange("signature", signatureDataURL);
     }
   };
 
@@ -2275,8 +2116,8 @@ const Application = () => {
                       </p>
                     )}
                     <p className="text-sm text-blue-600 dark:text-blue-400">
-                      Please upload a 2x2 passport-style photograph with a white background. This is
-                      required for your application.
+                      Please upload a 2x2 passport-style photograph with a white
+                      background. This is required for your application.
                     </p>
                   </div>
                 </div>
@@ -2413,81 +2254,13 @@ const Application = () => {
                           </p>
                           <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
                             {isSignaturePadReady ? (
-                              <SignatureCanvas
+                              <SignaturePad
                                 ref={signatureRef}
-                                penColor="#000000"
-                                backgroundColor="rgba(255,255,255,1)"
-                                canvasProps={{
-                                  width: 500,
-                                  height: 200,
-                                  className:
-                                    "signature-canvas w-full h-48 rounded-lg",
-                                  style: {
-                                    cursor: "crosshair !important",
-                                    touchAction: "none",
-                                    maxWidth: "100%",
-                                    height: "auto",
-                                    display: "block",
-                                  },
-                                  onMouseEnter: (e) => {
-                                    const canvas =
-                                      e.target as HTMLCanvasElement;
-                                    canvas.style.setProperty(
-                                      "cursor",
-                                      "crosshair",
-                                      "important"
-                                    );
-                                  },
-                                  onMouseMove: (e) => {
-                                    const canvas =
-                                      e.target as HTMLCanvasElement;
-                                    canvas.style.setProperty(
-                                      "cursor",
-                                      "crosshair",
-                                      "important"
-                                    );
-                                  },
-                                  onFocus: (e) => {
-                                    const canvas =
-                                      e.target as HTMLCanvasElement;
-                                    canvas.style.setProperty(
-                                      "cursor",
-                                      "crosshair",
-                                      "important"
-                                    );
-                                  },
+                                value={signatureData}
+                                onChange={(dataUrl) => {
+                                  setSignatureData(dataUrl);
+                                  handleInputChange("signature", dataUrl);
                                 }}
-                                onEnd={() => {
-                                  saveSignature();
-                                  // Ensure cursor stays as crosshair after drawing
-                                  if (signatureRef.current) {
-                                    const canvas =
-                                      signatureRef.current.getCanvas();
-                                    canvas.style.setProperty(
-                                      "cursor",
-                                      "crosshair",
-                                      "important"
-                                    );
-                                  }
-                                }}
-                                onBegin={() => {
-                                  // Ensure cursor is set when drawing begins
-                                  if (signatureRef.current) {
-                                    const canvas =
-                                      signatureRef.current.getCanvas();
-                                    canvas.style.setProperty(
-                                      "cursor",
-                                      "crosshair",
-                                      "important"
-                                    );
-                                    canvas.style.touchAction = "none";
-                                  }
-                                }}
-                                dotSize={2}
-                                minWidth={1}
-                                maxWidth={3}
-                                velocityFilterWeight={0.7}
-                                throttle={16}
                               />
                             ) : (
                               <div className="w-full h-48 flex items-center justify-center text-gray-500">
@@ -2504,7 +2277,13 @@ const Application = () => {
                               type="button"
                               variant="outline"
                               size="sm"
-                              onClick={clearSignature}
+                              onClick={() => {
+                                if (signatureRef.current) {
+                                  signatureRef.current.clear();
+                                }
+                                setSignatureData("");
+                                handleInputChange("signature", "");
+                              }}
                               className="text-red-600 border-red-300 hover:bg-red-50"
                             >
                               Clear Signature
