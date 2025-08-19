@@ -67,6 +67,13 @@ function Application() {
   const { seminars, addSeminar, removeSeminar, updateSeminar } = useSeminars();
   const { uploadedFiles, filePreviewUrls, handleFileUpload, removeFile } =
     useFileUpload();
+
+  // Clear profilePhoto error when a new image is uploaded
+  useEffect(() => {
+    if (uploadedFiles.profilePhoto && errors.profilePhoto) {
+      setErrors((prev) => ({ ...prev, profilePhoto: "" }));
+    }
+  }, [uploadedFiles.profilePhoto]);
   const {
     signatureRef,
     signatureData,
@@ -166,6 +173,17 @@ function Application() {
     setIsSubmitting(true);
     setSubmitMessage("");
     setErrors({});
+    // Debug log for profile photo
+    console.log("Profile photo before submit:", uploadedFiles.profilePhoto);
+    if (!uploadedFiles.profilePhoto) {
+      setErrors((prev) => ({
+        ...prev,
+        profilePhoto: "2x2 picture is required",
+      }));
+      setSubmitMessage("Please upload your 2x2 picture before submitting.");
+      setIsSubmitting(false);
+      return;
+    }
     try {
       // Validate form data using Zod schema
       const parsed = applicationSchema.safeParse({
@@ -265,8 +283,15 @@ function Application() {
   if (isLoadingApplications) {
     return (
       <>
-        <div className="flex-1 pt-16 md:pt-0 transition-all duration-300">
-          <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
+        <div className="flex-1 pt-24 md:pt-0 transition-all duration-300">
+          <div
+            className={`hidden md:flex items-center gap-4 fixed top-0 z-30 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 h-[73px] px-8 ${
+              isSidebarCollapsed
+                ? "md:ml-20 md:w-[calc(100%-5rem)]"
+                : "md:ml-64 md:w-[calc(100%-16rem)]"
+            }`}
+          >
+            <img src="/UBLogo.svg" alt="Logo" className="h-10 w-auto" />
             <h1 className="text-2xl font-bold text-white dark:text-white">
               Loading Application...
             </h1>
@@ -279,8 +304,15 @@ function Application() {
   if (user && !user.verified) {
     return (
       <>
-        <div className="flex-1 pt-16 md:pt-0 transition-all duration-300">
-          <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
+        <div className="flex-1 pt-24 md:pt-0 transition-all duration-300">
+          <div
+            className={`hidden md:flex items-center gap-4 fixed top-0 z-30 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 h-[73px] px-8 ${
+              isSidebarCollapsed
+                ? "md:ml-20 md:w-[calc(100%-5rem)]"
+                : "md:ml-64 md:w-[calc(100%-16rem)]"
+            }`}
+          >
+            <img src="/UBLogo.svg" alt="Logo" className="h-10 w-auto" />
             <h1 className="text-2xl font-bold text-white dark:text-white">
               Email Verification Required
             </h1>
@@ -348,10 +380,17 @@ function Application() {
         <div
           className={`flex-1 flex flex-col transition-all duration-300 ${
             isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
-          }`}
+          } pt-24`}
         >
           {/* Top header bar - only visible on desktop */}
-          <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 px-8 py-6">
+          <div
+            className={`hidden md:flex items-center gap-4 fixed top-0 z-30 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 h-[73px] px-8 ${
+              isSidebarCollapsed
+                ? "md:ml-20 md:w-[calc(100%-5rem)]"
+                : "md:ml-64 md:w-[calc(100%-16rem)]"
+            }`}
+          >
+            <img src="/UBLogo.svg" alt="Logo" className="h-10 w-auto" />
             <h1 className="text-2xl font-bold text-white dark:text-white">
               Application Status
             </h1>
@@ -563,13 +602,19 @@ function Application() {
           }`}
         >
           {/* Top header bar - only visible on desktop */}
-          <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 px-8 py-6">
-            <h1 className="text-2xl font-bold text-white dark:text-white">
+          <div
+            className={`hidden md:flex items-center gap-4 fixed top-0 left-0 z-30 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 h-[81px] ${
+              isSidebarCollapsed
+                ? "md:w-[calc(100%-5rem)] md:ml-20"
+                : "md:w-[calc(100%-16rem)] md:ml-64"
+            }`}
+          >
+            <h1 className="text-2xl font-bold text-white dark:text-white ml-4">
               Application Form
             </h1>
           </div>
           {/* Main Content */}
-          <div className="p-4 md:p-10">
+          <div className="p-4 md:p-10 mt-12">
             <Card className="max-w-4xl mx-auto">
               <CardContent className="p-4 md:p-8">
                 {/* University Header */}
