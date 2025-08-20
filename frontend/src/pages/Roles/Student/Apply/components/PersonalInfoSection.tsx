@@ -23,10 +23,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
     </h3>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ">
       <div>
-        <Label
-          htmlFor="firstName"
-          className="text-sm md:text-base text-gray-700 dark:text-gray-300"
-        >
+        <Label htmlFor="firstName" className="text-gray-700 dark:text-gray-300">
           First Name
         </Label>
         <Input
@@ -92,7 +89,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
             errors.gender ? "border-red-500" : ""
           } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
         >
-          <option value="">Select Gender</option>
+          <option value="">Select</option>
           <option value="Male">Male</option>
           <option value="Female">Female</option>
           <option value="Other">Other</option>
@@ -121,7 +118,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
             errors.gender ? "border-red-500" : ""
           } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
         >
-          <option value="">Select Civil Status</option>
+          <option value="">Select</option>
           <option value="Single">Single</option>
           <option value="Married">Married</option>
           <option value="Widowed">Widowed</option>

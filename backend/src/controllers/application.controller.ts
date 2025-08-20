@@ -91,10 +91,10 @@ export const createApplicationHandler = catchErrors(
     let profilePhoto: string | undefined;
     let idDocument: string | undefined;
     let certificates: string[] = [];
+    let signature: string | undefined;
 
     if (files) {
       if (files.profilePhoto && files.profilePhoto[0]) {
-        // Cloudinary URL
         profilePhoto = files.profilePhoto[0].path;
       }
       if (files.idDocument && files.idDocument[0]) {
@@ -102,6 +102,11 @@ export const createApplicationHandler = catchErrors(
       }
       if (files.certificates) {
         certificates = files.certificates.map((file) => file.path);
+      }
+      if (files.signature && files.signature[0]) {
+        signature = files.signature[0].path;
+        // Patch: set requestBody.signature to Cloudinary URL for validation
+        requestBody.signature = signature;
       }
     }
 
@@ -112,6 +117,7 @@ export const createApplicationHandler = catchErrors(
       profilePhoto,
       idDocument,
       certificates,
+      signature,
     });
 
     // Populate user information

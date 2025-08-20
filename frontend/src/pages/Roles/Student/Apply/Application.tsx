@@ -241,6 +241,7 @@ function Application() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isSubmitting) return;
     // Validate seminars: if any field is filled, all must be filled
     const seminarErrors: string[] = [];
     seminars.forEach((s, idx) => {
@@ -335,7 +336,6 @@ function Application() {
       const formDataToSubmit = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
         if (key === "seminars") {
-          // Always use latest seminars state
           formDataToSubmit.append(key, JSON.stringify(seminarsToSubmit));
         } else if (key === "age") {
           if (value !== undefined && value !== null) {
@@ -349,7 +349,11 @@ function Application() {
           if (value) {
             formDataToSubmit.append(key, value.toString());
           }
-        } else if (value !== undefined && value !== null) {
+        } else if (
+          key !== "signature" &&
+          value !== undefined &&
+          value !== null
+        ) {
           formDataToSubmit.append(key, value.toString());
         }
       });
@@ -359,13 +363,48 @@ function Application() {
         JSON.stringify(hasRelativeWorking ? relatives : [])
       );
 
+      // Profile photo
       if (uploadedFiles.profilePhoto) {
+        formDataToSubmit.append("profilePhoto", uploadedFiles.profilePhoto);
       }
-      // Append certificates to FormData
+      // Certificates
       if (uploadedCertificates.certificates.length > 0) {
         uploadedCertificates.certificates.forEach((file) => {
           formDataToSubmit.append("certificates", file);
         });
+      }
+      // Signature
+      if (signatureMethod === "upload" && uploadedSignature) {
+        formDataToSubmit.append("signature", uploadedSignature);
+      } else if (signatureMethod === "draw" && signatureRef.current) {
+        // Prevent blank signature submission
+        const isEmpty =
+          signatureRef.current.isEmpty && signatureRef.current.isEmpty();
+        if (isEmpty) {
+          setErrors((prev) => ({
+            ...prev,
+            signature: "Signature cannot be blank. Please draw your signature.",
+          }));
+          setSubmitMessage(
+            "Signature cannot be blank. Please draw your signature."
+          );
+          setIsSubmitting(false);
+          return;
+        }
+        // Convert drawn signature to blob and append
+        const dataUrl = signatureRef.current.toDataURL();
+        const arr = dataUrl.split(",");
+        if (arr.length === 2) {
+          const mime = arr[0].match(/:(.*?);/)[1];
+          const bstr = atob(arr[1]);
+          let n = bstr.length;
+          const u8arr = new Uint8Array(n);
+          while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+          }
+          const blob = new Blob([u8arr], { type: mime });
+          formDataToSubmit.append("signature", blob, "signature.png");
+        }
       }
 
       createApplicationMutation.mutate(formDataToSubmit);
@@ -933,7 +972,7 @@ function Application() {
                               💡 Click and drag in the box below to create your
                               signature
                             </p>
-                            <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 overflow-hidden">
+                            <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 overflow-hidden w-full max-w-lg mx-auto">
                               {isSignaturePadReady ? (
                                 <SignaturePad
                                   ref={signatureRef}

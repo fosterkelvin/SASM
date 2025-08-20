@@ -112,7 +112,7 @@ export const createApplicationSchema = z.object({
   }),
 
   // E-Signature
-  signature: z.string().min(1, "Electronic signature is required"),
+  signature: z.string().min(1, "Electronic signature is required").optional(),
 });
 
 // Schema for updating application status (HR use)

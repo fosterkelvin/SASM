@@ -46,8 +46,8 @@ const SignaturePad = forwardRef<SignatureCanvas, SignaturePadProps>(
           ref={signatureRef}
           penColor="black"
           canvasProps={{
-            width: 8000,
-            height: 200,
+            width: 500,
+            height: 180,
             className: "signature-canvas border rounded",
             style: { display: "block", margin: "0 auto" },
           }}

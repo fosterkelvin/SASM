@@ -46,6 +46,7 @@ export const uploadApplicationFiles = upload.fields([
   { name: "profilePhoto", maxCount: 1 },
   { name: "idDocument", maxCount: 1 },
   { name: "certificates", maxCount: 5 },
+  { name: "signature", maxCount: 1 },
 ]);
 
 export default upload;
