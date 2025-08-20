@@ -360,9 +360,7 @@ function Application() {
       );
 
       if (uploadedFiles.profilePhoto) {
-        formDataToSubmit.append(`profilePhoto`, uploadedFiles.profilePhoto);
       }
-
       // Append certificates to FormData
       if (uploadedCertificates.certificates.length > 0) {
         uploadedCertificates.certificates.forEach((file) => {
@@ -375,8 +373,6 @@ function Application() {
       setSubmitMessage(
         "An error occurred while submitting your application. Please try again."
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
   // All hooks and state declarations at the top
@@ -1091,9 +1087,8 @@ function Application() {
                         <>
                           <span className="inline-block mr-2">
                             <svg
-                              className="h-5 w-5 text-white"
+                              className="h-5 w-5 text-white animate-spin"
                               viewBox="0 0 24 24"
-                              style={{ animation: "spin 1s linear infinite" }}
                             >
                               <circle
                                 className="opacity-25"
