@@ -31,6 +31,7 @@ import { CheckCircle, AlertTriangle, Upload, X, PenTool } from "lucide-react";
 import CertificatesSection from "./components/CertificatesSection";
 
 function Application() {
+  // ...existing code...
   // Fetch user applications to check if they already have an active application
   const { user } = useAuth();
   const { data: userApplicationsData, isLoading: isLoadingApplications } =
@@ -69,6 +70,7 @@ function Application() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
+  // ...existing code...
 
   // Modular hooks
   const { seminars, addSeminar, removeSeminar, updateSeminar, setSeminars } =
@@ -78,11 +80,19 @@ function Application() {
 
   // Certificates upload hook (like profile photo)
   const {
+    clearCertificates,
     uploadedCertificates,
     certificatePreviewUrls,
     handleCertificatesUpload,
     removeCertificate,
   } = useCertificatesUpload();
+
+  // Ensure certificates section clears visually after successful submit
+  useEffect(() => {
+    if (submitSuccess) {
+      clearCertificates();
+    }
+  }, [submitSuccess, clearCertificates]);
 
   // Clear profilePhoto error when a new image is uploaded
   useEffect(() => {
@@ -1267,4 +1277,3 @@ export default Application;
 function clearCertificates() {
   throw new Error("Function not implemented.");
 }
-
