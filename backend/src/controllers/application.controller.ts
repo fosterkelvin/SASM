@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import cloudinary from "../config/cloudinary";
 import path from "path";
 import catchErrors from "../utils/catchErrors";
 import ApplicationModel from "../models/application.model";
@@ -351,6 +352,37 @@ export const deleteApplicationHandler = catchErrors(
       BAD_REQUEST,
       "You can only delete pending applications"
     );
+
+    // Delete files from Cloudinary
+    const filesToDelete = [];
+    if (application.profilePhoto) filesToDelete.push(application.profilePhoto);
+    if (application.certificates && application.certificates.length > 0) {
+      filesToDelete.push(...application.certificates);
+    }
+    if (application.signature) filesToDelete.push(application.signature);
+
+    // Extract public_id from Cloudinary URLs and delete
+    for (const fileUrl of filesToDelete) {
+      try {
+        // Extract public_id from Cloudinary URL (supports folders)
+        // Example: https://res.cloudinary.com/<cloud_name>/image/upload/v<version>/<folder>/<public_id>.<ext>
+        const matches = fileUrl.match(
+          /\/upload\/(?:v\d+\/)?(.+?)(\.[a-zA-Z0-9]+)?$/
+        );
+        const publicId = matches ? matches[1] : null;
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId);
+        } else {
+          console.error(
+            "Could not extract Cloudinary public_id from URL:",
+            fileUrl
+          );
+        }
+      } catch (err) {
+        // Log error but continue
+        console.error("Failed to delete file from Cloudinary:", fileUrl, err);
+      }
+    }
 
     await ApplicationModel.findByIdAndDelete(applicationId);
 

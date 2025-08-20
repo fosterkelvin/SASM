@@ -203,6 +203,7 @@ function Application() {
       while (uploadedCertificates.certificates.length > 0) {
         removeCertificate(0);
       }
+      setIsSubmitting(false);
     },
     onError: (error) => {
       // Try to extract field errors from backend response
@@ -234,6 +235,7 @@ function Application() {
       }
       setErrors(fieldErrors);
       setSubmitMessage(errorMessage);
+      setIsSubmitting(false);
     },
   });
 
