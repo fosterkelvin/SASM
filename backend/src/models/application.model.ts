@@ -10,6 +10,8 @@ export interface ApplicationDocument extends mongoose.Document {
   firstName: string;
   lastName: string;
   age: number;
+  gender: "Male" | "Female" | "Other";
+  civilStatus: "Single" | "Married" | "Widowed" | "Separated";
 
   // Address
   homeAddress: string;
@@ -41,9 +43,11 @@ export interface ApplicationDocument extends mongoose.Document {
 
   // Relative Information
   hasRelativeWorking: boolean;
-  relativeName?: string;
-  relativeDepartment?: string;
-  relativeRelationship?: string;
+  relatives?: Array<{
+    name: string;
+    department: string;
+    relationship: string;
+  }>;
 
   // Educational Background
   elementary?: string;
@@ -81,7 +85,6 @@ export interface ApplicationDocument extends mongoose.Document {
 
   // File uploads
   profilePhoto?: string;
-  idDocument?: string;
   certificates?: string[];
   signature?: string;
 
@@ -135,6 +138,16 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
       required: true,
       min: 15,
       max: 30,
+    },
+    gender: {
+      type: String,
+      enum: ["Male", "Female", "Other"],
+      required: true,
+    },
+    civilStatus: {
+      type: String,
+      enum: ["Single", "Married", "Widowed", "Separated"],
+      required: true,
     },
 
     // Address
@@ -246,18 +259,13 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
       required: true,
       default: false,
     },
-    relativeName: {
-      type: String,
-      trim: true,
-    },
-    relativeDepartment: {
-      type: String,
-      trim: true,
-    },
-    relativeRelationship: {
-      type: String,
-      trim: true,
-    },
+    relatives: [
+      {
+        name: { type: String, trim: true },
+        department: { type: String, trim: true },
+        relationship: { type: String, trim: true },
+      },
+    ],
 
     // Educational Background
     elementary: {
@@ -348,10 +356,6 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
 
     // File uploads (store file paths)
     profilePhoto: {
-      type: String,
-      default: null,
-    },
-    idDocument: {
       type: String,
       default: null,
     },

@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import cloudinary from "../config/cloudinary";
 import path from "path";
 import catchErrors from "../utils/catchErrors";
 import ApplicationModel from "../models/application.model";
@@ -28,13 +29,20 @@ export const createApplicationHandler = catchErrors(
   async (req: Request, res: Response) => {
     const userID = req.userID!;
 
-    // Parse form data - seminars might be JSON string
+    // Parse form data - seminars and relatives might be JSON string
     const requestBody = { ...req.body };
     if (requestBody.seminars && typeof requestBody.seminars === "string") {
       try {
         requestBody.seminars = JSON.parse(requestBody.seminars);
       } catch (error) {
         requestBody.seminars = [];
+      }
+    }
+    if (requestBody.relatives && typeof requestBody.relatives === "string") {
+      try {
+        requestBody.relatives = JSON.parse(requestBody.relatives);
+      } catch (error) {
+        requestBody.relatives = [];
       }
     }
 
@@ -78,36 +86,27 @@ export const createApplicationHandler = catchErrors(
       "You already have an active application. Please wait for it to be processed or contact HR."
     );
 
-    // Handle file uploads
+    // Handle file uploads (Cloudinary URLs)
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
     let profilePhoto: string | undefined;
     let idDocument: string | undefined;
     let certificates: string[] = [];
+    let signature: string | undefined;
 
     if (files) {
       if (files.profilePhoto && files.profilePhoto[0]) {
-        // Store relative path instead of absolute path
-        const relativePath = path.relative(
-          path.join(__dirname, "../../"),
-          files.profilePhoto[0].path
-        );
-        profilePhoto = relativePath.replace(/\\/g, "/"); // Normalize to forward slashes
+        profilePhoto = files.profilePhoto[0].path;
       }
       if (files.idDocument && files.idDocument[0]) {
-        const relativePath = path.relative(
-          path.join(__dirname, "../../"),
-          files.idDocument[0].path
-        );
-        idDocument = relativePath.replace(/\\/g, "/");
+        idDocument = files.idDocument[0].path;
       }
       if (files.certificates) {
-        certificates = files.certificates.map((file) => {
-          const relativePath = path.relative(
-            path.join(__dirname, "../../"),
-            file.path
-          );
-          return relativePath.replace(/\\/g, "/");
-        });
+        certificates = files.certificates.map((file) => file.path);
+      }
+      if (files.signature && files.signature[0]) {
+        signature = files.signature[0].path;
+        // Patch: set requestBody.signature to Cloudinary URL for validation
+        requestBody.signature = signature;
       }
     }
 
@@ -118,6 +117,7 @@ export const createApplicationHandler = catchErrors(
       profilePhoto,
       idDocument,
       certificates,
+      signature,
     });
 
     // Populate user information
@@ -358,6 +358,37 @@ export const deleteApplicationHandler = catchErrors(
       BAD_REQUEST,
       "You can only delete pending applications"
     );
+
+    // Delete files from Cloudinary
+    const filesToDelete = [];
+    if (application.profilePhoto) filesToDelete.push(application.profilePhoto);
+    if (application.certificates && application.certificates.length > 0) {
+      filesToDelete.push(...application.certificates);
+    }
+    if (application.signature) filesToDelete.push(application.signature);
+
+    // Extract public_id from Cloudinary URLs and delete
+    for (const fileUrl of filesToDelete) {
+      try {
+        // Extract public_id from Cloudinary URL (supports folders)
+        // Example: https://res.cloudinary.com/<cloud_name>/image/upload/v<version>/<folder>/<public_id>.<ext>
+        const matches = fileUrl.match(
+          /\/upload\/(?:v\d+\/)?(.+?)(\.[a-zA-Z0-9]+)?$/
+        );
+        const publicId = matches ? matches[1] : null;
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId);
+        } else {
+          console.error(
+            "Could not extract Cloudinary public_id from URL:",
+            fileUrl
+          );
+        }
+      } catch (err) {
+        // Log error but continue
+        console.error("Failed to delete file from Cloudinary:", fileUrl, err);
+      }
+    }
 
     await ApplicationModel.findByIdAndDelete(applicationId);
 

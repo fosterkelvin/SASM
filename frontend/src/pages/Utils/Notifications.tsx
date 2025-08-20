@@ -13,9 +13,9 @@ import {
   Check,
   X,
 } from "lucide-react";
-import StudentSidebar from "@/components/StudentSidebar";
-import HRSidebar from "@/components/HRSidebar";
-import OfficeSidebar from "@/components/OfficeSidebar";
+import StudentSidebar from "@/components/sidebar/StudentSidebar";
+import HRSidebar from "@/components/sidebar/HRSidebar";
+import OfficeSidebar from "@/components/sidebar/OfficeSidebar";
 import { useNotificationMutations } from "@/hooks/useNotificationMutations";
 import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
 

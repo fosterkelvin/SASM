@@ -6,7 +6,7 @@ import HRDashboard from "./pages/Roles/HR/HRDashboard";
 import OfficeDashboard from "./pages/Roles/Office/OfficeDashboard";
 import Home from "./pages/Auth/home";
 import Profile from "./pages/Auth/Profile";
-import Application from "./pages/Roles/Student/Application";
+import Application from "./pages/Roles/Student/Apply/Application";
 import ApplicationManagement from "./pages/Roles/HR/ApplicationManagement";
 import Notifications from "./pages/Utils/Notifications";
 import PublicRoute from "./routes/PublicRoute";

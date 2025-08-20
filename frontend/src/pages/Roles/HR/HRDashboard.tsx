@@ -1,5 +1,5 @@
 import { useState } from "react";
-import HRSidebar from "@/components/HRSidebar";
+import HRSidebar from "@/components/sidebar/HRSidebar";
 import {
   Users,
   FileText,

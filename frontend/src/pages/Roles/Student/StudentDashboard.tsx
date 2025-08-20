@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle, Mail } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { resendVerificationEmail } from "@/lib/api";
-import StudentSidebar from "@/components/StudentSidebar";
+import StudentSidebar from "@/components/sidebar/StudentSidebar";
 
 // ResendVerificationButton component for Student Dashboard
 import {
