@@ -4,30 +4,56 @@ export interface UploadedCertificates {
   certificates: File[];
 }
 
+export interface CertificatePreviewItem {
+  url: string;
+  isPdf: boolean;
+}
+
 export interface CertificatePreviewUrls {
-  certificates: string[];
+  certificates: CertificatePreviewItem[];
 }
 
 export default function useCertificatesUpload() {
+  // Clear all certificates
+  const clearCertificates = () => {
+    setUploadedCertificates({ certificates: [] });
+    setCertificatePreviewUrls({ certificates: [] });
+  };
   const [uploadedCertificates, setUploadedCertificates] =
     useState<UploadedCertificates>({ certificates: [] });
   const [certificatePreviewUrls, setCertificatePreviewUrls] =
     useState<CertificatePreviewUrls>({ certificates: [] });
 
+  const MAX_CERTIFICATE_SIZE_MB = 5; // 5MB limit
   const handleCertificatesUpload = (files: FileList) => {
     const newFiles = Array.from(files);
-    setUploadedCertificates((prev) => ({
-      certificates: [...prev.certificates, ...newFiles],
-    }));
-    const newUrls = newFiles.map((file) => {
-      if (file.type === "application/pdf") {
-        return file.name;
+    const validFiles: File[] = [];
+    const validPreviewItems: CertificatePreviewItem[] = [];
+    newFiles.forEach((file) => {
+      if (file.size > MAX_CERTIFICATE_SIZE_MB * 1024 * 1024) {
+        alert(
+          `File ${file.name} exceeds the ${MAX_CERTIFICATE_SIZE_MB}MB limit and was not added.`
+        );
+        return;
       }
-      return URL.createObjectURL(file);
+      validFiles.push(file);
+      if (file.type === "application/pdf") {
+        validPreviewItems.push({ url: file.name, isPdf: true });
+      } else {
+        validPreviewItems.push({
+          url: URL.createObjectURL(file),
+          isPdf: false,
+        });
+      }
     });
-    setCertificatePreviewUrls((prev) => ({
-      certificates: [...prev.certificates, ...newUrls],
-    }));
+    if (validFiles.length > 0) {
+      setUploadedCertificates((prev) => ({
+        certificates: [...prev.certificates, ...validFiles],
+      }));
+      setCertificatePreviewUrls((prev) => ({
+        certificates: [...prev.certificates, ...validPreviewItems],
+      }));
+    }
   };
 
   const removeCertificate = (index: number) => {
@@ -44,5 +70,6 @@ export default function useCertificatesUpload() {
     certificatePreviewUrls,
     handleCertificatesUpload,
     removeCertificate,
+    clearCertificates,
   };
 }

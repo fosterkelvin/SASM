@@ -1,8 +1,10 @@
 import React from "react";
 
+import { CertificatePreviewItem } from "../hooks/useCertificatesUpload";
+
 interface CertificatesSectionProps {
   certificateFiles: File[];
-  certificatePreviewUrls: string[];
+  certificatePreviewUrls: CertificatePreviewItem[];
   handleCertificateUpload: (files: FileList) => void;
   removeCertificate: (index: number) => void;
 }
@@ -51,7 +53,7 @@ const CertificatesSection: React.FC<CertificatesSectionProps> = ({
               key={idx}
               className="relative w-32 h-32 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-lg overflow-hidden bg-white dark:bg-gray-900 flex flex-col items-center justify-center"
             >
-              {certificatePreviewUrls[idx]?.endsWith(".pdf") ? (
+              {certificatePreviewUrls[idx]?.isPdf ? (
                 <div className="flex flex-col items-center justify-center h-full">
                   <span className="text-xs text-blue-700 dark:text-blue-300 font-bold">
                     PDF
@@ -62,7 +64,7 @@ const CertificatesSection: React.FC<CertificatesSectionProps> = ({
                 </div>
               ) : (
                 <img
-                  src={certificatePreviewUrls[idx]}
+                  src={certificatePreviewUrls[idx]?.url}
                   alt={file.name}
                   className="object-cover w-full h-full"
                 />
