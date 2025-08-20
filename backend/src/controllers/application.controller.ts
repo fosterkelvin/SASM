@@ -85,7 +85,7 @@ export const createApplicationHandler = catchErrors(
       "You already have an active application. Please wait for it to be processed or contact HR."
     );
 
-    // Handle file uploads
+    // Handle file uploads (Cloudinary URLs)
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
     let profilePhoto: string | undefined;
     let idDocument: string | undefined;
@@ -93,28 +93,14 @@ export const createApplicationHandler = catchErrors(
 
     if (files) {
       if (files.profilePhoto && files.profilePhoto[0]) {
-        // Store relative path instead of absolute path
-        const relativePath = path.relative(
-          path.join(__dirname, "../../"),
-          files.profilePhoto[0].path
-        );
-        profilePhoto = relativePath.replace(/\\/g, "/"); // Normalize to forward slashes
+        // Cloudinary URL
+        profilePhoto = files.profilePhoto[0].path;
       }
       if (files.idDocument && files.idDocument[0]) {
-        const relativePath = path.relative(
-          path.join(__dirname, "../../"),
-          files.idDocument[0].path
-        );
-        idDocument = relativePath.replace(/\\/g, "/");
+        idDocument = files.idDocument[0].path;
       }
       if (files.certificates) {
-        certificates = files.certificates.map((file) => {
-          const relativePath = path.relative(
-            path.join(__dirname, "../../"),
-            file.path
-          );
-          return relativePath.replace(/\\/g, "/");
-        });
+        certificates = files.certificates.map((file) => file.path);
       }
     }
 

@@ -1,49 +1,17 @@
 import multer from "multer";
-import path from "path";
-import fs from "fs";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
+import cloudinary from "../config/cloudinary";
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, "../../uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-// Configure storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Create subdirectories for different file types
-    let subDir = "";
-    switch (file.fieldname) {
-      case "profilePhoto":
-        subDir = "profiles";
-        break;
-      case "idDocument":
-        subDir = "ids";
-        break;
-      case "certificates":
-        subDir = "certificates";
-        break;
-      default:
-        subDir = "others";
-    }
-
-    const fullPath = path.join(uploadsDir, subDir);
-    if (!fs.existsSync(fullPath)) {
-      fs.mkdirSync(fullPath, { recursive: true });
-    }
-
-    cb(null, fullPath);
-  },
-  filename: (req, file, cb) => {
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    const name = path.basename(file.originalname, ext);
-    cb(null, `${file.fieldname}-${uniqueSuffix}-${name}${ext}`);
-  },
+// Configure Cloudinary storage
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: (req, file) => ({
+    folder: "uploads",
+    allowed_formats: ["jpg", "png", "jpeg", "pdf"],
+    public_id: `${file.fieldname}-${Date.now()}-${Math.round(Math.random() * 1e9)}`,
+  }),
 });
 
-// File filter to accept only images
 // File filter to accept images and PDFs
 const fileFilter = (
   req: any,
