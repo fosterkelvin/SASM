@@ -266,7 +266,7 @@ const StudentSidebar = ({
           isOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 ${
           isDesktopCollapsed ? "md:w-20" : "w-64"
-        } top-0 h-screen border-r border-gray-200 dark:border-gray-700 focus:outline-none overflow-y-auto`}
+        } top-0 h-screen border-r border-gray-200 dark:border-gray-700 focus:outline-none overflow-y-auto pt-16 md:pt-0`}
         aria-label="Student Sidebar"
       >
         {/* Header - Enhanced design */}
@@ -325,9 +325,7 @@ const StudentSidebar = ({
 
         {/* Menu Items - Enhanced */}
         <nav
-          className={`transition-all duration-300 ${
-            isDesktopCollapsed ? "md:hidden" : "p-4"
-          } flex-1 overflow-y-auto`}
+          className={`transition-all duration-300 p-4 flex-1 overflow-y-auto`}
           aria-label="Sidebar Navigation"
         >
           <ul className="space-y-2">
