@@ -4,7 +4,6 @@ import { getUserApplications, createApplication } from "@/lib/api";
 import ApplicationSuccessScreen from "./components/ApplicationSuccessScreen";
 import ApplicationWithdrawnScreen from "./components/ApplicationWithdrawnScreen";
 import ResendVerificationButton from "./components/ResendVerificationButton";
-import { z } from "zod";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,8 +30,6 @@ import { CheckCircle, AlertTriangle, Upload, X, PenTool } from "lucide-react";
 import CertificatesSection from "./components/CertificatesSection";
 
 function Application() {
-  // ...existing code...
-  // Fetch user applications to check if they already have an active application
   const { user } = useAuth();
   const { data: userApplicationsData, isLoading: isLoadingApplications } =
     useQuery({
@@ -40,20 +37,16 @@ function Application() {
       queryFn: getUserApplications,
       enabled: !!user,
     });
-  // Get the latest active application (excluding failed/rejected applications)
   const activeApplication = userApplicationsData?.applications?.find(
     (app: any) =>
       !["failed_interview", "rejected", "withdrawn"].includes(app.status)
   );
-
-  // Form state
 
   const [hasRelativeWorking, setHasRelativeWorking] = useState(false);
   const [relatives, setRelatives] = useState([
     { name: "", department: "", relationship: "" },
   ]);
   const [formData, setFormData] = useState<Partial<ApplicationFormData>>({
-    // Pre-fill with user data
     firstName: user?.firstname || "",
     lastName: user?.lastname || "",
     email: user?.email || "",
@@ -70,15 +63,12 @@ function Application() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
-  // ...existing code...
 
-  // Modular hooks
   const { seminars, addSeminar, removeSeminar, updateSeminar, setSeminars } =
     useSeminars();
   const { uploadedFiles, filePreviewUrls, handleFileUpload, removeFile } =
     useFileUpload();
 
-  // Certificates upload hook (like profile photo)
   const {
     clearCertificates,
     uploadedCertificates,
@@ -87,14 +77,12 @@ function Application() {
     removeCertificate,
   } = useCertificatesUpload();
 
-  // Ensure certificates section clears visually after successful submit
   useEffect(() => {
     if (submitSuccess) {
       clearCertificates();
     }
   }, [submitSuccess, clearCertificates]);
 
-  // Clear profilePhoto error when a new image is uploaded
   useEffect(() => {
     if (uploadedFiles.profilePhoto && errors.profilePhoto) {
       setErrors((prev) => ({ ...prev, profilePhoto: "" }));
@@ -115,15 +103,12 @@ function Application() {
     handleSignatureMethodChange,
   } = useSignaturePad();
 
-  // Ensure signature pad is ready on mount
   useEffect(() => {
     setIsSignaturePadReady(true);
   }, [setIsSignaturePadReady]);
 
-  // Withdraw confirmation modal state
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 
-  // Withdraw modal handlers
   const handleWithdrawCancel = () => setShowWithdrawModal(false);
   const handleWithdrawConfirm = async () => {
     if (!activeApplication) return;
@@ -133,14 +118,11 @@ function Application() {
       setShowWithdrawModal(false);
       setWithdrawSuccess(true);
       setSubmitMessage("Your application has been withdrawn.");
-      // Refetch applications to update UI
       queryClient.invalidateQueries({ queryKey: ["userApplications"] });
     } catch (error) {
       setSubmitMessage("Failed to withdraw application. Please try again.");
     }
   };
-
-  // Handlers
 
   const handleInputChange = (field: keyof ApplicationFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -150,13 +132,11 @@ function Application() {
         setRelatives([{ name: "", department: "", relationship: "" }]);
       }
     }
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
-  // Relative handlers
   const addRelative = () => {
     setRelatives((prev) => [
       ...prev,
@@ -186,7 +166,6 @@ function Application() {
           "Your application has been submitted successfully! You will receive a confirmation email and will be notified of any status updates via email and in-app notifications."
       );
       queryClient.invalidateQueries({ queryKey: ["userApplications"] });
-      // Reset form fields after successful submission
       setFormData({
         firstName: user?.firstname || "",
         lastName: user?.lastname || "",
@@ -196,7 +175,6 @@ function Application() {
         agreedToTerms: false,
         signature: "",
       });
-      // Reset seminars state
       setSeminars([
         { title: "", sponsoringAgency: "", inclusiveDate: "", place: "" },
       ]);
@@ -205,16 +183,13 @@ function Application() {
       setErrors({});
       setSignatureData("");
       clearSignature();
-      // Clear uploaded files and certificates
       if (uploadedFiles.profilePhoto) {
         removeFile();
       }
-      // Clear all certificates safely
       clearCertificates();
       setIsSubmitting(false);
     },
     onError: (error) => {
-      // Try to extract field errors from backend response
       let errorMessage =
         "An error occurred while submitting your application. Please try again.";
       let fieldErrors: Partial<Record<keyof ApplicationFormData, string>> = {};
@@ -225,7 +200,6 @@ function Application() {
         (error as any).response?.data
       ) {
         const responseData = (error as any).response.data;
-        // Common backend error formats: { errors: { field: message } } or { fields: { field: message } }
         if (responseData.errors && typeof responseData.errors === "object") {
           fieldErrors = responseData.errors;
         } else if (
@@ -234,7 +208,6 @@ function Application() {
         ) {
           fieldErrors = responseData.fields;
         }
-        // If there are field errors, show a more helpful message
         if (Object.keys(fieldErrors).length > 0) {
           errorMessage = "Please fill in all required fields.";
         } else if (responseData.message) {
@@ -250,7 +223,6 @@ function Application() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isSubmitting) return;
-    // Validate seminars: if any field is filled, all must be filled
     const seminarErrors: string[] = [];
     seminars.forEach((s, idx) => {
       const filled = [
@@ -281,7 +253,6 @@ function Application() {
     setIsSubmitting(true);
     setSubmitMessage("");
     setErrors({});
-    // Debug log for profile photo
     console.log("Profile photo before submit:", uploadedFiles.profilePhoto);
     if (!uploadedFiles.profilePhoto) {
       setErrors((prev) => ({
@@ -293,7 +264,6 @@ function Application() {
       return;
     }
 
-    // Custom validation for relatives
     if (hasRelativeWorking) {
       if (
         relatives.length === 0 ||
@@ -316,7 +286,6 @@ function Application() {
     }
 
     try {
-      // Always use latest seminars state for validation and submission
       const seminarsToSubmit = seminars.filter(
         (s) => s.title || s.sponsoringAgency || s.inclusiveDate || s.place
       );
@@ -328,7 +297,6 @@ function Application() {
         relatives: hasRelativeWorking ? relatives : [],
       });
       if (!parsed.success) {
-        // Collect errors
         const newErrors: Partial<Record<keyof ApplicationFormData, string>> =
           {};
         parsed.error.errors.forEach((err: any) => {
@@ -365,27 +333,22 @@ function Application() {
           formDataToSubmit.append(key, value.toString());
         }
       });
-      // Add relatives array to formDataToSubmit
       formDataToSubmit.append(
         "relatives",
         JSON.stringify(hasRelativeWorking ? relatives : [])
       );
 
-      // Profile photo
       if (uploadedFiles.profilePhoto) {
         formDataToSubmit.append("profilePhoto", uploadedFiles.profilePhoto);
       }
-      // Certificates
       if (uploadedCertificates.certificates.length > 0) {
         uploadedCertificates.certificates.forEach((file) => {
           formDataToSubmit.append("certificates", file);
         });
       }
-      // Signature
       if (signatureMethod === "upload" && uploadedSignature) {
         formDataToSubmit.append("signature", uploadedSignature);
       } else if (signatureMethod === "draw" && signatureRef.current) {
-        // Prevent blank signature submission
         const isEmpty =
           signatureRef.current.isEmpty && signatureRef.current.isEmpty();
         if (isEmpty) {
@@ -399,7 +362,6 @@ function Application() {
           setIsSubmitting(false);
           return;
         }
-        // Convert drawn signature to blob and append
         const dataUrl = signatureRef.current.toDataURL();
         const arr = dataUrl.split(",");
         if (arr.length === 2) {
@@ -422,11 +384,7 @@ function Application() {
       );
     }
   };
-  // All hooks and state declarations at the top
-  // Removed duplicate and unused declarations
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-  // Modularized sidebar rendering
   const renderSidebar = () => (
     <StudentSidebar
       currentPage="Application"
@@ -465,8 +423,6 @@ function Application() {
       </>
     );
   }
-
-  // Show loading state while checking for existing applications
   if (isLoadingApplications) {
     return (
       <>
@@ -555,8 +511,6 @@ function Application() {
       </>
     );
   }
-
-  // If user already has an active application, show the status card instead of the form
   if (activeApplication) {
     return (
       <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">
@@ -834,8 +788,6 @@ function Application() {
                     onChange={(value) => handleInputChange("position", value)}
                     error={errors.position}
                   />
-
-                  {/* Modularized sections */}
                   <PersonalInfoSection
                     formData={formData}
                     errors={errors}
@@ -877,7 +829,6 @@ function Application() {
                     addSeminar={addSeminar}
                     removeSeminar={removeSeminar}
                   />
-                  {/* Certificates Section (Optional) */}
                   <CertificatesSection
                     certificateFiles={uploadedCertificates.certificates}
                     certificatePreviewUrls={certificatePreviewUrls.certificates}
@@ -895,7 +846,6 @@ function Application() {
                     handleInputChange={handleInputChange}
                     error={errors.agreedToTerms}
                   />
-                  {/* Electronic Signature */}
                   <div className="space-y-6 p-4 rounded-lg border">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
                       <PenTool className="h-5 w-5 text-green-600" />
@@ -915,8 +865,6 @@ function Application() {
                             conditions stated above.
                           </p>
                         </div>
-
-                        {/* Signature Method Selection */}
                         <div className="space-y-3">
                           <Label className="text-gray-700 dark:text-gray-300 font-medium">
                             Choose signature method:
@@ -972,8 +920,6 @@ function Application() {
                             </div>
                           </div>
                         </div>
-
-                        {/* Draw Signature Section */}
                         {signatureMethod === "draw" && (
                           <div className="space-y-3">
                             <p className="text-xs text-blue-600 dark:text-blue-400 italic">
@@ -1025,8 +971,6 @@ function Application() {
                             </div>
                           </div>
                         )}
-
-                        {/* Upload Signature Section */}
                         {signatureMethod === "upload" && (
                           <div className="space-y-3">
                             <p className="text-xs text-blue-600 dark:text-blue-400 italic">
@@ -1120,8 +1064,6 @@ function Application() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Submit Button */}
                   <div className="flex justify-center md:justify-end">
                     <Button
                       type="submit"
@@ -1160,8 +1102,6 @@ function Application() {
                       )}
                     </Button>
                   </div>
-
-                  {/* Error message */}
                   {submitMessage && !submitSuccess && (
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
                       <div className="flex items-center gap-2">
@@ -1170,7 +1110,6 @@ function Application() {
                           {submitMessage}
                         </span>
                       </div>
-                      {/* Show all required field errors */}
                       {Object.keys(errors).length > 0 && (
                         <ul className="mt-2 ml-7 list-disc text-red-600 dark:text-red-400 text-sm">
                           {Object.entries(errors).map(([field, error]) =>
@@ -1189,7 +1128,6 @@ function Application() {
               </CardContent>
             </Card>
           </div>
-          {/* Withdraw Application Confirmation Modal */}
           {showWithdrawModal && (
             <div
               className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
@@ -1274,6 +1212,3 @@ function Application() {
 }
 
 export default Application;
-function clearCertificates() {
-  throw new Error("Function not implemented.");
-}
