@@ -1,4 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+// Helper for dynamic tooltip positioning
+import type { RefObject } from "react";
+const useTooltipPosition = <T extends HTMLElement>(): [
+  RefObject<T>,
+  number
+] => {
+  const iconRef = useRef<T>(null) as RefObject<T>;
+  const [top, setTop] = useState(0);
+  const updateTop = () => {
+    if (iconRef.current) {
+      const rect = iconRef.current.getBoundingClientRect();
+      setTop(rect.top + window.scrollY + rect.height / 2);
+    }
+  };
+  useEffect(() => {
+    updateTop();
+    window.addEventListener("resize", updateTop);
+    return () => window.removeEventListener("resize", updateTop);
+  }, []);
+  return [iconRef, top];
+};
 import {
   User,
   LogOut,
@@ -247,26 +268,24 @@ const StudentSidebar = ({
         </div>
       </div>
 
-      {/* Overlay for mobile */}
+      {/* Overlay for mobile and desktop */}
       <div
-        className={`md:hidden fixed inset-0 bg-black transition-opacity duration-300 z-40 ${
+        className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 z-40 ${
           isOpen ? "opacity-50 visible" : "opacity-0 invisible"
-        }`}
+        } md:hidden`}
         onClick={() => setIsOpen(false)}
         aria-hidden={!isOpen}
       />
 
-      {/* Sidebar */}
+      {/* Sidebar - always overlaps page */}
       <div
         id="student-sidebar"
         ref={sidebarRef}
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        className={`fixed left-0 bg-white dark:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out z-40 ${
+        className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out z-50 border-r border-gray-200 dark:border-gray-700 focus:outline-none overflow-visible ${
           isOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 ${
-          isDesktopCollapsed ? "md:w-20 w-64" : "w-64"
-        } top-0 h-screen border-r border-gray-200 dark:border-gray-700 focus:outline-none overflow-y-hidden`}
+        } md:translate-x-0 ${isDesktopCollapsed ? "md:w-20 w-64" : "w-64"}`}
         aria-label="Student Sidebar"
       >
         {/* Header - Enhanced design */}
@@ -493,116 +512,188 @@ const StudentSidebar = ({
           >
             <div className="flex-1 flex flex-col items-center space-y-4 w-full">
               <div className="group relative">
-                <button
-                  onClick={() => setIsDesktopCollapsed(false)}
-                  className="p-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 shadow-sm hover:shadow-md border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                  aria-label="Expand sidebar"
-                  title="Expand Menu"
-                >
-                  <Menu
-                    size={18}
-                    className="transform group-hover:scale-110 transition-transform duration-200"
-                  />
-                </button>
-                {/* Tooltip */}
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Expand Menu
-                </div>
+                {(() => {
+                  const [expandRef, expandTop] =
+                    useTooltipPosition<HTMLButtonElement>();
+                  return (
+                    <>
+                      <button
+                        ref={expandRef}
+                        onClick={() => setIsDesktopCollapsed(false)}
+                        className="p-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 shadow-sm hover:shadow-md border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                        aria-label="Expand sidebar"
+                        title="Expand Menu"
+                      >
+                        <Menu
+                          size={18}
+                          className="transform group-hover:scale-110 transition-transform duration-200"
+                        />
+                      </button>
+                      <div
+                        className="fixed"
+                        style={{
+                          left: "80px",
+                          top: expandTop,
+                          zIndex: 999,
+                          transform: "translateY(-50%)",
+                        }}
+                      >
+                        <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                          Expand Menu
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Mini menu icons */}
               <div className="space-y-2">
                 <div className="group relative">
-                  <button
-                    onClick={handleCollapsedDashboardClick}
-                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                    aria-label="Dashboard"
-                    title="Dashboard"
-                  >
-                    <Home size={16} />
-                  </button>
-                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                    Dashboard
-                  </div>
+                  {(() => {
+                    const [dashboardRef, dashboardTop] =
+                      useTooltipPosition<HTMLButtonElement>();
+                    return (
+                      <>
+                        <button
+                          ref={dashboardRef}
+                          onClick={handleCollapsedDashboardClick}
+                          className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                          aria-label="Dashboard"
+                          title="Dashboard"
+                        >
+                          <Home size={16} />
+                        </button>
+                        <div
+                          className="fixed"
+                          style={{
+                            left: "80px",
+                            top: dashboardTop,
+                            zIndex: 999,
+                            transform: "translateY(-50%)",
+                          }}
+                        >
+                          <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                            Dashboard
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div className="group relative">
-                  <button
-                    onClick={handleCollapsedNotificationsClick}
-                    className="relative p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                    aria-label="Notifications"
-                    title="Notifications"
-                  >
-                    <Bell size={16} />
-                    {unreadCount > 0 && (
-                      <span
-                        className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium"
-                        aria-label={`You have ${unreadCount} unread notifications`}
-                      >
-                        {unreadCount > 9 ? "9+" : unreadCount}
-                      </span>
-                    )}
-                  </button>
-                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                    Notifications
-                    {unreadCount > 0 && (
-                      <span className="ml-1 bg-red-500 text-white rounded-full px-1">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </div>
+                  {(() => {
+                    const [notifRef, notifTop] =
+                      useTooltipPosition<HTMLButtonElement>();
+                    return (
+                      <>
+                        <button
+                          ref={notifRef}
+                          onClick={handleCollapsedNotificationsClick}
+                          className="relative p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                          aria-label="Notifications"
+                          title="Notifications"
+                        >
+                          <Bell size={16} />
+                          {unreadCount > 0 && (
+                            <span
+                              className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium"
+                              aria-label={`You have ${unreadCount} unread notifications`}
+                            >
+                              {unreadCount > 9 ? "9+" : unreadCount}
+                            </span>
+                          )}
+                        </button>
+                        <div
+                          className="fixed"
+                          style={{
+                            left: "80px",
+                            top: notifTop,
+                            zIndex: 999,
+                            transform: "translateY(-50%)",
+                          }}
+                        >
+                          <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                            Notifications
+                            {unreadCount > 0 && (
+                              <span className="ml-1 bg-red-500 text-white rounded-full px-1">
+                                {unreadCount}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div className="group relative">
-                  <button
-                    onClick={() => setIsFormsExpanded(!isFormsExpanded)}
-                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                    aria-label="Forms"
-                    aria-expanded={isFormsExpanded}
-                    title="Forms"
-                  >
-                    <FileText size={16} />
-                  </button>
-                  {/* Collapsed Forms Submenu - Improved */}
-                  <div
-                    className={`absolute left-full ml-2 top-0 min-w-[160px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-50 ${
-                      isFormsExpanded ? "opacity-100" : ""
-                    }`}
-                    aria-hidden={!isFormsExpanded}
-                  >
-                    <div className="py-2">
-                      <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 rounded-t-xl">
-                        Forms
-                      </div>
-                      <button
-                        onClick={handleCollapsedApplyClick}
-                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
-                        aria-label="Apply"
-                        title="Apply"
-                      >
-                        <FileText size={16} className="text-red-500" />
-                        <span>Apply</span>
-                      </button>
-                      <button
-                        onClick={handleCollapsedReapplyClick}
-                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors duration-200"
-                        aria-label="Re-apply"
-                        title="Re-apply"
-                      >
-                        <FileText size={16} className="text-indigo-500" />
-                        <span>Re-apply</span>
-                      </button>
-                      <button
-                        onClick={handleCollapsedLeaveClick}
-                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-yellow-50 dark:hover:bg-gray-700 hover:text-yellow-600 dark:hover:text-yellow-400 rounded transition-colors duration-200"
-                        aria-label="Leave"
-                        title="Leave"
-                      >
-                        <FileText size={16} className="text-yellow-500" />
-                        <span>Leave</span>
-                      </button>
-                    </div>
-                  </div>
+                  {(() => {
+                    const [formsRef, formsTop] =
+                      useTooltipPosition<HTMLButtonElement>();
+                    return (
+                      <>
+                        <button
+                          ref={formsRef}
+                          onClick={() => setIsFormsExpanded(!isFormsExpanded)}
+                          className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                          aria-label="Forms"
+                          aria-expanded={isFormsExpanded}
+                          title="Forms"
+                        >
+                          <FileText size={16} />
+                        </button>
+                        {/* Collapsed Forms Submenu - Improved */}
+                        <div
+                          className={`fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl transition-all duration-200 whitespace-nowrap z-[999] min-w-[180px] ${
+                            isFormsExpanded
+                              ? "opacity-100 pointer-events-auto"
+                              : "opacity-0 pointer-events-none"
+                          }`}
+                          style={{
+                            left: "80px",
+                            top: formsTop,
+                            transform: "translateY(-50%)",
+                          }}
+                          aria-hidden={!isFormsExpanded}
+                        >
+                          <div className="py-2">
+                            <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 rounded-t-xl">
+                              Forms
+                            </div>
+                            <button
+                              onClick={handleCollapsedApplyClick}
+                              className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
+                              aria-label="Apply"
+                              title="Apply"
+                            >
+                              <FileText size={16} className="text-red-500" />
+                              <span>Apply</span>
+                            </button>
+                            <button
+                              onClick={handleCollapsedReapplyClick}
+                              className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors duration-200"
+                              aria-label="Re-apply"
+                              title="Re-apply"
+                            >
+                              <FileText size={16} className="text-indigo-500" />
+                              <span>Re-apply</span>
+                            </button>
+                            <button
+                              onClick={handleCollapsedLeaveClick}
+                              className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-yellow-50 dark:hover:bg-gray-700 hover:text-yellow-600 dark:hover:text-yellow-400 rounded transition-colors duration-200"
+                              aria-label="Leave"
+                              title="Leave"
+                            >
+                              <FileText size={16} className="text-yellow-500" />
+                              <span>Leave</span>
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -612,49 +703,108 @@ const StudentSidebar = ({
               style={{ bottom: "8px", left: 0, top: "auto" }}
             >
               <div className="group relative">
-                <button
-                  onClick={handleCollapsedProfileClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                  aria-label="Profile"
-                  title="Profile"
-                >
-                  <User size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Profile
-                </div>
+                {(() => {
+                  const [profileRef, profileTop] =
+                    useTooltipPosition<HTMLButtonElement>();
+                  return (
+                    <>
+                      <button
+                        ref={profileRef}
+                        onClick={handleCollapsedProfileClick}
+                        className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                        aria-label="Profile"
+                        title="Profile"
+                      >
+                        <User size={16} />
+                      </button>
+                      <div
+                        className="fixed"
+                        style={{
+                          left: "80px",
+                          top: profileTop,
+                          zIndex: 999,
+                          transform: "translateY(-50%)",
+                        }}
+                      >
+                        <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                          Profile
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               <div className="group relative w-full flex justify-center">
-                <button
-                  onClick={() => setDarkMode(!darkMode)}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
-                  aria-label={darkMode ? "Light Mode" : "Dark Mode"}
-                  title={
-                    darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"
-                  }
-                >
-                  {darkMode ? (
-                    <Sun size={16} className="text-yellow-500" />
-                  ) : (
-                    <Moon size={16} className="text-blue-500" />
-                  )}
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  {darkMode ? "Light Mode" : "Dark Mode"}
-                </div>
+                {(() => {
+                  const [themeRef, themeTop] =
+                    useTooltipPosition<HTMLButtonElement>();
+                  return (
+                    <>
+                      <button
+                        ref={themeRef}
+                        onClick={() => setDarkMode(!darkMode)}
+                        className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
+                        aria-label={darkMode ? "Light Mode" : "Dark Mode"}
+                        title={
+                          darkMode
+                            ? "Switch to Light Mode"
+                            : "Switch to Dark Mode"
+                        }
+                      >
+                        {darkMode ? (
+                          <Sun size={16} className="text-yellow-500" />
+                        ) : (
+                          <Moon size={16} className="text-blue-500" />
+                        )}
+                      </button>
+                      <div
+                        className="fixed"
+                        style={{
+                          left: "80px",
+                          top: themeTop,
+                          zIndex: 999,
+                          transform: "translateY(-50%)",
+                        }}
+                      >
+                        <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                          {darkMode ? "Light Mode" : "Dark Mode"}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               <div className="group relative w-full flex justify-center">
-                <button
-                  onClick={handleCollapsedSignout}
-                  className="p-2.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200"
-                  aria-label="Sign out"
-                  title="Sign out"
-                >
-                  <LogOut size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Sign out
-                </div>
+                {(() => {
+                  const [signoutRef, signoutTop] =
+                    useTooltipPosition<HTMLButtonElement>();
+                  return (
+                    <>
+                      <button
+                        ref={signoutRef}
+                        onClick={handleCollapsedSignout}
+                        className="p-2.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200"
+                        aria-label="Sign out"
+                        title="Sign out"
+                      >
+                        <LogOut size={16} />
+                      </button>
+                      <div
+                        className="fixed"
+                        style={{
+                          left: "80px",
+                          top: signoutTop,
+                          zIndex: 999,
+                          transform: "translateY(-50%)",
+                        }}
+                      >
+                        <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                          Sign out
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>
