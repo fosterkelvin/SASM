@@ -464,90 +464,114 @@ const HRSidebar = ({
 
         {/* Collapsed state - Enhanced mini sidebar */}
         {isDesktopCollapsed && (
-          <div className="hidden md:flex flex-col items-center py-4 space-y-4">
-            <div className="group relative">
-              <button
-                onClick={() => setIsDesktopCollapsed(false)}
-                className="p-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 shadow-sm hover:shadow-md border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                aria-label="Expand sidebar"
-              >
-                <Menu
-                  size={18}
-                  className="transform group-hover:scale-110 transition-transform duration-200"
-                />
-              </button>
-              {/* Tooltip */}
-              <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                Expand Menu
+          <div
+            className="hidden md:flex flex-col items-center py-4 h-full relative"
+            aria-label="Collapsed Sidebar"
+            style={{ minHeight: "100%" }}
+          >
+            <div className="flex-1 flex flex-col items-center space-y-4 w-full">
+              <div className="group relative">
+                <button
+                  onClick={() => setIsDesktopCollapsed(false)}
+                  className="p-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 shadow-sm hover:shadow-md border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                  aria-label="Expand sidebar"
+                  title="Expand Menu"
+                >
+                  <Menu
+                    size={18}
+                    className="transform group-hover:scale-110 transition-transform duration-200"
+                  />
+                </button>
+                {/* Tooltip */}
+                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                  Expand Menu
+                </div>
+              </div>
+
+              {/* Mini menu icons */}
+              <div className="space-y-2">
+                <div className="group relative">
+                  <button
+                    onClick={handleCollapsedDashboardClick}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="Dashboard"
+                    title="Dashboard"
+                  >
+                    <Home size={16} />
+                  </button>
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    Dashboard
+                  </div>
+                </div>
+
+                <div className="group relative">
+                  <button
+                    onClick={handleReportsClick}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="Reports"
+                    title="Reports"
+                  >
+                    <FileText size={16} />
+                  </button>
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    Reports
+                  </div>
+                </div>
+
+                <div className="group relative">
+                  <button
+                    onClick={handleScheduleClick}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="Schedule"
+                    title="Schedule"
+                  >
+                    <Calendar size={16} />
+                  </button>
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    Schedule
+                  </div>
+                </div>
+
+                <div className="group relative">
+                  <button
+                    onClick={handleAnalyticsClick}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="Analytics"
+                    title="Analytics"
+                  >
+                    <BarChart size={16} />
+                  </button>
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    Analytics
+                  </div>
+                </div>
+
+                <div className="group relative">
+                  <button
+                    onClick={handleCollapsedApplicationsClick}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="Applications"
+                    title="Applications"
+                  >
+                    <FileText size={16} />
+                  </button>
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    Applications
+                  </div>
+                </div>
               </div>
             </div>
-
-            {/* Mini menu icons */}
-            <div className="space-y-2">
-              <div className="group relative">
-                <button
-                  onClick={handleCollapsedDashboardClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                >
-                  <Home size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Dashboard
-                </div>
-              </div>
-
-              <div className="group relative">
-                <button
-                  onClick={handleReportsClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                >
-                  <FileText size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Reports
-                </div>
-              </div>
-
-              <div className="group relative">
-                <button
-                  onClick={handleScheduleClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                >
-                  <Calendar size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Schedule
-                </div>
-              </div>
-
-              <div className="group relative">
-                <button
-                  onClick={handleAnalyticsClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                >
-                  <BarChart size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Analytics
-                </div>
-              </div>
-
-              <div className="group relative">
-                <button
-                  onClick={handleCollapsedApplicationsClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                >
-                  <FileText size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Applications
-                </div>
-              </div>
-
+            {/* Bottom sticky signout and theme switcher */}
+            <div
+              className="w-full sticky flex flex-col items-center gap-2 pb-6"
+              style={{ bottom: "8px", left: 0, top: "auto" }}
+            >
               <div className="group relative">
                 <button
                   onClick={handleCollapsedProfileClick}
                   className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  aria-label="Profile"
+                  title="Profile"
                 >
                   <User size={16} />
                 </button>
@@ -555,33 +579,36 @@ const HRSidebar = ({
                   Profile
                 </div>
               </div>
-
-              <div className="group relative">
+              <div className="group relative w-full flex justify-center">
+                <button
+                  onClick={() => setDarkMode(!darkMode)}
+                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
+                  aria-label={darkMode ? "Light Mode" : "Dark Mode"}
+                  title={
+                    darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"
+                  }
+                >
+                  {darkMode ? (
+                    <Sun size={16} className="text-yellow-500" />
+                  ) : (
+                    <Moon size={16} className="text-blue-500" />
+                  )}
+                </button>
+                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                  {darkMode ? "Light Mode" : "Dark Mode"}
+                </div>
+              </div>
+              <div className="group relative w-full flex justify-center">
                 <button
                   onClick={handleCollapsedSignout}
                   className="p-2.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200"
+                  aria-label="Sign out"
+                  title="Sign out"
                 >
                   <LogOut size={16} />
                 </button>
                 <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                   Sign out
-                </div>
-              </div>
-
-              {/* Theme toggle in collapsed state */}
-              <div className="group relative">
-                <button
-                  onClick={() => setDarkMode(!darkMode)}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                >
-                  {darkMode ? (
-                    <Sun size={16} className="text-yellow-500" />
-                  ) : (
-                    <Moon size={16} className="text-red-500" />
-                  )}
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  {darkMode ? "Light Mode" : "Dark Mode"}
                 </div>
               </div>
             </div>
