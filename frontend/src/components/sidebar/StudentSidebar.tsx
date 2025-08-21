@@ -266,7 +266,7 @@ const StudentSidebar = ({
           isOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 ${
           isDesktopCollapsed ? "md:w-20" : "w-64"
-        } top-16 h-[calc(100vh-4rem)] md:top-0 md:h-full border-r border-gray-200 dark:border-gray-700 focus:outline-none overflow-y-auto`}
+        } top-0 h-screen border-r border-gray-200 dark:border-gray-700 focus:outline-none overflow-y-auto`}
         aria-label="Student Sidebar"
       >
         {/* Header - Enhanced design */}
