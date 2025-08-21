@@ -266,7 +266,7 @@ const StudentSidebar = ({
           isOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 ${
           isDesktopCollapsed ? "md:w-20 w-64" : "w-64"
-        } top-0 h-screen border-r border-gray-200 dark:border-gray-700 focus:outline-none overflow-y-auto`}
+        } top-0 h-screen border-r border-gray-200 dark:border-gray-700 focus:outline-none overflow-y-hidden`}
         aria-label="Student Sidebar"
       >
         {/* Header - Enhanced design */}
@@ -487,7 +487,7 @@ const StudentSidebar = ({
         {/* Collapsed state - Enhanced mini sidebar */}
         {isDesktopCollapsed && (
           <div
-            className="hidden md:flex flex-col items-center py-4 h-full relative"
+            className="hidden md:flex flex-col items-center py-4 h-full relative overflow-y-auto overflow-x-hidden"
             aria-label="Collapsed Sidebar"
             style={{ minHeight: "100%" }}
           >
