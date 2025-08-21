@@ -691,37 +691,39 @@ const StudentSidebar = ({
 
         {/* Theme Switcher at Bottom - Enhanced */}
         <div
-          className={`transition-all duration-300 border-t border-red-200 dark:border-red-800 bg-gradient-to-r from-red-100 to-red-200 dark:from-red-900 dark:to-red-800 ${
+          className={`transition-all duration-300 flex items-center justify-center ${
             isDesktopCollapsed ? "md:hidden" : "p-4"
           }`}
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: "none",
+            border: "none",
+          }}
         >
           <button
             onClick={() => setDarkMode(!darkMode)}
-            className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-blue-700 dark:hover:text-blue-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800"
+            className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-700 dark:hover:text-blue-400 hover:border-blue-400 dark:hover:border-blue-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
             aria-label={darkMode ? "Light Mode" : "Dark Mode"}
             title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
             {darkMode ? (
               <>
                 <Sun
-                  size={20}
-                  className="text-yellow-500 group-hover:scale-110 transition-transform duration-200"
+                  size={16}
+                  className="text-yellow-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
                 />
                 <span className="font-medium">Light Mode</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
-                </div>
               </>
             ) : (
               <>
                 <Moon
-                  size={20}
-                  className="text-blue-500 group-hover:scale-110 transition-transform duration-200"
+                  size={16}
+                  className="text-blue-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
                 />
                 <span className="font-medium">Dark Mode</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                </div>
               </>
             )}
           </button>
