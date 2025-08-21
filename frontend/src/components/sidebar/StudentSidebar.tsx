@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   User,
   LogOut,
@@ -26,6 +26,8 @@ const StudentSidebar = ({
   currentPage = "Dashboard",
   onCollapseChange,
 }: StudentSidebarProps) => {
+  // Ref for keyboard navigation
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const { data: unreadCountData } = useUnreadNotificationCount();
@@ -38,65 +40,15 @@ const StudentSidebar = ({
     localStorage.getItem("sidebarCollapsed") === "true"
   );
   const [isFormsExpanded, setIsFormsExpanded] = useState(false);
+  // Focus index for keyboard navigation
+  const [focusIndex, setFocusIndex] = useState<number | null>(null);
 
   // Notify parent component when collapse state changes
   useEffect(() => {
     onCollapseChange?.(isDesktopCollapsed);
   }, [isDesktopCollapsed, onCollapseChange]);
 
-  // Persist sidebar collapse state
-  useEffect(() => {
-    localStorage.setItem("sidebarCollapsed", isDesktopCollapsed.toString());
-  }, [isDesktopCollapsed]);
-
-  // Apply theme on mount
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [darkMode]);
-
-  // Close sidebar on screen resize for mobile
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsOpen(false);
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // Close sidebar on escape key press
-  useEffect(() => {
-    const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && isOpen) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("keydown", handleEscapeKey);
-    return () => document.removeEventListener("keydown", handleEscapeKey);
-  }, [isOpen]);
-
-  // Prevent body scroll when mobile sidebar is open
-  useEffect(() => {
-    if (isOpen && window.innerWidth < 768) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isOpen]);
-
+  // Sidebar action handlers
   const handleProfileClick = () => {
     navigate("/profile");
     setIsOpen(false);
@@ -163,6 +115,98 @@ const StudentSidebar = ({
     logout();
   };
 
+  // Keyboard navigation for sidebar
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (focusIndex === null) return;
+      if (e.key === "ArrowDown") {
+        setFocusIndex((prev) =>
+          prev !== null ? (prev + 1) % menuItems.length : 0
+        );
+        e.preventDefault();
+      } else if (e.key === "ArrowUp") {
+        setFocusIndex((prev) =>
+          prev !== null
+            ? (prev - 1 + menuItems.length) % menuItems.length
+            : menuItems.length - 1
+        );
+        e.preventDefault();
+      } else if (e.key === "Enter" || e.key === " ") {
+        menuItems[focusIndex].handler();
+        e.preventDefault();
+      }
+    },
+    [focusIndex]
+  );
+
+  // ...existing code...
+
+  // Handlers for sidebar actions
+  // ...existing code...
+
+  // Now define menuItems after handlers
+  const menuItems = [
+    { label: "Dashboard", handler: handleDashboardClick },
+    { label: "Profile", handler: handleProfileClick },
+    { label: "Notifications", handler: handleNotificationsClick },
+    { label: "Forms", handler: () => setIsFormsExpanded((v) => !v) },
+    { label: "Sign out", handler: handleSignout },
+  ];
+
+  // Persist sidebar collapse state
+  useEffect(() => {
+    localStorage.setItem("sidebarCollapsed", isDesktopCollapsed.toString());
+  }, [isDesktopCollapsed]);
+
+  // Apply theme on mount
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [darkMode]);
+
+  // Close sidebar on screen resize for mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Close sidebar on escape key press and focus management
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("keydown", handleEscapeKey);
+    return () => document.removeEventListener("keydown", handleEscapeKey);
+  }, [isOpen]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isOpen && window.innerWidth < 768) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
+  // ...existing code...
+
   return (
     <>
       {/* Mobile Header Bar with Toggle Button */}
@@ -172,6 +216,8 @@ const StudentSidebar = ({
             onClick={() => setIsOpen(!isOpen)}
             className="p-2 rounded-lg text-white hover:bg-red-700 dark:hover:bg-red-800 transition-colors duration-200 ml-4 mr-2"
             aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+            aria-expanded={isOpen}
+            aria-controls="student-sidebar"
           >
             <div className="relative w-6 h-6">
               <Menu
@@ -204,19 +250,21 @@ const StudentSidebar = ({
           isOpen ? "opacity-50 visible" : "opacity-0 invisible"
         }`}
         onClick={() => setIsOpen(false)}
+        aria-hidden={!isOpen}
       />
 
       {/* Sidebar */}
       <div
+        id="student-sidebar"
+        ref={sidebarRef}
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
         className={`fixed left-0 bg-white dark:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out z-40 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 ${
-          // Desktop: collapsible width with better sizing, Mobile: fixed width
           isDesktopCollapsed ? "md:w-20" : "w-64"
-        } ${
-          // Mobile: full height with top padding for header, Desktop: full height
-          "top-16 h-[calc(100vh-4rem)] md:top-0 md:h-full"
-        } border-r border-gray-200 dark:border-gray-700`}
+        } top-16 h-[calc(100vh-4rem)] md:top-0 md:h-full border-r border-gray-200 dark:border-gray-700 focus:outline-none`}
+        aria-label="Student Sidebar"
       >
         {/* Header - Enhanced design */}
         <div
@@ -277,12 +325,17 @@ const StudentSidebar = ({
           className={`transition-all duration-300 ${
             isDesktopCollapsed ? "md:hidden" : "p-4"
           } flex-1 overflow-y-auto`}
+          aria-label="Sidebar Navigation"
         >
           <ul className="space-y-2">
             <li>
               <button
                 onClick={handleDashboardClick}
                 className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Dashboard"
+                title="Go to Dashboard"
+                aria-current={currentPage === "Dashboard"}
               >
                 <Home
                   size={20}
@@ -298,6 +351,10 @@ const StudentSidebar = ({
               <button
                 onClick={handleProfileClick}
                 className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Profile"
+                title="View Profile"
+                aria-current={currentPage === "Profile"}
               >
                 <User
                   size={20}
@@ -313,6 +370,10 @@ const StudentSidebar = ({
               <button
                 onClick={handleNotificationsClick}
                 className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Notifications"
+                title="View Notifications"
+                aria-current={currentPage === "Notifications"}
               >
                 <div className="relative">
                   <Bell
@@ -320,7 +381,10 @@ const StudentSidebar = ({
                     className="group-hover:scale-110 transition-transform duration-200"
                   />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                    <span
+                      className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium"
+                      aria-label={`You have ${unreadCount} unread notifications`}
+                    >
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                   )}
@@ -341,6 +405,11 @@ const StudentSidebar = ({
                 <button
                   onClick={() => setIsFormsExpanded(!isFormsExpanded)}
                   className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                  tabIndex={0}
+                  aria-label="Forms"
+                  aria-expanded={isFormsExpanded}
+                  aria-controls="forms-submenu"
+                  title="Show Forms submenu"
                 >
                   <FileText
                     size={20}
@@ -367,28 +436,39 @@ const StudentSidebar = ({
 
                 {/* Submenu */}
                 <div
+                  id="forms-submenu"
                   className={`overflow-hidden transition-all duration-300 ${
                     isFormsExpanded
                       ? "max-h-48 opacity-100"
                       : "max-h-0 opacity-0"
                   }`}
+                  aria-hidden={!isFormsExpanded}
                 >
                   <div className="pl-8 pr-4 py-2 space-y-1">
                     <button
                       onClick={handleApplyClick}
                       className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
+                      tabIndex={isFormsExpanded ? 0 : -1}
+                      aria-label="Apply Form"
+                      title="Apply"
                     >
                       <span className="text-sm font-medium">Apply</span>
                     </button>
                     <button
                       onClick={handleReapplyClick}
                       className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
+                      tabIndex={isFormsExpanded ? 0 : -1}
+                      aria-label="Re-apply Form"
+                      title="Re-apply"
                     >
                       <span className="text-sm font-medium">Re-apply</span>
                     </button>
                     <button
                       onClick={handleLeaveClick}
                       className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
+                      tabIndex={isFormsExpanded ? 0 : -1}
+                      aria-label="Leave Form"
+                      title="Leave"
                     >
                       <span className="text-sm font-medium">Leave</span>
                     </button>
@@ -400,6 +480,9 @@ const StudentSidebar = ({
               <button
                 onClick={handleSignout}
                 className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-red-600 dark:text-red-400 hover:bg-gradient-to-r hover:from-red-100 hover:to-red-200 dark:hover:from-red-900/30 dark:hover:to-red-800/30 hover:text-red-700 dark:hover:text-red-300 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-300 dark:hover:border-red-700"
+                tabIndex={0}
+                aria-label="Sign out"
+                title="Sign out"
               >
                 <LogOut
                   size={20}
@@ -416,12 +499,16 @@ const StudentSidebar = ({
 
         {/* Collapsed state - Enhanced mini sidebar */}
         {isDesktopCollapsed && (
-          <div className="hidden md:flex flex-col items-center py-4 space-y-4">
+          <div
+            className="hidden md:flex flex-col items-center py-4 space-y-4"
+            aria-label="Collapsed Sidebar"
+          >
             <div className="group relative">
               <button
                 onClick={() => setIsDesktopCollapsed(false)}
                 className="p-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 shadow-sm hover:shadow-md border border-transparent hover:border-red-200 dark:hover:border-red-800"
                 aria-label="Expand sidebar"
+                title="Expand Menu"
               >
                 <Menu
                   size={18}
@@ -440,6 +527,8 @@ const StudentSidebar = ({
                 <button
                   onClick={handleCollapsedDashboardClick}
                   className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  aria-label="Dashboard"
+                  title="Dashboard"
                 >
                   <Home size={16} />
                 </button>
@@ -452,6 +541,8 @@ const StudentSidebar = ({
                 <button
                   onClick={handleCollapsedProfileClick}
                   className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  aria-label="Profile"
+                  title="Profile"
                 >
                   <User size={16} />
                 </button>
@@ -464,10 +555,15 @@ const StudentSidebar = ({
                 <button
                   onClick={handleCollapsedNotificationsClick}
                   className="relative p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  aria-label="Notifications"
+                  title="Notifications"
                 >
                   <Bell size={16} />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+                    <span
+                      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium"
+                      aria-label={`You have ${unreadCount} unread notifications`}
+                    >
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
@@ -486,6 +582,9 @@ const StudentSidebar = ({
                 <button
                   onClick={() => setIsFormsExpanded(!isFormsExpanded)}
                   className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  aria-label="Forms"
+                  aria-expanded={isFormsExpanded}
+                  title="Forms"
                 >
                   <FileText size={16} />
                 </button>
@@ -494,6 +593,7 @@ const StudentSidebar = ({
                   className={`absolute left-full ml-2 top-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 ${
                     isFormsExpanded ? "opacity-100" : ""
                   }`}
+                  aria-hidden={!isFormsExpanded}
                 >
                   <div className="p-1 space-y-1">
                     <div className="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600">
@@ -502,18 +602,24 @@ const StudentSidebar = ({
                     <button
                       onClick={handleCollapsedApplyClick}
                       className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
+                      aria-label="Apply"
+                      title="Apply"
                     >
                       Apply
                     </button>
                     <button
                       onClick={handleCollapsedReapplyClick}
                       className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
+                      aria-label="Re-apply"
+                      title="Re-apply"
                     >
                       Re-apply
                     </button>
                     <button
                       onClick={handleCollapsedLeaveClick}
                       className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
+                      aria-label="Leave"
+                      title="Leave"
                     >
                       Leave
                     </button>
@@ -525,6 +631,8 @@ const StudentSidebar = ({
                 <button
                   onClick={handleCollapsedSignout}
                   className="p-2.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200"
+                  aria-label="Sign out"
+                  title="Sign out"
                 >
                   <LogOut size={16} />
                 </button>
@@ -538,6 +646,10 @@ const StudentSidebar = ({
                 <button
                   onClick={() => setDarkMode(!darkMode)}
                   className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
+                  aria-label={darkMode ? "Light Mode" : "Dark Mode"}
+                  title={
+                    darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"
+                  }
                 >
                   {darkMode ? (
                     <Sun size={16} className="text-yellow-500" />
@@ -562,6 +674,8 @@ const StudentSidebar = ({
           <button
             onClick={() => setDarkMode(!darkMode)}
             className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-blue-700 dark:hover:text-blue-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800"
+            aria-label={darkMode ? "Light Mode" : "Dark Mode"}
+            title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
             {darkMode ? (
               <>
