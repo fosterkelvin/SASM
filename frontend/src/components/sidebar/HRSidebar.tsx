@@ -122,12 +122,6 @@ const HRSidebar = ({
     setIsOpen(false);
   };
 
-  // HR-specific menu handlers
-  const handleEmployeesClick = () => {
-    // navigate("/employees");
-    setIsOpen(false);
-  };
-
   const handleReportsClick = () => {
     setIsReportsExpanded((v) => !v);
   };
@@ -168,7 +162,6 @@ const HRSidebar = ({
   // Keyboard navigation for sidebar
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
-    { label: "Employees", handler: handleEmployeesClick },
     { label: "Reports", handler: handleReportsClick },
     { label: "Schedule", handler: handleScheduleClick },
     { label: "Analytics", handler: handleAnalyticsClick },
@@ -340,25 +333,6 @@ const HRSidebar = ({
               </button>
             </li>
             <li>
-              <button
-                onClick={handleEmployeesClick}
-                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                tabIndex={0}
-                aria-label="Employees"
-                title="View Employees"
-                aria-current={currentPage === "Employees"}
-              >
-                <Users
-                  size={20}
-                  className="group-hover:scale-110 transition-transform duration-200"
-                />
-                <span className="font-medium">Employees</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                </div>
-              </button>
-            </li>
-            <li>
               {/* Reports Menu Item with Submenu */}
               <div>
                 <button
@@ -485,25 +459,6 @@ const HRSidebar = ({
                 </div>
               </button>
             </li>
-            <li>
-              <button
-                onClick={handleProfileClick}
-                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                tabIndex={0}
-                aria-label="Profile"
-                title="View Profile"
-                aria-current={currentPage === "Profile"}
-              >
-                <User
-                  size={20}
-                  className="group-hover:scale-110 transition-transform duration-200"
-                />
-                <span className="font-medium">Profile</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                </div>
-              </button>
-            </li>
           </ul>
         </nav>
 
@@ -538,18 +493,6 @@ const HRSidebar = ({
                 </button>
                 <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                   Dashboard
-                </div>
-              </div>
-
-              <div className="group relative">
-                <button
-                  onClick={handleEmployeesClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                >
-                  <Users size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Employees
                 </div>
               </div>
 
@@ -659,6 +602,51 @@ const HRSidebar = ({
               zIndex: 50,
             }}
           >
+            {/* User Info Item */}
+            {user && (
+              <button
+                onClick={handleProfileClick}
+                className="w-full flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-gradient-to-r from-red-50 to-red-100 dark:from-gray-900 dark:to-gray-800 border border-red-200 dark:border-red-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 hover:bg-red-100 dark:hover:bg-gray-900/30 transition-all duration-200"
+                style={{ userSelect: "none" }}
+                aria-label="View Profile"
+                title="View Profile"
+              >
+                <div className="flex-shrink-0 relative">
+                  {/* Avatar or fallback icon */}
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt="User Avatar"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-red-400 dark:border-red-600 shadow"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-red-200 dark:bg-red-900 flex items-center justify-center border-2 border-red-400 dark:border-red-600 shadow">
+                      <User
+                        size={22}
+                        className="text-red-600 dark:text-red-300"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col min-w-0 text-left">
+                  <span className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
+                    {user?.firstname && user?.lastname
+                      ? `${user.firstname} ${user.lastname}`
+                      : user?.email || "User"}
+                  </span>
+                  {user?.email && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {user.email}
+                    </span>
+                  )}
+                  {user?.role && (
+                    <span className="text-xs font-semibold text-red-500 dark:text-red-400 mt-0.5 capitalize">
+                      {user.role}
+                    </span>
+                  )}
+                </div>
+              </button>
+            )}
             <button
               onClick={() => setDarkMode(!darkMode)}
               className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-700 dark:hover:text-blue-400 hover:border-blue-400 dark:hover:border-blue-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
