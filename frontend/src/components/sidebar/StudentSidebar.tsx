@@ -497,24 +497,6 @@ const StudentSidebar = ({
                 </div>
               </div>
             </li>
-            <li>
-              <button
-                onClick={handleSignout}
-                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-red-600 dark:text-red-400 hover:bg-gradient-to-r hover:from-red-100 hover:to-red-200 dark:hover:from-red-900/30 dark:hover:to-red-800/30 hover:text-red-700 dark:hover:text-red-300 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-300 dark:hover:border-red-700"
-                tabIndex={0}
-                aria-label="Sign out"
-                title="Sign out"
-              >
-                <LogOut
-                  size={20}
-                  className="group-hover:scale-110 transition-transform duration-200"
-                />
-                <span className="font-medium">Sign out</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div>
-                </div>
-              </button>
-            </li>
           </ul>
         </nav>
 
@@ -689,9 +671,9 @@ const StudentSidebar = ({
           </div>
         )}
 
-        {/* Theme Switcher at Bottom - Enhanced */}
+        {/* Theme Switcher and Sign out at Bottom - Enhanced */}
         <div
-          className={`transition-all duration-300 flex items-center justify-center ${
+          className={`transition-all duration-300 flex flex-col items-center justify-center gap-2 ${
             isDesktopCollapsed ? "md:hidden" : "p-4"
           }`}
           style={{
@@ -726,6 +708,18 @@ const StudentSidebar = ({
                 <span className="font-medium">Dark Mode</span>
               </>
             )}
+          </button>
+          <button
+            onClick={handleSignout}
+            className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 hover:bg-gradient-to-r hover:from-red-100 hover:to-red-200 dark:hover:from-red-900/30 dark:hover:to-red-800/30 hover:text-red-700 dark:hover:text-red-300 hover:border-red-300 dark:hover:border-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut
+              size={16}
+              className="group-hover:scale-110 transition-transform duration-200"
+            />
+            <span className="font-medium">Sign out</span>
           </button>
         </div>
       </div>
