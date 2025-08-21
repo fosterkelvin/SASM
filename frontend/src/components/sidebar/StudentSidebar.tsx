@@ -503,152 +503,145 @@ const StudentSidebar = ({
         {/* Collapsed state - Enhanced mini sidebar */}
         {isDesktopCollapsed && (
           <div
-            className="hidden md:flex flex-col items-center py-4 space-y-4"
+            className="hidden md:flex flex-col items-center py-4 h-full relative"
             aria-label="Collapsed Sidebar"
+            style={{ minHeight: "100%" }}
           >
-            <div className="group relative">
-              <button
-                onClick={() => setIsDesktopCollapsed(false)}
-                className="p-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 shadow-sm hover:shadow-md border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                aria-label="Expand sidebar"
-                title="Expand Menu"
-              >
-                <Menu
-                  size={18}
-                  className="transform group-hover:scale-110 transition-transform duration-200"
-                />
-              </button>
-              {/* Tooltip */}
-              <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                Expand Menu
-              </div>
-            </div>
-
-            {/* Mini menu icons */}
-            <div className="space-y-2">
+            <div className="flex-1 flex flex-col items-center space-y-4 w-full">
               <div className="group relative">
                 <button
-                  onClick={handleCollapsedDashboardClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                  aria-label="Dashboard"
-                  title="Dashboard"
+                  onClick={() => setIsDesktopCollapsed(false)}
+                  className="p-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 shadow-sm hover:shadow-md border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                  aria-label="Expand sidebar"
+                  title="Expand Menu"
                 >
-                  <Home size={16} />
+                  <Menu
+                    size={18}
+                    className="transform group-hover:scale-110 transition-transform duration-200"
+                  />
                 </button>
+                {/* Tooltip */}
                 <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Dashboard
+                  Expand Menu
                 </div>
               </div>
 
-              <div className="group relative">
-                <button
-                  onClick={handleCollapsedProfileClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                  aria-label="Profile"
-                  title="Profile"
-                >
-                  <User size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Profile
+              {/* Mini menu icons */}
+              <div className="space-y-2">
+                <div className="group relative">
+                  <button
+                    onClick={handleCollapsedDashboardClick}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="Dashboard"
+                    title="Dashboard"
+                  >
+                    <Home size={16} />
+                  </button>
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    Dashboard
+                  </div>
                 </div>
-              </div>
 
-              <div className="group relative">
-                <button
-                  onClick={handleCollapsedNotificationsClick}
-                  className="relative p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                  aria-label="Notifications"
-                  title="Notifications"
-                >
-                  <Bell size={16} />
-                  {unreadCount > 0 && (
-                    <span
-                      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium"
-                      aria-label={`You have ${unreadCount} unread notifications`}
-                    >
-                      {unreadCount > 9 ? "9+" : unreadCount}
-                    </span>
-                  )}
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Notifications
-                  {unreadCount > 0 && (
-                    <span className="ml-1 bg-red-500 text-white rounded-full px-1">
-                      {unreadCount}
-                    </span>
-                  )}
+                <div className="group relative">
+                  <button
+                    onClick={handleCollapsedProfileClick}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="Profile"
+                    title="Profile"
+                  >
+                    <User size={16} />
+                  </button>
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    Profile
+                  </div>
                 </div>
-              </div>
 
-              <div className="group relative">
-                <button
-                  onClick={() => setIsFormsExpanded(!isFormsExpanded)}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                  aria-label="Forms"
-                  aria-expanded={isFormsExpanded}
-                  title="Forms"
-                >
-                  <FileText size={16} />
-                </button>
-                {/* Collapsed Forms Submenu - Improved */}
-                <div
-                  className={`absolute left-full ml-2 top-0 min-w-[160px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-50 ${
-                    isFormsExpanded ? "opacity-100" : ""
-                  }`}
-                  aria-hidden={!isFormsExpanded}
-                >
-                  <div className="py-2">
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 rounded-t-xl">
-                      Forms
+                <div className="group relative">
+                  <button
+                    onClick={handleCollapsedNotificationsClick}
+                    className="relative p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="Notifications"
+                    title="Notifications"
+                  >
+                    <Bell size={16} />
+                    {unreadCount > 0 && (
+                      <span
+                        className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium"
+                        aria-label={`You have ${unreadCount} unread notifications`}
+                      >
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    Notifications
+                    {unreadCount > 0 && (
+                      <span className="ml-1 bg-red-500 text-white rounded-full px-1">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="group relative">
+                  <button
+                    onClick={() => setIsFormsExpanded(!isFormsExpanded)}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="Forms"
+                    aria-expanded={isFormsExpanded}
+                    title="Forms"
+                  >
+                    <FileText size={16} />
+                  </button>
+                  {/* Collapsed Forms Submenu - Improved */}
+                  <div
+                    className={`absolute left-full ml-2 top-0 min-w-[160px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-50 ${
+                      isFormsExpanded ? "opacity-100" : ""
+                    }`}
+                    aria-hidden={!isFormsExpanded}
+                  >
+                    <div className="py-2">
+                      <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 rounded-t-xl">
+                        Forms
+                      </div>
+                      <button
+                        onClick={handleCollapsedApplyClick}
+                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
+                        aria-label="Apply"
+                        title="Apply"
+                      >
+                        <FileText size={16} className="text-red-500" />
+                        <span>Apply</span>
+                      </button>
+                      <button
+                        onClick={handleCollapsedReapplyClick}
+                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors duration-200"
+                        aria-label="Re-apply"
+                        title="Re-apply"
+                      >
+                        <FileText size={16} className="text-indigo-500" />
+                        <span>Re-apply</span>
+                      </button>
+                      <button
+                        onClick={handleCollapsedLeaveClick}
+                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-yellow-50 dark:hover:bg-gray-700 hover:text-yellow-600 dark:hover:text-yellow-400 rounded transition-colors duration-200"
+                        aria-label="Leave"
+                        title="Leave"
+                      >
+                        <FileText size={16} className="text-yellow-500" />
+                        <span>Leave</span>
+                      </button>
                     </div>
-                    <button
-                      onClick={handleCollapsedApplyClick}
-                      className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
-                      aria-label="Apply"
-                      title="Apply"
-                    >
-                      <FileText size={16} className="text-red-500" />
-                      <span>Apply</span>
-                    </button>
-                    <button
-                      onClick={handleCollapsedReapplyClick}
-                      className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors duration-200"
-                      aria-label="Re-apply"
-                      title="Re-apply"
-                    >
-                      <FileText size={16} className="text-indigo-500" />
-                      <span>Re-apply</span>
-                    </button>
-                    <button
-                      onClick={handleCollapsedLeaveClick}
-                      className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-yellow-50 dark:hover:bg-gray-700 hover:text-yellow-600 dark:hover:text-yellow-400 rounded transition-colors duration-200"
-                      aria-label="Leave"
-                      title="Leave"
-                    >
-                      <FileText size={16} className="text-yellow-500" />
-                      <span>Leave</span>
-                    </button>
                   </div>
                 </div>
               </div>
-
-              <div className="group relative">
-                <button
-                  onClick={handleCollapsedSignout}
-                  className="p-2.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200"
-                  aria-label="Sign out"
-                  title="Sign out"
-                >
-                  <LogOut size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Sign out
-                </div>
-              </div>
-
-              {/* Theme toggle in collapsed state */}
-              <div className="group relative">
+            </div>
+            {/* Bottom sticky signout and theme switcher */}
+            <div
+              className="w-full sticky flex flex-col items-center gap-2 pb-6"
+              style={{ bottom: "8px", left: 0, top: "auto" }}
+            >
+              <div className="group relative w-full flex justify-center">
                 <button
                   onClick={() => setDarkMode(!darkMode)}
                   className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
@@ -667,61 +660,76 @@ const StudentSidebar = ({
                   {darkMode ? "Light Mode" : "Dark Mode"}
                 </div>
               </div>
+              <div className="group relative w-full flex justify-center">
+                <button
+                  onClick={handleCollapsedSignout}
+                  className="p-2.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200"
+                  aria-label="Sign out"
+                  title="Sign out"
+                >
+                  <LogOut size={16} />
+                </button>
+                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                  Sign out
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* Theme Switcher and Sign out at Bottom - Enhanced */}
-        <div
-          className={`transition-all duration-300 flex flex-col items-center justify-center gap-2 ${
-            isDesktopCollapsed ? "md:hidden" : "p-4"
-          }`}
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: "none",
-            border: "none",
-          }}
-        >
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-700 dark:hover:text-blue-400 hover:border-blue-400 dark:hover:border-blue-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            aria-label={darkMode ? "Light Mode" : "Dark Mode"}
-            title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+        {/* Theme Switcher and Sign out at Bottom - Always visible for both desktop and mobile */}
+        {!isDesktopCollapsed ? (
+          <div
+            className="transition-all duration-300 flex flex-col items-center justify-center gap-2 p-4"
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: "none",
+              border: "none",
+              zIndex: 50,
+            }}
           >
-            {darkMode ? (
-              <>
-                <Sun
-                  size={16}
-                  className="text-yellow-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
-                />
-                <span className="font-medium">Light Mode</span>
-              </>
-            ) : (
-              <>
-                <Moon
-                  size={16}
-                  className="text-blue-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
-                />
-                <span className="font-medium">Dark Mode</span>
-              </>
-            )}
-          </button>
-          <button
-            onClick={handleSignout}
-            className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 hover:bg-gradient-to-r hover:from-red-100 hover:to-red-200 dark:hover:from-red-900/30 dark:hover:to-red-800/30 hover:text-red-700 dark:hover:text-red-300 hover:border-red-300 dark:hover:border-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-400"
-            aria-label="Sign out"
-            title="Sign out"
-          >
-            <LogOut
-              size={16}
-              className="group-hover:scale-110 transition-transform duration-200"
-            />
-            <span className="font-medium">Sign out</span>
-          </button>
-        </div>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-700 dark:hover:text-blue-400 hover:border-blue-400 dark:hover:border-blue-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              aria-label={darkMode ? "Light Mode" : "Dark Mode"}
+              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {darkMode ? (
+                <>
+                  <Sun
+                    size={16}
+                    className="text-yellow-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
+                  />
+                  <span className="font-medium">Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon
+                    size={16}
+                    className="text-blue-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
+                  />
+                  <span className="font-medium">Dark Mode</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleSignout}
+              className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 hover:bg-gradient-to-r hover:from-red-100 hover:to-red-200 dark:hover:from-red-900/30 dark:hover:to-red-800/30 hover:text-red-700 dark:hover:text-red-300 hover:border-red-300 dark:hover:border-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut
+                size={16}
+                className="group-hover:scale-110 transition-transform duration-200"
+              />
+              <span className="font-medium">Sign out</span>
+            </button>
+          </div>
+        ) : null}
       </div>
     </>
   );
