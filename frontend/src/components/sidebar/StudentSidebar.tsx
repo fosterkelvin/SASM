@@ -684,7 +684,7 @@ const StudentSidebar = ({
             className="transition-all duration-300 flex flex-col items-center justify-center gap-2 p-4"
             style={{
               position: "absolute",
-              bottom: 0,
+              bottom: 32,
               left: 0,
               right: 0,
               background: "none",
