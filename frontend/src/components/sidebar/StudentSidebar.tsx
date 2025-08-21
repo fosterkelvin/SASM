@@ -152,6 +152,9 @@ const StudentSidebar = ({
     { label: "Forms", handler: () => setIsFormsExpanded((v) => !v) },
     { label: "Sign out", handler: handleSignout },
   ];
+  // Icons for submenu
+  const ApplyIcon = <FileText size={16} className="text-red-500 mr-2" />;
+  const ReapplyIcon = <FileText size={16} className="text-indigo-500 mr-2" />;
 
   // Persist sidebar collapse state
   useEffect(() => {
@@ -447,30 +450,48 @@ const StudentSidebar = ({
                   <div className="pl-8 pr-4 py-2 space-y-1">
                     <button
                       onClick={handleApplyClick}
-                      className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
+                      className={`group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200 ${
+                        currentPage === "Apply"
+                          ? "bg-red-50 dark:bg-gray-700 border-red-200 dark:border-red-800"
+                          : ""
+                      }`}
                       tabIndex={isFormsExpanded ? 0 : -1}
                       aria-label="Apply Form"
                       title="Apply"
+                      aria-current={currentPage === "Apply"}
                     >
-                      <span className="text-sm font-medium">Apply</span>
+                      {ApplyIcon}
+                      <span className="font-medium">Apply</span>
                     </button>
                     <button
                       onClick={handleReapplyClick}
-                      className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
+                      className={`group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-all duration-200 ${
+                        currentPage === "Re-apply"
+                          ? "bg-indigo-50 dark:bg-gray-700 border-indigo-200 dark:border-indigo-800"
+                          : ""
+                      }`}
                       tabIndex={isFormsExpanded ? 0 : -1}
                       aria-label="Re-apply Form"
                       title="Re-apply"
+                      aria-current={currentPage === "Re-apply"}
                     >
-                      <span className="text-sm font-medium">Re-apply</span>
+                      {ReapplyIcon}
+                      <span className="font-medium">Re-apply</span>
                     </button>
                     <button
                       onClick={handleLeaveClick}
-                      className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
+                      className={`group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-yellow-600 dark:hover:text-yellow-400 rounded-lg transition-all duration-200 ${
+                        currentPage === "Leave"
+                          ? "bg-yellow-50 dark:bg-gray-700 border-yellow-200 dark:border-yellow-800"
+                          : ""
+                      }`}
                       tabIndex={isFormsExpanded ? 0 : -1}
                       aria-label="Leave Form"
                       title="Leave"
+                      aria-current={currentPage === "Leave"}
                     >
-                      <span className="text-sm font-medium">Leave</span>
+                      <FileText size={16} className="text-yellow-500 mr-2" />
+                      <span className="font-medium">Leave</span>
                     </button>
                   </div>
                 </div>
@@ -588,40 +609,43 @@ const StudentSidebar = ({
                 >
                   <FileText size={16} />
                 </button>
-                {/* Collapsed Forms Submenu */}
+                {/* Collapsed Forms Submenu - Improved */}
                 <div
-                  className={`absolute left-full ml-2 top-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50 ${
+                  className={`absolute left-full ml-2 top-0 min-w-[160px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-50 ${
                     isFormsExpanded ? "opacity-100" : ""
                   }`}
                   aria-hidden={!isFormsExpanded}
                 >
-                  <div className="p-1 space-y-1">
-                    <div className="px-3 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600">
+                  <div className="py-2">
+                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 rounded-t-xl">
                       Forms
                     </div>
                     <button
                       onClick={handleCollapsedApplyClick}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
+                      className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
                       aria-label="Apply"
                       title="Apply"
                     >
-                      Apply
+                      <FileText size={16} className="text-red-500" />
+                      <span>Apply</span>
                     </button>
                     <button
                       onClick={handleCollapsedReapplyClick}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
+                      className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition-colors duration-200"
                       aria-label="Re-apply"
                       title="Re-apply"
                     >
-                      Re-apply
+                      <FileText size={16} className="text-indigo-500" />
+                      <span>Re-apply</span>
                     </button>
                     <button
                       onClick={handleCollapsedLeaveClick}
-                      className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 rounded transition-colors duration-200"
+                      className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-yellow-50 dark:hover:bg-gray-700 hover:text-yellow-600 dark:hover:text-yellow-400 rounded transition-colors duration-200"
                       aria-label="Leave"
                       title="Leave"
                     >
-                      Leave
+                      <FileText size={16} className="text-yellow-500" />
+                      <span>Leave</span>
                     </button>
                   </div>
                 </div>
