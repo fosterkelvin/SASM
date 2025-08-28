@@ -928,6 +928,7 @@ const ApplicationManagement = () => {
                     {selectedApplication.age}
                   </div>
                 </div>
+
                 <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
                   <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
                     Citizenship
@@ -936,11 +937,35 @@ const ApplicationManagement = () => {
                     {selectedApplication.citizenship}
                   </div>
                 </div>
+
+                {/* New: Gender */}
                 <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
                   <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                    Home Contact
+                    Gender
                   </div>
-                  <div className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedApplication.gender || (
+                      <span className="text-gray-500">No input data</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* New: Civil Status */}
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                    Civil Status
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedApplication.civilStatus || (
+                      <span className="text-gray-500">No input data</span>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                    Home Address
+                  </div>
+                  <div className="text-sm text-gray-900 font-semibold dark:text-gray-100 leading-relaxed">
                     {selectedApplication.homeAddress}
                     {selectedApplication.homeStreet &&
                       `, ${selectedApplication.homeStreet}`}
@@ -951,10 +976,10 @@ const ApplicationManagement = () => {
                   </div>
                 </div>
                 <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
                     Baguio/Benguet Address
                   </div>
-                  <div className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed">
+                  <div className="text-sm text-gray-900 font-semibold dark:text-gray-100 leading-relaxed">
                     {selectedApplication.baguioAddress}
                     {selectedApplication.baguioStreet &&
                       `, ${selectedApplication.baguioStreet}`}
@@ -1069,15 +1094,21 @@ const ApplicationManagement = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div>
                     <span className="font-medium">Name:</span>{" "}
-                    {selectedApplication.relativeName}
+                    {selectedApplication.relatives?.[0]?.name || (
+                      <span className="text-gray-500">No input data</span>
+                    )}
                   </div>
                   <div>
                     <span className="font-medium">Department:</span>{" "}
-                    {selectedApplication.relativeDepartment}
+                    {selectedApplication.relatives?.[0]?.department || (
+                      <span className="text-gray-500">No input data</span>
+                    )}
                   </div>
                   <div>
                     <span className="font-medium">Relationship:</span>{" "}
-                    {selectedApplication.relativeRelationship}
+                    {selectedApplication.relatives?.[0]?.relationship || (
+                      <span className="text-gray-500">No input data</span>
+                    )}
                   </div>
                 </div>
               </div>
