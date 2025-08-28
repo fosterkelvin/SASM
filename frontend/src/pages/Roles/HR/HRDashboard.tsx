@@ -20,7 +20,7 @@ const HRDashboard = () => {
       />
       {/* Main content area with dynamic margin based on sidebar state */}
       <div
-        className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
+        className={`flex-1 pt-16 md:pt-[81px] transition-all duration-300 ${
           isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
         }`}
       >
@@ -38,10 +38,7 @@ const HRDashboard = () => {
         </div>
 
         {/* Main content */}
-        <div
-          className="p-6 md:p-10"
-          style={{ borderTop: "0.5in solid #b91c1c" }} // #b91c1c is Tailwind's red-700
-        >
+        <div className="p-6 md:p-10">
           {/* Welcome Card */}
           <div className="bg-gradient-to-br from-gray-100 via-white to-gray-200 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 rounded-xl shadow-lg border border-red-100 dark:border-red-700/60 p-6 mb-8">
             <div className="flex items-center gap-4 mb-4">

@@ -340,7 +340,7 @@ const ApplicationManagement = () => {
       <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
         {renderSidebar()}
         <div
-          className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
+          className={`flex-1 pt-16 md:pt-[81px] transition-all duration-300 ${
             isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
           }`}
         >
@@ -375,7 +375,7 @@ const ApplicationManagement = () => {
       <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
         {renderSidebar()}
         <div
-          className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
+          className={`flex-1 pt-16 md:pt-[81px] transition-all duration-300 ${
             isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
           }`}
         >
@@ -391,13 +391,19 @@ const ApplicationManagement = () => {
     <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
       {renderSidebar()}
       <div
-        className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
+        className={`flex-1 pt-16 md:pt-[81px] transition-all duration-300 ${
           isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
         }`}
       >
         {/* Header */}
-        <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
-          <h1 className="text-2xl font-bold text-white dark:text-white">
+        <div
+          className={`hidden md:flex items-center gap-4 fixed top-0 left-0 z-30 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 h-[81px] ${
+            isSidebarCollapsed
+              ? "md:w-[calc(100%-5rem)] md:ml-20"
+              : "md:w-[calc(100%-16rem)] md:ml-64"
+          }`}
+        >
+          <h1 className="text-2xl font-bold text-white dark:text-white ml-4">
             Application Management
           </h1>
         </div>
@@ -1651,14 +1657,18 @@ const ApplicationManagement = () => {
                               const res = await fetch(sig);
                               const blob = await res.blob();
                               const blobUrl = URL.createObjectURL(blob);
-                              const name = `signature-${selectedApplication._id || 'sig'}.png`;
+                              const name = `signature-${
+                                selectedApplication._id || "sig"
+                              }.png`;
                               // @ts-ignore
                               downloadUrlAs(blobUrl, name);
                               URL.revokeObjectURL(blobUrl);
                             } else {
                               // remote URL: use download helper which fetches and infers extension
                               const parts = sig.split("?")[0].split("/");
-                              const name = parts[parts.length - 1] || `signature-${selectedApplication._id || 'sig'}`;
+                              const name =
+                                parts[parts.length - 1] ||
+                                `signature-${selectedApplication._id || "sig"}`;
                               // @ts-ignore
                               downloadUrlAs(sig, name);
                             }
