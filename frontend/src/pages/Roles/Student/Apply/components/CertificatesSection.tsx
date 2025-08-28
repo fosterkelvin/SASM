@@ -54,14 +54,21 @@ const CertificatesSection: React.FC<CertificatesSectionProps> = ({
               className="relative w-32 h-32 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-lg overflow-hidden bg-white dark:bg-gray-900 flex flex-col items-center justify-center"
             >
               {certificatePreviewUrls[idx]?.isPdf ? (
-                <div className="flex flex-col items-center justify-center h-full">
-                  <span className="text-xs text-blue-700 dark:text-blue-300 font-bold">
-                    PDF
-                  </span>
-                  <span className="text-[10px] text-gray-500 dark:text-gray-400 text-center px-2 truncate w-24">
-                    {file.name}
-                  </span>
-                </div>
+                // Use browser embedding for PDFs. Some browsers will show a thumbnail/preview.
+                <object
+                  data={certificatePreviewUrls[idx]?.url}
+                  type="application/pdf"
+                  className="w-full h-full"
+                >
+                  <div className="flex flex-col items-center justify-center h-full px-2">
+                    <span className="text-xs text-blue-700 dark:text-blue-300 font-bold">
+                      PDF
+                    </span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 text-center px-2 truncate w-24">
+                      {file.name}
+                    </span>
+                  </div>
+                </object>
               ) : (
                 <img
                   src={certificatePreviewUrls[idx]?.url}
