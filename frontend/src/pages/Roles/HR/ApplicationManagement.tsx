@@ -241,6 +241,28 @@ const ApplicationManagement = () => {
           );
           return;
         }
+        // Enforce interview time window: 08:00 - 17:00 (inclusive)
+        try {
+          const t = statusUpdateData.interviewTime; // expected format HH:MM
+          const [hhStr, mmStr] = (t || "").split(":");
+          const hh = parseInt(hhStr || "", 10);
+          const mm = parseInt(mmStr || "", 10);
+          if (
+            Number.isNaN(hh) ||
+            Number.isNaN(mm) ||
+            hh < 8 ||
+            hh > 17 ||
+            (hh === 17 && mm > 0)
+          ) {
+            alert("Interview time must be between 08:00 and 17:00.");
+            return;
+          }
+        } catch (e) {
+          alert(
+            "Invalid interview time. Please choose a time between 08:00 and 17:00."
+          );
+          return;
+        }
       }
 
       updateStatusMutation.mutate({
@@ -2328,6 +2350,9 @@ const ApplicationManagement = () => {
                                   }))
                                 }
                                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
+                                min="08:00"
+                                max="17:00"
+                                title="Select a time between 08:00 and 17:00"
                                 required
                               />
                             </div>
