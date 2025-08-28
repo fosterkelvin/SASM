@@ -629,15 +629,17 @@ function Application() {
                       </li>
                     </ul>
                   </div>
-                  <div className="flex justify-center mt-6">
-                    <Button
-                      variant="outline"
-                      className="border-red-600 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
-                      onClick={() => setShowWithdrawModal(true)}
-                    >
-                      Withdraw Application
-                    </Button>
-                  </div>
+                  {activeApplication.status === "pending" && (
+                    <div className="flex justify-center mt-6">
+                      <Button
+                        variant="outline"
+                        className="border-red-600 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
+                        onClick={() => setShowWithdrawModal(true)}
+                      >
+                        Withdraw Application
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 {/* Withdraw Application Confirmation Modal */}
                 {showWithdrawModal && (
