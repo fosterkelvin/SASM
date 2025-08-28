@@ -1638,6 +1638,38 @@ const ApplicationManagement = () => {
                         style={{ imageRendering: "pixelated" }}
                       />
                     </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="text-sm text-blue-600 dark:text-blue-400 underline"
+                        onClick={async () => {
+                          const sig = selectedApplication.signature;
+                          if (!sig) return;
+                          try {
+                            if (sig.startsWith("data:")) {
+                              // data URL: convert to blob then download
+                              const res = await fetch(sig);
+                              const blob = await res.blob();
+                              const blobUrl = URL.createObjectURL(blob);
+                              const name = `signature-${selectedApplication._id || 'sig'}.png`;
+                              // @ts-ignore
+                              downloadUrlAs(blobUrl, name);
+                              URL.revokeObjectURL(blobUrl);
+                            } else {
+                              // remote URL: use download helper which fetches and infers extension
+                              const parts = sig.split("?")[0].split("/");
+                              const name = parts[parts.length - 1] || `signature-${selectedApplication._id || 'sig'}`;
+                              // @ts-ignore
+                              downloadUrlAs(sig, name);
+                            }
+                          } catch (err) {
+                            window.open(sig, "_blank");
+                          }
+                        }}
+                      >
+                        Download Signature
+                      </button>
+                    </div>
                     <div className="text-center">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         Digitally signed by {selectedApplication.firstName}{" "}
