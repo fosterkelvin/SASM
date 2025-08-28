@@ -382,6 +382,19 @@ const Notifications = () => {
               filteredNotifications.map((notification: any) => (
                 <Card
                   key={notification._id}
+                  onClick={(e: any) => {
+                    if (!isSelectionMode) return;
+                    // Don't toggle selection when clicking interactive elements inside the card
+                    if ((e.target as HTMLElement).closest("button, input, a"))
+                      return;
+                    toggleNotificationSelection(notification._id);
+                  }}
+                  role={isSelectionMode ? "button" : undefined}
+                  aria-pressed={
+                    isSelectionMode
+                      ? selectedNotifications.includes(notification._id)
+                      : undefined
+                  }
                   className={`transition-all duration-200 hover:shadow-md border ${getNotificationBgColor(
                     notification.type,
                     notification.isRead
@@ -394,7 +407,7 @@ const Notifications = () => {
                     selectedNotifications.includes(notification._id)
                       ? "ring-2 ring-blue-500 dark:ring-blue-400"
                       : ""
-                  }`}
+                  } ${isSelectionMode ? "cursor-pointer" : ""}`}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
