@@ -97,8 +97,14 @@ const StudentDashboard = () => {
         }`}
       >
         {/* Top header bar - only visible on desktop */}
-        <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6">
-          <h1 className="text-2xl font-bold text-white dark:text-white">
+        <div
+          className={`hidden md:flex items-center gap-4 fixed top-0 left-0 z-30 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 h-[81px] ${
+            isSidebarCollapsed
+              ? "md:w-[calc(100%-5rem)] md:ml-20"
+              : "md:w-[calc(100%-16rem)] md:ml-64"
+          }`}
+        >
+          <h1 className="text-2xl font-bold text-white dark:text-white ml-4">
             Student Dashboard
           </h1>
         </div>
