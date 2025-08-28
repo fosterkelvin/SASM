@@ -49,6 +49,11 @@ const ApplicationManagement = () => {
     interviewNotes: "",
   });
 
+  // When true the next modal open will NOT auto-populate hrComments from the
+  // application object. This is set when the user cancels so the previous
+  // typed comment doesn't reappear on reopen.
+  const [skipPopulateHrComments, setSkipPopulateHrComments] = useState(false);
+
   // Preview state for PDFs/images
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
@@ -156,16 +161,8 @@ const ApplicationManagement = () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       // Trigger notification update since status changes create notifications
       triggerNotificationUpdate();
-      setShowStatusUpdate(false);
-      setSelectedApplication(null);
-      setStatusUpdateData({
-        status: "",
-        hrComments: "",
-        interviewDate: "",
-        interviewTime: "",
-        interviewLocation: "",
-        interviewNotes: "",
-      });
+      // Use centralized close helper to ensure consistent reset behavior
+      closeStatusModal();
     },
     onError: (error: any) => {
       console.error("Failed to update application status:", error);
@@ -180,6 +177,23 @@ const ApplicationManagement = () => {
     setFilters((prev) => ({ ...prev, page: newPage }));
   };
 
+  // Centralized helper to close the status update modal and reset modal state
+  const closeStatusModal = () => {
+    setShowStatusUpdate(false);
+    setSelectedApplication(null);
+    setStatusUpdateData({
+      status: "",
+      hrComments: "",
+      interviewDate: "",
+      interviewTime: "",
+      interviewLocation: "",
+      interviewNotes: "",
+    });
+    // Prevent the next modal open from auto-filling hrComments from the
+    // selected application (user intentionally cancelled).
+    setSkipPopulateHrComments(true);
+  };
+
   const handleStatusUpdate = (application: any) => {
     setSelectedApplication(application);
 
@@ -191,12 +205,14 @@ const ApplicationManagement = () => {
     ) {
       setStatusUpdateData({
         status: application.status,
-        hrComments: application.hrComments || "",
+        hrComments: skipPopulateHrComments ? "" : application.hrComments || "",
         interviewDate: application.interviewDate || "",
         interviewTime: application.interviewTime || "",
         interviewLocation: application.interviewLocation || "",
         interviewNotes: application.interviewNotes || "",
       });
+      // clear the flag after using it so subsequent opens behave normally
+      if (skipPopulateHrComments) setSkipPopulateHrComments(false);
       setShowStatusUpdate(true);
       return; // Don't auto-update or allow changes
     }
@@ -207,12 +223,13 @@ const ApplicationManagement = () => {
 
     setStatusUpdateData({
       status: initialStatus,
-      hrComments: application.hrComments || "",
+      hrComments: skipPopulateHrComments ? "" : application.hrComments || "",
       interviewDate: application.interviewDate || "",
       interviewTime: application.interviewTime || "",
       interviewLocation: application.interviewLocation || "",
       interviewNotes: application.interviewNotes || "",
     });
+    if (skipPopulateHrComments) setSkipPopulateHrComments(false);
     setShowStatusUpdate(true);
 
     // Auto-update pending applications to under_review when HR opens them
@@ -2571,10 +2588,7 @@ const ApplicationManagement = () => {
             <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-4 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-600">
               <Button
                 variant="outline"
-                onClick={() => {
-                  setShowStatusUpdate(false);
-                  setSelectedApplication(null);
-                }}
+                onClick={() => closeStatusModal()}
                 className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
               >
                 Cancel
