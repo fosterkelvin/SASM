@@ -219,23 +219,7 @@ const ApplicationManagement = () => {
     });
   };
 
-  // Helper function to extract filename from path (handles both Windows and Unix paths)
-  const getFilenameFromPath = (filePath: string) => {
-    if (!filePath) {
-      console.log("getFilenameFromPath: empty filePath");
-      return "";
-    }
-
-    // Handle both forward slashes and backslashes
-    const filename = filePath.split(/[/\\]/).pop() || "";
-    console.log("getFilenameFromPath:", {
-      filePath,
-      filename,
-      splitResult: filePath.split(/[/\\]/),
-      lastElement: filePath.split(/[/\\]/).pop(),
-    });
-    return filename;
-  };
+  // NOTE: removed filename-extraction helper — use stored profile/certificate value directly
 
   // Debug environment variables
   React.useEffect(() => {
@@ -484,23 +468,22 @@ const ApplicationManagement = () => {
 
                                     // Check if we have a profile photo
                                     if (application.profilePhoto) {
-                                      // If profilePhoto contains a relative path (new format)
-                                      let profileUrl;
-                                      if (
-                                        application.profilePhoto.includes("/")
-                                      ) {
+                                      const photo = application.profilePhoto;
+                                      let profileUrl: string | undefined;
+
+                                      // If it's already an absolute URL (Cloudinary or other), use it as-is
+                                      if (/^https?:\/\//i.test(photo)) {
+                                        profileUrl = photo;
+                                      } else if (photo.includes("/")) {
                                         // New format: relative path like "uploads/profiles/filename.jpg"
                                         profileUrl = `${
                                           import.meta.env.VITE_API
-                                        }/${application.profilePhoto}`;
+                                        }/${photo}`;
                                       } else {
-                                        // Old format: just filename, extract it from path
-                                        const filename = getFilenameFromPath(
-                                          application.profilePhoto
-                                        );
+                                        // Old format: stored as filename
                                         profileUrl = `${
                                           import.meta.env.VITE_API
-                                        }/uploads/profiles/${filename}`;
+                                        }/uploads/profiles/${photo}`;
                                       }
 
                                       console.log("Profile URL constructed:", {
@@ -529,25 +512,32 @@ const ApplicationManagement = () => {
                                               application.certificates.length >
                                                 0
                                             ) {
-                                              let certUrl;
                                               const certPath =
                                                 application.certificates[0];
-                                              if (certPath.includes("/")) {
+                                              let certUrl: string | undefined;
+
+                                              if (
+                                                /^https?:\/\//i.test(certPath)
+                                              ) {
+                                                certUrl = certPath;
+                                              } else if (
+                                                certPath.includes("/")
+                                              ) {
                                                 certUrl = `${
                                                   import.meta.env.VITE_API
                                                 }/${certPath}`;
                                               } else {
-                                                const certFilename =
-                                                  getFilenameFromPath(certPath);
                                                 certUrl = `${
                                                   import.meta.env.VITE_API
-                                                }/uploads/certificates/${certFilename}`;
+                                                }/uploads/certificates/${certPath}`;
                                               }
+
                                               console.log(
                                                 "Trying certificate fallback:",
                                                 certUrl
                                               );
-                                              e.currentTarget.src = certUrl;
+                                              if (certUrl)
+                                                e.currentTarget.src = certUrl;
                                             } else {
                                               e.currentTarget.src =
                                                 "/placeholder-image.png";
@@ -570,28 +560,20 @@ const ApplicationManagement = () => {
                                     ) {
                                       const certPath =
                                         application.certificates[0];
-                                      let certUrl;
+                                      let certUrl: string | undefined;
 
-                                      if (certPath.includes("/")) {
+                                      if (/^https?:\/\//i.test(certPath)) {
+                                        certUrl = certPath;
+                                      } else if (certPath.includes("/")) {
                                         // New format: relative path like "uploads/certificates/filename.jpg"
                                         certUrl = `${
                                           import.meta.env.VITE_API
                                         }/${certPath}`;
                                       } else {
-                                        // Old format: extract filename from path
-                                        const filename =
-                                          getFilenameFromPath(certPath);
-                                        if (!filename) {
-                                          console.error(
-                                            "No filename extracted from certificate path:",
-                                            certPath
-                                          );
-                                          // Continue to default avatar
-                                        } else {
-                                          certUrl = `${
-                                            import.meta.env.VITE_API
-                                          }/uploads/certificates/${filename}`;
-                                        }
+                                        // Old format: stored as filename
+                                        certUrl = `${
+                                          import.meta.env.VITE_API
+                                        }/uploads/certificates/${certPath}`;
                                       }
 
                                       if (certUrl) {
@@ -764,51 +746,75 @@ const ApplicationManagement = () => {
                 {/* Display profile photo - prioritize actual profile photo, fallback to 2x2 from certificates */}
                 {selectedApplication.profilePhoto ? (
                   <div className="relative">
-                    <img
-                      src={`${
-                        import.meta.env.VITE_API
-                      }/uploads/profiles/${getFilenameFromPath(
-                        selectedApplication.profilePhoto
-                      )}`}
-                      alt="Profile Photo"
-                      className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
-                      onClick={() =>
-                        window.open(
-                          `${
-                            import.meta.env.VITE_API
-                          }/uploads/profiles/${getFilenameFromPath(
-                            selectedApplication.profilePhoto
-                          )}`,
-                          "_blank"
-                        )
+                    {(() => {
+                      const photo = selectedApplication.profilePhoto;
+                      let profileUrl: string | undefined;
+
+                      if (/^https?:\/\//i.test(photo)) {
+                        profileUrl = photo;
+                      } else if (photo.includes("/")) {
+                        // Already a relative path like "uploads/profiles/.."
+                        profileUrl = `${import.meta.env.VITE_API}/${photo}`;
+                      } else {
+                        // Bare filename
+                        profileUrl = `${
+                          import.meta.env.VITE_API
+                        }/uploads/profiles/${photo}`;
                       }
-                      onError={(e) => {
-                        console.error("Profile image failed to load:", {
-                          src: e.currentTarget.src,
-                          originalPath: selectedApplication.profilePhoto,
-                          extractedFilename: getFilenameFromPath(
-                            selectedApplication.profilePhoto
-                          ),
-                          viteApi: import.meta.env.VITE_API,
-                          fullUrl: `${
-                            import.meta.env.VITE_API
-                          }/uploads/profiles/${getFilenameFromPath(
-                            selectedApplication.profilePhoto
-                          )}`,
-                        });
-                        e.currentTarget.src = "/placeholder-image.png";
-                      }}
-                      onLoad={() => {
-                        console.log("Profile image loaded successfully:", {
-                          src: `${
-                            import.meta.env.VITE_API
-                          }/uploads/profiles/${getFilenameFromPath(
-                            selectedApplication.profilePhoto
-                          )}`,
-                          originalPath: selectedApplication.profilePhoto,
-                        });
-                      }}
-                    />
+
+                      return (
+                        <img
+                          src={profileUrl}
+                          alt="Profile Photo"
+                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                          onClick={() =>
+                            profileUrl && window.open(profileUrl, "_blank")
+                          }
+                          onError={(e) => {
+                            console.error("Profile image failed to load:", {
+                              src: e.currentTarget.src,
+                              originalPath: selectedApplication.profilePhoto,
+                              viteApi: import.meta.env.VITE_API,
+                              attempted: profileUrl,
+                            });
+
+                            // Try fallback to certificate if available
+                            if (
+                              selectedApplication.certificates &&
+                              selectedApplication.certificates.length > 0
+                            ) {
+                              const certPath =
+                                selectedApplication.certificates[0];
+                              let certUrl: string | undefined;
+
+                              if (/^https?:\/\//i.test(certPath)) {
+                                certUrl = certPath;
+                              } else if (certPath.includes("/")) {
+                                certUrl = `${
+                                  import.meta.env.VITE_API
+                                }/${certPath}`;
+                              } else {
+                                certUrl = `${
+                                  import.meta.env.VITE_API
+                                }/uploads/certificates/${certPath}`;
+                              }
+
+                              if (certUrl) e.currentTarget.src = certUrl;
+                              else
+                                e.currentTarget.src = "/placeholder-image.png";
+                            } else {
+                              e.currentTarget.src = "/placeholder-image.png";
+                            }
+                          }}
+                          onLoad={() => {
+                            console.log(
+                              "Profile image loaded successfully:",
+                              profileUrl
+                            );
+                          }}
+                        />
+                      );
+                    })()}
                     <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-1">
                       <svg
                         className="w-4 h-4"
@@ -830,20 +836,16 @@ const ApplicationManagement = () => {
                   selectedApplication.certificates.length > 0 ? (
                   <div className="relative">
                     <img
-                      src={`${
-                        import.meta.env.VITE_API
-                      }/uploads/certificates/${getFilenameFromPath(
+                      src={`${import.meta.env.VITE_API}/uploads/certificates/${
                         selectedApplication.certificates[0]
-                      )}`}
+                      }`}
                       alt="2x2 Profile Photo"
                       className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
                       onClick={() =>
                         window.open(
-                          `${
-                            import.meta.env.VITE_API
-                          }/uploads/certificates/${getFilenameFromPath(
+                          `${import.meta.env.VITE_API}/uploads/certificates/${
                             selectedApplication.certificates[0]
-                          )}`,
+                          }`,
                           "_blank"
                         )
                       }
@@ -1220,25 +1222,6 @@ const ApplicationManagement = () => {
                   Uploaded Documents
                 </h4>
 
-                {/* Debug Information */}
-                <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                  <p className="text-xs text-yellow-800 dark:text-yellow-200">
-                    <strong>Debug Info:</strong>
-                    Profile Photo:{" "}
-                    {selectedApplication.profilePhoto ? "Yes" : "No"} | ID
-                    Document: {selectedApplication.idDocument ? "Yes" : "No"} |
-                    Certificates:{" "}
-                    {selectedApplication.certificates?.length || 0}
-                  </p>
-                  {selectedApplication.certificates &&
-                    selectedApplication.certificates.length > 0 && (
-                      <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
-                        <strong>Certificate Paths:</strong>{" "}
-                        {selectedApplication.certificates.join(", ")}
-                      </p>
-                    )}
-                </div>
-
                 <div className="space-y-4 sm:space-y-6">
                   {/* 2x2 Profile Photo - Display from certificates if different from profile photo */}
                   {selectedApplication.certificates &&
@@ -1274,18 +1257,18 @@ const ApplicationManagement = () => {
                             <img
                               src={`${
                                 import.meta.env.VITE_API
-                              }/uploads/certificates/${getFilenameFromPath(
+                              }/uploads/certificates/${
                                 selectedApplication.certificates[0]
-                              )}`}
+                              }`}
                               alt="2x2 Profile Photo"
                               className="h-32 sm:h-48 w-auto object-cover rounded-lg border-2 border-purple-200 dark:border-purple-700 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
                               onClick={() =>
                                 window.open(
                                   `${
                                     import.meta.env.VITE_API
-                                  }/uploads/certificates/${getFilenameFromPath(
+                                  }/uploads/certificates/${
                                     selectedApplication.certificates[0]
-                                  )}`,
+                                  }`,
                                   "_blank"
                                 )
                               }
@@ -1387,18 +1370,14 @@ const ApplicationManagement = () => {
                                   <img
                                     src={`${
                                       import.meta.env.VITE_API
-                                    }/uploads/certificates/${getFilenameFromPath(
-                                      cert
-                                    )}`}
+                                    }/uploads/certificates/${cert}`}
                                     alt={`Certificate ${index + 1}`}
                                     className="w-full h-20 sm:h-24 object-cover rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:shadow-lg transition-all duration-200 group-hover:scale-105"
                                     onClick={() =>
                                       window.open(
                                         `${
                                           import.meta.env.VITE_API
-                                        }/uploads/certificates/${getFilenameFromPath(
-                                          cert
-                                        )}`,
+                                        }/uploads/certificates/${cert}`,
                                         "_blank"
                                       )
                                     }
