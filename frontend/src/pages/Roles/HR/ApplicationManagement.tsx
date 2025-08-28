@@ -219,19 +219,6 @@ const ApplicationManagement = () => {
     });
   };
 
-  // NOTE: removed filename-extraction helper — use stored profile/certificate value directly
-
-  // Debug environment variables
-  React.useEffect(() => {
-    console.log("Environment Debug:", {
-      VITE_API: import.meta.env.VITE_API,
-      MODE: import.meta.env.MODE,
-      DEV: import.meta.env.DEV,
-      PROD: import.meta.env.PROD,
-      allEnv: import.meta.env,
-    });
-  }, []);
-
   // Determine which sidebar to show based on user role
   const renderSidebar = () => {
     switch (user?.role) {
@@ -453,19 +440,6 @@ const ApplicationManagement = () => {
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 h-10 w-10">
                                   {(() => {
-                                    // Debug logging
-                                    console.log("Application Debug:", {
-                                      firstName: application.firstName,
-                                      lastName: application.lastName,
-                                      profilePhoto: application.profilePhoto,
-                                      certificates: application.certificates,
-                                      hasProfilePhoto:
-                                        !!application.profilePhoto,
-                                      profilePhotoType:
-                                        typeof application.profilePhoto,
-                                      VITE_API: import.meta.env.VITE_API,
-                                    });
-
                                     // Check if we have a profile photo
                                     if (application.profilePhoto) {
                                       const photo = application.profilePhoto;
@@ -485,11 +459,6 @@ const ApplicationManagement = () => {
                                           import.meta.env.VITE_API
                                         }/uploads/profiles/${photo}`;
                                       }
-
-                                      console.log("Profile URL constructed:", {
-                                        originalPath: application.profilePhoto,
-                                        constructedUrl: profileUrl,
-                                      });
 
                                       return (
                                         <img
@@ -749,17 +718,34 @@ const ApplicationManagement = () => {
                     {(() => {
                       const photo = selectedApplication.profilePhoto;
                       let profileUrl: string | undefined;
+                      const _photo = (photo || "").toString().trim();
 
-                      if (/^https?:\/\//i.test(photo)) {
-                        profileUrl = photo;
-                      } else if (photo.includes("/")) {
-                        // Already a relative path like "uploads/profiles/.."
-                        profileUrl = `${import.meta.env.VITE_API}/${photo}`;
-                      } else {
+                      // If it's already an absolute URL (Cloudinary or other) or protocol-relative, use as-is
+                      if (
+                        /^https?:\/\//i.test(_photo) ||
+                        /^\/\//.test(_photo)
+                      ) {
+                        profileUrl = _photo.startsWith("//")
+                          ? `https:${_photo}`
+                          : _photo;
+                      } else if (
+                        /cloudinary/i.test(_photo) ||
+                        _photo.startsWith("res.cloudinary.com")
+                      ) {
+                        // Might be stored without protocol (e.g. "res.cloudinary.com/..."), assume https
+                        profileUrl = _photo.startsWith("//")
+                          ? `https:${_photo}`
+                          : `https://${_photo}`;
+                      } else if (_photo.includes("/")) {
+                        // Already a relative path like "uploads/profiles/..."
+                        profileUrl = `${import.meta.env.VITE_API}/${_photo}`;
+                      } else if (_photo) {
                         // Bare filename
                         profileUrl = `${
                           import.meta.env.VITE_API
-                        }/uploads/profiles/${photo}`;
+                        }/uploads/profiles/${_photo}`;
+                      } else {
+                        profileUrl = undefined;
                       }
 
                       return (
@@ -786,17 +772,32 @@ const ApplicationManagement = () => {
                               const certPath =
                                 selectedApplication.certificates[0];
                               let certUrl: string | undefined;
+                              const _certPath = (certPath || "")
+                                .toString()
+                                .trim();
 
-                              if (/^https?:\/\//i.test(certPath)) {
-                                certUrl = certPath;
-                              } else if (certPath.includes("/")) {
+                              if (
+                                /^https?:\/\//i.test(_certPath) ||
+                                /^\/\//.test(_certPath)
+                              ) {
+                                certUrl = _certPath.startsWith("//")
+                                  ? `https:${_certPath}`
+                                  : _certPath;
+                              } else if (
+                                /cloudinary/i.test(_certPath) ||
+                                _certPath.startsWith("res.cloudinary.com")
+                              ) {
+                                certUrl = _certPath.startsWith("//")
+                                  ? `https:${_certPath}`
+                                  : `https://${_certPath}`;
+                              } else if (_certPath.includes("/")) {
                                 certUrl = `${
                                   import.meta.env.VITE_API
-                                }/${certPath}`;
-                              } else {
+                                }/${_certPath}`;
+                              } else if (_certPath) {
                                 certUrl = `${
                                   import.meta.env.VITE_API
-                                }/uploads/certificates/${certPath}`;
+                                }/uploads/certificates/${_certPath}`;
                               }
 
                               if (certUrl) e.currentTarget.src = certUrl;
@@ -835,24 +836,79 @@ const ApplicationManagement = () => {
                 ) : selectedApplication.certificates &&
                   selectedApplication.certificates.length > 0 ? (
                   <div className="relative">
-                    <img
-                      src={`${import.meta.env.VITE_API}/uploads/certificates/${
-                        selectedApplication.certificates[0]
-                      }`}
-                      alt="2x2 Profile Photo"
-                      className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
-                      onClick={() =>
-                        window.open(
-                          `${import.meta.env.VITE_API}/uploads/certificates/${
-                            selectedApplication.certificates[0]
-                          }`,
-                          "_blank"
-                        )
+                    {(() => {
+                      const cert0 = (
+                        selectedApplication.certificates?.[0] || ""
+                      )
+                        .toString()
+                        .trim();
+                      let certUrl: string | undefined;
+
+                      if (/^https?:\/\//i.test(cert0) || /^\/\//.test(cert0)) {
+                        certUrl = cert0.startsWith("//")
+                          ? `https:${cert0}`
+                          : cert0;
+                      } else if (
+                        /cloudinary/i.test(cert0) ||
+                        cert0.startsWith("res.cloudinary.com")
+                      ) {
+                        certUrl = cert0.startsWith("//")
+                          ? `https:${cert0}`
+                          : `https://${cert0}`;
+                      } else if (cert0.includes("/")) {
+                        certUrl = `${import.meta.env.VITE_API}/${cert0}`;
+                      } else if (cert0) {
+                        certUrl = `${
+                          import.meta.env.VITE_API
+                        }/uploads/certificates/${cert0}`;
                       }
-                      onError={(e) => {
-                        e.currentTarget.src = "/placeholder-image.png";
-                      }}
-                    />
+
+                      // If the certificate fallback is a PDF (Cloudinary raw/pdf), render a PDF card
+                      const isCertPdf = !!(
+                        certUrl &&
+                        (/\.pdf(\?|$)/i.test(certUrl) ||
+                          /\/raw\/upload/i.test(certUrl) ||
+                          /resource_type=raw/i.test(certUrl) ||
+                          /format=pdf/i.test(certUrl) ||
+                          /\.pdf\b/i.test(cert0) ||
+                          /\bpdf\b/i.test(cert0))
+                      );
+
+                      return isCertPdf ? (
+                        <div
+                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                          onClick={() =>
+                            certUrl && window.open(certUrl, "_blank")
+                          }
+                          title="Open PDF"
+                        >
+                          <div className="flex flex-col items-center gap-1">
+                            <svg
+                              className="w-6 h-6 text-red-600"
+                              fill="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12 12-5.373 12-12S18.628 0 12 0zm1 17h-2v-2h2v2zm0-4h-2V5h2v8z" />
+                            </svg>
+                            <div className="text-xs text-gray-700 dark:text-gray-300">
+                              PDF
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <img
+                          src={certUrl}
+                          alt="2x2 Profile Photo"
+                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                          onClick={() =>
+                            certUrl && window.open(certUrl, "_blank")
+                          }
+                          onError={(e) => {
+                            e.currentTarget.src = "/placeholder-image.png";
+                          }}
+                        />
+                      );
+                    })()}
                     <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-1">
                       <svg
                         className="w-4 h-4"
@@ -1233,207 +1289,127 @@ const ApplicationManagement = () => {
                       clipRule="evenodd"
                     />
                   </svg>
-                  Uploaded Documents
+                  Uploaded Certificate
                 </h4>
 
                 <div className="space-y-4 sm:space-y-6">
-                  {/* 2x2 Profile Photo - Display from certificates if different from profile photo */}
-                  {selectedApplication.certificates &&
-                    selectedApplication.certificates.length > 0 && (
-                      <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center justify-between mb-3">
-                          <h5 className="text-xs sm:text-sm font-medium text-purple-600 dark:text-purple-400 flex items-center gap-2">
-                            <svg
-                              className="w-3 h-3 sm:w-4 sm:h-4"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M4 3a2 2 0 00-2 2v1.816a.5.5 0 00.166.374L5 8.058V15a2 2 0 002 2h6a2 2 0 002-2V8.058l.834-.668A.5.5 0 0016 6.816V5a2 2 0 00-2-2H4zm6 9a3 3 0 100-6 3 3 0 000 6z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            <span className="hidden sm:inline">
-                              2x2 ID Photo (From Certificates)
-                            </span>
-                            <span className="sm:hidden">2x2 Photo</span>
-                          </h5>
-                          <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                            <span className="hidden sm:inline">
-                              Click to enlarge
-                            </span>
-                            <span className="sm:hidden">Tap</span>
-                          </span>
-                        </div>
-                        <div className="flex justify-center">
-                          <div className="relative">
-                            <img
-                              src={`${
-                                import.meta.env.VITE_API
-                              }/uploads/certificates/${
-                                selectedApplication.certificates[0]
-                              }`}
-                              alt="2x2 Profile Photo"
-                              className="h-32 sm:h-48 w-auto object-cover rounded-lg border-2 border-purple-200 dark:border-purple-700 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-                              onClick={() =>
-                                window.open(
-                                  `${
-                                    import.meta.env.VITE_API
-                                  }/uploads/certificates/${
-                                    selectedApplication.certificates[0]
-                                  }`,
-                                  "_blank"
-                                )
-                              }
-                              onError={(e) => {
-                                e.currentTarget.src = "/placeholder-image.png";
-                              }}
-                            />
-                            <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-1.5 shadow-lg">
-                              <svg
-                                className="w-4 h-4"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </div>
-                            <div className="absolute -top-2 -left-2 bg-blue-500 text-white rounded-full px-2 py-1 text-xs font-bold shadow-md">
-                              2x2
-                            </div>
-                          </div>
-                        </div>
-                        <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-3">
-                          Passport-style 2x2 photograph as required for
-                          application
-                        </p>
-                      </div>
-                    )}
-
-                  {/* ID Document and Certificates */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
-                    {selectedApplication.idDocument && (
-                      <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center justify-between mb-3">
-                          <h5 className="text-xs sm:text-sm font-medium text-purple-600 dark:text-purple-400">
-                            ID Document
-                          </h5>
-                          <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                            <span className="hidden sm:inline">
-                              Click to view
-                            </span>
-                            <span className="sm:hidden">Tap</span>
-                          </span>
-                        </div>
-                        <img
-                          src={`${
-                            import.meta.env.VITE_API
-                          }/uploads/${selectedApplication.idDocument
-                            .split("/")
-                            .pop()}`}
-                          alt="ID Document"
-                          className="w-full h-32 sm:h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-                          onClick={() =>
-                            window.open(
-                              `${
-                                import.meta.env.VITE_API
-                              }/uploads/${selectedApplication.idDocument
-                                .split("/")
-                                .pop()}`,
-                              "_blank"
-                            )
-                          }
-                          onError={(e) => {
-                            e.currentTarget.src = "/placeholder-image.png";
-                          }}
-                        />
-                      </div>
-                    )}
-
+                  {/* Certificates */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {selectedApplication.certificates &&
-                      selectedApplication.certificates.length > 1 && (
-                        <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                          <div className="flex items-center justify-between mb-3">
-                            <h5 className="text-xs sm:text-sm font-medium text-purple-600 dark:text-purple-400">
-                              <span className="hidden sm:inline">
-                                Additional Certificates (
-                                {selectedApplication.certificates.length - 1})
-                              </span>
-                              <span className="sm:hidden">
-                                Certificates (
-                                {selectedApplication.certificates.length - 1})
-                              </span>
-                            </h5>
-                            <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                              <span className="hidden sm:inline">
-                                Click any to view
-                              </span>
-                              <span className="sm:hidden">Tap</span>
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                            {selectedApplication.certificates
-                              .slice(1, 5) // Skip the first one (2x2 photo) and show up to 4 additional
-                              .map((cert: string, index: number) => (
-                                <div key={index} className="relative group">
-                                  <img
-                                    src={`${
-                                      import.meta.env.VITE_API
-                                    }/uploads/certificates/${cert}`}
-                                    alt={`Certificate ${index + 1}`}
-                                    className="w-full h-20 sm:h-24 object-cover rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:shadow-lg transition-all duration-200 group-hover:scale-105"
-                                    onClick={() =>
-                                      window.open(
-                                        `${
-                                          import.meta.env.VITE_API
-                                        }/uploads/certificates/${cert}`,
-                                        "_blank"
-                                      )
-                                    }
-                                    onError={(e) => {
-                                      e.currentTarget.src =
-                                        "/placeholder-image.png";
-                                    }}
-                                  />
-                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded flex items-center justify-center">
-                                    <svg
-                                      className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                      />
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                      />
-                                    </svg>
-                                  </div>
+                    selectedApplication.certificates.length > 0 ? (
+                      selectedApplication.certificates.map(
+                        (cert: string, idx: number) => {
+                          let certUrl: string | undefined;
+                          const _cert = (cert || "").toString().trim();
+
+                          if (
+                            /^https?:\/\//i.test(_cert) ||
+                            /^\/\//.test(_cert)
+                          ) {
+                            certUrl = _cert.startsWith("//")
+                              ? `https:${_cert}`
+                              : _cert;
+                          } else if (
+                            /cloudinary/i.test(_cert) ||
+                            _cert.startsWith("res.cloudinary.com")
+                          ) {
+                            // cloudinary link stored without protocol
+                            certUrl = _cert.startsWith("//")
+                              ? `https:${_cert}`
+                              : `https://${_cert}`;
+                          } else if (_cert.includes("/")) {
+                            certUrl = `${import.meta.env.VITE_API}/${_cert}`;
+                          } else if (_cert) {
+                            certUrl = `${
+                              import.meta.env.VITE_API
+                            }/uploads/certificates/${_cert}`;
+                          }
+
+                          return (
+                            <div
+                              key={idx}
+                              className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700 flex flex-col items-stretch"
+                            >
+                              <div
+                                className="w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden cursor-pointer flex items-center justify-center"
+                                onClick={() =>
+                                  certUrl && window.open(certUrl, "_blank")
+                                }
+                              >
+                                {(() => {
+                                  // Enhanced PDF detection:
+                                  // Cloudinary raw/pdf resources sometimes don't end with .pdf
+                                  // (or may include query params/format/resource_type markers).
+                                  // Use additional heuristics based on the URL and original
+                                  // certificate string to avoid attempting to render PDFs as images.
+                                  const isPdf = !!(
+                                    certUrl &&
+                                    (/\.pdf(\?|$)/i.test(certUrl) ||
+                                      /\/raw\/upload/i.test(certUrl) ||
+                                      /resource_type=raw/i.test(certUrl) ||
+                                      /format=pdf/i.test(certUrl) ||
+                                      /\.pdf\b/i.test(_cert) ||
+                                      /\bpdf\b/i.test(_cert))
+                                  );
+                                  if (isPdf) {
+                                    return (
+                                      <div className="flex flex-col items-center gap-2">
+                                        <svg
+                                          className="w-10 h-10 text-red-600"
+                                          fill="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12 12-5.373 12-12S18.628 0 12 0zm1 17h-2v-2h2v2zm0-4h-2V5h2v8z" />
+                                        </svg>
+                                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                                          PDF Document
+                                        </div>
+                                        <div className="text-xs text-blue-600 dark:text-blue-400 underline">
+                                          Open
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <img
+                                      src={certUrl}
+                                      alt={`Certificate ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        (
+                                          e.currentTarget as HTMLImageElement
+                                        ).src = "/placeholder-image.png";
+                                      }}
+                                    />
+                                  );
+                                })()}
+                              </div>
+
+                              <div className="mt-2 flex items-center justify-between gap-2">
+                                <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                  Certificate {idx + 1}
                                 </div>
-                              ))}
-                          </div>
-                          {selectedApplication.certificates.length > 5 && (
-                            <div className="mt-3 text-center">
-                              <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
-                                +{selectedApplication.certificates.length - 5}{" "}
-                                more certificates
-                              </span>
+                                <div className="flex items-center gap-2">
+                                  <a
+                                    href={certUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs text-blue-600 dark:text-blue-400 underline"
+                                  >
+                                    Open
+                                  </a>
+                                </div>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      )}
+                          );
+                        }
+                      )
+                    ) : (
+                      <div className="text-sm text-gray-500">
+                        No certificates uploaded.
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
