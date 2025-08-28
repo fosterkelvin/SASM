@@ -88,26 +88,178 @@ export const createApplicationHandler = catchErrors(
 
     // Handle file uploads (Cloudinary URLs)
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    // Debug: log received file fieldnames and counts (temporary)
+    try {
+      if (files) {
+        console.log(
+          "[DEBUG] Received file fields:",
+          Object.keys(files).map((k) => ({ field: k, count: files[k].length }))
+        );
+      } else {
+        console.log("[DEBUG] No files received in req.files");
+      }
+    } catch (err) {
+      console.error("[DEBUG] Error logging req.files:", err);
+    }
     let profilePhoto: string | undefined;
     let idDocument: string | undefined;
     let certificates: string[] = [];
     let signature: string | undefined;
 
     if (files) {
+      // Helper: prefer secure_url/url over path and append .pdf when mimetype is PDF
+      const ensurePdfExt = (file: any): string | undefined => {
+        if (!file) return undefined;
+        // Prefer secure_url or url if provided by Cloudinary storage
+        const candidate: string | undefined =
+          file.secure_url || file.url || file.path;
+        if (candidate) {
+          // If Cloudinary already returned a URL, try to return a URL that ends with .pdf for PDFs.
+          try {
+            const isPdf = file && file.mimetype === "application/pdf";
+            if (isPdf && !candidate.toLowerCase().endsWith(".pdf")) {
+              // If public_id available, use cloudinary.url to generate a canonical URL with format
+              const pub = file.public_id;
+              if (pub) {
+                try {
+                  return cloudinary.url(pub, {
+                    resource_type: "raw",
+                    format: "pdf",
+                    secure: true,
+                  });
+                } catch (err) {
+                  // fallback to appending .pdf
+                  return `${candidate}.pdf`;
+                }
+              }
+
+              // Attempt to parse public_id from the candidate URL (after '/upload/')
+              try {
+                const uploadIndex = candidate.indexOf("/upload/");
+                if (uploadIndex !== -1) {
+                  let rest = candidate.substring(
+                    uploadIndex + "/upload/".length
+                  );
+                  // remove version prefix if present (e.g. v123456789/)
+                  const versionMatch = rest.match(/^v\d+\/(.*)$/);
+                  if (versionMatch && versionMatch[1]) {
+                    rest = versionMatch[1];
+                  }
+                  const parsedPublicId = rest;
+                  try {
+                    return cloudinary.url(parsedPublicId, {
+                      resource_type: "raw",
+                      format: "pdf",
+                      secure: true,
+                    });
+                  } catch (err) {
+                    return `${candidate}.pdf`;
+                  }
+                }
+              } catch (err) {
+                // fallback
+                return `${candidate}.pdf`;
+              }
+            }
+          } catch (err) {
+            // ignore
+          }
+          return candidate;
+        }
+
+        // If there's no URL but we have a public_id, construct one via cloudinary API
+        if (file.public_id) {
+          try {
+            const resource_type =
+              file.resource_type ||
+              (file.mimetype === "application/pdf" ? "raw" : "image");
+            const format =
+              file.format ||
+              (file.mimetype === "application/pdf" ? "pdf" : undefined);
+            const url = cloudinary.url(file.public_id, {
+              resource_type,
+              format,
+              secure: true,
+            });
+            return url;
+          } catch (err) {
+            console.error(
+              "[DEBUG] Failed to construct cloudinary url from public_id:",
+              err
+            );
+          }
+        }
+
+        return undefined;
+      };
+
+      // Debug: log received file fieldnames and counts (temporary)
+      try {
+        console.log(
+          "[DEBUG] Received file fields:",
+          Object.keys(files).map((k) => ({ field: k, count: files[k].length }))
+        );
+      } catch (err) {
+        console.error("[DEBUG] Error logging req.files:", err);
+      }
+
+      // Debug: log metadata of first certificate file (temporary)
+      try {
+        if (files.certificates && files.certificates[0]) {
+          const sample = files.certificates[0] as any;
+          console.log("[DEBUG] Sample certificate file metadata:", {
+            originalname: sample.originalname,
+            mimetype: sample.mimetype,
+            size: sample.size,
+            path: sample.path,
+            url: sample.url || sample.secure_url || sample.path,
+            secure_url: sample.secure_url,
+            public_id: sample.public_id,
+          });
+        }
+      } catch (err) {
+        console.error(
+          "[DEBUG] Error logging sample certificate metadata:",
+          err
+        );
+      }
+
       if (files.profilePhoto && files.profilePhoto[0]) {
-        profilePhoto = files.profilePhoto[0].path;
+        profilePhoto = ensurePdfExt(files.profilePhoto[0]);
       }
       if (files.idDocument && files.idDocument[0]) {
-        idDocument = files.idDocument[0].path;
+        idDocument = ensurePdfExt(files.idDocument[0]);
       }
       if (files.certificates) {
-        certificates = files.certificates.map((file) => file.path);
+        certificates = files.certificates
+          .map((f) => {
+            const file = f as any;
+            const computed =
+              ensurePdfExt(file) || file.path || file.url || file.secure_url;
+            if (
+              file &&
+              file.mimetype === "application/pdf" &&
+              typeof computed === "string" &&
+              !computed.toLowerCase().endsWith(".pdf")
+            ) {
+              return `${computed}.pdf`;
+            }
+            return computed;
+          })
+          .filter((v): v is string => typeof v === "string");
       }
       if (files.signature && files.signature[0]) {
-        signature = files.signature[0].path;
-        // Patch: set requestBody.signature to Cloudinary URL for validation
+        signature = ensurePdfExt(files.signature[0]);
+        // set requestBody.signature to Cloudinary URL for validation
         requestBody.signature = signature;
       }
+    }
+
+    // Debug: show final certificate URLs
+    try {
+      console.log("[DEBUG] Final certificate URLs:", certificates);
+    } catch (err) {
+      console.error("[DEBUG] Error logging final certificates:", err);
     }
 
     // Create the application
@@ -132,7 +284,7 @@ export const createApplicationHandler = catchErrors(
 
       await createNotification({
         userID: userID,
-        title: "Application Submitted Successfully! ✅",
+        title: "Application Submitted Successfully! \u2705",
         message: `Your application for ${positionTitle} position has been submitted successfully. You will be notified of any updates via this system and email.`,
         type: "success",
         relatedApplicationID: (application as any)._id.toString(),
@@ -377,7 +529,16 @@ export const deleteApplicationHandler = catchErrors(
         );
         const publicId = matches ? matches[1] : null;
         if (publicId) {
-          await cloudinary.uploader.destroy(publicId);
+          // If the file was uploaded as a PDF it was stored as a raw resource_type.
+          // Detect PDF by url extension and pass resource_type: 'raw' when destroying.
+          const isPdf = /\.pdf$/i.test(fileUrl);
+          if (isPdf) {
+            await cloudinary.uploader.destroy(publicId, {
+              resource_type: "raw",
+            });
+          } else {
+            await cloudinary.uploader.destroy(publicId);
+          }
         } else {
           console.error(
             "Could not extract Cloudinary public_id from URL:",

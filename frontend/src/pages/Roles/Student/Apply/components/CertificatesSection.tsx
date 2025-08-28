@@ -76,6 +76,17 @@ const CertificatesSection: React.FC<CertificatesSectionProps> = ({
                   className="object-cover w-full h-full"
                 />
               )}
+              {/* Download button for previewed file (works for local object URLs and remote URLs) */}
+              <a
+                href={certificatePreviewUrls[idx]?.url}
+                download={file.name}
+                target="_blank"
+                rel="noreferrer"
+                className="absolute bottom-1 left-1 bg-white bg-opacity-80 text-blue-600 rounded px-2 py-0.5 text-xs shadow-sm hover:bg-opacity-100"
+                title={`Download ${file.name}`}
+              >
+                Download
+              </a>
               <button
                 type="button"
                 className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-md"

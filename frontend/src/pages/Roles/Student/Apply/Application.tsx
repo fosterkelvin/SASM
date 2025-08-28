@@ -343,7 +343,8 @@ function Application() {
       }
       if (uploadedCertificates.certificates.length > 0) {
         uploadedCertificates.certificates.forEach((file) => {
-          formDataToSubmit.append("certificates", file);
+          // Provide the filename explicitly to ensure FormData includes it correctly
+          formDataToSubmit.append("certificates", file, file.name);
         });
       }
       if (signatureMethod === "upload" && uploadedSignature) {
