@@ -5,11 +5,22 @@ import cloudinary from "../config/cloudinary";
 // Configure Cloudinary storage
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: (req, file) => ({
-    folder: "uploads",
-    allowed_formats: ["jpg", "png", "jpeg", "pdf"],
-    public_id: `${file.fieldname}-${Date.now()}-${Math.round(Math.random() * 1e9)}`,
-  }),
+  params: (req, file) => {
+    // Use raw resource_type for PDFs so Cloudinary serves them correctly
+    const isPdf = file.mimetype === "application/pdf";
+    // Put files in subfolders based on field name for easier organization
+    const folder = `uploads/${file.fieldname}`;
+
+    return {
+      folder,
+      allowed_formats: ["jpg", "png", "jpeg", "pdf"],
+      public_id: `${file.fieldname}-${Date.now()}-${Math.round(
+        Math.random() * 1e9
+      )}`,
+      resource_type: isPdf ? "raw" : "image",
+      format: isPdf ? "pdf" : undefined,
+    };
+  },
 });
 
 // File filter to accept images and PDFs

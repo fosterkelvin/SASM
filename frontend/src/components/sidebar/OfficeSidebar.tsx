@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   User,
   LogOut,
@@ -12,6 +12,8 @@ import {
   Database,
   Briefcase,
   Users,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -26,6 +28,8 @@ const OfficeSidebar = ({
   currentPage = "Dashboard",
   onCollapseChange,
 }: OfficeSidebarProps) => {
+  // Ref for keyboard navigation
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(
@@ -35,6 +39,9 @@ const OfficeSidebar = ({
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(
     localStorage.getItem("sidebarCollapsed") === "true"
   );
+  const [isReportsExpanded, setIsReportsExpanded] = useState(false);
+  // Focus index for keyboard navigation
+  const [focusIndex, setFocusIndex] = useState<number | null>(null);
 
   // Notify parent component when collapse state changes
   useEffect(() => {
@@ -69,47 +76,69 @@ const OfficeSidebar = ({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Close sidebar on escape key press and focus management
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("keydown", handleEscapeKey);
+    return () => document.removeEventListener("keydown", handleEscapeKey);
+  }, [isOpen]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (isOpen && window.innerWidth < 768) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
   // Handlers
   const handleDashboardClick = () => {
-    setIsOpen(false);
     const dashboardRoute = getRoleBasedRedirect(user?.role || "office");
     navigate(dashboardRoute);
+    setIsOpen(false);
   };
 
   const handleProfileClick = () => {
-    setIsOpen(false);
     navigate("/profile");
+    setIsOpen(false);
   };
 
   const handleSignout = () => {
-    setIsOpen(false);
     logout();
+    setIsOpen(false);
   };
 
   // Office-specific menu handlers
   const handleRecordsClick = () => {
-    setIsOpen(false);
     // navigate("/records");
+    setIsOpen(false);
   };
 
   const handleReportsClick = () => {
-    setIsOpen(false);
-    // navigate("/reports");
+    setIsReportsExpanded((v) => !v);
   };
 
   const handleAdministrationClick = () => {
-    setIsOpen(false);
     // navigate("/administration");
+    setIsOpen(false);
   };
 
   const handleDocumentsClick = () => {
-    setIsOpen(false);
     // navigate("/documents");
+    setIsOpen(false);
   };
 
   const handleApplicationsClick = () => {
-    setIsOpen(false);
     navigate("/applications");
+    setIsOpen(false);
   };
 
   // Handlers for collapsed sidebar that don't expand the sidebar
@@ -129,6 +158,41 @@ const OfficeSidebar = ({
   const handleCollapsedApplicationsClick = () => {
     navigate("/applications");
   };
+
+  // Keyboard navigation for sidebar
+  const menuItems = [
+    { label: "Dashboard", handler: handleDashboardClick },
+    { label: "Records", handler: handleRecordsClick },
+    { label: "Documents", handler: handleDocumentsClick },
+    { label: "Applications", handler: handleApplicationsClick },
+    { label: "Reports", handler: handleReportsClick },
+    { label: "Administration", handler: handleAdministrationClick },
+    { label: "Profile", handler: handleProfileClick },
+    { label: "Sign out", handler: handleSignout },
+  ];
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (focusIndex === null) return;
+      if (e.key === "ArrowDown") {
+        setFocusIndex((prev) =>
+          prev !== null ? (prev + 1) % menuItems.length : 0
+        );
+        e.preventDefault();
+      } else if (e.key === "ArrowUp") {
+        setFocusIndex((prev) =>
+          prev !== null
+            ? (prev - 1 + menuItems.length) % menuItems.length
+            : menuItems.length - 1
+        );
+        e.preventDefault();
+      } else if (e.key === "Enter" || e.key === " ") {
+        menuItems[focusIndex].handler();
+        e.preventDefault();
+      }
+    },
+    [focusIndex]
+  );
 
   return (
     <>
@@ -175,15 +239,16 @@ const OfficeSidebar = ({
 
       {/* Sidebar */}
       <div
+        id="office-sidebar"
+        ref={sidebarRef}
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
         className={`fixed left-0 bg-white dark:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out z-40 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 ${
-          // Desktop: collapsible width with better sizing, Mobile: fixed width
-          isDesktopCollapsed ? "md:w-20" : "w-64"
-        } ${
-          // Mobile: full height with top padding for header, Desktop: full height
-          "top-16 h-[calc(100vh-4rem)] md:top-0 md:h-full"
-        } border-r border-gray-200 dark:border-gray-700`}
+          isDesktopCollapsed ? "md:w-20 w-64" : "w-64"
+        } top-0 h-screen border-r border-gray-200 dark:border-gray-700 focus:outline-none overflow-y-auto`}
+        aria-label="Office Sidebar"
       >
         {/* Header - Enhanced design */}
         <div
@@ -243,13 +308,20 @@ const OfficeSidebar = ({
         <nav
           className={`transition-all duration-300 ${
             isDesktopCollapsed ? "md:hidden" : "p-4"
-          } flex-1 overflow-y-auto`}
+          } flex-1 overflow-y-auto ${
+            !isDesktopCollapsed ? "mt-16 md:mt-0" : ""
+          }`}
+          aria-label="Sidebar Navigation"
         >
           <ul className="space-y-2">
             <li>
               <button
                 onClick={handleDashboardClick}
                 className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Dashboard"
+                title="Go to Dashboard"
+                aria-current={currentPage === "Dashboard"}
               >
                 <Home
                   size={20}
@@ -265,6 +337,10 @@ const OfficeSidebar = ({
               <button
                 onClick={handleRecordsClick}
                 className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Records"
+                title="View Records"
+                aria-current={currentPage === "Records"}
               >
                 <Database
                   size={20}
@@ -280,6 +356,10 @@ const OfficeSidebar = ({
               <button
                 onClick={handleDocumentsClick}
                 className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Documents"
+                title="View Documents"
+                aria-current={currentPage === "Documents"}
               >
                 <FileText
                   size={20}
@@ -295,6 +375,10 @@ const OfficeSidebar = ({
               <button
                 onClick={handleApplicationsClick}
                 className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Applications"
+                title="View Applications"
+                aria-current={currentPage === "Applications"}
               >
                 <Users
                   size={20}
@@ -307,24 +391,83 @@ const OfficeSidebar = ({
               </button>
             </li>
             <li>
-              <button
-                onClick={handleReportsClick}
-                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
-              >
-                <Briefcase
-                  size={20}
-                  className="group-hover:scale-110 transition-transform duration-200"
-                />
-                <span className="font-medium">Reports</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+              {/* Reports Menu Item with Submenu */}
+              <div>
+                <button
+                  onClick={handleReportsClick}
+                  className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                  tabIndex={0}
+                  aria-label="Reports"
+                  aria-expanded={isReportsExpanded}
+                  aria-controls="reports-submenu"
+                  title="Show Reports submenu"
+                >
+                  <Briefcase
+                    size={20}
+                    className="group-hover:scale-110 transition-transform duration-200"
+                  />
+                  <span className="font-medium">Reports</span>
+                  <div className="ml-auto flex items-center gap-2">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                    {isReportsExpanded ? (
+                      <ChevronDown
+                        size={16}
+                        className="transition-transform duration-200"
+                      />
+                    ) : (
+                      <ChevronRight
+                        size={16}
+                        className="transition-transform duration-200"
+                      />
+                    )}
+                  </div>
+                </button>
+                {/* Submenu */}
+                <div
+                  id="reports-submenu"
+                  className={`overflow-hidden transition-all duration-300 ${
+                    isReportsExpanded
+                      ? "max-h-48 opacity-100"
+                      : "max-h-0 opacity-0"
+                  }`}
+                  aria-hidden={!isReportsExpanded}
+                >
+                  <div className="pl-8 pr-4 py-2 space-y-1">
+                    <button
+                      onClick={() => {
+                        /* navigate to report 1 */
+                      }}
+                      className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
+                      tabIndex={isReportsExpanded ? 0 : -1}
+                      aria-label="Report 1"
+                      title="Report 1"
+                    >
+                      {/* Add icon if needed */}
+                      <span className="font-medium">Report 1</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        /* navigate to report 2 */
+                      }}
+                      className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
+                      tabIndex={isReportsExpanded ? 0 : -1}
+                      aria-label="Report 2"
+                      title="Report 2"
+                    >
+                      <span className="font-medium">Report 2</span>
+                    </button>
+                  </div>
                 </div>
-              </button>
+              </div>
             </li>
             <li>
               <button
                 onClick={handleAdministrationClick}
                 className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Administration"
+                title="View Administration"
+                aria-current={currentPage === "Administration"}
               >
                 <Settings
                   size={20}
@@ -340,6 +483,10 @@ const OfficeSidebar = ({
               <button
                 onClick={handleProfileClick}
                 className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Profile"
+                title="View Profile"
+                aria-current={currentPage === "Profile"}
               >
                 <User
                   size={20}
@@ -348,21 +495,6 @@ const OfficeSidebar = ({
                 <span className="font-medium">Profile</span>
                 <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                </div>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={handleSignout}
-                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-red-600 dark:text-red-400 hover:bg-gradient-to-r hover:from-red-100 hover:to-red-200 dark:hover:from-red-900/30 dark:hover:to-red-800/30 hover:text-red-700 dark:hover:text-red-300 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-300 dark:hover:border-red-700"
-              >
-                <LogOut
-                  size={20}
-                  className="group-hover:scale-110 transition-transform duration-200"
-                />
-                <span className="font-medium">Sign out</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-red-600 rounded-full"></div>
                 </div>
               </button>
             </li>
@@ -507,41 +639,58 @@ const OfficeSidebar = ({
           </div>
         )}
 
-        {/* Theme Switcher at Bottom - Enhanced */}
-        <div
-          className={`transition-all duration-300 border-t border-red-200 dark:border-red-800 bg-gradient-to-r from-red-100 to-red-200 dark:from-red-900 dark:to-red-800 ${
-            isDesktopCollapsed ? "md:hidden" : "p-4"
-          }`}
-        >
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+        {/* Theme Switcher and Sign out at Bottom - Always visible for both desktop and mobile */}
+        {!isDesktopCollapsed ? (
+          <div
+            className="transition-all duration-300 flex flex-col items-center justify-center gap-2 p-4"
+            style={{
+              position: "absolute",
+              bottom: 32,
+              left: 0,
+              right: 0,
+              background: "none",
+              border: "none",
+              zIndex: 50,
+            }}
           >
-            {darkMode ? (
-              <>
-                <Sun
-                  size={20}
-                  className="text-yellow-500 group-hover:scale-110 transition-transform duration-200"
-                />
-                <span className="font-medium">Light Mode</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
-                </div>
-              </>
-            ) : (
-              <>
-                <Moon
-                  size={20}
-                  className="text-red-500 group-hover:scale-110 transition-transform duration-200"
-                />
-                <span className="font-medium">Dark Mode</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                </div>
-              </>
-            )}
-          </button>
-        </div>
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-700 dark:hover:text-blue-400 hover:border-blue-400 dark:hover:border-blue-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              aria-label={darkMode ? "Light Mode" : "Dark Mode"}
+              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {darkMode ? (
+                <>
+                  <Sun
+                    size={16}
+                    className="text-yellow-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
+                  />
+                  <span className="font-medium">Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon
+                    size={16}
+                    className="text-blue-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
+                  />
+                  <span className="font-medium">Dark Mode</span>
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleSignout}
+              className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 hover:bg-gradient-to-r hover:from-red-100 hover:to-red-200 dark:hover:from-red-900/30 dark:hover:to-red-800/30 hover:text-red-700 dark:hover:text-red-300 hover:border-red-300 dark:hover:border-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut
+                size={16}
+                className="group-hover:scale-110 transition-transform duration-200"
+              />
+              <span className="font-medium">Sign out</span>
+            </button>
+          </div>
+        ) : null}
       </div>
     </>
   );

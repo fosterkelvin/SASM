@@ -219,35 +219,6 @@ const ApplicationManagement = () => {
     });
   };
 
-  // Helper function to extract filename from path (handles both Windows and Unix paths)
-  const getFilenameFromPath = (filePath: string) => {
-    if (!filePath) {
-      console.log("getFilenameFromPath: empty filePath");
-      return "";
-    }
-
-    // Handle both forward slashes and backslashes
-    const filename = filePath.split(/[/\\]/).pop() || "";
-    console.log("getFilenameFromPath:", {
-      filePath,
-      filename,
-      splitResult: filePath.split(/[/\\]/),
-      lastElement: filePath.split(/[/\\]/).pop(),
-    });
-    return filename;
-  };
-
-  // Debug environment variables
-  React.useEffect(() => {
-    console.log("Environment Debug:", {
-      VITE_API: import.meta.env.VITE_API,
-      MODE: import.meta.env.MODE,
-      DEV: import.meta.env.DEV,
-      PROD: import.meta.env.PROD,
-      allEnv: import.meta.env,
-    });
-  }, []);
-
   // Determine which sidebar to show based on user role
   const renderSidebar = () => {
     switch (user?.role) {
@@ -469,44 +440,25 @@ const ApplicationManagement = () => {
                               <div className="flex items-center">
                                 <div className="flex-shrink-0 h-10 w-10">
                                   {(() => {
-                                    // Debug logging
-                                    console.log("Application Debug:", {
-                                      firstName: application.firstName,
-                                      lastName: application.lastName,
-                                      profilePhoto: application.profilePhoto,
-                                      certificates: application.certificates,
-                                      hasProfilePhoto:
-                                        !!application.profilePhoto,
-                                      profilePhotoType:
-                                        typeof application.profilePhoto,
-                                      VITE_API: import.meta.env.VITE_API,
-                                    });
-
                                     // Check if we have a profile photo
                                     if (application.profilePhoto) {
-                                      // If profilePhoto contains a relative path (new format)
-                                      let profileUrl;
-                                      if (
-                                        application.profilePhoto.includes("/")
-                                      ) {
+                                      const photo = application.profilePhoto;
+                                      let profileUrl: string | undefined;
+
+                                      // If it's already an absolute URL (Cloudinary or other), use it as-is
+                                      if (/^https?:\/\//i.test(photo)) {
+                                        profileUrl = photo;
+                                      } else if (photo.includes("/")) {
                                         // New format: relative path like "uploads/profiles/filename.jpg"
                                         profileUrl = `${
                                           import.meta.env.VITE_API
-                                        }/${application.profilePhoto}`;
+                                        }/${photo}`;
                                       } else {
-                                        // Old format: just filename, extract it from path
-                                        const filename = getFilenameFromPath(
-                                          application.profilePhoto
-                                        );
+                                        // Old format: stored as filename
                                         profileUrl = `${
                                           import.meta.env.VITE_API
-                                        }/uploads/profiles/${filename}`;
+                                        }/uploads/profiles/${photo}`;
                                       }
-
-                                      console.log("Profile URL constructed:", {
-                                        originalPath: application.profilePhoto,
-                                        constructedUrl: profileUrl,
-                                      });
 
                                       return (
                                         <img
@@ -529,25 +481,32 @@ const ApplicationManagement = () => {
                                               application.certificates.length >
                                                 0
                                             ) {
-                                              let certUrl;
                                               const certPath =
                                                 application.certificates[0];
-                                              if (certPath.includes("/")) {
+                                              let certUrl: string | undefined;
+
+                                              if (
+                                                /^https?:\/\//i.test(certPath)
+                                              ) {
+                                                certUrl = certPath;
+                                              } else if (
+                                                certPath.includes("/")
+                                              ) {
                                                 certUrl = `${
                                                   import.meta.env.VITE_API
                                                 }/${certPath}`;
                                               } else {
-                                                const certFilename =
-                                                  getFilenameFromPath(certPath);
                                                 certUrl = `${
                                                   import.meta.env.VITE_API
-                                                }/uploads/certificates/${certFilename}`;
+                                                }/uploads/certificates/${certPath}`;
                                               }
+
                                               console.log(
                                                 "Trying certificate fallback:",
                                                 certUrl
                                               );
-                                              e.currentTarget.src = certUrl;
+                                              if (certUrl)
+                                                e.currentTarget.src = certUrl;
                                             } else {
                                               e.currentTarget.src =
                                                 "/placeholder-image.png";
@@ -570,28 +529,20 @@ const ApplicationManagement = () => {
                                     ) {
                                       const certPath =
                                         application.certificates[0];
-                                      let certUrl;
+                                      let certUrl: string | undefined;
 
-                                      if (certPath.includes("/")) {
+                                      if (/^https?:\/\//i.test(certPath)) {
+                                        certUrl = certPath;
+                                      } else if (certPath.includes("/")) {
                                         // New format: relative path like "uploads/certificates/filename.jpg"
                                         certUrl = `${
                                           import.meta.env.VITE_API
                                         }/${certPath}`;
                                       } else {
-                                        // Old format: extract filename from path
-                                        const filename =
-                                          getFilenameFromPath(certPath);
-                                        if (!filename) {
-                                          console.error(
-                                            "No filename extracted from certificate path:",
-                                            certPath
-                                          );
-                                          // Continue to default avatar
-                                        } else {
-                                          certUrl = `${
-                                            import.meta.env.VITE_API
-                                          }/uploads/certificates/${filename}`;
-                                        }
+                                        // Old format: stored as filename
+                                        certUrl = `${
+                                          import.meta.env.VITE_API
+                                        }/uploads/certificates/${certPath}`;
                                       }
 
                                       if (certUrl) {
@@ -764,51 +715,107 @@ const ApplicationManagement = () => {
                 {/* Display profile photo - prioritize actual profile photo, fallback to 2x2 from certificates */}
                 {selectedApplication.profilePhoto ? (
                   <div className="relative">
-                    <img
-                      src={`${
-                        import.meta.env.VITE_API
-                      }/uploads/profiles/${getFilenameFromPath(
-                        selectedApplication.profilePhoto
-                      )}`}
-                      alt="Profile Photo"
-                      className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
-                      onClick={() =>
-                        window.open(
-                          `${
-                            import.meta.env.VITE_API
-                          }/uploads/profiles/${getFilenameFromPath(
-                            selectedApplication.profilePhoto
-                          )}`,
-                          "_blank"
-                        )
+                    {(() => {
+                      const photo = selectedApplication.profilePhoto;
+                      let profileUrl: string | undefined;
+                      const _photo = (photo || "").toString().trim();
+
+                      // If it's already an absolute URL (Cloudinary or other) or protocol-relative, use as-is
+                      if (
+                        /^https?:\/\//i.test(_photo) ||
+                        /^\/\//.test(_photo)
+                      ) {
+                        profileUrl = _photo.startsWith("//")
+                          ? `https:${_photo}`
+                          : _photo;
+                      } else if (
+                        /cloudinary/i.test(_photo) ||
+                        _photo.startsWith("res.cloudinary.com")
+                      ) {
+                        // Might be stored without protocol (e.g. "res.cloudinary.com/..."), assume https
+                        profileUrl = _photo.startsWith("//")
+                          ? `https:${_photo}`
+                          : `https://${_photo}`;
+                      } else if (_photo.includes("/")) {
+                        // Already a relative path like "uploads/profiles/..."
+                        profileUrl = `${import.meta.env.VITE_API}/${_photo}`;
+                      } else if (_photo) {
+                        // Bare filename
+                        profileUrl = `${
+                          import.meta.env.VITE_API
+                        }/uploads/profiles/${_photo}`;
+                      } else {
+                        profileUrl = undefined;
                       }
-                      onError={(e) => {
-                        console.error("Profile image failed to load:", {
-                          src: e.currentTarget.src,
-                          originalPath: selectedApplication.profilePhoto,
-                          extractedFilename: getFilenameFromPath(
-                            selectedApplication.profilePhoto
-                          ),
-                          viteApi: import.meta.env.VITE_API,
-                          fullUrl: `${
-                            import.meta.env.VITE_API
-                          }/uploads/profiles/${getFilenameFromPath(
-                            selectedApplication.profilePhoto
-                          )}`,
-                        });
-                        e.currentTarget.src = "/placeholder-image.png";
-                      }}
-                      onLoad={() => {
-                        console.log("Profile image loaded successfully:", {
-                          src: `${
-                            import.meta.env.VITE_API
-                          }/uploads/profiles/${getFilenameFromPath(
-                            selectedApplication.profilePhoto
-                          )}`,
-                          originalPath: selectedApplication.profilePhoto,
-                        });
-                      }}
-                    />
+
+                      return (
+                        <img
+                          src={profileUrl}
+                          alt="Profile Photo"
+                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                          onClick={() =>
+                            profileUrl && window.open(profileUrl, "_blank")
+                          }
+                          onError={(e) => {
+                            console.error("Profile image failed to load:", {
+                              src: e.currentTarget.src,
+                              originalPath: selectedApplication.profilePhoto,
+                              viteApi: import.meta.env.VITE_API,
+                              attempted: profileUrl,
+                            });
+
+                            // Try fallback to certificate if available
+                            if (
+                              selectedApplication.certificates &&
+                              selectedApplication.certificates.length > 0
+                            ) {
+                              const certPath =
+                                selectedApplication.certificates[0];
+                              let certUrl: string | undefined;
+                              const _certPath = (certPath || "")
+                                .toString()
+                                .trim();
+
+                              if (
+                                /^https?:\/\//i.test(_certPath) ||
+                                /^\/\//.test(_certPath)
+                              ) {
+                                certUrl = _certPath.startsWith("//")
+                                  ? `https:${_certPath}`
+                                  : _certPath;
+                              } else if (
+                                /cloudinary/i.test(_certPath) ||
+                                _certPath.startsWith("res.cloudinary.com")
+                              ) {
+                                certUrl = _certPath.startsWith("//")
+                                  ? `https:${_certPath}`
+                                  : `https://${_certPath}`;
+                              } else if (_certPath.includes("/")) {
+                                certUrl = `${
+                                  import.meta.env.VITE_API
+                                }/${_certPath}`;
+                              } else if (_certPath) {
+                                certUrl = `${
+                                  import.meta.env.VITE_API
+                                }/uploads/certificates/${_certPath}`;
+                              }
+
+                              if (certUrl) e.currentTarget.src = certUrl;
+                              else
+                                e.currentTarget.src = "/placeholder-image.png";
+                            } else {
+                              e.currentTarget.src = "/placeholder-image.png";
+                            }
+                          }}
+                          onLoad={() => {
+                            console.log(
+                              "Profile image loaded successfully:",
+                              profileUrl
+                            );
+                          }}
+                        />
+                      );
+                    })()}
                     <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-1">
                       <svg
                         className="w-4 h-4"
@@ -829,28 +836,79 @@ const ApplicationManagement = () => {
                 ) : selectedApplication.certificates &&
                   selectedApplication.certificates.length > 0 ? (
                   <div className="relative">
-                    <img
-                      src={`${
-                        import.meta.env.VITE_API
-                      }/uploads/certificates/${getFilenameFromPath(
-                        selectedApplication.certificates[0]
-                      )}`}
-                      alt="2x2 Profile Photo"
-                      className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
-                      onClick={() =>
-                        window.open(
-                          `${
-                            import.meta.env.VITE_API
-                          }/uploads/certificates/${getFilenameFromPath(
-                            selectedApplication.certificates[0]
-                          )}`,
-                          "_blank"
-                        )
+                    {(() => {
+                      const cert0 = (
+                        selectedApplication.certificates?.[0] || ""
+                      )
+                        .toString()
+                        .trim();
+                      let certUrl: string | undefined;
+
+                      if (/^https?:\/\//i.test(cert0) || /^\/\//.test(cert0)) {
+                        certUrl = cert0.startsWith("//")
+                          ? `https:${cert0}`
+                          : cert0;
+                      } else if (
+                        /cloudinary/i.test(cert0) ||
+                        cert0.startsWith("res.cloudinary.com")
+                      ) {
+                        certUrl = cert0.startsWith("//")
+                          ? `https:${cert0}`
+                          : `https://${cert0}`;
+                      } else if (cert0.includes("/")) {
+                        certUrl = `${import.meta.env.VITE_API}/${cert0}`;
+                      } else if (cert0) {
+                        certUrl = `${
+                          import.meta.env.VITE_API
+                        }/uploads/certificates/${cert0}`;
                       }
-                      onError={(e) => {
-                        e.currentTarget.src = "/placeholder-image.png";
-                      }}
-                    />
+
+                      // If the certificate fallback is a PDF (Cloudinary raw/pdf), render a PDF card
+                      const isCertPdf = !!(
+                        certUrl &&
+                        (/\.pdf(\?|$)/i.test(certUrl) ||
+                          /\/raw\/upload/i.test(certUrl) ||
+                          /resource_type=raw/i.test(certUrl) ||
+                          /format=pdf/i.test(certUrl) ||
+                          /\.pdf\b/i.test(cert0) ||
+                          /\bpdf\b/i.test(cert0))
+                      );
+
+                      return isCertPdf ? (
+                        <div
+                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                          onClick={() =>
+                            certUrl && window.open(certUrl, "_blank")
+                          }
+                          title="Open PDF"
+                        >
+                          <div className="flex flex-col items-center gap-1">
+                            <svg
+                              className="w-6 h-6 text-red-600"
+                              fill="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12 12-5.373 12-12S18.628 0 12 0zm1 17h-2v-2h2v2zm0-4h-2V5h2v8z" />
+                            </svg>
+                            <div className="text-xs text-gray-700 dark:text-gray-300">
+                              PDF
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <img
+                          src={certUrl}
+                          alt="2x2 Profile Photo"
+                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                          onClick={() =>
+                            certUrl && window.open(certUrl, "_blank")
+                          }
+                          onError={(e) => {
+                            e.currentTarget.src = "/placeholder-image.png";
+                          }}
+                        />
+                      );
+                    })()}
                     <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-1">
                       <svg
                         className="w-4 h-4"
@@ -926,6 +984,7 @@ const ApplicationManagement = () => {
                     {selectedApplication.age}
                   </div>
                 </div>
+
                 <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
                   <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
                     Citizenship
@@ -934,47 +993,35 @@ const ApplicationManagement = () => {
                     {selectedApplication.citizenship}
                   </div>
                 </div>
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                    Home Contact
-                  </div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-all">
-                    {selectedApplication.homeContact}
-                  </div>
-                </div>
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                    Baguio Contact
-                  </div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-all">
-                    {selectedApplication.baguioContact}
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Address Information */}
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 border border-blue-200 dark:border-blue-800">
-              <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 sm:mb-4 flex items-center gap-2">
-                <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Address Information
-              </h4>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
+                {/* New: Gender */}
                 <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                    Gender
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedApplication.gender || (
+                      <span className="text-gray-500">No input data</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* New: Civil Status */}
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                    Civil Status
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedApplication.civilStatus || (
+                      <span className="text-gray-500">No input data</span>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
                     Home Address
                   </div>
-                  <div className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed">
+                  <div className="text-sm text-gray-900 font-semibold dark:text-gray-100 leading-relaxed">
                     {selectedApplication.homeAddress}
                     {selectedApplication.homeStreet &&
                       `, ${selectedApplication.homeStreet}`}
@@ -985,10 +1032,10 @@ const ApplicationManagement = () => {
                   </div>
                 </div>
                 <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
                     Baguio/Benguet Address
                   </div>
-                  <div className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed">
+                  <div className="text-sm text-gray-900 font-semibold dark:text-gray-100 leading-relaxed">
                     {selectedApplication.baguioAddress}
                     {selectedApplication.baguioStreet &&
                       `, ${selectedApplication.baguioStreet}`}
@@ -1103,15 +1150,21 @@ const ApplicationManagement = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div>
                     <span className="font-medium">Name:</span>{" "}
-                    {selectedApplication.relativeName}
+                    {selectedApplication.relatives?.[0]?.name || (
+                      <span className="text-gray-500">No input data</span>
+                    )}
                   </div>
                   <div>
                     <span className="font-medium">Department:</span>{" "}
-                    {selectedApplication.relativeDepartment}
+                    {selectedApplication.relatives?.[0]?.department || (
+                      <span className="text-gray-500">No input data</span>
+                    )}
                   </div>
                   <div>
                     <span className="font-medium">Relationship:</span>{" "}
-                    {selectedApplication.relativeRelationship}
+                    {selectedApplication.relatives?.[0]?.relationship || (
+                      <span className="text-gray-500">No input data</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1123,38 +1176,57 @@ const ApplicationManagement = () => {
                 Educational Background
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                {selectedApplication.elementary && (
-                  <div>
-                    <span className="font-medium">Elementary:</span>{" "}
-                    {selectedApplication.elementary}
-                    {selectedApplication.elementaryYears &&
-                      ` (${selectedApplication.elementaryYears})`}
-                  </div>
-                )}
-                {selectedApplication.highSchool && (
-                  <div>
-                    <span className="font-medium">High School:</span>{" "}
-                    {selectedApplication.highSchool}
-                    {selectedApplication.highSchoolYears &&
-                      ` (${selectedApplication.highSchoolYears})`}
-                  </div>
-                )}
-                {selectedApplication.college && (
-                  <div>
-                    <span className="font-medium">College:</span>{" "}
-                    {selectedApplication.college}
-                    {selectedApplication.collegeYears &&
-                      ` (${selectedApplication.collegeYears})`}
-                  </div>
-                )}
-                {selectedApplication.others && (
-                  <div>
-                    <span className="font-medium">Others:</span>{" "}
-                    {selectedApplication.others}
-                    {selectedApplication.othersYears &&
-                      ` (${selectedApplication.othersYears})`}
-                  </div>
-                )}
+                <div>
+                  <span className="font-medium">Elementary:</span>{" "}
+                  {selectedApplication.elementary ? (
+                    <>
+                      {selectedApplication.elementary}
+                      {selectedApplication.elementaryYears &&
+                        ` (${selectedApplication.elementaryYears})`}
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No input data</span>
+                  )}
+                </div>
+
+                <div>
+                  <span className="font-medium">High School:</span>{" "}
+                  {selectedApplication.highSchool ? (
+                    <>
+                      {selectedApplication.highSchool}
+                      {selectedApplication.highSchoolYears &&
+                        ` (${selectedApplication.highSchoolYears})`}
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No input data</span>
+                  )}
+                </div>
+
+                <div>
+                  <span className="font-medium">College:</span>{" "}
+                  {selectedApplication.college ? (
+                    <>
+                      {selectedApplication.college}
+                      {selectedApplication.collegeYears &&
+                        ` (${selectedApplication.collegeYears})`}
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No input data</span>
+                  )}
+                </div>
+
+                <div>
+                  <span className="font-medium">Others:</span>{" "}
+                  {selectedApplication.others ? (
+                    <>
+                      {selectedApplication.others}
+                      {selectedApplication.othersYears &&
+                        ` (${selectedApplication.othersYears})`}
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No input data</span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1217,230 +1289,127 @@ const ApplicationManagement = () => {
                       clipRule="evenodd"
                     />
                   </svg>
-                  Uploaded Documents
+                  Uploaded Certificate
                 </h4>
 
-                {/* Debug Information */}
-                <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                  <p className="text-xs text-yellow-800 dark:text-yellow-200">
-                    <strong>Debug Info:</strong>
-                    Profile Photo:{" "}
-                    {selectedApplication.profilePhoto ? "Yes" : "No"} | ID
-                    Document: {selectedApplication.idDocument ? "Yes" : "No"} |
-                    Certificates:{" "}
-                    {selectedApplication.certificates?.length || 0}
-                  </p>
-                  {selectedApplication.certificates &&
-                    selectedApplication.certificates.length > 0 && (
-                      <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
-                        <strong>Certificate Paths:</strong>{" "}
-                        {selectedApplication.certificates.join(", ")}
-                      </p>
-                    )}
-                </div>
-
                 <div className="space-y-4 sm:space-y-6">
-                  {/* 2x2 Profile Photo - Display from certificates if different from profile photo */}
-                  {selectedApplication.certificates &&
-                    selectedApplication.certificates.length > 0 && (
-                      <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center justify-between mb-3">
-                          <h5 className="text-xs sm:text-sm font-medium text-purple-600 dark:text-purple-400 flex items-center gap-2">
-                            <svg
-                              className="w-3 h-3 sm:w-4 sm:h-4"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M4 3a2 2 0 00-2 2v1.816a.5.5 0 00.166.374L5 8.058V15a2 2 0 002 2h6a2 2 0 002-2V8.058l.834-.668A.5.5 0 0016 6.816V5a2 2 0 00-2-2H4zm6 9a3 3 0 100-6 3 3 0 000 6z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            <span className="hidden sm:inline">
-                              2x2 ID Photo (From Certificates)
-                            </span>
-                            <span className="sm:hidden">2x2 Photo</span>
-                          </h5>
-                          <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                            <span className="hidden sm:inline">
-                              Click to enlarge
-                            </span>
-                            <span className="sm:hidden">Tap</span>
-                          </span>
-                        </div>
-                        <div className="flex justify-center">
-                          <div className="relative">
-                            <img
-                              src={`${
-                                import.meta.env.VITE_API
-                              }/uploads/certificates/${getFilenameFromPath(
-                                selectedApplication.certificates[0]
-                              )}`}
-                              alt="2x2 Profile Photo"
-                              className="h-32 sm:h-48 w-auto object-cover rounded-lg border-2 border-purple-200 dark:border-purple-700 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-                              onClick={() =>
-                                window.open(
-                                  `${
-                                    import.meta.env.VITE_API
-                                  }/uploads/certificates/${getFilenameFromPath(
-                                    selectedApplication.certificates[0]
-                                  )}`,
-                                  "_blank"
-                                )
-                              }
-                              onError={(e) => {
-                                e.currentTarget.src = "/placeholder-image.png";
-                              }}
-                            />
-                            <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-1.5 shadow-lg">
-                              <svg
-                                className="w-4 h-4"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </div>
-                            <div className="absolute -top-2 -left-2 bg-blue-500 text-white rounded-full px-2 py-1 text-xs font-bold shadow-md">
-                              2x2
-                            </div>
-                          </div>
-                        </div>
-                        <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-3">
-                          Passport-style 2x2 photograph as required for
-                          application
-                        </p>
-                      </div>
-                    )}
-
-                  {/* ID Document and Certificates */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
-                    {selectedApplication.idDocument && (
-                      <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center justify-between mb-3">
-                          <h5 className="text-xs sm:text-sm font-medium text-purple-600 dark:text-purple-400">
-                            ID Document
-                          </h5>
-                          <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                            <span className="hidden sm:inline">
-                              Click to view
-                            </span>
-                            <span className="sm:hidden">Tap</span>
-                          </span>
-                        </div>
-                        <img
-                          src={`${
-                            import.meta.env.VITE_API
-                          }/uploads/${selectedApplication.idDocument
-                            .split("/")
-                            .pop()}`}
-                          alt="ID Document"
-                          className="w-full h-32 sm:h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
-                          onClick={() =>
-                            window.open(
-                              `${
-                                import.meta.env.VITE_API
-                              }/uploads/${selectedApplication.idDocument
-                                .split("/")
-                                .pop()}`,
-                              "_blank"
-                            )
-                          }
-                          onError={(e) => {
-                            e.currentTarget.src = "/placeholder-image.png";
-                          }}
-                        />
-                      </div>
-                    )}
-
+                  {/* Certificates */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {selectedApplication.certificates &&
-                      selectedApplication.certificates.length > 1 && (
-                        <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                          <div className="flex items-center justify-between mb-3">
-                            <h5 className="text-xs sm:text-sm font-medium text-purple-600 dark:text-purple-400">
-                              <span className="hidden sm:inline">
-                                Additional Certificates (
-                                {selectedApplication.certificates.length - 1})
-                              </span>
-                              <span className="sm:hidden">
-                                Certificates (
-                                {selectedApplication.certificates.length - 1})
-                              </span>
-                            </h5>
-                            <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-                              <span className="hidden sm:inline">
-                                Click any to view
-                              </span>
-                              <span className="sm:hidden">Tap</span>
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                            {selectedApplication.certificates
-                              .slice(1, 5) // Skip the first one (2x2 photo) and show up to 4 additional
-                              .map((cert: string, index: number) => (
-                                <div key={index} className="relative group">
-                                  <img
-                                    src={`${
-                                      import.meta.env.VITE_API
-                                    }/uploads/certificates/${getFilenameFromPath(
-                                      cert
-                                    )}`}
-                                    alt={`Certificate ${index + 1}`}
-                                    className="w-full h-20 sm:h-24 object-cover rounded border border-gray-200 dark:border-gray-600 cursor-pointer hover:shadow-lg transition-all duration-200 group-hover:scale-105"
-                                    onClick={() =>
-                                      window.open(
-                                        `${
-                                          import.meta.env.VITE_API
-                                        }/uploads/certificates/${getFilenameFromPath(
-                                          cert
-                                        )}`,
-                                        "_blank"
-                                      )
-                                    }
-                                    onError={(e) => {
-                                      e.currentTarget.src =
-                                        "/placeholder-image.png";
-                                    }}
-                                  />
-                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded flex items-center justify-center">
-                                    <svg
-                                      className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                      />
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="2"
-                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                      />
-                                    </svg>
-                                  </div>
+                    selectedApplication.certificates.length > 0 ? (
+                      selectedApplication.certificates.map(
+                        (cert: string, idx: number) => {
+                          let certUrl: string | undefined;
+                          const _cert = (cert || "").toString().trim();
+
+                          if (
+                            /^https?:\/\//i.test(_cert) ||
+                            /^\/\//.test(_cert)
+                          ) {
+                            certUrl = _cert.startsWith("//")
+                              ? `https:${_cert}`
+                              : _cert;
+                          } else if (
+                            /cloudinary/i.test(_cert) ||
+                            _cert.startsWith("res.cloudinary.com")
+                          ) {
+                            // cloudinary link stored without protocol
+                            certUrl = _cert.startsWith("//")
+                              ? `https:${_cert}`
+                              : `https://${_cert}`;
+                          } else if (_cert.includes("/")) {
+                            certUrl = `${import.meta.env.VITE_API}/${_cert}`;
+                          } else if (_cert) {
+                            certUrl = `${
+                              import.meta.env.VITE_API
+                            }/uploads/certificates/${_cert}`;
+                          }
+
+                          return (
+                            <div
+                              key={idx}
+                              className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700 flex flex-col items-stretch"
+                            >
+                              <div
+                                className="w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden cursor-pointer flex items-center justify-center"
+                                onClick={() =>
+                                  certUrl && window.open(certUrl, "_blank")
+                                }
+                              >
+                                {(() => {
+                                  // Enhanced PDF detection:
+                                  // Cloudinary raw/pdf resources sometimes don't end with .pdf
+                                  // (or may include query params/format/resource_type markers).
+                                  // Use additional heuristics based on the URL and original
+                                  // certificate string to avoid attempting to render PDFs as images.
+                                  const isPdf = !!(
+                                    certUrl &&
+                                    (/\.pdf(\?|$)/i.test(certUrl) ||
+                                      /\/raw\/upload/i.test(certUrl) ||
+                                      /resource_type=raw/i.test(certUrl) ||
+                                      /format=pdf/i.test(certUrl) ||
+                                      /\.pdf\b/i.test(_cert) ||
+                                      /\bpdf\b/i.test(_cert))
+                                  );
+                                  if (isPdf) {
+                                    return (
+                                      <div className="flex flex-col items-center gap-2">
+                                        <svg
+                                          className="w-10 h-10 text-red-600"
+                                          fill="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12 12-5.373 12-12S18.628 0 12 0zm1 17h-2v-2h2v2zm0-4h-2V5h2v8z" />
+                                        </svg>
+                                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                                          PDF Document
+                                        </div>
+                                        <div className="text-xs text-blue-600 dark:text-blue-400 underline">
+                                          Open
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <img
+                                      src={certUrl}
+                                      alt={`Certificate ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        (
+                                          e.currentTarget as HTMLImageElement
+                                        ).src = "/placeholder-image.png";
+                                      }}
+                                    />
+                                  );
+                                })()}
+                              </div>
+
+                              <div className="mt-2 flex items-center justify-between gap-2">
+                                <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                  Certificate {idx + 1}
                                 </div>
-                              ))}
-                          </div>
-                          {selectedApplication.certificates.length > 5 && (
-                            <div className="mt-3 text-center">
-                              <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
-                                +{selectedApplication.certificates.length - 5}{" "}
-                                more certificates
-                              </span>
+                                <div className="flex items-center gap-2">
+                                  <a
+                                    href={certUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs text-blue-600 dark:text-blue-400 underline"
+                                  >
+                                    Open
+                                  </a>
+                                </div>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      )}
+                          );
+                        }
+                      )
+                    ) : (
+                      <div className="text-sm text-gray-500">
+                        No certificates uploaded.
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
