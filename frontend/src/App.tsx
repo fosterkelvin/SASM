@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Outlet } from "react-router-dom";
 import Signin from "./pages/Auth/SigninPage";
 import Signup from "./pages/Auth/SignupPage";
 import StudentDashboard from "./pages/Roles/Student/StudentDashboard";
@@ -7,10 +7,10 @@ import OfficeDashboard from "./pages/Roles/Office/OfficeDashboard";
 import Home from "./pages/Auth/home";
 import Profile from "./pages/Auth/Profile";
 import Application from "./pages/Roles/Student/Apply/Application";
-import ApplicationManagement from "./pages/Roles/HR/ApplicationManagement";
+import HRApplicationManagement from "./pages/Roles/HR/ApplicationManagement";
 import Notifications from "./pages/Utils/Notifications";
 import PublicRoute from "./routes/PublicRoute";
-import ProtectedRoute from "./routes/ProtectedRoute";
+import RoleProtectedRoute from "./routes/RoleProtectedRoute";
 import NotFound from "@/pages/Utils/NotFound";
 import VerifyEmail from "./pages/Auth/VerifyEmail";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
@@ -18,13 +18,12 @@ import ResetPassword from "./pages/Auth/ResetPassword";
 import AppContainer from "./components/AppContainer";
 import { ReactElement } from "react";
 import { useState, useEffect } from "react";
-
-const withPublic = (element: ReactElement): ReactElement => (
-  <PublicRoute>{element}</PublicRoute>
-);
-
-const withProtected = (element: ReactElement): ReactElement => (
-  <ProtectedRoute>{element}</ProtectedRoute>
+// Small layout components to group routes
+const PublicLayout = (): ReactElement => (
+  <>
+    <AppContainer />
+    <Outlet />
+  </>
 );
 
 function App(): ReactElement {
@@ -99,41 +98,87 @@ function App(): ReactElement {
 
   return (
     <Routes>
-      {/* Public Routes */}
+      {/* Public routes grouped under a public layout so shared UI (AppContainer) renders once */}
       <Route
-        path="/"
-        element={withPublic(
-          <>
-            <AppContainer />
-            <Home />
-          </>
-        )}
-      />
-      <Route path="/signin" element={withPublic(<Signin />)} />
-      <Route path="/signup" element={withPublic(<Signup />)} />
-      <Route path="/password/forgot" element={withPublic(<ForgotPassword />)} />
-      <Route path="/password/reset" element={withPublic(<ResetPassword />)} />
+        element={
+          <PublicRoute>
+            <PublicLayout />
+          </PublicRoute>
+        }
+      >
+        <Route path="/" element={<Home />} />
+        <Route path="/signin" element={<Signin />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/password/forgot" element={<ForgotPassword />} />
+        <Route path="/password/reset" element={<ResetPassword />} />
+        <Route path="/email/verify/:code" element={<VerifyEmail />} />
+      </Route>
 
-      {/* Protected Routes */}
+      {/* Protected routes: each route wrapped with RoleProtectedRoute to enforce role-based access */}
       <Route
         path="/student-dashboard"
-        element={withProtected(<StudentDashboard />)}
-      />
-      <Route path="/HR-dashboard" element={withProtected(<HRDashboard />)} />
-      <Route
-        path="/office-dashboard"
-        element={withProtected(<OfficeDashboard />)}
-      />
-      <Route path="/profile" element={withProtected(<Profile />)} />
-      <Route path="/notifications" element={withProtected(<Notifications />)} />
-      <Route path="/application" element={withProtected(<Application />)} />
-      <Route
-        path="/applications"
-        element={withProtected(<ApplicationManagement />)}
+        element={
+          <RoleProtectedRoute>
+            <StudentDashboard />
+          </RoleProtectedRoute>
+        }
       />
 
-      {/* Standalone Routes */}
-      <Route path="/email/verify/:code" element={<VerifyEmail />} />
+      <Route
+        path="/application"
+        element={
+          <RoleProtectedRoute>
+            <Application />
+          </RoleProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/hr-dashboard"
+        element={
+          <RoleProtectedRoute>
+            <HRDashboard />
+          </RoleProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/office-dashboard"
+        element={
+          <RoleProtectedRoute>
+            <OfficeDashboard />
+          </RoleProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/profile"
+        element={
+          <RoleProtectedRoute>
+            <Profile />
+          </RoleProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/notifications"
+        element={
+          <RoleProtectedRoute>
+            <Notifications />
+          </RoleProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/applications"
+        element={
+          <RoleProtectedRoute>
+            <HRApplicationManagement />
+          </RoleProtectedRoute>
+        }
+      />
+
+      {/* Fallback */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
