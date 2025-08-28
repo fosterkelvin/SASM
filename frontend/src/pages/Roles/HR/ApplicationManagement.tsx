@@ -940,42 +940,6 @@ const ApplicationManagement = () => {
                   <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
                     Home Contact
                   </div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-all">
-                    {selectedApplication.homeContact}
-                  </div>
-                </div>
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                    Baguio Contact
-                  </div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 break-all">
-                    {selectedApplication.baguioContact}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Address Information */}
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 border border-blue-200 dark:border-blue-800">
-              <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 sm:mb-4 flex items-center gap-2">
-                <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Address Information
-              </h4>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
-                    Home Address
-                  </div>
                   <div className="text-sm text-gray-900 dark:text-gray-100 leading-relaxed">
                     {selectedApplication.homeAddress}
                     {selectedApplication.homeStreet &&
@@ -1125,38 +1089,57 @@ const ApplicationManagement = () => {
                 Educational Background
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                {selectedApplication.elementary && (
-                  <div>
-                    <span className="font-medium">Elementary:</span>{" "}
-                    {selectedApplication.elementary}
-                    {selectedApplication.elementaryYears &&
-                      ` (${selectedApplication.elementaryYears})`}
-                  </div>
-                )}
-                {selectedApplication.highSchool && (
-                  <div>
-                    <span className="font-medium">High School:</span>{" "}
-                    {selectedApplication.highSchool}
-                    {selectedApplication.highSchoolYears &&
-                      ` (${selectedApplication.highSchoolYears})`}
-                  </div>
-                )}
-                {selectedApplication.college && (
-                  <div>
-                    <span className="font-medium">College:</span>{" "}
-                    {selectedApplication.college}
-                    {selectedApplication.collegeYears &&
-                      ` (${selectedApplication.collegeYears})`}
-                  </div>
-                )}
-                {selectedApplication.others && (
-                  <div>
-                    <span className="font-medium">Others:</span>{" "}
-                    {selectedApplication.others}
-                    {selectedApplication.othersYears &&
-                      ` (${selectedApplication.othersYears})`}
-                  </div>
-                )}
+                <div>
+                  <span className="font-medium">Elementary:</span>{" "}
+                  {selectedApplication.elementary ? (
+                    <>
+                      {selectedApplication.elementary}
+                      {selectedApplication.elementaryYears &&
+                        ` (${selectedApplication.elementaryYears})`}
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No input data</span>
+                  )}
+                </div>
+
+                <div>
+                  <span className="font-medium">High School:</span>{" "}
+                  {selectedApplication.highSchool ? (
+                    <>
+                      {selectedApplication.highSchool}
+                      {selectedApplication.highSchoolYears &&
+                        ` (${selectedApplication.highSchoolYears})`}
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No input data</span>
+                  )}
+                </div>
+
+                <div>
+                  <span className="font-medium">College:</span>{" "}
+                  {selectedApplication.college ? (
+                    <>
+                      {selectedApplication.college}
+                      {selectedApplication.collegeYears &&
+                        ` (${selectedApplication.collegeYears})`}
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No input data</span>
+                  )}
+                </div>
+
+                <div>
+                  <span className="font-medium">Others:</span>{" "}
+                  {selectedApplication.others ? (
+                    <>
+                      {selectedApplication.others}
+                      {selectedApplication.othersYears &&
+                        ` (${selectedApplication.othersYears})`}
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No input data</span>
+                  )}
+                </div>
               </div>
             </div>
 
