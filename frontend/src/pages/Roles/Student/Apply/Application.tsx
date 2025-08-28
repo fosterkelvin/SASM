@@ -63,6 +63,7 @@ function Application() {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [withdrawSuccess, setWithdrawSuccess] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   const { seminars, addSeminar, removeSeminar, updateSeminar, setSeminars } =
     useSeminars();
@@ -112,15 +113,34 @@ function Application() {
   const handleWithdrawCancel = () => setShowWithdrawModal(false);
   const handleWithdrawConfirm = async () => {
     if (!activeApplication) return;
+    setIsWithdrawing(true);
     try {
       const { deleteApplication } = await import("@/lib/api");
       await deleteApplication(activeApplication._id);
+      // Clear any uploaded client-side files/previews when withdrawing
+      try {
+        clearCertificates();
+      } catch (e) {
+        // ignore
+      }
+      try {
+        removeFile();
+      } catch (e) {
+        // ignore
+      }
+      try {
+        clearSignature();
+      } catch (e) {
+        // ignore
+      }
       setShowWithdrawModal(false);
       setWithdrawSuccess(true);
       setSubmitMessage("Your application has been withdrawn.");
       queryClient.invalidateQueries({ queryKey: ["userApplications"] });
     } catch (error) {
       setSubmitMessage("Failed to withdraw application. Please try again.");
+    } finally {
+      setIsWithdrawing(false);
     }
   };
 
@@ -715,9 +735,17 @@ function Application() {
                           </Button>
                           <Button
                             onClick={handleWithdrawConfirm}
+                            disabled={isWithdrawing}
                             className="order-1 sm:order-2 bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-red-200"
                           >
-                            Yes, Withdraw
+                            {isWithdrawing ? (
+                              <div className="flex items-center gap-2">
+                                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                                Withdrawing...
+                              </div>
+                            ) : (
+                              "Yes, Withdraw"
+                            )}
                           </Button>
                         </div>
                       </div>
@@ -1199,9 +1227,17 @@ function Application() {
                     </Button>
                     <Button
                       onClick={handleWithdrawConfirm}
+                      disabled={isWithdrawing}
                       className="order-1 sm:order-2 bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-red-200"
                     >
-                      Yes, Withdraw
+                      {isWithdrawing ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                          Withdrawing...
+                        </div>
+                      ) : (
+                        "Yes, Withdraw"
+                      )}
                     </Button>
                   </div>
                 </div>

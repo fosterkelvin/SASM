@@ -17,6 +17,20 @@ export interface CertificatePreviewUrls {
 export default function useCertificatesUpload() {
   // Clear all certificates
   const clearCertificates = () => {
+    // Revoke any object URLs created for previews to free memory
+    try {
+      certificatePreviewUrls.certificates.forEach((item) => {
+        if (item && item.url) {
+          try {
+            URL.revokeObjectURL(item.url);
+          } catch (e) {
+            // ignore revoke errors
+          }
+        }
+      });
+    } catch (e) {
+      // ignore if preview list is not available
+    }
     setUploadedCertificates({ certificates: [] });
     setCertificatePreviewUrls({ certificates: [] });
   };
@@ -60,10 +74,21 @@ export default function useCertificatesUpload() {
   };
 
   const removeCertificate = (index: number) => {
+    // Revoke object URL for the removed preview if present
+    setCertificatePreviewUrls((prev) => {
+      const toRevoke = prev.certificates[index];
+      if (toRevoke && toRevoke.url) {
+        try {
+          URL.revokeObjectURL(toRevoke.url);
+        } catch (e) {
+          // ignore
+        }
+      }
+      return {
+        certificates: prev.certificates.filter((_, i) => i !== index),
+      };
+    });
     setUploadedCertificates((prev) => ({
-      certificates: prev.certificates.filter((_, i) => i !== index),
-    }));
-    setCertificatePreviewUrls((prev) => ({
       certificates: prev.certificates.filter((_, i) => i !== index),
     }));
   };
