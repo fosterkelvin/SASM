@@ -75,11 +75,74 @@ const ApplicationStatusCard: React.FC<ApplicationStatusCardProps> = ({
           {status.replace(/_/g, " ").toUpperCase()}
         </span>
       </div>
-      <div className="mb-2">Submitted: {formatDate(application.createdAt)}</div>
-      {application.updatedAt && (
-        <div>Last Updated: {formatDate(application.updatedAt)}</div>
+
+      {/* Hired state: show expanded details */}
+      {status === "hired" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="border rounded-md p-4 bg-white/60">
+            <h4 className="font-semibold mb-2">Application Details</h4>
+            <div className="text-sm text-slate-700">
+              <div>
+                <span className="font-medium">Position:</span>{" "}
+                {application?.position?.title || application?.position || "N/A"}
+              </div>
+              <div className="mt-2">
+                <span className="font-medium">Submitted:</span>{" "}
+                {application?.createdAt
+                  ? formatDate(application.createdAt)
+                  : "-"}
+              </div>
+              {application?.updatedAt && (
+                <div className="mt-2">
+                  <span className="font-medium">Last Updated:</span>{" "}
+                  {formatDate(application.updatedAt)}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="border rounded-md p-4 bg-white/60">
+            <div className="flex items-center justify-between">
+              <div className="inline-flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-sm font-medium">
+                  Hired
+                </span>
+              </div>
+            </div>
+            <h4 className="font-semibold mt-4 mb-2">What's Next?</h4>
+            <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
+              <li>Your application has been accepted and marked as hired.</li>
+              <li>HR will reach out with onboarding details and next steps.</li>
+              <li>
+                You will receive email notifications for updates.
+              </li>
+            </ul>
+          </div>
+
+          <div className="md:col-span-2 border rounded-md p-4 bg-white/60">
+            <h4 className="text-red-600 font-semibold mb-2">Need Help?</h4>
+            <div className="text-sm text-slate-700">
+              If you have any questions about your hired status or onboarding,
+              please contact:
+              <ul className="list-disc list-inside mt-2">
+                <li>HR Office: [Contact information]</li>
+                <li>Email: hr@ub.edu.ph</li>
+                <li>Office Hours: Monday - Friday, 8:00 AM - 5:00 PM</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="mb-2">
+            Submitted: {formatDate(application.createdAt)}
+          </div>
+          {application.updatedAt && (
+            <div>Last Updated: {formatDate(application.updatedAt)}</div>
+          )}
+          {/* Add more details as needed */}
+        </>
       )}
-      {/* Add more details as needed */}
     </CardContent>
   </Card>
 );

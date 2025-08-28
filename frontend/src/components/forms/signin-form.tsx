@@ -40,11 +40,38 @@ export function SigninForm({
       navigate(redirectUrl, { replace: true });
     },
     onError: (error: any) => {
-      // Extract the error message from the response
-      const message =
-        error?.response?.data?.message || "Invalid email or password";
-      console.log("Signin error:", error);
-      console.log("Error message:", message);
+      // The API client may reject with different shapes. Normalize them here so
+      // the UI shows a friendly message and the mutation stops loading.
+      console.log("Signin error (raw):", error);
+
+      // Possible shapes from apiClient interceptor: { status, message } or { status, ...data }
+      // Or axios error with response.data.message
+      let message = "Invalid email or password";
+
+      if (typeof error === "string") {
+        message = error;
+      } else if (error?.message) {
+        message = error.message;
+      } else if (error?.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error?.message) {
+        message = error.message;
+      } else if (error?.data?.message) {
+        message = error.data.message;
+      } else if (error?.message) {
+        message = String(error.message);
+      } else if (error?.status && error?.message === undefined) {
+        // If the interceptor returned an object with status and other fields
+        // try to extract any message-like property
+        message =
+          error?.data?.message ||
+          error?.message ||
+          error?.error ||
+          error?.detail ||
+          "Invalid email or password";
+      }
+
+      console.log("Signin error message:", message);
       setErrorMessage(message);
     },
   });

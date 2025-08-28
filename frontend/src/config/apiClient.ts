@@ -45,6 +45,27 @@ API.interceptors.response.use(
           });
         }
 
+        // Do NOT attempt a token refresh for certain auth endpoints like signin/signup/refresh
+        // These endpoints legitimately return 401 for invalid credentials or missing refresh token
+        // and should be surfaced directly to callers instead of triggering a refresh loop.
+        const noRefreshUrls = [
+          "/auth/signin",
+          "/auth/signup",
+          "/auth/refresh",
+          "/auth/password/forgot",
+          "/auth/email/resend",
+        ];
+
+        const requestUrl = String(error.config?.url || "");
+        if (noRefreshUrls.includes(requestUrl)) {
+          return Promise.reject({
+            status,
+            ...(typeof data === "object" && data !== null
+              ? data
+              : { message: data }),
+          });
+        }
+
         // For other 401s, try to refresh the token
         if (isRefreshing) {
           // If already refreshing, queue this request
