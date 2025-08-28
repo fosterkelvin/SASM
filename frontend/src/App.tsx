@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Outlet } from "react-router-dom";
 import Signin from "./pages/Auth/SigninPage";
 import Signup from "./pages/Auth/SignupPage";
 import StudentDashboard from "./pages/Roles/Student/StudentDashboard";
@@ -7,10 +7,10 @@ import OfficeDashboard from "./pages/Roles/Office/OfficeDashboard";
 import Home from "./pages/Auth/home";
 import Profile from "./pages/Auth/Profile";
 import Application from "./pages/Roles/Student/Apply/Application";
-import ApplicationManagement from "./pages/Roles/HR/ApplicationManagement";
+import HRApplicationManagement from "./pages/Roles/HR/ApplicationManagement";
 import Notifications from "./pages/Utils/Notifications";
 import PublicRoute from "./routes/PublicRoute";
-import ProtectedRoute from "./routes/ProtectedRoute";
+import RoleProtectedRoute from "./routes/RoleProtectedRoute";
 import NotFound from "@/pages/Utils/NotFound";
 import VerifyEmail from "./pages/Auth/VerifyEmail";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
@@ -18,14 +18,8 @@ import ResetPassword from "./pages/Auth/ResetPassword";
 import AppContainer from "./components/AppContainer";
 import { ReactElement } from "react";
 import { useState, useEffect } from "react";
-
-const withPublic = (element: ReactElement): ReactElement => (
-  <PublicRoute>{element}</PublicRoute>
-);
-
-const withProtected = (element: ReactElement): ReactElement => (
-  <ProtectedRoute>{element}</ProtectedRoute>
-);
+// Small layout components to group routes
+const PublicLayout = (): ReactElement => <Outlet />;
 
 function App(): ReactElement {
   const [loading, setLoading] = useState(true);
@@ -99,41 +93,40 @@ function App(): ReactElement {
 
   return (
     <Routes>
-      {/* Public Routes */}
+      {/* Public routes grouped under a public layout so shared UI (AppContainer) renders once */}
       <Route
-        path="/"
-        element={withPublic(
-          <>
+        element={
+          <PublicRoute>
+            <PublicLayout />
+          </PublicRoute>
+        }
+      >
+        <Route path="/" element={<Home />} />
+        <Route path="/signin" element={<Signin />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/password/forgot" element={<ForgotPassword />} />
+        <Route path="/password/reset" element={<ResetPassword />} />
+        <Route path="/email/verify/:code" element={<VerifyEmail />} />
+      </Route>
+
+      {/* Protected routes: group under a shared layout (AppContainer) wrapped with RoleProtectedRoute */}
+      <Route
+        element={
+          <RoleProtectedRoute>
             <AppContainer />
-            <Home />
-          </>
-        )}
-      />
-      <Route path="/signin" element={withPublic(<Signin />)} />
-      <Route path="/signup" element={withPublic(<Signup />)} />
-      <Route path="/password/forgot" element={withPublic(<ForgotPassword />)} />
-      <Route path="/password/reset" element={withPublic(<ResetPassword />)} />
+          </RoleProtectedRoute>
+        }
+      >
+        <Route path="/student-dashboard" element={<StudentDashboard />} />
+        <Route path="/application" element={<Application />} />
+        <Route path="/hr-dashboard" element={<HRDashboard />} />
+        <Route path="/office-dashboard" element={<OfficeDashboard />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/applications" element={<HRApplicationManagement />} />
+      </Route>
 
-      {/* Protected Routes */}
-      <Route
-        path="/student-dashboard"
-        element={withProtected(<StudentDashboard />)}
-      />
-      <Route path="/HR-dashboard" element={withProtected(<HRDashboard />)} />
-      <Route
-        path="/office-dashboard"
-        element={withProtected(<OfficeDashboard />)}
-      />
-      <Route path="/profile" element={withProtected(<Profile />)} />
-      <Route path="/notifications" element={withProtected(<Notifications />)} />
-      <Route path="/application" element={withProtected(<Application />)} />
-      <Route
-        path="/applications"
-        element={withProtected(<ApplicationManagement />)}
-      />
-
-      {/* Standalone Routes */}
-      <Route path="/email/verify/:code" element={<VerifyEmail />} />
+      {/* Fallback */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

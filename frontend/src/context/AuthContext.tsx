@@ -1,6 +1,7 @@
 // src/context/AuthContext.tsx
 import { createContext, useContext, useEffect, useState } from "react";
 import { getUser, signin, signout, signup } from "@/lib/api";
+import { getRoleBasedRedirect } from "@/lib/roleUtils";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { useToast } from "./ToastContext";
 
@@ -65,9 +66,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (data: any) => {
     const signinResponse = await signin(data);
-    const userData = await getUser();
-    setUser(userData.data);
-    return { redirectUrl: signinResponse.redirectUrl };
+
+    // The server returns the user in the signin response and also sets
+    // auth cookies. In some dev cross-origin setups the cookies may be
+    // blocked by the browser (SameSite/Secure rules) which would cause a
+    // subsequent getUser() call to 401 and trigger the API interceptor
+    // to attempt a refresh (which then redirects to /signin). To avoid
+    // that navigation loop, prefer the user returned directly by the
+    // signin response but try to refresh from /user when possible.
+    let fetchedUser: any = undefined;
+    try {
+      const userData = await getUser();
+      fetchedUser = userData.data;
+      setUser(fetchedUser);
+    } catch (err) {
+      // Fallback to the user included in the signin response if getUser fails
+      const respUser = signinResponse?.user;
+      setUser(respUser ?? null);
+      fetchedUser = { data: respUser };
+    }
+
+    const redirectUrl =
+      signinResponse?.redirectUrl ||
+      getRoleBasedRedirect(fetchedUser?.data?.role || "");
+
+    return { redirectUrl };
   };
 
   const logout = async () => {

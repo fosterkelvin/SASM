@@ -19,6 +19,18 @@ export default function useFileUpload() {
   };
 
   const removeFile = () => {
+    // revoke object URL if exists
+    try {
+      if (filePreviewUrls.profilePhoto) {
+        try {
+          URL.revokeObjectURL(filePreviewUrls.profilePhoto);
+        } catch (e) {
+          // ignore
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
     setUploadedFiles((prev) => ({ ...prev, profilePhoto: null }));
     setFilePreviewUrls((prev) => ({ ...prev, profilePhoto: "" }));
   };

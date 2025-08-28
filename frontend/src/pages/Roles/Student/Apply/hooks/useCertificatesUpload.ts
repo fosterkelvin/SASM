@@ -1,4 +1,5 @@
 import { useState } from "react";
+// No PDF library: we'll use object URLs for PDF preview which lets the browser embed a PDF preview where supported.
 
 export interface UploadedCertificates {
   certificates: File[];
@@ -16,6 +17,20 @@ export interface CertificatePreviewUrls {
 export default function useCertificatesUpload() {
   // Clear all certificates
   const clearCertificates = () => {
+    // Revoke any object URLs created for previews to free memory
+    try {
+      certificatePreviewUrls.certificates.forEach((item) => {
+        if (item && item.url) {
+          try {
+            URL.revokeObjectURL(item.url);
+          } catch (e) {
+            // ignore revoke errors
+          }
+        }
+      });
+    } catch (e) {
+      // ignore if preview list is not available
+    }
     setUploadedCertificates({ certificates: [] });
     setCertificatePreviewUrls({ certificates: [] });
   };
@@ -38,7 +53,8 @@ export default function useCertificatesUpload() {
       }
       validFiles.push(file);
       if (file.type === "application/pdf") {
-        validPreviewItems.push({ url: file.name, isPdf: true });
+        // Use object URL so the browser can render a preview via <object> or <embed>.
+        validPreviewItems.push({ url: URL.createObjectURL(file), isPdf: true });
       } else {
         validPreviewItems.push({
           url: URL.createObjectURL(file),
@@ -50,6 +66,7 @@ export default function useCertificatesUpload() {
       setUploadedCertificates((prev) => ({
         certificates: [...prev.certificates, ...validFiles],
       }));
+
       setCertificatePreviewUrls((prev) => ({
         certificates: [...prev.certificates, ...validPreviewItems],
       }));
@@ -57,10 +74,21 @@ export default function useCertificatesUpload() {
   };
 
   const removeCertificate = (index: number) => {
+    // Revoke object URL for the removed preview if present
+    setCertificatePreviewUrls((prev) => {
+      const toRevoke = prev.certificates[index];
+      if (toRevoke && toRevoke.url) {
+        try {
+          URL.revokeObjectURL(toRevoke.url);
+        } catch (e) {
+          // ignore
+        }
+      }
+      return {
+        certificates: prev.certificates.filter((_, i) => i !== index),
+      };
+    });
     setUploadedCertificates((prev) => ({
-      certificates: prev.certificates.filter((_, i) => i !== index),
-    }));
-    setCertificatePreviewUrls((prev) => ({
       certificates: prev.certificates.filter((_, i) => i !== index),
     }));
   };

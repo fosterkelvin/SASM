@@ -8,7 +8,7 @@ export const getRoleBasedRedirect = (role: string): string => {
     case "student":
       return "/student-dashboard";
     case "hr":
-      return "/HR-dashboard";
+      return "/hr-dashboard";
     case "office":
       return "/office-dashboard";
     default:
@@ -23,10 +23,12 @@ export const getRoleBasedRedirect = (role: string): string => {
  * @returns Whether the user has access to the route
  */
 export const hasRouteAccess = (userRole: string, route: string): boolean => {
-  const roleRoutes = {
-    student: ["/student-dashboard"],
-    hr: ["/HR-dashboard"],
-    office: ["/office-dashboard"],
+  const commonRoutes = ["/profile", "/notifications"];
+
+  const roleRoutes: Record<string, string[]> = {
+    student: ["/student-dashboard", "/application", ...commonRoutes],
+    hr: ["/hr-dashboard", "/applications", ...commonRoutes],
+    office: ["/office-dashboard", ...commonRoutes],
   };
 
   return (

@@ -78,11 +78,9 @@ export const deleteSession = async (sessionId: string) =>
 
 // Application management
 export const createApplication = async (applicationData: any) => {
-  const response = await API.post("/applications", applicationData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  // Do not set the Content-Type header manually for multipart/form-data.
+  // Let the browser/axios set the correct boundary automatically.
+  const response = await API.post("/applications", applicationData);
   return response.data;
 };
 
