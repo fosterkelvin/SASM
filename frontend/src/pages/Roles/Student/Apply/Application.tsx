@@ -28,6 +28,7 @@ import AgreementSection from "./components/AgreementSection";
 import SignaturePad from "./components/SignaturePad";
 import { CheckCircle, AlertTriangle, Upload, X, PenTool } from "lucide-react";
 import CertificatesSection from "./components/CertificatesSection";
+import ApplicationStatusCard from "./components/ApplicationStatusCard";
 
 function Application() {
   const { user } = useAuth();
@@ -572,84 +573,13 @@ function Application() {
                     Application Status
                   </h3>
                 </div>
-                <div className="flex flex-col md:flex-row gap-6 px-8 py-8">
-                  <div className="flex-1 bg-white dark:bg-gray-900 rounded-lg p-6 text-left border border-red-100 dark:border-gray-800">
-                    <h4 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">
-                      Application Details
-                    </h4>
-                    <p className="mb-1">
-                      <span className="font-medium text-gray-600 dark:text-gray-300">
-                        Position:
-                      </span>{" "}
-                      <span className="text-gray-800 dark:text-white">
-                        {activeApplication.position === "student_assistant"
-                          ? "Student Assistant"
-                          : "Student Marshal"}
-                      </span>
-                    </p>
-                    <p className="mb-1">
-                      <span className="font-medium text-gray-600 dark:text-gray-300">
-                        Submitted:
-                      </span>{" "}
-                      <span className="text-gray-800 dark:text-white">
-                        {new Date(activeApplication.createdAt).toLocaleString(
-                          "en-US",
-                          {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}
-                      </span>
-                    </p>
-                  </div>
-                  <div className="flex-1 bg-white dark:bg-gray-900 rounded-lg p-6 flex flex-col items-center justify-center border border-red-100 dark:border-gray-800">
-                    <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-yellow-100 dark:bg-yellow-900/80 text-yellow-800 dark:text-yellow-300 font-semibold text-lg mb-4 border border-yellow-300 dark:border-yellow-700">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M12 8v4l3 3" />
-                      </svg>
-                      {activeApplication.status.charAt(0).toUpperCase() +
-                        activeApplication.status.slice(1)}
-                    </span>
-                    <h4 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">
-                      What's Next?
-                    </h4>
-                    <ul className="list-disc list-inside text-gray-700 dark:text-gray-300 text-sm text-left">
-                      <li>Your application is in the queue for review</li>
-                      <li>HR will review your application soon</li>
-                      <li>
-                        You will be notified of any updates via email and in-app
-                        notifications
-                      </li>
-                    </ul>
-                  </div>
+                <div className="px-8 py-8">
+                  <ApplicationStatusCard
+                    status={activeApplication.status}
+                    application={activeApplication}
+                  />
                 </div>
                 <div className="mt-4 px-8 pb-8">
-                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                    <h4 className="text-lg font-semibold text-red-600 dark:text-red-300 mb-2">
-                      Need Help?
-                    </h4>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
-                      If you have any questions about your application status,
-                      please contact:
-                    </p>
-                    <ul className="text-sm text-gray-700 dark:text-gray-300">
-                      <li>• HR Office: [Contact information]</li>
-                      <li>• Email: hr@ub.edu.ph</li>
-                      <li>
-                        • Office Hours: Monday - Friday, 8:00 AM - 5:00 PM
-                      </li>
-                    </ul>
-                  </div>
                   {activeApplication.status === "pending" && (
                     <div className="flex justify-center mt-6">
                       <Button
