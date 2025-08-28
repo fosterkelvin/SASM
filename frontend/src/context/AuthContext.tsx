@@ -1,6 +1,7 @@
 // src/context/AuthContext.tsx
 import { createContext, useContext, useEffect, useState } from "react";
 import { getUser, signin, signout, signup } from "@/lib/api";
+import { getRoleBasedRedirect } from "@/lib/roleUtils";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { useToast } from "./ToastContext";
 
@@ -67,7 +68,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const signinResponse = await signin(data);
     const userData = await getUser();
     setUser(userData.data);
-    return { redirectUrl: signinResponse.redirectUrl };
+    // Prefer server-provided redirectUrl but fallback to a role-based URL
+    // computed from the freshly fetched user to avoid navigation loops.
+    const redirectUrl =
+      signinResponse?.redirectUrl ||
+      getRoleBasedRedirect(userData?.data?.role || "");
+
+    return { redirectUrl };
   };
 
   const logout = async () => {
