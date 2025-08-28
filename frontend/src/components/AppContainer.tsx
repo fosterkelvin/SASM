@@ -1,5 +1,4 @@
 import { Navigate, Outlet } from "react-router-dom";
-import UserMenu from "./UserMenu";
 import { useAuth } from "@/context/AuthContext";
 
 const AppContainer = () => {
@@ -27,7 +26,6 @@ const AppContainer = () => {
 
   return (
     <div className="p-4 min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <UserMenu />
       <Outlet />
     </div>
   );
