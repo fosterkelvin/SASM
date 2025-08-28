@@ -433,6 +433,35 @@ export const updateApplicationStatusHandler = catchErrors(
 
     const statusChanged = currentApplication.status !== updateData.status;
 
+    // If attempting to mark as hired, ensure the applicant has an academic email
+    // ending with @s.ubaguio.edu. Check both current email and pendingEmail.
+    if (updateData.status === "hired") {
+      try {
+        const applicantId =
+          (currentApplication.userID as any)?._id || currentApplication.userID;
+        const applicant = await UserModel.findById(applicantId);
+        appAssert(applicant, NOT_FOUND, "Applicant not found");
+
+        const candidateEmail = (
+          applicant.pendingEmail ||
+          applicant.email ||
+          ""
+        ).toLowerCase();
+        if (!candidateEmail.endsWith("@s.ubaguio.edu")) {
+          return res.status(BAD_REQUEST).json({
+            message:
+              "Applicant must have an academic email ending with @s.ubaguio.edu before being marked as hired. Please ask the applicant to update their email.",
+          });
+        }
+      } catch (err) {
+        console.error("Error verifying applicant email for hiring:", err);
+        return res.status(BAD_REQUEST).json({
+          message:
+            "Unable to verify applicant email. Hiring is blocked until the applicant's academic email is confirmed.",
+        });
+      }
+    }
+
     // Find and update the application
     const application = await ApplicationModel.findByIdAndUpdate(
       applicationId,
@@ -522,22 +551,48 @@ export const deleteApplicationHandler = catchErrors(
     // Extract public_id from Cloudinary URLs and delete
     for (const fileUrl of filesToDelete) {
       try {
+        // Remove any query string first to make matching reliable
+        const urlNoQuery = fileUrl.split("?")[0];
+
         // Extract public_id from Cloudinary URL (supports folders)
         // Example: https://res.cloudinary.com/<cloud_name>/image/upload/v<version>/<folder>/<public_id>.<ext>
-        const matches = fileUrl.match(
+        const matches = urlNoQuery.match(
           /\/upload\/(?:v\d+\/)?(.+?)(\.[a-zA-Z0-9]+)?$/
         );
         const publicId = matches ? matches[1] : null;
         if (publicId) {
-          // If the file was uploaded as a PDF it was stored as a raw resource_type.
-          // Detect PDF by url extension and pass resource_type: 'raw' when destroying.
-          const isPdf = /\.pdf$/i.test(fileUrl);
-          if (isPdf) {
-            await cloudinary.uploader.destroy(publicId, {
-              resource_type: "raw",
-            });
-          } else {
-            await cloudinary.uploader.destroy(publicId);
+          // Try deleting as an image first, then fall back to raw if that fails.
+          // This covers cases where PDFs/raw files may not end with .pdf in the stored URL
+          try {
+            // Try deleting as image first
+            const res = await cloudinary.uploader.destroy(publicId);
+            // If destroy did not succeed (result not 'ok'), try deleting as raw
+            if (!res || res.result !== "ok") {
+              try {
+                await cloudinary.uploader.destroy(publicId, {
+                  resource_type: "raw",
+                });
+              } catch (rawErr) {
+                console.error(
+                  "Failed to delete file from Cloudinary as raw:",
+                  fileUrl,
+                  rawErr
+                );
+              }
+            }
+          } catch (err) {
+            // If deleting as image threw an error, try raw as a fallback
+            try {
+              await cloudinary.uploader.destroy(publicId, {
+                resource_type: "raw",
+              });
+            } catch (err2) {
+              console.error(
+                "Failed to delete file from Cloudinary (both image/raw):",
+                fileUrl,
+                err2
+              );
+            }
           }
         } else {
           console.error(

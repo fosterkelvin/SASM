@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,7 +16,6 @@ import {
   Trash2,
   X,
   AlertTriangle,
-  RefreshCw,
 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -26,6 +25,7 @@ import {
   changeEmail as changeEmailAPI,
   cancelEmailChange as cancelEmailChangeAPI,
 } from "@/lib/api";
+import { getUserApplications } from "@/lib/api";
 import { z } from "zod";
 import StudentSidebar from "@/components/sidebar/StudentSidebar";
 import HRSidebar from "@/components/sidebar/HRSidebar";
@@ -95,6 +95,8 @@ const Profile = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState("");
   const [emailSuccessMessage, setEmailSuccessMessage] = useState("");
+  const [emailBlockUntil, setEmailBlockUntil] = useState<number | null>(null);
+  const [emailBlockRemaining, setEmailBlockRemaining] = useState<number>(0);
   const [sessionMessage, setSessionMessage] = useState("");
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
 
@@ -177,12 +179,56 @@ const Profile = () => {
       );
       setEmailData({ newEmail: "" });
       setErrors({});
+      // clear any client-side block when request succeeds
+      setEmailBlockUntil(null);
+      setEmailBlockRemaining(0);
+      try {
+        localStorage.removeItem("emailChangeBlockedUntil");
+      } catch (err) {}
     },
     onError: (error: any) => {
       console.error("Email change error:", error);
       setEmailSuccessMessage("");
-      if (error.response?.data?.message) {
-        setErrors({ emailGeneral: error.response.data.message });
+      // The API client may reject with different shapes. Handle common ones:
+      // - axios error: error.response.data.message
+      // - our interceptor: an object { status, message? } or { status, ...data }
+      const status = error?.status || error?.response?.status;
+      const serverMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        error?.response?.data;
+
+      // If it's a conflict (409) or explicit server message, show 'Email is already in use'
+      if (
+        status === 409 ||
+        (typeof serverMessage === "string" &&
+          serverMessage.toLowerCase().includes("email is already in use"))
+      ) {
+        setErrors({ emailGeneral: "Email is already in use" });
+        return;
+      }
+
+      // If too many requests (429), inform the user to wait 5 minutes and start client-side timer
+      if (
+        status === 429 ||
+        (typeof serverMessage === "string" &&
+          serverMessage.toLowerCase().includes("wait 5 minutes"))
+      ) {
+        const blockMs = 5 * 60 * 1000; // 5 minutes
+        const until = Date.now() + blockMs;
+        setEmailBlockUntil(until);
+        try {
+          localStorage.setItem("emailChangeBlockedUntil", String(until));
+        } catch (err) {}
+        setErrors({
+          emailGeneral:
+            "Please wait 5 minutes before requesting another email change",
+        });
+        return;
+      }
+
+      if (serverMessage && typeof serverMessage === "string") {
+        setErrors({ emailGeneral: serverMessage });
       } else {
         setErrors({
           emailGeneral: "Failed to change email. Please try again.",
@@ -221,6 +267,77 @@ const Profile = () => {
   });
 
   const sessions = sessionsResponse?.data || [];
+
+  // Fetch user's applications to determine if they're hired
+  const { data: appsResponse } = useQuery({
+    queryKey: ["myApplications"],
+    queryFn: getUserApplications,
+    enabled: !!user,
+  });
+
+  const userApplications = appsResponse?.applications || [];
+  const hasHiredApplication = userApplications.some(
+    (a: any) => a.status === "hired"
+  );
+
+  const newEmailInputRef = useRef<HTMLInputElement | null>(null);
+  const currentEmailIsUB = (user.pendingEmail || user.email || "")
+    .toLowerCase()
+    .endsWith("@s.ubaguio.edu");
+  const showEmailChangeRequired = hasHiredApplication && !currentEmailIsUB;
+
+  // Load persisted block from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("emailChangeBlockedUntil");
+      if (raw) {
+        const ts = parseInt(raw, 10);
+        if (!Number.isNaN(ts) && ts > Date.now()) {
+          setEmailBlockUntil(ts);
+        } else {
+          localStorage.removeItem("emailChangeBlockedUntil");
+        }
+      }
+    } catch (err) {
+      // ignore
+    }
+  }, []);
+
+  // Countdown timer for block
+  useEffect(() => {
+    if (!emailBlockUntil) {
+      setEmailBlockRemaining(0);
+      return;
+    }
+    const update = () => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((emailBlockUntil - Date.now()) / 1000)
+      );
+      setEmailBlockRemaining(remaining);
+      if (remaining <= 0) {
+        setEmailBlockUntil(null);
+        try {
+          localStorage.removeItem("emailChangeBlockedUntil");
+        } catch (err) {}
+      }
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [emailBlockUntil]);
+
+  const isEmailBlocked = Boolean(emailBlockUntil && emailBlockRemaining > 0);
+
+  const formatRemaining = (secs: number) => {
+    const m = Math.floor(secs / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = Math.floor(secs % 60)
+      .toString()
+      .padStart(2, "0");
+    return `${m}:${s}`;
+  };
 
   const deleteSessionMutation = useMutation({
     mutationFn: deleteSession,
@@ -274,6 +391,18 @@ const Profile = () => {
       console.log("Email validation failed: new email same as current");
       setErrors({ newEmail: "New email must be different from current email" });
       return;
+    }
+
+    // If user has been hired, enforce academic email domain
+    if (hasHiredApplication) {
+      const candidate = (emailData.newEmail || "").toLowerCase();
+      if (!candidate.endsWith("@s.ubaguio.edu")) {
+        setErrors({
+          newEmail:
+            "Hired students must use an academic email address ending with @s.ubaguio.edu",
+        });
+        return;
+      }
     }
 
     try {
@@ -574,6 +703,23 @@ const Profile = () => {
                         <p className="font-medium text-gray-800 dark:text-gray-200">
                           {user.email}
                         </p>
+                        {showEmailChangeRequired && (
+                          <div className="mt-3 flex items-center gap-3">
+                            <div className="px-2 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-xs font-medium">
+                              Change required
+                            </div>
+                            <p className="text-sm text-orange-600 dark:text-orange-300">
+                              Your account was hired — update to your UB email
+                              (@s.ubaguio.edu).
+                            </p>
+                            <button
+                              onClick={() => newEmailInputRef.current?.focus()}
+                              className="ml-auto text-sm px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded"
+                            >
+                              Update Now
+                            </button>
+                          </div>
+                        )}
                         {user.pendingEmail && (
                           <div className="mt-2 p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md">
                             <div className="flex items-center justify-between">
@@ -644,6 +790,7 @@ const Profile = () => {
                           <Input
                             id="newEmail"
                             type="email"
+                            ref={newEmailInputRef}
                             value={emailData.newEmail}
                             onChange={(e) =>
                               handleInputChange("newEmail", e.target.value)
@@ -654,7 +801,7 @@ const Profile = () => {
                                 : "border-gray-300 dark:border-gray-600"
                             }`}
                             placeholder="Enter your new email address"
-                            disabled={!!user.pendingEmail}
+                            disabled={!!user.pendingEmail || isEmailBlocked}
                           />
                           {errors.newEmail && (
                             <p className="text-red-500 dark:text-red-400 text-sm">
@@ -666,7 +813,9 @@ const Profile = () => {
                         <Button
                           type="submit"
                           disabled={
-                            changeEmailMutation.isPending || !!user.pendingEmail
+                            changeEmailMutation.isPending ||
+                            !!user.pendingEmail ||
+                            isEmailBlocked
                           }
                           className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white disabled:opacity-50"
                           size="sm"
@@ -680,6 +829,13 @@ const Profile = () => {
                             "Change Email"
                           )}
                         </Button>
+
+                        {isEmailBlocked && (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            You can try again in{" "}
+                            {formatRemaining(emailBlockRemaining)}
+                          </p>
+                        )}
 
                         {!user.pendingEmail && (
                           <p className="text-xs text-gray-500 dark:text-gray-400">

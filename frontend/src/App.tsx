@@ -19,12 +19,7 @@ import AppContainer from "./components/AppContainer";
 import { ReactElement } from "react";
 import { useState, useEffect } from "react";
 // Small layout components to group routes
-const PublicLayout = (): ReactElement => (
-  <>
-    <AppContainer />
-    <Outlet />
-  </>
-);
+const PublicLayout = (): ReactElement => <Outlet />;
 
 function App(): ReactElement {
   const [loading, setLoading] = useState(true);
@@ -114,69 +109,22 @@ function App(): ReactElement {
         <Route path="/email/verify/:code" element={<VerifyEmail />} />
       </Route>
 
-      {/* Protected routes: each route wrapped with RoleProtectedRoute to enforce role-based access */}
+      {/* Protected routes: group under a shared layout (AppContainer) wrapped with RoleProtectedRoute */}
       <Route
-        path="/student-dashboard"
         element={
           <RoleProtectedRoute>
-            <StudentDashboard />
+            <AppContainer />
           </RoleProtectedRoute>
         }
-      />
-
-      <Route
-        path="/application"
-        element={
-          <RoleProtectedRoute>
-            <Application />
-          </RoleProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/hr-dashboard"
-        element={
-          <RoleProtectedRoute>
-            <HRDashboard />
-          </RoleProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/office-dashboard"
-        element={
-          <RoleProtectedRoute>
-            <OfficeDashboard />
-          </RoleProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/profile"
-        element={
-          <RoleProtectedRoute>
-            <Profile />
-          </RoleProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/notifications"
-        element={
-          <RoleProtectedRoute>
-            <Notifications />
-          </RoleProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/applications"
-        element={
-          <RoleProtectedRoute>
-            <HRApplicationManagement />
-          </RoleProtectedRoute>
-        }
-      />
+      >
+        <Route path="/student-dashboard" element={<StudentDashboard />} />
+        <Route path="/application" element={<Application />} />
+        <Route path="/hr-dashboard" element={<HRDashboard />} />
+        <Route path="/office-dashboard" element={<OfficeDashboard />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/applications" element={<HRApplicationManagement />} />
+      </Route>
 
       {/* Fallback */}
       <Route path="*" element={<NotFound />} />

@@ -66,13 +66,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (data: any) => {
     const signinResponse = await signin(data);
-    const userData = await getUser();
-    setUser(userData.data);
-    // Prefer server-provided redirectUrl but fallback to a role-based URL
-    // computed from the freshly fetched user to avoid navigation loops.
+
+    // The server returns the user in the signin response and also sets
+    // auth cookies. In some dev cross-origin setups the cookies may be
+    // blocked by the browser (SameSite/Secure rules) which would cause a
+    // subsequent getUser() call to 401 and trigger the API interceptor
+    // to attempt a refresh (which then redirects to /signin). To avoid
+    // that navigation loop, prefer the user returned directly by the
+    // signin response but try to refresh from /user when possible.
+    let fetchedUser: any = undefined;
+    try {
+      const userData = await getUser();
+      fetchedUser = userData.data;
+      setUser(fetchedUser);
+    } catch (err) {
+      // Fallback to the user included in the signin response if getUser fails
+      const respUser = signinResponse?.user;
+      setUser(respUser ?? null);
+      fetchedUser = { data: respUser };
+    }
+
     const redirectUrl =
       signinResponse?.redirectUrl ||
-      getRoleBasedRedirect(userData?.data?.role || "");
+      getRoleBasedRedirect(fetchedUser?.data?.role || "");
 
     return { redirectUrl };
   };

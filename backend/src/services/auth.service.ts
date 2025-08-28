@@ -435,6 +435,18 @@ export const changeEmail = async ({ newEmail, userID }: ChangeEmailParams) => {
   const user = await UserModel.findById(userID);
   appAssert(user, NOT_FOUND, "User not found");
 
+  // Prevent abuse: disallow requesting another email change within 5 minutes
+  const recentCount = await VerificationCodeModel.countDocuments({
+    userID,
+    type: VerificationCodeType.EmailVerification,
+    createdAt: { $gt: fiveMinutesAgo() },
+  });
+  appAssert(
+    recentCount === 0,
+    TOO_MANY_REQUESTS,
+    "Please wait 5 minutes before requesting another email change"
+  );
+
   // Check if the new email is already in use by another user
   const existingUser = await UserModel.findOne({
     email: newEmail,
