@@ -8,7 +8,7 @@ export const getRoleBasedRedirect = (role: string): string => {
     case "student":
       return "/student-dashboard";
     case "hr":
-      return "/HR-dashboard";
+      return "/hr-dashboard";
     case "office":
       return "/office-dashboard";
     default:

@@ -343,7 +343,8 @@ function Application() {
       }
       if (uploadedCertificates.certificates.length > 0) {
         uploadedCertificates.certificates.forEach((file) => {
-          formDataToSubmit.append("certificates", file);
+          // Provide the filename explicitly to ensure FormData includes it correctly
+          formDataToSubmit.append("certificates", file, file.name);
         });
       }
       if (signatureMethod === "upload" && uploadedSignature) {
@@ -629,15 +630,17 @@ function Application() {
                       </li>
                     </ul>
                   </div>
-                  <div className="flex justify-center mt-6">
-                    <Button
-                      variant="outline"
-                      className="border-red-600 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
-                      onClick={() => setShowWithdrawModal(true)}
-                    >
-                      Withdraw Application
-                    </Button>
-                  </div>
+                  {activeApplication.status === "pending" && (
+                    <div className="flex justify-center mt-6">
+                      <Button
+                        variant="outline"
+                        className="border-red-600 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
+                        onClick={() => setShowWithdrawModal(true)}
+                      >
+                        Withdraw Application
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 {/* Withdraw Application Confirmation Modal */}
                 {showWithdrawModal && (

@@ -53,6 +53,27 @@ const ApplicationManagement = () => {
     document.title = "Application Management | SASM-IMS";
   }, []);
 
+  // Helper to download remote file and force a filename (pure-browser, no deps)
+  const downloadUrlAs = async (url: string, filename: string) => {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Network response was not ok");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      // some browsers require the element to be in the DOM
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      // fallback to opening in new tab
+      window.open(url, "_blank");
+    }
+  };
+
   // Fetch applications
   const { data: applicationsData, isLoading } = useQuery({
     queryKey: ["applications", filters],
@@ -877,9 +898,19 @@ const ApplicationManagement = () => {
                       return isCertPdf ? (
                         <div
                           className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
-                          onClick={() =>
-                            certUrl && window.open(certUrl, "_blank")
-                          }
+                          onClick={() => {
+                            if (!certUrl) return;
+                            try {
+                              const pathPart = certUrl.split("?")[0];
+                              const parts = pathPart.split("/");
+                              let name =
+                                parts[parts.length - 1] || "certificate.pdf";
+                              if (!/\.pdf$/i.test(name)) name = `${name}.pdf`;
+                              downloadUrlAs(certUrl, name);
+                            } catch (e) {
+                              window.open(certUrl, "_blank");
+                            }
+                          }}
                           title="Open PDF"
                         >
                           <div className="flex flex-col items-center gap-1">
