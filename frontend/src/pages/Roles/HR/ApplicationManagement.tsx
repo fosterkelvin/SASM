@@ -49,6 +49,38 @@ const ApplicationManagement = () => {
     interviewNotes: "",
   });
 
+  // Preview state for PDFs/images
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewFilename, setPreviewFilename] = useState<string | null>(null);
+
+  // Open a preview for a certificate URL (prefers blob URL)
+  const openPreview = async (url: string, fallbackName: string) => {
+    try {
+      let finalUrl = url;
+      let res = await fetch(finalUrl);
+      if (!res.ok && /\.pdf(\?|$)/i.test(finalUrl)) {
+        try {
+          const withoutPdf = finalUrl.replace(/\.pdf(?=$|\?)/i, "");
+          const altRes = await fetch(withoutPdf);
+          if (altRes.ok) {
+            res = altRes;
+            finalUrl = withoutPdf;
+          }
+        } catch {}
+      }
+      if (!res.ok) throw new Error("Network response not ok");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      setPreviewBlobUrl(blobUrl);
+      const parts = finalUrl.split("?")[0].split("/");
+      setPreviewFilename(parts[parts.length - 1] || fallbackName);
+      setIsPreviewOpen(true);
+    } catch (err) {
+      window.open(url, "_blank");
+    }
+  };
+
   useEffect(() => {
     document.title = "Application Management | SASM-IMS";
   }, []);
@@ -56,13 +88,48 @@ const ApplicationManagement = () => {
   // Helper to download remote file and force a filename (pure-browser, no deps)
   const downloadUrlAs = async (url: string, filename: string) => {
     try {
-      const res = await fetch(url);
+      let finalUrl = url;
+      let res = await fetch(finalUrl);
+
+      // If original fetch failed and URL ends with .pdf, try fetching without the .pdf
+      if (!res.ok && /\.pdf(\?|$)/i.test(finalUrl)) {
+        try {
+          const withoutPdf = finalUrl.replace(/\.pdf(?=$|\?)/i, "");
+          const altRes = await fetch(withoutPdf);
+          if (altRes.ok) {
+            res = altRes;
+            finalUrl = withoutPdf;
+          }
+        } catch (e) {
+          // ignore and fallthrough to original error handling
+        }
+      }
+
       if (!res.ok) throw new Error("Network response was not ok");
       const blob = await res.blob();
+
+      // If filename has no extension, try to infer from content-type
+      const hasExt = /\.[a-z0-9]{1,6}$/i.test(filename);
+      let finalName = filename;
+      if (!hasExt) {
+        const contentType = res.headers.get("content-type") || "";
+        if (/application\/pdf/i.test(contentType))
+          finalName = `${filename}.pdf`;
+        else if (/image\/(jpeg|jpg)/i.test(contentType))
+          finalName = `${filename}.jpg`;
+        else if (/image\/png/i.test(contentType)) finalName = `${filename}.png`;
+        else if (/image\/webp/i.test(contentType))
+          finalName = `${filename}.webp`;
+        else if (/image\/svg\+xml/i.test(contentType))
+          finalName = `${filename}.svg`;
+        else if (/text\//i.test(contentType)) finalName = `${filename}.txt`;
+        // else leave as-is (browser may still infer when saving)
+      }
+
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl;
-      a.download = filename;
+      a.download = finalName;
       // some browsers require the element to be in the DOM
       document.body.appendChild(a);
       a.click();
@@ -522,6 +589,24 @@ const ApplicationManagement = () => {
                                                 }/uploads/certificates/${certPath}`;
                                               }
 
+                                              // Normalize Cloudinary raw/upload paths with redundant uploads/ segment
+                                              if (
+                                                certUrl &&
+                                                /res\.cloudinary\.com/i.test(
+                                                  certUrl
+                                                )
+                                              ) {
+                                                certUrl = certUrl
+                                                  .replace(
+                                                    /(\/raw\/upload\/v\d+\/)uploads\//i,
+                                                    "$1"
+                                                  )
+                                                  .replace(
+                                                    /(\/raw\/upload\/)uploads\//i,
+                                                    "$1"
+                                                  );
+                                              }
+
                                               console.log(
                                                 "Trying certificate fallback:",
                                                 certUrl
@@ -811,6 +896,26 @@ const ApplicationManagement = () => {
                                 certUrl = _certPath.startsWith("//")
                                   ? `https:${_certPath}`
                                   : `https://${_certPath}`;
+
+                                // Normalize Cloudinary raw/upload paths which may include
+                                // an extra 'uploads/' folder segment in the public_id
+                                // (e.g. .../raw/upload/v1/uploads/certificates/...).
+                                // Remove the redundant 'uploads/' that follows the
+                                // '/raw/upload(/v#)/' segment to avoid 404s.
+                                if (
+                                  certUrl &&
+                                  /res\.cloudinary\.com/i.test(certUrl)
+                                ) {
+                                  certUrl = certUrl
+                                    .replace(
+                                      /(\/raw\/upload\/v\d+\/)uploads\//i,
+                                      "$1"
+                                    )
+                                    .replace(
+                                      /(\/raw\/upload\/)uploads\//i,
+                                      "$1"
+                                    );
+                                }
                               } else if (_certPath.includes("/")) {
                                 certUrl = `${
                                   import.meta.env.VITE_API
@@ -876,6 +981,12 @@ const ApplicationManagement = () => {
                         certUrl = cert0.startsWith("//")
                           ? `https:${cert0}`
                           : `https://${cert0}`;
+
+                        if (certUrl && /res\.cloudinary\.com/i.test(certUrl)) {
+                          certUrl = certUrl
+                            .replace(/(\/raw\/upload\/v\d+\/)uploads\//i, "$1")
+                            .replace(/(\/raw\/upload\/)uploads\//i, "$1");
+                        }
                       } else if (cert0.includes("/")) {
                         certUrl = `${import.meta.env.VITE_API}/${cert0}`;
                       } else if (cert0) {
@@ -903,9 +1014,9 @@ const ApplicationManagement = () => {
                             try {
                               const pathPart = certUrl.split("?")[0];
                               const parts = pathPart.split("/");
+                              // pass basename without forcing extension; helper will append .pdf when Content-Type indicates
                               let name =
-                                parts[parts.length - 1] || "certificate.pdf";
-                              if (!/\.pdf$/i.test(name)) name = `${name}.pdf`;
+                                parts[parts.length - 1] || "certificate";
                               downloadUrlAs(certUrl, name);
                             } catch (e) {
                               window.open(certUrl, "_blank");
@@ -1348,6 +1459,21 @@ const ApplicationManagement = () => {
                             certUrl = _cert.startsWith("//")
                               ? `https:${_cert}`
                               : `https://${_cert}`;
+
+                            // Normalize Cloudinary raw/upload paths which may include
+                            // a redundant 'uploads/' segment in the public_id and
+                            // cause 404s (e.g. /raw/upload/v1/uploads/...).
+                            if (
+                              certUrl &&
+                              /res\.cloudinary\.com/i.test(certUrl)
+                            ) {
+                              certUrl = certUrl
+                                .replace(
+                                  /(\/raw\/upload\/v\d+\/)uploads\//i,
+                                  "$1"
+                                )
+                                .replace(/(\/raw\/upload\/)uploads\//i, "$1");
+                            }
                           } else if (_cert.includes("/")) {
                             certUrl = `${import.meta.env.VITE_API}/${_cert}`;
                           } else if (_cert) {
@@ -1356,6 +1482,26 @@ const ApplicationManagement = () => {
                             }/uploads/certificates/${_cert}`;
                           }
 
+                          // Enhanced PDF detection (computed early so click handlers can use it)
+                          const isPdf = !!(
+                            certUrl &&
+                            (/\.pdf(\?|$)/i.test(certUrl) ||
+                              /\/raw\/upload/i.test(certUrl) ||
+                              /resource_type=raw/i.test(certUrl) ||
+                              /format=pdf/i.test(certUrl) ||
+                              /\.pdf\b/i.test(_cert) ||
+                              /\bpdf\b/i.test(_cert))
+                          );
+
+                          const handleCardClick = () => {
+                            if (!certUrl) return;
+                            if (isPdf) {
+                              openPreview(certUrl, `certificate-${idx + 1}`);
+                            } else {
+                              window.open(certUrl, "_blank");
+                            }
+                          };
+
                           return (
                             <div
                               key={idx}
@@ -1363,58 +1509,36 @@ const ApplicationManagement = () => {
                             >
                               <div
                                 className="w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden cursor-pointer flex items-center justify-center"
-                                onClick={() =>
-                                  certUrl && window.open(certUrl, "_blank")
-                                }
+                                onClick={handleCardClick}
                               >
-                                {(() => {
-                                  // Enhanced PDF detection:
-                                  // Cloudinary raw/pdf resources sometimes don't end with .pdf
-                                  // (or may include query params/format/resource_type markers).
-                                  // Use additional heuristics based on the URL and original
-                                  // certificate string to avoid attempting to render PDFs as images.
-                                  const isPdf = !!(
-                                    certUrl &&
-                                    (/\.pdf(\?|$)/i.test(certUrl) ||
-                                      /\/raw\/upload/i.test(certUrl) ||
-                                      /resource_type=raw/i.test(certUrl) ||
-                                      /format=pdf/i.test(certUrl) ||
-                                      /\.pdf\b/i.test(_cert) ||
-                                      /\bpdf\b/i.test(_cert))
-                                  );
-                                  if (isPdf) {
-                                    return (
-                                      <div className="flex flex-col items-center gap-2">
-                                        <svg
-                                          className="w-10 h-10 text-red-600"
-                                          fill="currentColor"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12 12-5.373 12-12S18.628 0 12 0zm1 17h-2v-2h2v2zm0-4h-2V5h2v8z" />
-                                        </svg>
-                                        <div className="text-sm text-gray-700 dark:text-gray-300">
-                                          PDF Document
-                                        </div>
-                                        <div className="text-xs text-blue-600 dark:text-blue-400 underline">
-                                          Open
-                                        </div>
-                                      </div>
-                                    );
-                                  }
-
-                                  return (
-                                    <img
-                                      src={certUrl}
-                                      alt={`Certificate ${idx + 1}`}
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        (
-                                          e.currentTarget as HTMLImageElement
-                                        ).src = "/placeholder-image.png";
-                                      }}
-                                    />
-                                  );
-                                })()}
+                                {isPdf ? (
+                                  <div className="flex flex-col items-center gap-2">
+                                    <svg
+                                      className="w-10 h-10 text-red-600"
+                                      fill="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12 12-5.373 12-12S18.628 0 12 0zm1 17h-2v-2h2v2zm0-4h-2V5h2v8z" />
+                                    </svg>
+                                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                                      PDF Document
+                                    </div>
+                                    <div className="text-xs text-blue-600 dark:text-blue-400 underline">
+                                      Open
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <img
+                                    src={certUrl}
+                                    alt={`Certificate ${idx + 1}`}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (
+                                        e.currentTarget as HTMLImageElement
+                                      ).src = "/placeholder-image.png";
+                                    }}
+                                  />
+                                )}
                               </div>
 
                               <div className="mt-2 flex items-center justify-between gap-2">
@@ -1424,12 +1548,50 @@ const ApplicationManagement = () => {
                                 <div className="flex items-center gap-2">
                                   <a
                                     href={certUrl}
-                                    target="_blank"
+                                    onClick={(e) => {
+                                      if (!certUrl) return;
+                                      if (isPdf) {
+                                        e.preventDefault();
+                                        openPreview(
+                                          certUrl,
+                                          `certificate-${idx + 1}`
+                                        );
+                                      }
+                                    }}
                                     rel="noreferrer"
                                     className="text-xs text-blue-600 dark:text-blue-400 underline"
                                   >
                                     Open
                                   </a>
+
+                                  {/* Download button - works for both PDFs and images */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (!certUrl) return;
+                                      try {
+                                        const pathPart = certUrl.split("?")[0];
+                                        const parts = pathPart.split("/");
+                                        let name =
+                                          parts[parts.length - 1] ||
+                                          `certificate-${idx + 1}`;
+                                        // default extension for images if none
+                                        if (!/\.[a-z0-9]{1,6}$/i.test(name)) {
+                                          name = isPdf
+                                            ? `${name}.pdf`
+                                            : `${name}.jpg`;
+                                        }
+                                        // @ts-ignore
+                                        downloadUrlAs(certUrl, name);
+                                      } catch (err) {
+                                        window.open(certUrl, "_blank");
+                                      }
+                                    }}
+                                    className="text-xs text-gray-700 dark:text-gray-300 underline"
+                                  >
+                                    Download
+                                  </button>
                                 </div>
                               </div>
                             </div>
@@ -2391,6 +2553,61 @@ const ApplicationManagement = () => {
                   )}
                 </Button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview Modal for PDFs/Images */}
+      {isPreviewOpen && previewBlobUrl && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-4xl h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <svg
+                  className="w-5 h-5 text-red-600"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12 12-5.373 12-12S18.628 0 12 0zm1 17h-2v-2h2v2zm0-4h-2V5h2v8z" />
+                </svg>
+                <div className="text-sm font-medium text-gray-800 dark:text-gray-100">
+                  {previewFilename || "Preview"}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="text-sm text-blue-600 dark:text-blue-400 underline"
+                  onClick={() => {
+                    if (!previewBlobUrl) return;
+                    // download current preview blob
+                    const parts = (previewFilename || "certificate").split(".");
+                    let name = parts[0] || "certificate";
+                    // @ts-ignore
+                    downloadUrlAs(previewBlobUrl, name);
+                  }}
+                >
+                  Download
+                </button>
+                <button
+                  className="text-sm text-gray-600 dark:text-gray-300"
+                  onClick={() => {
+                    if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
+                    setPreviewBlobUrl(null);
+                    setPreviewFilename(null);
+                    setIsPreviewOpen(false);
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <div className="h-full bg-gray-50 dark:bg-gray-800">
+              <iframe
+                title="Document Preview"
+                src={previewBlobUrl}
+                className="w-full h-full"
+              />
             </div>
           </div>
         </div>
