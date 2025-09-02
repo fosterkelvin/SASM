@@ -26,7 +26,12 @@ export const hasRouteAccess = (userRole: string, route: string): boolean => {
   const commonRoutes = ["/profile", "/notifications"];
 
   const roleRoutes: Record<string, string[]> = {
-    student: ["/student-dashboard", "/application", ...commonRoutes],
+    student: [
+      "/student-dashboard",
+      "/application",
+      "/re-apply",
+      ...commonRoutes,
+    ],
     hr: ["/hr-dashboard", "/applications", ...commonRoutes],
     office: ["/office-dashboard", ...commonRoutes],
   };

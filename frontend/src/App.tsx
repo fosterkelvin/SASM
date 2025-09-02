@@ -18,6 +18,7 @@ import ResetPassword from "./pages/Auth/ResetPassword";
 import AppContainer from "./components/AppContainer";
 import { ReactElement } from "react";
 import { useState, useEffect } from "react";
+import ReApply from "./pages/Roles/Student/ReApply/ReApply";
 // Small layout components to group routes
 const PublicLayout = (): ReactElement => <Outlet />;
 
@@ -119,6 +120,7 @@ function App(): ReactElement {
       >
         <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/application" element={<Application />} />
+        <Route path="/re-apply" element={<ReApply />} />
         <Route path="/hr-dashboard" element={<HRDashboard />} />
         <Route path="/office-dashboard" element={<OfficeDashboard />} />
         <Route path="/profile" element={<Profile />} />

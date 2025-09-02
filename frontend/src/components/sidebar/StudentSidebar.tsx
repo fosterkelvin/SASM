@@ -95,7 +95,7 @@ const StudentSidebar = ({
   };
 
   const handleReapplyClick = () => {
-    navigate("/reapply");
+    navigate("/re-apply");
     setIsOpen(false);
   };
 
@@ -129,7 +129,7 @@ const StudentSidebar = ({
   };
 
   const handleCollapsedReapplyClick = () => {
-    navigate("/reapply");
+    navigate("/re-apply");
   };
 
   const handleCollapsedLeaveClick = () => {
