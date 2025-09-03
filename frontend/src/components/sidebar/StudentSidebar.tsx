@@ -30,8 +30,9 @@ import {
   Home,
   FileText,
   ChevronDown,
-  ChevronRight,
   Bell,
+  Calendar,
+  BookOpen,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -69,6 +70,8 @@ const StudentSidebar = ({
   const [dashboardRef, dashboardTop] = useTooltipPosition<HTMLButtonElement>();
   const [notifRef, notifTop] = useTooltipPosition<HTMLButtonElement>();
   const [formsRef, formsTop] = useTooltipPosition<HTMLButtonElement>();
+  const [gradesRef, gradesTop] = useTooltipPosition<HTMLButtonElement>();
+  const [scheduleRef, scheduleTop] = useTooltipPosition<HTMLButtonElement>();
   const [profileRef, profileTop] = useTooltipPosition<HTMLButtonElement>();
   const [themeRef, themeTop] = useTooltipPosition<HTMLButtonElement>();
   const [signoutRef, signoutTop] = useTooltipPosition<HTMLButtonElement>();
@@ -110,6 +113,16 @@ const StudentSidebar = ({
     setIsOpen(false);
   };
 
+  const handleGradesClick = () => {
+    navigate("/grades");
+    setIsOpen(false);
+  };
+
+  const handleScheduleClick = () => {
+    navigate("/schedule");
+    setIsOpen(false);
+  };
+
   const handleSignout = () => {
     logout();
     setIsOpen(false);
@@ -145,6 +158,14 @@ const StudentSidebar = ({
     logout();
   };
 
+  const handleCollapsedGradesClick = () => {
+    navigate("/grades");
+  };
+
+  const handleCollapsedScheduleClick = () => {
+    navigate("/schedule");
+  };
+
   // Keyboard navigation for sidebar
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -177,6 +198,8 @@ const StudentSidebar = ({
   // Now define menuItems after handlers
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
+    { label: "Grades", handler: handleGradesClick },
+    { label: "Schedule", handler: handleScheduleClick },
     { label: "Profile", handler: handleProfileClick },
     { label: "Notifications", handler: handleNotificationsClick },
     { label: "Forms", handler: () => setIsFormsExpanded((v) => !v) },
@@ -418,6 +441,38 @@ const StudentSidebar = ({
               </button>
             </li>
             <li>
+              <button
+                onClick={handleGradesClick}
+                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Grades"
+                title="View Grades"
+                aria-current={currentPage === "Grades"}
+              >
+                <BookOpen
+                  size={20}
+                  className="group-hover:scale-110 transition-transform duration-200"
+                />
+                <span className="font-medium">Grades</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={handleScheduleClick}
+                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Schedule"
+                title="View Schedule"
+                aria-current={currentPage === "Schedule"}
+              >
+                <Calendar
+                  size={20}
+                  className="group-hover:scale-110 transition-transform duration-200"
+                />
+                <span className="font-medium">Schedule</span>
+              </button>
+            </li>
+            <li>
               {/* Forms Menu Item with Submenu - Mobile toggle fix */}
               <div>
                 <button
@@ -546,7 +601,55 @@ const StudentSidebar = ({
                   </span>
                 </div>
               </div>
+              <div className="group relative">
+                <button
+                  ref={gradesRef}
+                  onClick={handleCollapsedGradesClick}
+                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  aria-label="Grades"
+                  title="Grades"
+                >
+                  <BookOpen size={16} />
+                </button>
+                <div
+                  className="fixed"
+                  style={{
+                    left: "80px",
+                    top: gradesTop,
+                    zIndex: 999,
+                    transform: "translateY(-50%)",
+                  }}
+                >
+                  <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    Grades
+                  </span>
+                </div>
+              </div>
 
+              <div className="group relative">
+                <button
+                  ref={scheduleRef}
+                  onClick={handleCollapsedScheduleClick}
+                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  aria-label="Schedule"
+                  title="Schedule"
+                >
+                  <Calendar size={16} />
+                </button>
+                <div
+                  className="fixed"
+                  style={{
+                    left: "80px",
+                    top: scheduleTop,
+                    zIndex: 999,
+                    transform: "translateY(-50%)",
+                  }}
+                >
+                  <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    Schedule
+                  </span>
+                </div>
+              </div>
               {/* Mini menu icons */}
               <div className="space-y-2">
                 <div className="group relative">
