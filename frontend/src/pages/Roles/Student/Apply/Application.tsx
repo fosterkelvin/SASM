@@ -1036,10 +1036,10 @@ function Application() {
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         Please inform your parent or guardian about your
                         application to the Student Assistant Scholarship. By
-                        continuing, you confirm that your parent/guardian confirms that they have been
-                        informed about the application, understand the nature of
-                        the program and its responsibilities, and give consent
-                        for you to apply.
+                        continuing, you confirm that your parent/guardian
+                        confirms that they have been informed about the
+                        application, understand the nature of the program and
+                        its responsibilities, and give consent for you to apply.
                       </p>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
