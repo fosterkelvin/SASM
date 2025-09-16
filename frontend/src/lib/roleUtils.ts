@@ -28,6 +28,7 @@ export const hasRouteAccess = (userRole: string, route: string): boolean => {
   const roleRoutes: Record<string, string[]> = {
     student: [
       "/student-dashboard",
+      "/schedule",
       "/grades",
       "/application",
       "/re-apply",
