@@ -72,6 +72,7 @@ const StudentSidebar = ({
   const [formsRef, formsTop] = useTooltipPosition<HTMLButtonElement>();
   const [gradesRef, gradesTop] = useTooltipPosition<HTMLButtonElement>();
   const [scheduleRef, scheduleTop] = useTooltipPosition<HTMLButtonElement>();
+  const [dtrRef, dtrTop] = useTooltipPosition<HTMLButtonElement>();
   const [profileRef, profileTop] = useTooltipPosition<HTMLButtonElement>();
   const [themeRef, themeTop] = useTooltipPosition<HTMLButtonElement>();
   const [signoutRef, signoutTop] = useTooltipPosition<HTMLButtonElement>();
@@ -115,6 +116,11 @@ const StudentSidebar = ({
 
   const handleGradesClick = () => {
     navigate("/grades");
+    setIsOpen(false);
+  };
+
+  const handleDtrClick = () => {
+    navigate("/dtr");
     setIsOpen(false);
   };
 
@@ -162,6 +168,10 @@ const StudentSidebar = ({
     navigate("/grades");
   };
 
+  const handleCollapsedDtrClick = () => {
+    navigate("/dtr");
+  };
+
   const handleCollapsedScheduleClick = () => {
     navigate("/schedule");
   };
@@ -199,6 +209,7 @@ const StudentSidebar = ({
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
     { label: "Grades", handler: handleGradesClick },
+    { label: "DTR", handler: handleDtrClick },
     { label: "Schedule", handler: handleScheduleClick },
     { label: "Profile", handler: handleProfileClick },
     { label: "Notifications", handler: handleNotificationsClick },
@@ -454,6 +465,22 @@ const StudentSidebar = ({
                   className="group-hover:scale-110 transition-transform duration-200"
                 />
                 <span className="font-medium">Grades</span>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={handleDtrClick}
+                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="DTR"
+                title="View DTR"
+                aria-current={currentPage === "DTR"}
+              >
+                <FileText
+                  size={20}
+                  className="group-hover:scale-110 transition-transform duration-200"
+                />
+                <span className="font-medium">DTR</span>
               </button>
             </li>
             <li>
@@ -772,6 +799,30 @@ const StudentSidebar = ({
                         <span>Leave</span>
                       </button>
                     </div>
+                  </div>
+                </div>
+                <div className="group relative">
+                  <button
+                    ref={dtrRef}
+                    onClick={handleCollapsedDtrClick}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="DTR"
+                    title="DTR"
+                  >
+                    <FileText size={16} />
+                  </button>
+                  <div
+                    className="fixed"
+                    style={{
+                      left: "80px",
+                      top: dtrTop,
+                      zIndex: 999,
+                      transform: "translateY(-50%)",
+                    }}
+                  >
+                    <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                      DTR
+                    </span>
                   </div>
                 </div>
               </div>
