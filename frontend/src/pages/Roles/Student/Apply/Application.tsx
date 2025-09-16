@@ -1025,6 +1025,108 @@ function Application() {
                       </div>
                     </div>
                   </div>
+                  {/* Parent/Guardian Consent Section */}
+                  <div className="space-y-6 p-4 rounded-lg border">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
+                      Parent/Guardian's Consent
+                      <span className="text-red-600"> *</span>
+                    </h3>
+
+                    <div className="space-y-4 p-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Please inform your parent or guardian about your
+                        application to the Student Assistant Scholarship. By
+                        continuing, you confirm that your parent/guardian confirms that they have been
+                        informed about the application, understand the nature of
+                        the program and its responsibilities, and give consent
+                        for you to apply.
+                      </p>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-gray-700 dark:text-gray-300 font-medium">
+                            Parent / Guardian Full Name
+                          </Label>
+                          <input
+                            type="text"
+                            value={(formData as any).parentGuardianName ?? ""}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) =>
+                              handleInputChange(
+                                "parentGuardianName" as any,
+                                e.target.value
+                              )
+                            }
+                            placeholder="Applicant's Parent / Guardian Full Name"
+                            className="mt-1 w-full rounded-md border px-3 py-2"
+                          />
+                          {(errors as any).parentGuardianName && (
+                            <p className="text-red-600 text-sm mt-1">
+                              {(errors as any).parentGuardianName}
+                            </p>
+                          )}
+                        </div>
+
+                        <div>
+                          <Label className="text-gray-700 dark:text-gray-300 font-medium">
+                            Parent / Guardian Valid ID (Upload ONE)
+                          </Label>
+                          <div className="mt-1">
+                            <input
+                              id="parent-id-upload"
+                              type="file"
+                              accept="image/*,application/pdf"
+                              onChange={(
+                                e: React.ChangeEvent<HTMLInputElement>
+                              ) => {
+                                const file =
+                                  e.target.files && e.target.files[0];
+                                // store as File object in formData if handler expects it
+                                handleInputChange(
+                                  "parentID" as any,
+                                  file ?? null
+                                );
+                              }}
+                              className="w-full"
+                            />
+                            {(errors as any).parentID && (
+                              <p className="text-red-600 text-sm mt-1">
+                                {(errors as any).parentID}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="checkbox"
+                          id="parent-consent-checkbox"
+                          checked={!!(formData as any).parentConsent}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            handleInputChange(
+                              "parentConsent" as any,
+                              e.target.checked
+                            )
+                          }
+                          className="h-4 w-4 text-red-600"
+                        />
+                        <label
+                          htmlFor="parent-consent-checkbox"
+                          className="text-sm text-gray-700 dark:text-gray-300"
+                        >
+                          I confirm that I have informed my parent/guardian
+                          about my application.
+                        </label>
+                      </div>
+                      {(errors as any).parentConsent && (
+                        <p className="text-red-600 text-sm mt-1">
+                          {(errors as any).parentConsent}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                   <div className="flex justify-center md:justify-end">
                     <Button
                       type="submit"
