@@ -20,6 +20,9 @@ import { ReactElement } from "react";
 import { useState, useEffect } from "react";
 import ReApply from "./pages/Roles/Student/ReApply/ReApply";
 import Leave from "./pages/Roles/Student/Leave/Leave";
+import Grades from "./pages/Roles/Student/Grades/Grades";
+import Schedule from "./pages/Roles/Student/Schedule/Schedule";
+import Dtr from "./pages/Roles/Student/DTR/Dtr";
 // Small layout components to group routes
 const PublicLayout = (): ReactElement => <Outlet />;
 
@@ -121,8 +124,11 @@ function App(): ReactElement {
       >
         <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/application" element={<Application />} />
+        <Route path="/grades" element={<Grades />} />
+        <Route path="/schedule" element={<Schedule />} />
         <Route path="/re-apply" element={<ReApply />} />
         <Route path="/leave" element={<Leave />} />
+        <Route path="/dtr" element={<Dtr />} />
         <Route path="/hr-dashboard" element={<HRDashboard />} />
         <Route path="/office-dashboard" element={<OfficeDashboard />} />
         <Route path="/profile" element={<Profile />} />

@@ -26,6 +26,7 @@ const LeaveDetailsSection: React.FC<Props> = ({ data, onChange }) => (
           <option value="">Select leave type</option>
           <option value="sick">Sick Leave</option>
           <option value="social">Social Orientation</option>
+          <option value="vacation">Bereavement Leave</option>
           <option value="others">Others</option>
         </select>
       </div>
