@@ -141,6 +141,16 @@ const HRSidebar = ({
     setIsOpen(false);
   };
 
+  const handleReapplicationsClick = () => {
+    navigate("/reapplications");
+    setIsOpen(false);
+  };
+
+  const handleLeavesClick = () => {
+    navigate("/leave-management");
+    setIsOpen(false);
+  };
+
   // Handlers for collapsed sidebar that don't expand the sidebar
   const handleCollapsedProfileClick = () => {
     navigate("/profile");
@@ -159,6 +169,14 @@ const HRSidebar = ({
     navigate("/applications");
   };
 
+  const handleCollapsedReapplicationsClick = () => {
+    navigate("/reapplications");
+  };
+
+  const handleCollapsedLeavesClick = () => {
+    navigate("/leave-management");
+  };
+
   // Keyboard navigation for sidebar
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
@@ -166,6 +184,8 @@ const HRSidebar = ({
     { label: "Schedule", handler: handleScheduleClick },
     { label: "Analytics", handler: handleAnalyticsClick },
     { label: "Applications", handler: handleApplicationsClick },
+    { label: "Reapplications", handler: handleReapplicationsClick },
+    { label: "Leave Management", handler: handleLeavesClick },
     { label: "Profile", handler: handleProfileClick },
     { label: "Sign out", handler: handleSignout },
   ];
@@ -459,6 +479,44 @@ const HRSidebar = ({
                 </div>
               </button>
             </li>
+            <li>
+              <button
+                onClick={handleReapplicationsClick}
+                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Reapplications"
+                title="View Reapplications"
+                aria-current={currentPage === "Reapplications"}
+              >
+                <FileText
+                  size={20}
+                  className="group-hover:scale-110 transition-transform duration-200"
+                />
+                <span className="font-medium">Reapplications</span>
+                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                </div>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={handleLeavesClick}
+                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Leave Management"
+                title="Leave Management"
+                aria-current={currentPage === "Leave Management"}
+              >
+                <Calendar
+                  size={20}
+                  className="group-hover:scale-110 transition-transform duration-200"
+                />
+                <span className="font-medium">Leave Management</span>
+                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                </div>
+              </button>
+            </li>
           </ul>
         </nav>
 
@@ -557,6 +615,34 @@ const HRSidebar = ({
                   </button>
                   <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                     Applications
+                  </div>
+                </div>
+
+                <div className="group relative">
+                  <button
+                    onClick={handleCollapsedReapplicationsClick}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="Reapplications"
+                    title="Reapplications"
+                  >
+                    <FileText size={16} />
+                  </button>
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    Reapplications
+                  </div>
+                </div>
+
+                <div className="group relative">
+                  <button
+                    onClick={handleCollapsedLeavesClick}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="Leave Management"
+                    title="Leave Management"
+                  >
+                    <Calendar size={16} />
+                  </button>
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    Leave Management
                   </div>
                 </div>
               </div>

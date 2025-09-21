@@ -433,9 +433,9 @@ export const updateApplicationStatusHandler = catchErrors(
 
     const statusChanged = currentApplication.status !== updateData.status;
 
-    // If attempting to mark as hired, ensure the applicant has an academic email
+    // If attempting to mark as accepted, ensure the applicant has an academic email
     // ending with @s.ubaguio.edu. Check both current email and pendingEmail.
-    if (updateData.status === "hired") {
+    if (updateData.status === "accepted") {
       try {
         const applicantId =
           (currentApplication.userID as any)?._id || currentApplication.userID;
@@ -450,14 +450,14 @@ export const updateApplicationStatusHandler = catchErrors(
         if (!candidateEmail.endsWith("@s.ubaguio.edu")) {
           return res.status(BAD_REQUEST).json({
             message:
-              "Applicant must have an academic email ending with @s.ubaguio.edu before being marked as hired. Please ask the applicant to update their email.",
+              "Applicant must have an academic email ending with @s.ubaguio.edu before being marked as accepted. Please ask the applicant to update their email.",
           });
         }
       } catch (err) {
         console.error("Error verifying applicant email for hiring:", err);
         return res.status(BAD_REQUEST).json({
           message:
-            "Unable to verify applicant email. Hiring is blocked until the applicant's academic email is confirmed.",
+            "Unable to verify applicant email. Acceptance is blocked until the applicant's academic email is confirmed.",
         });
       }
     }

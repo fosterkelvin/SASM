@@ -21,7 +21,6 @@ import { useNotificationUpdater } from "@/hooks/useNotificationUpdater";
 import StudentSidebar from "@/components/sidebar/StudentSidebar";
 import HRSidebar from "@/components/sidebar/HRSidebar";
 import OfficeSidebar from "@/components/sidebar/OfficeSidebar";
-import React from "react";
 
 const ApplicationManagement = () => {
   const { user } = useAuth();
@@ -303,7 +302,7 @@ const ApplicationManagement = () => {
         return "bg-teal-100 text-teal-800 border-teal-200";
       case "failed_interview":
         return "bg-orange-100 text-orange-800 border-orange-200";
-      case "hired":
+      case "accepted":
         return "bg-green-100 text-green-800 border-green-200";
       case "rejected":
         return "bg-red-100 text-red-800 border-red-200";
@@ -318,7 +317,7 @@ const ApplicationManagement = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "hired":
+      case "accepted":
         return <CheckCircle className="h-4 w-4" />;
       case "passed_interview":
         return <CheckCircle className="h-4 w-4" />;
@@ -496,7 +495,7 @@ const ApplicationManagement = () => {
                     <option value="passed_interview">Interview Passed</option>
                     <option value="hours_completed">Hours Completed</option>
                     <option value="failed_interview">Interview Failed</option>
-                    <option value="hired">Hired</option>
+                    <option value="accepted">Accepted</option>
                     <option value="on_hold">Put On Hold</option>
                     <option value="withdrawn">Withdrawn by Applicant</option>
                     <option value="rejected">Rejected</option>
@@ -1931,7 +1930,7 @@ const ApplicationManagement = () => {
                             <option value="hours_completed">
                               Keep as Hours Completed
                             </option>
-                            <option value="hired">Hire Applicant</option>
+                            <option value="accepted">Accept Applicant</option>
                             <option value="on_hold">Put on Hold</option>
                             <option value="rejected">Reject Application</option>
                           </>
@@ -1949,8 +1948,8 @@ const ApplicationManagement = () => {
                           </>
                         )}
 
-                        {selectedApplication.status === "hired" && (
-                          <option value="hired">Already Hired</option>
+                        {selectedApplication.status === "accepted" && (
+                          <option value="accepted">Already Accepted</option>
                         )}
 
                         {selectedApplication.status === "on_hold" && (
@@ -2093,7 +2092,7 @@ const ApplicationManagement = () => {
                               <p className="font-medium">Hours Completed</p>
                               <p className="mt-1">
                                 Student has completed their required hours and
-                                is ready to be hired.
+                                is ready to be accepted.
                               </p>
                             </div>
                           </div>
@@ -2150,7 +2149,7 @@ const ApplicationManagement = () => {
                         </div>
                       )}
 
-                      {(selectedApplication.status === "hired" ||
+                      {(selectedApplication.status === "accepted" ||
                         selectedApplication.status === "rejected" ||
                         selectedApplication.status === "withdrawn") && (
                         <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">

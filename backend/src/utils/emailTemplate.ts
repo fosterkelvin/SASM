@@ -386,12 +386,12 @@ export const getApplicationStatusEmailTemplate = (
             "You have successfully completed the required hours. Your application is being processed for final hiring.",
           color: "#17a2b8",
         };
-      case "hired":
+      case "accepted":
         return {
           icon: "🎉",
-          title: "Congratulations - You're Hired!",
+          title: "Congratulations - Application Accepted!",
           message:
-            "Welcome to our team! You have been successfully hired for this position.",
+            "Welcome to our team! Your application has been accepted for this position.",
           color: "#28a745",
         };
       case "failed_interview":

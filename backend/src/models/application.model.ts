@@ -75,7 +75,7 @@ export interface ApplicationDocument extends mongoose.Document {
     | "passed_interview"
     | "failed_interview"
     | "hours_completed"
-    | "hired"
+    | "accepted"
     | "rejected"
     | "withdrawn"
     | "on_hold";
@@ -333,7 +333,7 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
         "passed_interview",
         "failed_interview",
         "hours_completed",
-        "hired",
+        "accepted",
         "rejected",
         "withdrawn",
         "on_hold",

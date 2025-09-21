@@ -6,7 +6,7 @@ const {
 const testStatuses = [
   "failed_interview",
   "passed_interview",
-  "hired",
+  "accepted",
   "withdrawn",
   "on_hold",
   "pending",

@@ -8,6 +8,8 @@ import Home from "./pages/Auth/home";
 import Profile from "./pages/Auth/Profile";
 import Application from "./pages/Roles/Student/Apply/Application";
 import HRApplicationManagement from "./pages/Roles/HR/Application Management/ApplicationManagement";
+import LeaveManagement from "./pages/Roles/HR/Leave Management/LeaveManagement";
+import ReApplicationManagement from "./pages/Roles/HR/ReApplication Management/ReApplicationManagement";
 import Notifications from "./pages/Utils/Notifications";
 import PublicRoute from "./routes/PublicRoute";
 import RoleProtectedRoute from "./routes/RoleProtectedRoute";
@@ -136,6 +138,8 @@ function App(): ReactElement {
         <Route path="/profile" element={<Profile />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/applications" element={<HRApplicationManagement />} />
+        <Route path="/leave-management" element={<LeaveManagement />} />
+        <Route path="/reapplications" element={<ReApplicationManagement />} />
       </Route>
 
       {/* Fallback */}

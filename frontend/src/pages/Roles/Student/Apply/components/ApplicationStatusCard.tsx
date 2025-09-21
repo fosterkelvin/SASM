@@ -21,7 +21,7 @@ const getStatusColor = (status: string) => {
       return "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800";
     case "hours_completed":
       return "bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-800";
-    case "hired":
+    case "accepted":
       return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800";
     case "on_hold":
       return "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-400 dark:border-indigo-800";
@@ -33,7 +33,7 @@ const getStatusColor = (status: string) => {
 const getStatusIcon = (status: string) => {
   switch (status) {
     case "approved":
-    case "hired":
+    case "accepted":
     case "passed_interview":
       return <CheckCircle className="h-6 w-6" />;
     case "hours_completed":
@@ -76,8 +76,8 @@ const ApplicationStatusCard: React.FC<ApplicationStatusCardProps> = ({
         </span>
       </div>
 
-      {/* Hired state: show expanded details */}
-      {status === "hired" ? (
+      {/* Accepted state: show expanded details */}
+      {status === "accepted" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="border rounded-md p-4 bg-white/60">
             <h4 className="font-semibold mb-2">Application Details</h4>
@@ -105,25 +105,25 @@ const ApplicationStatusCard: React.FC<ApplicationStatusCardProps> = ({
             <div className="flex items-center justify-between">
               <div className="inline-flex items-center gap-2">
                 <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-sm font-medium">
-                  Hired
+                  Accepted
                 </span>
               </div>
             </div>
             <h4 className="font-semibold mt-4 mb-2">What's Next?</h4>
             <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
-              <li>Your application has been accepted and marked as hired.</li>
-              <li>HR will reach out with onboarding details and next steps.</li>
               <li>
-                You will receive email notifications for updates.
+                Your application has been accepted and marked as accepted.
               </li>
+              <li>HR will reach out with onboarding details and next steps.</li>
+              <li>You will receive email notifications for updates.</li>
             </ul>
           </div>
 
           <div className="md:col-span-2 border rounded-md p-4 bg-white/60">
             <h4 className="text-red-600 font-semibold mb-2">Need Help?</h4>
             <div className="text-sm text-slate-700">
-              If you have any questions about your hired status or onboarding,
-              please contact:
+              If you have any questions about your accepted status or
+              onboarding, please contact:
               <ul className="list-disc list-inside mt-2">
                 <li>HR Office: [Contact information]</li>
                 <li>Email: hr@ub.edu.ph</li>

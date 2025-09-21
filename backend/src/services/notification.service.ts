@@ -216,9 +216,9 @@ export const createApplicationStatusNotification = async (
       message = `Excellent work! You have successfully completed the required hours for the ${positionTitle} position. Your performance will be reviewed for final hiring decision.`;
       type = "success";
       break;
-    case "hired":
-      title = "You're Hired! 🎉";
-      message = `Congratulations! You have been hired for the ${positionTitle} position. Welcome to the team! Please check your email for onboarding details.`;
+    case "accepted":
+      title = "Application Accepted! 🎉";
+      message = `Congratulations! Your application for the ${positionTitle} position has been accepted. Welcome aboard! Please check your email for onboarding details.`;
       type = "success";
       break;
     case "rejected":
