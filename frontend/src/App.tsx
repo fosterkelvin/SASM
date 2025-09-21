@@ -23,6 +23,7 @@ import Leave from "./pages/Roles/Student/Leave/Leave";
 import Grades from "./pages/Roles/Student/Grades/Grades";
 import Schedule from "./pages/Roles/Student/Schedule/Schedule";
 import Dtr from "./pages/Roles/Student/DTR/Dtr";
+import Requirements from "./pages/Roles/Student/Requirements/Requirements";
 // Small layout components to group routes
 const PublicLayout = (): ReactElement => <Outlet />;
 
@@ -129,6 +130,7 @@ function App(): ReactElement {
         <Route path="/re-apply" element={<ReApply />} />
         <Route path="/leave" element={<Leave />} />
         <Route path="/dtr" element={<Dtr />} />
+        <Route path="/requirements" element={<Requirements />} />
         <Route path="/hr-dashboard" element={<HRDashboard />} />
         <Route path="/office-dashboard" element={<OfficeDashboard />} />
         <Route path="/profile" element={<Profile />} />

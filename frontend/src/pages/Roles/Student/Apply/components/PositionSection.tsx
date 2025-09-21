@@ -21,7 +21,7 @@ export default function PositionSection({ position, onChange, error }: PositionS
           <rect x="2" y="7" width="20" height="13" rx="2" />
           <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
         </svg>
-        Position <p className="text-red-600">*</p>
+        Type of Scholarship <p className="text-red-600">*</p>
       </h3>
       <div className="grid grid-cols-2 gap-3 md:gap-4 mt-4">
         <div className="flex items-ce</svg>nter space-x-3">
