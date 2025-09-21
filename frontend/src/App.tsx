@@ -1,13 +1,13 @@
 import { Routes, Route, Outlet } from "react-router-dom";
 import Signin from "./pages/Auth/SigninPage";
 import Signup from "./pages/Auth/SignupPage";
-import StudentDashboard from "./pages/Roles/Student/StudentDashboard";
+import StudentDashboard from "./pages/Roles/Student/Student Dashboard/StudentDashboard";
 import HRDashboard from "./pages/Roles/HR/HRDashboard";
 import OfficeDashboard from "./pages/Roles/Office/OfficeDashboard";
 import Home from "./pages/Auth/home";
 import Profile from "./pages/Auth/Profile";
 import Application from "./pages/Roles/Student/Apply/Application";
-import HRApplicationManagement from "./pages/Roles/HR/ApplicationManagement";
+import HRApplicationManagement from "./pages/Roles/HR/Application Management/ApplicationManagement";
 import Notifications from "./pages/Utils/Notifications";
 import PublicRoute from "./routes/PublicRoute";
 import RoleProtectedRoute from "./routes/RoleProtectedRoute";
