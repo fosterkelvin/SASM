@@ -11,6 +11,7 @@ import HRApplicationManagement from "./pages/Roles/HR/Application Management/App
 import LeaveManagement from "./pages/Roles/HR/Leave Management/LeaveManagement";
 import ReApplicationManagement from "./pages/Roles/HR/ReApplication Management/ReApplicationManagement";
 import Users from "./pages/Roles/HR/Users/Users";
+import EvaluationManagement from "./pages/Roles/HR/Evaluation Management/EvaluationManagement";
 import Notifications from "./pages/Utils/Notifications";
 import PublicRoute from "./routes/PublicRoute";
 import RoleProtectedRoute from "./routes/RoleProtectedRoute";
@@ -142,6 +143,7 @@ function App(): ReactElement {
         <Route path="/leave-management" element={<LeaveManagement />} />
         <Route path="/reapplications" element={<ReApplicationManagement />} />
         <Route path="/hr/users" element={<Users />} />
+        <Route path="/hr/evaluations" element={<EvaluationManagement />} />
       </Route>
 
       {/* Fallback */}
