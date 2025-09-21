@@ -507,7 +507,7 @@ const ApplicationManagement = () => {
                     htmlFor="position"
                     className="text-gray-700 dark:text-gray-300"
                   >
-                    Position
+                    Scholarship
                   </Label>
                   <select
                     id="position"
@@ -517,7 +517,7 @@ const ApplicationManagement = () => {
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   >
-                    <option value="">All Positions</option>
+                    <option value="">All Scholarships</option>
                     <option value="student_assistant">Student Assistant</option>
                     <option value="student_marshal">Student Marshal</option>
                   </select>
@@ -538,7 +538,7 @@ const ApplicationManagement = () => {
                           Applicant
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Position
+                          Scholarship
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                           Status
@@ -1132,7 +1132,10 @@ const ApplicationManagement = () => {
                     {getStatusIcon(selectedApplication.status)}
                     {selectedApplication.status.replace("_", " ").toUpperCase()}
                   </span>
-                  <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
+                  <span
+                    className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800"
+                    aria-label="Scholarship"
+                  >
                     {selectedApplication.position === "student_assistant"
                       ? "Student Assistant"
                       : "Student Marshal"}
@@ -2440,7 +2443,7 @@ const ApplicationManagement = () => {
                                   "student_assistant"
                                     ? "Student Assistant"
                                     : "Student Marshal"}{" "}
-                                  Position
+                                  Scholarship
                                 </p>
                                 <div className="mt-3 text-gray-700 dark:text-gray-300 leading-relaxed">
                                   <p>
@@ -2453,8 +2456,8 @@ const ApplicationManagement = () => {
                                     "student_assistant"
                                       ? "Student Assistant"
                                       : "Student Marshal"}{" "}
-                                    position has been reviewed and we would like
-                                    to invite you for an interview.
+                                    scholarship has been reviewed and we would
+                                    like to invite you for an interview.
                                   </p>
 
                                   <div className="mt-4 bg-blue-50 dark:bg-blue-900/30 p-4 rounded border-l-4 border-blue-400">
@@ -2493,7 +2496,7 @@ const ApplicationManagement = () => {
                                           "[Location not set]"}
                                       </p>
                                       <p>
-                                        <strong>👤 Position:</strong>{" "}
+                                        <strong>👤 Scholarship:</strong>{" "}
                                         {selectedApplication?.position ===
                                         "student_assistant"
                                           ? "Student Assistant"
