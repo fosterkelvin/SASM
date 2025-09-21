@@ -39,6 +39,7 @@ export const hasRouteAccess = (userRole: string, route: string): boolean => {
     ],
     hr: [
       "/hr-dashboard",
+      "/hr/users",
       "/applications",
       "/reapplications",
       "/leave-management",

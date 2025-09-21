@@ -12,8 +12,6 @@ import {
   Calendar,
   BarChart,
   Bell,
-  ChevronDown,
-  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -37,7 +35,6 @@ const HRSidebar = ({
   // Uncomment if notification count is available for HR
   // const { data: unreadCountData } = useUnreadNotificationCount();
   // const unreadCount = unreadCountData?.unreadCount || 0;
-  const unreadCount = 0; // Placeholder
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
@@ -45,7 +42,7 @@ const HRSidebar = ({
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(
     localStorage.getItem("sidebarCollapsed") === "true"
   );
-  const [isReportsExpanded, setIsReportsExpanded] = useState(false);
+  // reports and schedule removed — no local expanded state needed
   // Focus index for keyboard navigation
   const [focusIndex, setFocusIndex] = useState<number | null>(null);
 
@@ -122,15 +119,6 @@ const HRSidebar = ({
     setIsOpen(false);
   };
 
-  const handleReportsClick = () => {
-    setIsReportsExpanded((v) => !v);
-  };
-
-  const handleScheduleClick = () => {
-    // navigate("/schedule");
-    setIsOpen(false);
-  };
-
   const handleAnalyticsClick = () => {
     // navigate("/analytics");
     setIsOpen(false);
@@ -143,6 +131,11 @@ const HRSidebar = ({
 
   const handleReapplicationsClick = () => {
     navigate("/reapplications");
+    setIsOpen(false);
+  };
+
+  const handleUsersClick = () => {
+    navigate("/hr/users");
     setIsOpen(false);
   };
 
@@ -173,6 +166,10 @@ const HRSidebar = ({
     navigate("/reapplications");
   };
 
+  const handleCollapsedUsersClick = () => {
+    navigate("/hr/users");
+  };
+
   const handleCollapsedLeavesClick = () => {
     navigate("/leave-management");
   };
@@ -180,8 +177,6 @@ const HRSidebar = ({
   // Keyboard navigation for sidebar
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
-    { label: "Reports", handler: handleReportsClick },
-    { label: "Schedule", handler: handleScheduleClick },
     { label: "Analytics", handler: handleAnalyticsClick },
     { label: "Applications", handler: handleApplicationsClick },
     { label: "Reapplications", handler: handleReapplicationsClick },
@@ -352,95 +347,8 @@ const HRSidebar = ({
                 </div>
               </button>
             </li>
-            <li>
-              {/* Reports Menu Item with Submenu */}
-              <div>
-                <button
-                  onClick={handleReportsClick}
-                  className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                  tabIndex={0}
-                  aria-label="Reports"
-                  aria-expanded={isReportsExpanded}
-                  aria-controls="reports-submenu"
-                  title="Show Reports submenu"
-                >
-                  <FileText
-                    size={20}
-                    className="group-hover:scale-110 transition-transform duration-200"
-                  />
-                  <span className="font-medium">Reports</span>
-                  <div className="ml-auto flex items-center gap-2">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                    {isReportsExpanded ? (
-                      <ChevronDown
-                        size={16}
-                        className="transition-transform duration-200"
-                      />
-                    ) : (
-                      <ChevronRight
-                        size={16}
-                        className="transition-transform duration-200"
-                      />
-                    )}
-                  </div>
-                </button>
-                {/* Submenu */}
-                <div
-                  id="reports-submenu"
-                  className={`overflow-hidden transition-all duration-300 ${
-                    isReportsExpanded
-                      ? "max-h-48 opacity-100"
-                      : "max-h-0 opacity-0"
-                  }`}
-                  aria-hidden={!isReportsExpanded}
-                >
-                  <div className="pl-8 pr-4 py-2 space-y-1">
-                    <button
-                      onClick={() => {
-                        /* navigate to report 1 */
-                      }}
-                      className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
-                      tabIndex={isReportsExpanded ? 0 : -1}
-                      aria-label="Report 1"
-                      title="Report 1"
-                    >
-                      {/* Add icon if needed */}
-                      <span className="font-medium">Report 1</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        /* navigate to report 2 */
-                      }}
-                      className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
-                      tabIndex={isReportsExpanded ? 0 : -1}
-                      aria-label="Report 2"
-                      title="Report 2"
-                    >
-                      <span className="font-medium">Report 2</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </li>
-            <li>
-              <button
-                onClick={handleScheduleClick}
-                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                tabIndex={0}
-                aria-label="Schedule"
-                title="View Schedule"
-                aria-current={currentPage === "Schedule"}
-              >
-                <Calendar
-                  size={20}
-                  className="group-hover:scale-110 transition-transform duration-200"
-                />
-                <span className="font-medium">Schedule</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                </div>
-              </button>
-            </li>
+            {/* Reports removed */}
+            {/* Schedule removed */}
             <li>
               <button
                 onClick={handleAnalyticsClick}
@@ -493,6 +401,25 @@ const HRSidebar = ({
                   className="group-hover:scale-110 transition-transform duration-200"
                 />
                 <span className="font-medium">Reapplications</span>
+                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                </div>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={handleUsersClick}
+                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Users"
+                title="Manage Users"
+                aria-current={currentPage === "Users"}
+              >
+                <Users
+                  size={20}
+                  className="group-hover:scale-110 transition-transform duration-200"
+                />
+                <span className="font-medium">Users</span>
                 <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
                 </div>
@@ -562,33 +489,7 @@ const HRSidebar = ({
                   </div>
                 </div>
 
-                <div className="group relative">
-                  <button
-                    onClick={handleReportsClick}
-                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                    aria-label="Reports"
-                    title="Reports"
-                  >
-                    <FileText size={16} />
-                  </button>
-                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                    Reports
-                  </div>
-                </div>
-
-                <div className="group relative">
-                  <button
-                    onClick={handleScheduleClick}
-                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                    aria-label="Schedule"
-                    title="Schedule"
-                  >
-                    <Calendar size={16} />
-                  </button>
-                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                    Schedule
-                  </div>
-                </div>
+                {/* Reports and Schedule removed in collapsed view */}
 
                 <div className="group relative">
                   <button
@@ -629,6 +530,20 @@ const HRSidebar = ({
                   </button>
                   <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                     Reapplications
+                  </div>
+                </div>
+
+                <div className="group relative">
+                  <button
+                    onClick={handleCollapsedUsersClick}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="Users"
+                    title="Users"
+                  >
+                    <Users size={16} />
+                  </button>
+                  <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    Users
                   </div>
                 </div>
 
