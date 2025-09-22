@@ -13,6 +13,7 @@ import ReApplicationManagement from "./pages/Roles/HR/ReApplication Management/R
 import Users from "./pages/Roles/HR/Users/Users";
 import EvaluationManagement from "./pages/Roles/HR/Evaluation Management/EvaluationManagement";
 import Notifications from "./pages/Utils/Notifications";
+import Analytics from "./pages/Roles/HR/Analytics/Analytics";
 import PublicRoute from "./routes/PublicRoute";
 import RoleProtectedRoute from "./routes/RoleProtectedRoute";
 import NotFound from "@/pages/Utils/NotFound";
@@ -28,6 +29,7 @@ import Grades from "./pages/Roles/Student/Grades/Grades";
 import Schedule from "./pages/Roles/Student/Schedule/Schedule";
 import Dtr from "./pages/Roles/Student/DTR/Dtr";
 import Requirements from "./pages/Roles/Student/Requirements/Requirements";
+import HRRequirementsManagement from "./pages/Roles/HR/Requirements Management/RequirementsManagement";
 // Small layout components to group routes
 const PublicLayout = (): ReactElement => <Outlet />;
 
@@ -135,6 +137,8 @@ function App(): ReactElement {
         <Route path="/leave" element={<Leave />} />
         <Route path="/dtr" element={<Dtr />} />
         <Route path="/requirements" element={<Requirements />} />
+        <Route path="/hr/requirements" element={<HRRequirementsManagement />} />
+        <Route path="/hr/analytics" element={<Analytics />} />
         <Route path="/hr-dashboard" element={<HRDashboard />} />
         <Route path="/office-dashboard" element={<OfficeDashboard />} />
         <Route path="/profile" element={<Profile />} />

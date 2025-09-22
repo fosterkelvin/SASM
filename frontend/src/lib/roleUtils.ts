@@ -39,6 +39,8 @@ export const hasRouteAccess = (userRole: string, route: string): boolean => {
     ],
     hr: [
       "/hr-dashboard",
+      "/hr/analytics",
+      "/hr/requirements",
       "/hr/evaluations",
       "/hr/users",
       "/applications",
@@ -49,7 +51,18 @@ export const hasRouteAccess = (userRole: string, route: string): boolean => {
     office: ["/office-dashboard", ...commonRoutes],
   };
 
-  return (
-    roleRoutes[userRole as keyof typeof roleRoutes]?.includes(route) || false
-  );
+  const allowed = roleRoutes[userRole as keyof typeof roleRoutes] || [];
+
+  // Normalize helper: remove trailing slash (unless it's just '/')
+  const normalize = (p: string) => (p === "/" ? p : p.replace(/\/+$/g, ""));
+  const rNorm = normalize(route);
+
+  for (const a of allowed) {
+    const aNorm = normalize(a);
+    if (aNorm === rNorm) return true;
+    // allow prefix matches (e.g. /hr/analytics/stats should match /hr/analytics)
+    if (rNorm.startsWith(aNorm + "/")) return true;
+  }
+
+  return false;
 };
