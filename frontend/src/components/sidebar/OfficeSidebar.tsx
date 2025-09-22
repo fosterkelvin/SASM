@@ -645,7 +645,7 @@ const OfficeSidebar = ({
             className="transition-all duration-300 flex flex-col items-center justify-center gap-2 p-4"
             style={{
               position: "absolute",
-              bottom: 32,
+              bottom: 4,
               left: 0,
               right: 0,
               background: "none",
@@ -653,6 +653,51 @@ const OfficeSidebar = ({
               zIndex: 50,
             }}
           >
+            {/* User Info Item */}
+            {user && (
+              <button
+                onClick={handleProfileClick}
+                className="w-full flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-gradient-to-r from-red-50 to-red-100 dark:from-gray-900 dark:to-gray-800 border border-red-200 dark:border-red-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 hover:bg-red-100 dark:hover:bg-gray-900/30 transition-all duration-200"
+                style={{ userSelect: "none" }}
+                aria-label="View Profile"
+                title="View Profile"
+              >
+                <div className="flex-shrink-0 relative">
+                  {/* Avatar or fallback icon */}
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt="User Avatar"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-red-400 dark:border-red-600 shadow"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-red-200 dark:bg-red-900 flex items-center justify-center border-2 border-red-400 dark:border-red-600 shadow">
+                      <User
+                        size={22}
+                        className="text-red-600 dark:text-red-300"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col min-w-0 text-left">
+                  <span className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
+                    {user?.firstname && user?.lastname
+                      ? `${user.firstname} ${user.lastname}`
+                      : user?.email || "User"}
+                  </span>
+                  {user?.email && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {user.email}
+                    </span>
+                  )}
+                  {user?.role && (
+                    <span className="text-xs font-semibold text-red-500 dark:text-red-400 mt-0.5 capitalize">
+                      {user.role}
+                    </span>
+                  )}
+                </div>
+              </button>
+            )}
             <button
               onClick={() => setDarkMode(!darkMode)}
               className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-700 dark:hover:text-blue-400 hover:border-blue-400 dark:hover:border-blue-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
