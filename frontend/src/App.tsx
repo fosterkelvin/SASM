@@ -1,14 +1,19 @@
 import { Routes, Route, Outlet } from "react-router-dom";
 import Signin from "./pages/Auth/SigninPage";
 import Signup from "./pages/Auth/SignupPage";
-import StudentDashboard from "./pages/Roles/Student/StudentDashboard";
-import HRDashboard from "./pages/Roles/HR/HRDashboard";
+import StudentDashboard from "./pages/Roles/Student/Student Dashboard/StudentDashboard";
+import HRDashboard from "./pages/Roles/HR/HR Dashboard/HRDashboard";
 import OfficeDashboard from "./pages/Roles/Office/OfficeDashboard";
 import Home from "./pages/Auth/home";
 import Profile from "./pages/Auth/Profile";
 import Application from "./pages/Roles/Student/Apply/Application";
-import HRApplicationManagement from "./pages/Roles/HR/ApplicationManagement";
+import HRApplicationManagement from "./pages/Roles/HR/Application Management/ApplicationManagement";
+import LeaveManagement from "./pages/Roles/HR/Leave Management/LeaveManagement";
+import ReApplicationManagement from "./pages/Roles/HR/ReApplication Management/ReApplicationManagement";
+import Users from "./pages/Roles/HR/Users/Users";
+import EvaluationManagement from "./pages/Roles/HR/Evaluation Management/EvaluationManagement";
 import Notifications from "./pages/Utils/Notifications";
+import Analytics from "./pages/Roles/HR/Analytics/Analytics";
 import PublicRoute from "./routes/PublicRoute";
 import RoleProtectedRoute from "./routes/RoleProtectedRoute";
 import NotFound from "@/pages/Utils/NotFound";
@@ -23,6 +28,8 @@ import Leave from "./pages/Roles/Student/Leave/Leave";
 import Grades from "./pages/Roles/Student/Grades/Grades";
 import Schedule from "./pages/Roles/Student/Schedule/Schedule";
 import Dtr from "./pages/Roles/Student/DTR/Dtr";
+import Requirements from "./pages/Roles/Student/Requirements/Requirements";
+import HRRequirementsManagement from "./pages/Roles/HR/Requirements Management/RequirementsManagement";
 // Small layout components to group routes
 const PublicLayout = (): ReactElement => <Outlet />;
 
@@ -129,11 +136,18 @@ function App(): ReactElement {
         <Route path="/re-apply" element={<ReApply />} />
         <Route path="/leave" element={<Leave />} />
         <Route path="/dtr" element={<Dtr />} />
+        <Route path="/requirements" element={<Requirements />} />
+        <Route path="/hr/requirements" element={<HRRequirementsManagement />} />
+        <Route path="/hr/analytics" element={<Analytics />} />
         <Route path="/hr-dashboard" element={<HRDashboard />} />
         <Route path="/office-dashboard" element={<OfficeDashboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/applications" element={<HRApplicationManagement />} />
+        <Route path="/leave-management" element={<LeaveManagement />} />
+        <Route path="/reapplications" element={<ReApplicationManagement />} />
+        <Route path="/hr/users" element={<Users />} />
+        <Route path="/hr/evaluations" element={<EvaluationManagement />} />
       </Route>
 
       {/* Fallback */}

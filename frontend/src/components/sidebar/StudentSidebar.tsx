@@ -108,6 +108,11 @@ const StudentSidebar = ({
     setIsOpen(false);
   };
 
+  const handleRequirementsClick = () => {
+    navigate("/requirements");
+    setIsOpen(false);
+  };
+
   const handleDashboardClick = () => {
     const dashboardRoute = getRoleBasedRedirect(user?.role || "student");
     navigate(dashboardRoute);
@@ -153,6 +158,10 @@ const StudentSidebar = ({
 
   const handleCollapsedLeaveClick = () => {
     navigate("/leave");
+  };
+
+  const handleCollapsedRequirementsClick = () => {
+    navigate("/requirements");
   };
 
   const handleCollapsedDashboardClick = () => {
@@ -586,6 +595,21 @@ const StudentSidebar = ({
                       <FileText size={16} className="text-yellow-500 mr-2" />
                       <span className="font-medium">Leave</span>
                     </button>
+                    <button
+                      onClick={handleRequirementsClick}
+                      className={`group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-green-600 dark:hover:text-green-400 rounded-lg transition-all duration-200 ${
+                        currentPage === "Requirements"
+                          ? "bg-green-50 dark:bg-gray-700 border-green-200 dark:border-green-800"
+                          : ""
+                      }`}
+                      tabIndex={isFormsExpanded ? 0 : -1}
+                      aria-label="Requirements"
+                      title="Requirements"
+                      aria-current={currentPage === "Requirements"}
+                    >
+                      <FileText size={16} className="text-green-500 mr-2" />
+                      <span className="font-medium">Requirements</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -822,6 +846,31 @@ const StudentSidebar = ({
                   >
                     <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
                       DTR
+                    </span>
+                  </div>
+                </div>
+
+                <div className="group relative">
+                  <button
+                    ref={dtrRef}
+                    onClick={handleCollapsedRequirementsClick}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-green-600 dark:hover:text-green-400 transition-all duration-200"
+                    aria-label="Requirements"
+                    title="Requirements"
+                  >
+                    <FileText size={16} />
+                  </button>
+                  <div
+                    className="fixed"
+                    style={{
+                      left: "80px",
+                      top: dtrTop + 44,
+                      zIndex: 999,
+                      transform: "translateY(-50%)",
+                    }}
+                  >
+                    <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                      Requirements
                     </span>
                   </div>
                 </div>

@@ -268,7 +268,7 @@ const Profile = () => {
 
   const sessions = sessionsResponse?.data || [];
 
-  // Fetch user's applications to determine if they're hired
+  // Fetch user's applications to determine if they're accepted
   const { data: appsResponse } = useQuery({
     queryKey: ["myApplications"],
     queryFn: getUserApplications,
@@ -276,15 +276,15 @@ const Profile = () => {
   });
 
   const userApplications = appsResponse?.applications || [];
-  const hasHiredApplication = userApplications.some(
-    (a: any) => a.status === "hired"
+  const hasAcceptedApplication = userApplications.some(
+    (a: any) => a.status === "accepted"
   );
 
   const newEmailInputRef = useRef<HTMLInputElement | null>(null);
   const currentEmailIsUB = (user.pendingEmail || user.email || "")
     .toLowerCase()
     .endsWith("@s.ubaguio.edu");
-  const showEmailChangeRequired = hasHiredApplication && !currentEmailIsUB;
+  const showEmailChangeRequired = hasAcceptedApplication && !currentEmailIsUB;
 
   // Load persisted block from localStorage on mount
   useEffect(() => {
@@ -393,13 +393,13 @@ const Profile = () => {
       return;
     }
 
-    // If user has been hired, enforce academic email domain
-    if (hasHiredApplication) {
+    // If user has been accepted, enforce academic email domain
+    if (hasAcceptedApplication) {
       const candidate = (emailData.newEmail || "").toLowerCase();
       if (!candidate.endsWith("@s.ubaguio.edu")) {
         setErrors({
           newEmail:
-            "Hired students must use an academic email address ending with @s.ubaguio.edu",
+            "Accepted students must use an academic email address ending with @s.ubaguio.edu",
         });
         return;
       }
@@ -709,8 +709,8 @@ const Profile = () => {
                               Change required
                             </div>
                             <p className="text-sm text-orange-600 dark:text-orange-300">
-                              Your account was hired — update to your UB email
-                              (@s.ubaguio.edu).
+                              Your account was accepted — update to your UB
+                              email (@s.ubaguio.edu).
                             </p>
                             <button
                               onClick={() => newEmailInputRef.current?.focus()}
