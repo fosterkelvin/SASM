@@ -9,10 +9,14 @@ const StatsGrid = () => {
           <div className="w-10 h-10 bg-red-600 dark:bg-red-700 rounded-lg flex items-center justify-center">
             <Users className="w-6 h-6 text-white" />
           </div>
-          <span className="text-2xl font-bold text-red-600 dark:text-red-400">234</span>
+          <span className="text-2xl font-bold text-red-600 dark:text-red-400">
+            234
+          </span>
         </div>
-  <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Total Users</h3>
-  <p className="text-sm text-gray-600 dark:text-gray-400">Active users</p>
+        <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">
+          Total Users
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Active users</p>
       </div>
 
       {/* Pending Applications Card */}
@@ -21,10 +25,16 @@ const StatsGrid = () => {
           <div className="w-10 h-10 bg-orange-500 dark:bg-orange-700 rounded-lg flex items-center justify-center">
             <FileText className="w-6 h-6 text-white" />
           </div>
-          <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">18</span>
+          <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+            18
+          </span>
         </div>
-        <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Pending Reviews</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">Awaiting approval</p>
+        <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">
+          Pending Reviews
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Awaiting approval
+        </p>
       </div>
 
       {/* Department Count Card */}
@@ -33,10 +43,16 @@ const StatsGrid = () => {
           <div className="w-10 h-10 bg-green-600 dark:bg-green-700 rounded-lg flex items-center justify-center">
             <Building2 className="w-6 h-6 text-white" />
           </div>
-          <span className="text-2xl font-bold text-green-600 dark:text-green-400">12</span>
+          <span className="text-2xl font-bold text-green-600 dark:text-green-400">
+            12
+          </span>
         </div>
-        <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Offices</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">Active Offices</p>
+        <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">
+          Offices
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Active Offices
+        </p>
       </div>
 
       {/* Average Satisfaction Card */}
@@ -45,10 +61,16 @@ const StatsGrid = () => {
           <div className="w-10 h-10 bg-purple-600 dark:bg-purple-700 rounded-lg flex items-center justify-center">
             <Star className="w-6 h-6 text-white" />
           </div>
-          <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">4.2</span>
+          <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            4.2
+          </span>
         </div>
-        <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Satisfaction</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">Office Representative rating</p>
+        <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">
+          Satisfaction
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Office Representative rating
+        </p>
       </div>
     </div>
   );

@@ -67,12 +67,16 @@ const HRDashboard = () => {
                   : [
                       {
                         label: "Female",
-                        value: Math.round((summary?.activeStudents ?? 0) * 0.425),
+                        value: Math.round(
+                          (summary?.activeStudents ?? 0) * 0.425
+                        ),
                         color: "#ef4444",
                       },
                       {
                         label: "Male",
-                        value: Math.round((summary?.activeStudents ?? 0) * 0.575),
+                        value: Math.round(
+                          (summary?.activeStudents ?? 0) * 0.575
+                        ),
                         color: "#3b82f6",
                       },
                     ]
