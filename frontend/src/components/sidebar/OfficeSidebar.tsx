@@ -21,7 +21,7 @@ const useTooltipPosition = <T extends HTMLElement>(): [
   return [iconRef, top];
 };
 
-import { User, LogOut, Sun, Moon, Menu, X, Home } from "lucide-react";
+import { User, LogOut, Sun, Moon, Menu, X, Home, Calendar } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { getRoleBasedRedirect } from "@/lib/roleUtils";
@@ -53,6 +53,8 @@ const OfficeSidebar = ({
   // Tooltip refs and positions for collapsed sidebar
   const [expandRef, expandTop] = useTooltipPosition<HTMLButtonElement>();
   const [dashboardRef, dashboardTop] = useTooltipPosition<HTMLButtonElement>();
+  const [dtrRef, dtrTop] = useTooltipPosition<HTMLButtonElement>();
+  const [evalRef, evalTop] = useTooltipPosition<HTMLButtonElement>();
   const [profileRef, profileTop] = useTooltipPosition<HTMLButtonElement>();
   const [themeRef, themeTop] = useTooltipPosition<HTMLButtonElement>();
   const [signoutRef, signoutTop] = useTooltipPosition<HTMLButtonElement>();
@@ -138,6 +140,14 @@ const OfficeSidebar = ({
     navigate(dashboardRoute);
   };
 
+  const handleCollapsedDtrClick = () => {
+    navigate("/office/dtr");
+  };
+
+  const handleCollapsedEvalClick = () => {
+    navigate("/office/evaluation");
+  };
+
   const handleCollapsedProfileClick = () => {
     navigate("/profile");
   };
@@ -151,6 +161,22 @@ const OfficeSidebar = ({
   // Keyboard navigation for sidebar
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
+
+    {
+      label: "DTR",
+      handler: () => {
+        navigate("/office/dtr");
+        setIsOpen(false);
+      },
+    },
+
+    {
+      label: "Evaluation",
+      handler: () => {
+        navigate("/office/evaluation");
+        setIsOpen(false);
+      },
+    },
 
     { label: "Sign out", handler: handleSignout },
   ];
@@ -317,6 +343,54 @@ const OfficeSidebar = ({
                 </div>
               </button>
             </li>
+            <li>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate("/office/dtr");
+                  setIsOpen(false);
+                }}
+                type="button"
+                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="DTR"
+                title="DTR"
+                aria-current={currentPage === "DTR"}
+              >
+                <Calendar
+                  size={20}
+                  className="group-hover:scale-110 transition-transform duration-200"
+                />
+                <span className="font-medium">DTR</span>
+                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                </div>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate("/office/evaluation");
+                  setIsOpen(false);
+                }}
+                type="button"
+                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                tabIndex={0}
+                aria-label="Evaluation"
+                title="Evaluation"
+                aria-current={currentPage === "Evaluation"}
+              >
+                <Calendar
+                  size={20}
+                  className="group-hover:scale-110 transition-transform duration-200"
+                />
+                <span className="font-medium">Evaluation</span>
+                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                </div>
+              </button>
+            </li>
           </ul>
         </nav>
 
@@ -377,6 +451,62 @@ const OfficeSidebar = ({
                 >
                   <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
                     Dashboard
+                  </span>
+                </div>
+              </div>
+
+              <div className="group relative">
+                <button
+                  ref={dtrRef}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCollapsedDtrClick();
+                  }}
+                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  aria-label="DTR"
+                  title="DTR"
+                >
+                  <Calendar size={16} />
+                </button>
+                <div
+                  className="fixed"
+                  style={{
+                    left: "80px",
+                    top: dtrTop,
+                    zIndex: 999,
+                    transform: "translateY(-50%)",
+                  }}
+                >
+                  <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    DTR
+                  </span>
+                </div>
+              </div>
+
+              <div className="group relative">
+                <button
+                  ref={evalRef}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCollapsedEvalClick();
+                  }}
+                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  aria-label="Evaluation"
+                  title="Evaluation"
+                >
+                  <Calendar size={16} />
+                </button>
+                <div
+                  className="fixed"
+                  style={{
+                    left: "80px",
+                    top: evalTop,
+                    zIndex: 999,
+                    transform: "translateY(-50%)",
+                  }}
+                >
+                  <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    Evaluation
                   </span>
                 </div>
               </div>

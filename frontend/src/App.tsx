@@ -4,6 +4,8 @@ import Signup from "./pages/Auth/SignupPage";
 import StudentDashboard from "./pages/Roles/Student/Student Dashboard/StudentDashboard";
 import HRDashboard from "./pages/Roles/HR/HR Dashboard/HRDashboard";
 import OfficeDashboard from "./pages/Roles/Office/Office Dashboard/OfficeDashboard";
+import OfficeDTRPage from "./pages/Roles/Office/DTR/DTR";
+import OfficeEvaluationPage from "./pages/Roles/Office/Evaluation/Evaluation";
 import Home from "./pages/Auth/home";
 import Profile from "./pages/Auth/Profile";
 import Application from "./pages/Roles/Student/Apply/Application";
@@ -141,6 +143,8 @@ function App(): ReactElement {
         <Route path="/hr/analytics" element={<Analytics />} />
         <Route path="/hr-dashboard" element={<HRDashboard />} />
         <Route path="/office-dashboard" element={<OfficeDashboard />} />
+        <Route path="/office/dtr" element={<OfficeDTRPage />} />
+        <Route path="/office/evaluation" element={<OfficeEvaluationPage />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/applications" element={<HRApplicationManagement />} />
