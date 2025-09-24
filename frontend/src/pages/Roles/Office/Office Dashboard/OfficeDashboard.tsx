@@ -1,6 +1,6 @@
 import { useState } from "react";
 import OfficeSidebar from "@/components/sidebar/OfficeSidebar";
-import { WelcomeCard, StatsGrid, QuickActions } from "./components";
+import { WelcomeCard } from "./components";
 
 const OfficeDashboard = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -34,9 +34,7 @@ const OfficeDashboard = () => {
         <div className="p-6 md:p-10">
           <WelcomeCard />
 
-          <StatsGrid />
-
-          <QuickActions />
+          {/* Stats and Quick Actions removed as requested */}
         </div>
       </div>
     </div>

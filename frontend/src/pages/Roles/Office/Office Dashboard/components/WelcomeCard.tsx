@@ -17,10 +17,7 @@ const WelcomeCard = () => {
         </div>
       </div>
       <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-        Your comprehensive administrative portal for managing office operations,
-        staff records, academic programs, and institutional resources.
-        Streamline your workflow and maintain efficient oversight of all office
-        activities.
+        Your comprehensive administrative portal for managing office operations.
       </p>
     </div>
   );

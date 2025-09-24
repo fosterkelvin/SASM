@@ -48,7 +48,15 @@ export const hasRouteAccess = (userRole: string, route: string): boolean => {
       "/leave-management",
       ...commonRoutes,
     ],
-    office: ["/office-dashboard", ...commonRoutes],
+    office: [
+      "/office-dashboard",
+      "/office/dtr",
+      "/office/evaluation",
+      "/office/scholars",
+      "/office/requests",
+      "/office/leave-requests",
+      ...commonRoutes,
+    ],
   };
 
   const allowed = roleRoutes[userRole as keyof typeof roleRoutes] || [];
