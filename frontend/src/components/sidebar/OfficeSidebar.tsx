@@ -1,20 +1,27 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import {
-  User,
-  LogOut,
-  Sun,
-  Moon,
-  Menu,
-  X,
-  Home,
-  FileText,
-  Settings,
-  Database,
-  Briefcase,
-  Users,
-  ChevronDown,
-  ChevronRight,
-} from "lucide-react";
+import type { RefObject } from "react";
+// Helper for dynamic tooltip positioning
+const useTooltipPosition = <T extends HTMLElement>(): [
+  RefObject<T>,
+  number
+] => {
+  const iconRef = useRef<T>(null) as RefObject<T>;
+  const [top, setTop] = useState(0);
+  const updateTop = () => {
+    if (iconRef.current) {
+      const rect = iconRef.current.getBoundingClientRect();
+      setTop(rect.top + window.scrollY + rect.height / 2);
+    }
+  };
+  useEffect(() => {
+    updateTop();
+    window.addEventListener("resize", updateTop);
+    return () => window.removeEventListener("resize", updateTop);
+  }, []);
+  return [iconRef, top];
+};
+
+import { User, LogOut, Sun, Moon, Menu, X, Home } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { getRoleBasedRedirect } from "@/lib/roleUtils";
@@ -39,9 +46,16 @@ const OfficeSidebar = ({
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(
     localStorage.getItem("sidebarCollapsed") === "true"
   );
-  const [isReportsExpanded, setIsReportsExpanded] = useState(false);
+
   // Focus index for keyboard navigation
   const [focusIndex, setFocusIndex] = useState<number | null>(null);
+
+  // Tooltip refs and positions for collapsed sidebar
+  const [expandRef, expandTop] = useTooltipPosition<HTMLButtonElement>();
+  const [dashboardRef, dashboardTop] = useTooltipPosition<HTMLButtonElement>();
+  const [profileRef, profileTop] = useTooltipPosition<HTMLButtonElement>();
+  const [themeRef, themeTop] = useTooltipPosition<HTMLButtonElement>();
+  const [signoutRef, signoutTop] = useTooltipPosition<HTMLButtonElement>();
 
   // Notify parent component when collapse state changes
   useEffect(() => {
@@ -101,13 +115,8 @@ const OfficeSidebar = ({
 
   // Handlers
   const handleDashboardClick = () => {
-    const dashboardRoute = getRoleBasedRedirect(user?.role || "office");
+    const dashboardRoute = getRoleBasedRedirect("office");
     navigate(dashboardRoute);
-    setIsOpen(false);
-  };
-
-  const handleProfileClick = () => {
-    navigate("/profile");
     setIsOpen(false);
   };
 
@@ -116,58 +125,33 @@ const OfficeSidebar = ({
     setIsOpen(false);
   };
 
-  // Office-specific menu handlers
-  const handleRecordsClick = () => {
-    // navigate("/records");
+  const handleProfileClick = () => {
+    navigate("/profile");
     setIsOpen(false);
   };
 
-  const handleReportsClick = () => {
-    setIsReportsExpanded((v) => !v);
-  };
-
-  const handleAdministrationClick = () => {
-    // navigate("/administration");
-    setIsOpen(false);
-  };
-
-  const handleDocumentsClick = () => {
-    // navigate("/documents");
-    setIsOpen(false);
-  };
-
-  const handleApplicationsClick = () => {
-    navigate("/applications");
-    setIsOpen(false);
-  };
+  // (Removed Records/Documents/Applications/Reports/Administration handlers)
 
   // Handlers for collapsed sidebar that don't expand the sidebar
-  const handleCollapsedProfileClick = () => {
-    navigate("/profile");
+  const handleCollapsedDashboardClick = () => {
+    const dashboardRoute = getRoleBasedRedirect("office");
+    navigate(dashboardRoute);
   };
 
-  const handleCollapsedDashboardClick = () => {
-    const dashboardRoute = getRoleBasedRedirect(user?.role || "office");
-    navigate(dashboardRoute);
+  const handleCollapsedProfileClick = () => {
+    navigate("/profile");
   };
 
   const handleCollapsedSignout = () => {
     logout();
   };
 
-  const handleCollapsedApplicationsClick = () => {
-    navigate("/applications");
-  };
+  // (removed collapsed handlers for removed items)
 
   // Keyboard navigation for sidebar
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
-    { label: "Records", handler: handleRecordsClick },
-    { label: "Documents", handler: handleDocumentsClick },
-    { label: "Applications", handler: handleApplicationsClick },
-    { label: "Reports", handler: handleReportsClick },
-    { label: "Administration", handler: handleAdministrationClick },
-    { label: "Profile", handler: handleProfileClick },
+
     { label: "Sign out", handler: handleSignout },
   ];
 
@@ -333,319 +317,166 @@ const OfficeSidebar = ({
                 </div>
               </button>
             </li>
-            <li>
-              <button
-                onClick={handleRecordsClick}
-                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                tabIndex={0}
-                aria-label="Records"
-                title="View Records"
-                aria-current={currentPage === "Records"}
-              >
-                <Database
-                  size={20}
-                  className="group-hover:scale-110 transition-transform duration-200"
-                />
-                <span className="font-medium">Records</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                </div>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={handleDocumentsClick}
-                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                tabIndex={0}
-                aria-label="Documents"
-                title="View Documents"
-                aria-current={currentPage === "Documents"}
-              >
-                <FileText
-                  size={20}
-                  className="group-hover:scale-110 transition-transform duration-200"
-                />
-                <span className="font-medium">Documents</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                </div>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={handleApplicationsClick}
-                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                tabIndex={0}
-                aria-label="Applications"
-                title="View Applications"
-                aria-current={currentPage === "Applications"}
-              >
-                <Users
-                  size={20}
-                  className="group-hover:scale-110 transition-transform duration-200"
-                />
-                <span className="font-medium">Applications</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                </div>
-              </button>
-            </li>
-            <li>
-              {/* Reports Menu Item with Submenu */}
-              <div>
-                <button
-                  onClick={handleReportsClick}
-                  className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                  tabIndex={0}
-                  aria-label="Reports"
-                  aria-expanded={isReportsExpanded}
-                  aria-controls="reports-submenu"
-                  title="Show Reports submenu"
-                >
-                  <Briefcase
-                    size={20}
-                    className="group-hover:scale-110 transition-transform duration-200"
-                  />
-                  <span className="font-medium">Reports</span>
-                  <div className="ml-auto flex items-center gap-2">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-                    {isReportsExpanded ? (
-                      <ChevronDown
-                        size={16}
-                        className="transition-transform duration-200"
-                      />
-                    ) : (
-                      <ChevronRight
-                        size={16}
-                        className="transition-transform duration-200"
-                      />
-                    )}
-                  </div>
-                </button>
-                {/* Submenu */}
-                <div
-                  id="reports-submenu"
-                  className={`overflow-hidden transition-all duration-300 ${
-                    isReportsExpanded
-                      ? "max-h-48 opacity-100"
-                      : "max-h-0 opacity-0"
-                  }`}
-                  aria-hidden={!isReportsExpanded}
-                >
-                  <div className="pl-8 pr-4 py-2 space-y-1">
-                    <button
-                      onClick={() => {
-                        /* navigate to report 1 */
-                      }}
-                      className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
-                      tabIndex={isReportsExpanded ? 0 : -1}
-                      aria-label="Report 1"
-                      title="Report 1"
-                    >
-                      {/* Add icon if needed */}
-                      <span className="font-medium">Report 1</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        /* navigate to report 2 */
-                      }}
-                      className="group w-full flex items-center gap-3 px-3 py-2.5 text-left text-gray-600 dark:text-gray-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-all duration-200"
-                      tabIndex={isReportsExpanded ? 0 : -1}
-                      aria-label="Report 2"
-                      title="Report 2"
-                    >
-                      <span className="font-medium">Report 2</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </li>
-            <li>
-              <button
-                onClick={handleAdministrationClick}
-                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                tabIndex={0}
-                aria-label="Administration"
-                title="View Administration"
-                aria-current={currentPage === "Administration"}
-              >
-                <Settings
-                  size={20}
-                  className="group-hover:scale-110 transition-transform duration-200"
-                />
-                <span className="font-medium">Administration</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                </div>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={handleProfileClick}
-                className="group w-full flex items-center gap-3 px-4 py-3.5 text-left text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 dark:hover:from-gray-700 dark:hover:to-gray-600 hover:text-red-700 dark:hover:text-red-400 rounded-xl transition-all duration-200 hover:shadow-sm border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                tabIndex={0}
-                aria-label="Profile"
-                title="View Profile"
-                aria-current={currentPage === "Profile"}
-              >
-                <User
-                  size={20}
-                  className="group-hover:scale-110 transition-transform duration-200"
-                />
-                <span className="font-medium">Profile</span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                </div>
-              </button>
-            </li>
           </ul>
         </nav>
 
         {/* Collapsed state - Enhanced mini sidebar */}
         {isDesktopCollapsed && (
-          <div className="hidden md:flex flex-col items-center py-4 space-y-4">
-            <div className="group relative">
-              <button
-                onClick={() => setIsDesktopCollapsed(false)}
-                className="p-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 shadow-sm hover:shadow-md border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                aria-label="Expand sidebar"
-              >
-                <Menu
-                  size={18}
-                  className="transform group-hover:scale-110 transition-transform duration-200"
-                />
-              </button>
-              {/* Tooltip */}
-              <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                Expand Menu
-              </div>
-            </div>
-
-            {/* Mini menu icons */}
-            <div className="space-y-2">
+          <div
+            className="hidden md:flex flex-col items-center py-4 h-full relative overflow-y-auto overflow-x-hidden"
+            aria-label="Collapsed Sidebar"
+            style={{ minHeight: "100%" }}
+          >
+            <div className="flex-1 flex flex-col items-center space-y-4 w-full">
               <div className="group relative">
                 <button
+                  ref={expandRef}
+                  onClick={() => setIsDesktopCollapsed(false)}
+                  className="p-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 shadow-sm hover:shadow-md border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                  aria-label="Expand sidebar"
+                  title="Expand Menu"
+                >
+                  <Menu
+                    size={18}
+                    className="transform group-hover:scale-110 transition-transform duration-200"
+                  />
+                </button>
+                <div
+                  className="fixed"
+                  style={{
+                    left: "80px",
+                    top: expandTop,
+                    zIndex: 999,
+                    transform: "translateY(-50%)",
+                  }}
+                >
+                  <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    Expand Menu
+                  </span>
+                </div>
+              </div>
+
+              <div className="group relative">
+                <button
+                  ref={dashboardRef}
                   onClick={handleCollapsedDashboardClick}
                   className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  aria-label="Dashboard"
+                  title="Dashboard"
                 >
                   <Home size={16} />
                 </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Dashboard
-                </div>
-              </div>
-
-              <div className="group relative">
-                <button
-                  onClick={handleRecordsClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                <div
+                  className="fixed"
+                  style={{
+                    left: "80px",
+                    top: dashboardTop,
+                    zIndex: 999,
+                    transform: "translateY(-50%)",
+                  }}
                 >
-                  <Database size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Records
+                  <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    Dashboard
+                  </span>
                 </div>
               </div>
 
-              <div className="group relative">
+              {/* primary mini icons only - profile/theme/signout are in the bottom sticky area */}
+            </div>
+            {/* Bottom sticky signout and theme switcher */}
+            <div
+              className="w-full flex flex-col items-center gap-2 pb-6"
+              style={{ bottom: "45px", left: 0, top: "auto" }}
+            >
+              <div className="group relative w-full flex justify-center">
                 <button
-                  onClick={handleDocumentsClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                >
-                  <FileText size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Documents
-                </div>
-              </div>
-
-              <div className="group relative">
-                <button
-                  onClick={handleCollapsedApplicationsClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                >
-                  <Users size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Applications
-                </div>
-              </div>
-
-              <div className="group relative">
-                <button
-                  onClick={handleReportsClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                >
-                  <Briefcase size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Reports
-                </div>
-              </div>
-
-              <div className="group relative">
-                <button
-                  onClick={handleAdministrationClick}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-                >
-                  <Settings size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Administration
-                </div>
-              </div>
-
-              <div className="group relative">
-                <button
+                  ref={profileRef}
                   onClick={handleCollapsedProfileClick}
                   className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  aria-label="Profile"
+                  title="Profile"
                 >
                   <User size={16} />
                 </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Profile
-                </div>
-              </div>
-
-              <div className="group relative">
-                <button
-                  onClick={handleCollapsedSignout}
-                  className="p-2.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200"
+                <div
+                  className="fixed"
+                  style={{
+                    left: "80px",
+                    top: profileTop,
+                    zIndex: 999,
+                    transform: "translateY(-50%)",
+                  }}
                 >
-                  <LogOut size={16} />
-                </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  Sign out
+                  <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    Profile
+                  </span>
                 </div>
               </div>
-
-              {/* Theme toggle in collapsed state */}
-              <div className="group relative">
+              <div className="group relative w-full flex justify-center">
                 <button
+                  ref={themeRef}
                   onClick={() => setDarkMode(!darkMode)}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
+                  aria-label={darkMode ? "Light Mode" : "Dark Mode"}
+                  title={
+                    darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"
+                  }
                 >
                   {darkMode ? (
                     <Sun size={16} className="text-yellow-500" />
                   ) : (
-                    <Moon size={16} className="text-red-500" />
+                    <Moon size={16} className="text-blue-500" />
                   )}
                 </button>
-                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                  {darkMode ? "Light Mode" : "Dark Mode"}
+                <div
+                  className="fixed"
+                  style={{
+                    left: "80px",
+                    top: themeTop,
+                    zIndex: 999,
+                    transform: "translateY(-50%)",
+                  }}
+                >
+                  <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    {darkMode ? "Light Mode" : "Dark Mode"}
+                  </span>
+                </div>
+              </div>
+              <div className="group relative w-full flex justify-center">
+                <button
+                  ref={signoutRef}
+                  onClick={handleCollapsedSignout}
+                  className="p-2.5 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200"
+                  aria-label="Sign out"
+                  title="Sign out"
+                >
+                  <LogOut size={16} />
+                </button>
+                <div
+                  className="fixed"
+                  style={{
+                    left: "80px",
+                    top: signoutTop,
+                    zIndex: 999,
+                    transform: "translateY(-50%)",
+                  }}
+                >
+                  <span className="bg-gray-900 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    Sign out
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Theme Switcher and Sign out at Bottom - Always visible for both desktop and mobile */}
+        {/* Re-introduced User Info for desktop (bottom) */}
         {!isDesktopCollapsed ? (
           <div
             className="transition-all duration-300 flex flex-col items-center justify-center gap-2 p-4"
             style={{
               position: "absolute",
-              bottom: 32,
+              bottom: 4,
               left: 0,
               right: 0,
               background: "none",
@@ -653,42 +484,89 @@ const OfficeSidebar = ({
               zIndex: 50,
             }}
           >
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-700 dark:hover:text-blue-400 hover:border-blue-400 dark:hover:border-blue-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              aria-label={darkMode ? "Light Mode" : "Dark Mode"}
-              title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {darkMode ? (
-                <>
-                  <Sun
-                    size={16}
-                    className="text-yellow-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
-                  />
-                  <span className="font-medium">Light Mode</span>
-                </>
-              ) : (
-                <>
-                  <Moon
-                    size={16}
-                    className="text-blue-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
-                  />
-                  <span className="font-medium">Dark Mode</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleSignout}
-              className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 hover:bg-gradient-to-r hover:from-red-100 hover:to-red-200 dark:hover:from-red-900/30 dark:hover:to-red-800/30 hover:text-red-700 dark:hover:text-red-300 hover:border-red-300 dark:hover:border-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-400"
-              aria-label="Sign out"
-              title="Sign out"
-            >
-              <LogOut
-                size={16}
-                className="group-hover:scale-110 transition-transform duration-200"
-              />
-              <span className="font-medium">Sign out</span>
-            </button>
+            {user && (
+              <button
+                onClick={handleProfileClick}
+                className="w-full flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-gradient-to-r from-red-50 to-red-100 dark:from-gray-900 dark:to-gray-800 border border-red-200 dark:border-red-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 hover:bg-red-100 dark:hover:bg-gray-900/30 transition-all duration-200"
+                style={{ userSelect: "none" }}
+                aria-label="View Profile"
+                title="View Profile"
+              >
+                <div className="flex-shrink-0 relative">
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt="User Avatar"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-red-400 dark:border-red-600 shadow"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-red-200 dark:bg-red-900 flex items-center justify-center border-2 border-red-400 dark:border-red-600 shadow">
+                      <User
+                        size={22}
+                        className="text-red-600 dark:text-red-300"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col min-w-0 text-left">
+                  <span className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
+                    {user?.firstname && user?.lastname
+                      ? `${user.firstname} ${user.lastname}`
+                      : user?.email || "User"}
+                  </span>
+                  {user?.email && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {user.email}
+                    </span>
+                  )}
+                  {user?.role && (
+                    <span className="text-xs font-semibold text-red-500 dark:text-red-400 mt-0.5 capitalize">
+                      {user.role}
+                    </span>
+                  )}
+                </div>
+              </button>
+            )}
+            <div className="w-full flex flex-col items-center justify-center gap-2">
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-700 dark:hover:text-blue-400 hover:border-blue-400 dark:hover:border-blue-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                aria-label={darkMode ? "Light Mode" : "Dark Mode"}
+                title={
+                  darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"
+                }
+              >
+                {darkMode ? (
+                  <>
+                    <Sun
+                      size={16}
+                      className="text-yellow-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
+                    />
+                    <span className="font-medium">Light Mode</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon
+                      size={16}
+                      className="text-blue-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
+                    />
+                    <span className="font-medium">Dark Mode</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleSignout}
+                className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700 hover:bg-gradient-to-r hover:from-red-100 hover:to-red-200 dark:hover:from-red-900/30 dark:hover:to-red-800/30 hover:text-red-700 dark:hover:text-red-300 hover:border-red-300 dark:hover:border-red-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+                aria-label="Sign out"
+                title="Sign out"
+              >
+                <LogOut
+                  size={16}
+                  className="group-hover:scale-110 transition-transform duration-200"
+                />
+                <span className="font-medium">Sign out</span>
+              </button>
+            </div>
           </div>
         ) : null}
       </div>

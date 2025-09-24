@@ -3,7 +3,7 @@ import Signin from "./pages/Auth/SigninPage";
 import Signup from "./pages/Auth/SignupPage";
 import StudentDashboard from "./pages/Roles/Student/Student Dashboard/StudentDashboard";
 import HRDashboard from "./pages/Roles/HR/HR Dashboard/HRDashboard";
-import OfficeDashboard from "./pages/Roles/Office/OfficeDashboard";
+import OfficeDashboard from "./pages/Roles/Office/Office Dashboard/OfficeDashboard";
 import Home from "./pages/Auth/home";
 import Profile from "./pages/Auth/Profile";
 import Application from "./pages/Roles/Student/Apply/Application";
