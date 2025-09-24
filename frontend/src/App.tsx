@@ -6,6 +6,8 @@ import HRDashboard from "./pages/Roles/HR/HR Dashboard/HRDashboard";
 import OfficeDashboard from "./pages/Roles/Office/Office Dashboard/OfficeDashboard";
 import OfficeDTRPage from "./pages/Roles/Office/DTR/DTR";
 import OfficeEvaluationPage from "./pages/Roles/Office/Evaluation/Evaluation";
+import OfficeLeaveRequests from "./pages/Roles/Office/Leave Requests";
+import OfficeRequests from "./pages/Roles/Office/Requests/Requests";
 import Home from "./pages/Auth/home";
 import Profile from "./pages/Auth/Profile";
 import Application from "./pages/Roles/Student/Apply/Application";
@@ -14,6 +16,7 @@ import LeaveManagement from "./pages/Roles/HR/Leave Management/LeaveManagement";
 import ReApplicationManagement from "./pages/Roles/HR/ReApplication Management/ReApplicationManagement";
 import Users from "./pages/Roles/HR/Users/Users";
 import EvaluationManagement from "./pages/Roles/HR/Evaluation Management/EvaluationManagement";
+import Scholars from "./pages/Roles/Office/Scholars/Scholars";
 import Notifications from "./pages/Utils/Notifications";
 import Analytics from "./pages/Roles/HR/Analytics/Analytics";
 import PublicRoute from "./routes/PublicRoute";
@@ -145,6 +148,12 @@ function App(): ReactElement {
         <Route path="/office-dashboard" element={<OfficeDashboard />} />
         <Route path="/office/dtr" element={<OfficeDTRPage />} />
         <Route path="/office/evaluation" element={<OfficeEvaluationPage />} />
+        <Route path="/office/scholars" element={<Scholars />} />
+        <Route
+          path="/office/leave-requests"
+          element={<OfficeLeaveRequests />}
+        />
+        <Route path="/office/requests" element={<OfficeRequests />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/applications" element={<HRApplicationManagement />} />

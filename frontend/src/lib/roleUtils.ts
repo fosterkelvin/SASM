@@ -52,6 +52,9 @@ export const hasRouteAccess = (userRole: string, route: string): boolean => {
       "/office-dashboard",
       "/office/dtr",
       "/office/evaluation",
+      "/office/scholars",
+      "/office/requests",
+      "/office/leave-requests",
       ...commonRoutes,
     ],
   };
