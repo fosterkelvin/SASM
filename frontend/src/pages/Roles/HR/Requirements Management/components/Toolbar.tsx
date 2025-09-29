@@ -1,3 +1,7 @@
+import React from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 type Props = {
   query: string;
   onQueryChange: (q: string) => void;
@@ -5,14 +9,22 @@ type Props = {
 
 const Toolbar: React.FC<Props> = ({ query, onQueryChange }) => {
   return (
-    <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-4">
-      <div className="flex-1">
-        <input
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Search submissions or student name..."
-          className="w-full p-2 border rounded"
-        />
+    <div className="mb-4">
+      <div className="flex flex-col md:flex-row gap-2 items-end">
+        <div className="w-full md:w-auto md:max-w-md">
+          <Label htmlFor="rm-search" className="mb-1">
+            Search Submissions
+          </Label>
+          <div className="relative">
+            <Input
+              id="rm-search"
+              placeholder="Search by applicant name or item"
+              value={query}
+              onChange={(e: any) => onQueryChange(e.target.value)}
+              className="h-10 w-full"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

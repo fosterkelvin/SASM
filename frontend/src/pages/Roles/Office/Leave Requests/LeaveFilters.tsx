@@ -37,12 +37,12 @@ const LeaveFilters: React.FC<Props> = ({ filters, setFilters }) => {
       </div>
 
       <div className="flex gap-2">
-        <button
+        {/* <button
           onClick={() => setFilters({ query: "", status: "all" })}
           className="px-3 py-2 border rounded text-sm"
         >
           Clear
-        </button>
+        </button> */}
       </div>
     </div>
   );

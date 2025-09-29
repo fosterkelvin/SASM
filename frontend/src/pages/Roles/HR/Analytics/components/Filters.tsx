@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import React from "react";
 
 type Props = {
@@ -30,12 +31,9 @@ const Filters: React.FC<Props> = ({ start, end, onChange }) => {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <button
-          className="px-3 py-2 rounded bg-gray-100 text-sm"
-          onClick={() => onChange?.("", "")}
-        >
+        <Button variant="outline" className="bg-gray-400 hover:bg-gray-500" onClick={() => onChange?.("", "")}>
           Reset
-        </button>
+        </Button>
       </div>
     </div>
   );

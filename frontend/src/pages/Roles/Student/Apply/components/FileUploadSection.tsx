@@ -18,12 +18,9 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
 }) => (
   <div className="space-y-6 p-4 rounded-lg border">
     <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
-      2x2 Picture (Required)
+      2x2 Picture <span className="text-red-600"> *</span>
     </h3>
     <div className="space-y-3">
-      <Label className="text-gray-700 dark:text-gray-300 font-medium">
-        Upload 2x2 Picture *
-      </Label>
       <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center hover:border-red-400 transition-colors">
         {filePreviewUrl ? (
           <div className="space-y-3">
@@ -60,7 +57,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
               Upload 2x2 Picture *
             </span>
             <p className="text-xs text-gray-500 mt-1">
-              Required: Upload a 2x2 passport-style photograph
+              Accepted: .jpg, .jpeg, .png
             </p>
           </label>
         )}

@@ -1,5 +1,6 @@
 import React from "react";
 import { EvaluationRow } from "./EvaluationsList";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   evaluation: EvaluationRow | null;
@@ -14,9 +15,6 @@ const EvaluationModal: React.FC<Props> = ({ evaluation, onClose }) => {
       <div className="bg-white dark:bg-gray-900 rounded max-w-2xl w-full mx-4 p-6">
         <div className="flex justify-between items-start">
           <h2 className="text-xl font-semibold">Evaluation Details</h2>
-          <button onClick={onClose} className="text-gray-500">
-            Close
-          </button>
         </div>
 
         <div className="mt-4 space-y-3">
@@ -60,12 +58,9 @@ const EvaluationModal: React.FC<Props> = ({ evaluation, onClose }) => {
         </div>
 
         <div className="mt-6 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded border hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
+          <Button variant="secondary" onClick={onClose} className="bg-gray-400 hover:bg-gray-500">
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>

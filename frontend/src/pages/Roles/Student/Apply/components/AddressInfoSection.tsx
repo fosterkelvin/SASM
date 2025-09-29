@@ -2,6 +2,7 @@ import { Label } from "@/components/ui/label";
 import { MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ApplicationFormData } from "../applicationSchema";
+import { useState } from "react";
 
 interface AddressSectionProps {
   formData: Partial<ApplicationFormData>;
@@ -14,6 +15,24 @@ export default function AddressInfoSection({
   errors,
   handleInputChange,
 }: AddressSectionProps) {
+  const [useHomeAsBaguio, setUseHomeAsBaguio] = useState(false);
+
+  const toggleUseHomeAsBaguio = () => {
+    const next = !useHomeAsBaguio;
+    setUseHomeAsBaguio(next);
+
+    if (next) {
+      // copy home address fields into baguio fields
+      handleInputChange("baguioAddress", formData.homeAddress || "");
+      handleInputChange("baguioBarangay", formData.homeBarangay || "");
+      handleInputChange("baguioCity", formData.homeCity || "");
+    } else {
+      // clear baguio fields when toggled off
+      handleInputChange("baguioAddress", "");
+      handleInputChange("baguioBarangay", "");
+      handleInputChange("baguioCity", "");
+    }
+  };
   return (
     <div className="space-y-4 md:space-y-6 p-4 rounded-lg border">
       <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
@@ -106,9 +125,20 @@ export default function AddressInfoSection({
       </div>
       {/* Baguio/Benguet Address */}
       <div className="p-4 rounded-lg border">
-        <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-4">
-          Baguio/Benguet Address<span className="text-red-600"> *</span>
-        </h4>
+        <div className="flex items-center justify-between">
+          <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-4">
+            Baguio/Benguet Address<span className="text-red-600"> *</span>
+          </h4>
+          <label className="flex items-center gap-2 text-sm text-gray-600">
+            <input
+              type="checkbox"
+              checked={useHomeAsBaguio}
+              onChange={toggleUseHomeAsBaguio}
+              className="w-4 h-4"
+            />
+            Use home address
+          </label>
+        </div>
         <hr className="my-4 border-t border-gray-300 dark:border-gray-700" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="md:col-span-2">
@@ -116,7 +146,7 @@ export default function AddressInfoSection({
               htmlFor="baguioAddress"
               className="text-gray-700 dark:text-gray-300"
             >
-              Complete Address 
+              Complete Address
             </Label>
             <Input
               id="baguioAddress"
@@ -140,7 +170,7 @@ export default function AddressInfoSection({
               htmlFor="baguioBarangay"
               className="text-gray-700 dark:text-gray-300"
             >
-              Barangay 
+              Barangay
             </Label>
             <Input
               id="baguioBarangay"
@@ -161,7 +191,7 @@ export default function AddressInfoSection({
               htmlFor="baguioCity"
               className="text-gray-700 dark:text-gray-300"
             >
-              City/Municipality 
+              City/Municipality
             </Label>
             <Input
               id="baguioCity"

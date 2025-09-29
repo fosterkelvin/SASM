@@ -60,16 +60,15 @@ export const createApplicationSchema = z.object({
   citizenship: z.string().min(2, "Citizenship is required").max(50),
 
   // Parents Information
-  fatherName: z.string().min(2, "Father's name is required").max(100),
-  fatherOccupation: z
-    .string()
-    .min(2, "Father's occupation is required")
-    .max(100),
-  motherName: z.string().min(2, "Mother's name is required").max(100),
-  motherOccupation: z
-    .string()
-    .min(2, "Mother's occupation is required")
-    .max(100),
+  fatherName: z.string().max(100).optional(),
+  fatherOccupation: z.string().max(100).optional(),
+  motherName: z.string().max(100).optional(),
+  motherOccupation: z.string().max(100).optional(),
+  // Unknown / Not Applicable flags — when true, the corresponding field may be empty
+  fatherNameUnknown: z.boolean().optional(),
+  fatherOccupationUnknown: z.boolean().optional(),
+  motherNameUnknown: z.boolean().optional(),
+  motherOccupationUnknown: z.boolean().optional(),
 
   // Emergency Contact
   emergencyContact: z
@@ -158,6 +157,46 @@ export const getApplicationsSchema = z.object({
 });
 
 export type CreateApplicationData = z.infer<typeof createApplicationSchema>;
+// Add cross-field validation to enforce required parent fields only when not marked Unknown
+export const createApplicationSchemaWithConditional =
+  createApplicationSchema.superRefine((data, ctx) => {
+    if (!data.fatherNameUnknown) {
+      if (!data.fatherName || data.fatherName.trim().length < 2) {
+        ctx.addIssue({
+          path: ["fatherName"],
+          message: "Father's name is required",
+          code: z.ZodIssueCode.custom,
+        });
+      }
+    }
+    if (!data.fatherOccupationUnknown) {
+      if (!data.fatherOccupation || data.fatherOccupation.trim().length < 2) {
+        ctx.addIssue({
+          path: ["fatherOccupation"],
+          message: "Father's occupation is required",
+          code: z.ZodIssueCode.custom,
+        });
+      }
+    }
+    if (!data.motherNameUnknown) {
+      if (!data.motherName || data.motherName.trim().length < 2) {
+        ctx.addIssue({
+          path: ["motherName"],
+          message: "Mother's name is required",
+          code: z.ZodIssueCode.custom,
+        });
+      }
+    }
+    if (!data.motherOccupationUnknown) {
+      if (!data.motherOccupation || data.motherOccupation.trim().length < 2) {
+        ctx.addIssue({
+          path: ["motherOccupation"],
+          message: "Mother's occupation is required",
+          code: z.ZodIssueCode.custom,
+        });
+      }
+    }
+  });
 export type UpdateApplicationStatusData = z.infer<
   typeof updateApplicationStatusSchema
 >;

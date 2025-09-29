@@ -3,6 +3,7 @@ import OfficeSidebar from "@/components/sidebar/OfficeSidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import OfficeDTRTable from "./components/OfficeDTRTable";
 import { Entry } from "@/pages/Roles/Student/DTR/components/types";
+import { Button } from "@/components/ui/button";
 
 const OfficeDTRPage: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -206,12 +207,13 @@ const OfficeDTRPage: React.FC = () => {
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <button
+                        <Button
+                          variant="outline"
+                          className="bg-gray-400 hover:bg-gray-500"
                           onClick={() => setSelectedScholar(null)}
-                          className="px-3 py-1 border rounded text-sm"
                         >
                           Back
-                        </button>
+                        </Button>
                       </div>
                       <div className="text-right">
                         <div className="font-semibold">

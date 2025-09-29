@@ -59,6 +59,8 @@ export function SignupForm({
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [apiError, setApiError] = useState("");
+  const [isUnder24Confirmed, setIsUnder24Confirmed] = useState(false);
+  const [ageError, setAgeError] = useState("");
 
   const { register } = useAuth();
 
@@ -147,6 +149,13 @@ export function SignupForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setApiError("");
+    setAgeError("");
+    if (!isUnder24Confirmed) {
+      setAgeError(
+        "You must confirm that you are 24 years old or below to create an account."
+      );
+      return;
+    }
     try {
       userSchema.parse(formData);
       setErrors({});
@@ -188,13 +197,31 @@ export function SignupForm({
                   </p>
                 </div>
                 <div className="mt-4 space-y-2">
-                  <p className="text-sm text-gray-500 dark:text-slate-500">
-                    Please check your email inbox and click the verification
-                    link to activate your account.
-                  </p>
+                    <div className="rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 p-3 flex items-center gap-2">
+                    <svg
+                      className="w-5 h-5 text-yellow-500 dark:text-yellow-400 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"
+                      />
+                    </svg>
+                    <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                      Please check your email inbox and click the verification link to activate your account.
+                      <br />
+                      <span className="font-normal">
+                      Note: It may take a few minutes for the email to arrive. Also check the spam/junk folder.
+                      </span>
+                    </p>
+                    </div>
                   <Button
                     onClick={() => (window.location.href = "/signin")}
-                    className="mt-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+                    className="mt-4 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white"
                   >
                     Go to Sign In
                   </Button>
@@ -530,35 +557,65 @@ export function SignupForm({
                 })()}
 
                 {/* Submit Button */}
-                <Button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-medium py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
-                  disabled={isFormEmpty || loading}
-                >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      Creating account...
+                <div className="grid gap-2">
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={isUnder24Confirmed}
+                      onChange={(e) => {
+                        setIsUnder24Confirmed(e.target.checked);
+                        if (e.target.checked) setAgeError("");
+                      }}
+                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 rounded"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-slate-300">
+                      I confirm that I am not over 24 years old and a senior highschool graduate.
                     </span>
-                  ) : (
-                    "Sign Up"
+                  </label>
+                  {ageError && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-2">
+                      <p
+                        className="text-xs text-red-600 dark:text-red-400"
+                        aria-live="polite"
+                      >
+                        {ageError}
+                      </p>
+                    </div>
                   )}
-                </Button>
+
+                  <Button
+                    type="submit"
+                    className="w-full bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white font-medium py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                    disabled={isFormEmpty || loading || !isUnder24Confirmed}
+                  >
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <svg
+                          className="animate-spin h-4 w-4"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Creating account...
+                      </span>
+                    ) : (
+                      "Sign Up"
+                    )}
+                  </Button>
+                </div>
 
                 {/* Signin Redirect */}
                 <div className="text-center text-sm text-gray-600 dark:text-slate-400">
@@ -576,7 +633,7 @@ export function SignupForm({
         </CardContent>
       </Card>
 
-      {/* Terms & Privacy - only show when not success */}
+      {/* Terms & Privacy - only show when not success
       {!signupSuccess && (
         <div className="text-center text-xs text-gray-600 dark:text-slate-400">
           By clicking continue, you agree to our{" "}
@@ -595,7 +652,7 @@ export function SignupForm({
           </a>
           .
         </div>
-      )}
+      )} */}
     </div>
   );
 }

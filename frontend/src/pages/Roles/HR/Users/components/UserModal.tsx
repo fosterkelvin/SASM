@@ -58,10 +58,12 @@ const UserModal: React.FC<Props> = ({ user, onClose, onSave, onChange }) => {
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" className="bg-gray-400 hover:bg-gray-500" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={() => onSave(user)}>Save</Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => onSave(user)}>
+              Save
+            </Button>
           </div>
         </div>
       </div>

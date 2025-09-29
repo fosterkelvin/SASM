@@ -11,10 +11,12 @@ import { Label } from "@/components/ui/label";
 import StudentSidebar from "@/components/sidebar/StudentSidebar";
 import useSeminars from "./hooks/useSeminars";
 import useFileUpload from "./hooks/useFileUpload";
-import useSignaturePad from "./hooks/useSignaturePad";
+// signature removed: replaced with conformity checkbox
 import useCertificatesUpload from "./hooks/useCertificatesUpload";
-import { ApplicationFormData } from "./applicationSchema";
-import { applicationSchema } from "./applicationSchema";
+import {
+  ApplicationFormData,
+  applicationSchemaWithConditional,
+} from "./applicationSchema";
 import PositionSection from "./components/PositionSection";
 import PersonalInfoSection from "./components/PersonalInfoSection";
 import AddressInfoSection from "./components/AddressInfoSection";
@@ -24,9 +26,8 @@ import RelativeSection from "./components/RelativeSection";
 import EducationInfoSection from "./components/EducationInfoSection";
 import SeminarsSection from "./components/SeminarsSection";
 import FileUploadSection from "./components/FileUploadSection";
-import AgreementSection from "./components/AgreementSection";
-import SignaturePad from "./components/SignaturePad";
-import { CheckCircle, AlertTriangle, Upload, X, PenTool } from "lucide-react";
+// Signature pad removed; using conformity checkbox instead
+import { AlertTriangle } from "lucide-react";
 import CertificatesSection from "./components/CertificatesSection";
 import ApplicationStatusCard from "./components/ApplicationStatusCard";
 
@@ -54,7 +55,7 @@ function Application() {
     hasRelativeWorking: false,
     seminars: [],
     agreedToTerms: false,
-    signature: "",
+    conformity: false,
   });
 
   const [errors, setErrors] = useState<
@@ -90,24 +91,7 @@ function Application() {
       setErrors((prev) => ({ ...prev, profilePhoto: "" }));
     }
   }, [uploadedFiles.profilePhoto]);
-  const {
-    signatureRef,
-    signatureData,
-    setSignatureData,
-    isSignaturePadReady,
-    setIsSignaturePadReady,
-    signatureMethod,
-    uploadedSignature,
-    signaturePreviewUrl,
-    clearSignature,
-    handleSignatureUpload,
-    removeUploadedSignature,
-    handleSignatureMethodChange,
-  } = useSignaturePad();
-
-  useEffect(() => {
-    setIsSignaturePadReady(true);
-  }, [setIsSignaturePadReady]);
+  // signature logic removed
 
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 
@@ -129,11 +113,7 @@ function Application() {
       } catch (e) {
         // ignore
       }
-      try {
-        clearSignature();
-      } catch (e) {
-        // ignore
-      }
+      // signature clearing removed
       setShowWithdrawModal(false);
       setWithdrawSuccess(true);
       setSubmitMessage("Your application has been withdrawn.");
@@ -194,7 +174,7 @@ function Application() {
         hasRelativeWorking: false,
         seminars: [],
         agreedToTerms: false,
-        signature: "",
+        conformity: false,
       });
       setSeminars([
         { title: "", sponsoringAgency: "", inclusiveDate: "", place: "" },
@@ -202,8 +182,7 @@ function Application() {
       setRelatives([{ name: "", department: "", relationship: "" }]);
       setHasRelativeWorking(false);
       setErrors({});
-      setSignatureData("");
-      clearSignature();
+      // signature data cleared
       if (uploadedFiles.profilePhoto) {
         removeFile();
       }
@@ -310,7 +289,7 @@ function Application() {
       const seminarsToSubmit = seminars.filter(
         (s) => s.title || s.sponsoringAgency || s.inclusiveDate || s.place
       );
-      const parsed = applicationSchema.safeParse({
+      const parsed = applicationSchemaWithConditional.safeParse({
         ...formData,
         seminars: seminarsToSubmit,
         age: formData.age ? Number(formData.age) : undefined,
@@ -338,7 +317,11 @@ function Application() {
           if (value !== undefined && value !== null) {
             formDataToSubmit.append(key, Number(value).toString());
           }
-        } else if (key === "hasRelativeWorking" || key === "agreedToTerms") {
+        } else if (
+          key === "hasRelativeWorking" ||
+          key === "agreedToTerms" ||
+          key === "conformity"
+        ) {
           if (value !== undefined && value !== null) {
             formDataToSubmit.append(key, Boolean(value).toString());
           }
@@ -346,11 +329,7 @@ function Application() {
           if (value) {
             formDataToSubmit.append(key, value.toString());
           }
-        } else if (
-          key !== "signature" &&
-          value !== undefined &&
-          value !== null
-        ) {
+        } else if (value !== undefined && value !== null) {
           formDataToSubmit.append(key, value.toString());
         }
       });
@@ -368,36 +347,9 @@ function Application() {
           formDataToSubmit.append("certificates", file, file.name);
         });
       }
-      if (signatureMethod === "upload" && uploadedSignature) {
-        formDataToSubmit.append("signature", uploadedSignature);
-      } else if (signatureMethod === "draw" && signatureRef.current) {
-        const isEmpty =
-          signatureRef.current.isEmpty && signatureRef.current.isEmpty();
-        if (isEmpty) {
-          setErrors((prev) => ({
-            ...prev,
-            signature: "Signature cannot be blank. Please draw your signature.",
-          }));
-          setSubmitMessage(
-            "Signature cannot be blank. Please draw your signature."
-          );
-          setIsSubmitting(false);
-          return;
-        }
-        const dataUrl = signatureRef.current.toDataURL();
-        const arr = dataUrl.split(",");
-        if (arr.length === 2) {
-          const mime = arr[0].match(/:(.*?);/)[1];
-          const bstr = atob(arr[1]);
-          let n = bstr.length;
-          const u8arr = new Uint8Array(n);
-          while (n--) {
-            u8arr[n] = bstr.charCodeAt(n);
-          }
-          const blob = new Blob([u8arr], { type: mime });
-          formDataToSubmit.append("signature", blob, "signature.png");
-        }
-      }
+      // signature upload/draw removed - replaced by conformity checkbox
+
+      // Parent unknown flags are included via formData entries when present.
 
       createApplicationMutation.mutate(formDataToSubmit);
     } catch (error) {
@@ -802,225 +754,88 @@ function Application() {
                     removeFile={removeFile}
                     error={errors.profilePhoto}
                   />
-                  <AgreementSection
-                    agreedToTerms={formData.agreedToTerms || false}
-                    handleInputChange={handleInputChange}
-                    error={errors.agreedToTerms}
-                  />
                   <div className="space-y-6 p-4 rounded-lg border">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
-                      <PenTool className="h-5 w-5 text-green-600" />
-                      Electronic Signature
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                      Agreement & Applicant's Conformity{" "}
                       <span className="text-red-600"> *</span>
                     </h3>
 
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <div className="space-y-4">
-                        <div>
-                          <Label className="text-gray-700 dark:text-gray-300 font-medium">
-                            Please provide your signature *
-                          </Label>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            By providing your signature, you are confirming that
-                            you have read and agree to all the terms and
-                            conditions stated above.
-                          </p>
-                        </div>
-                        <div className="space-y-3">
-                          <Label className="text-gray-700 dark:text-gray-300 font-medium">
-                            Choose signature method:
-                          </Label>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="flex items-center space-x-3">
-                              <input
-                                type="radio"
-                                id="signature_draw"
-                                name="signatureMethod"
-                                value="draw"
-                                checked={signatureMethod === "draw"}
-                                onChange={(e) =>
-                                  handleSignatureMethodChange(
-                                    e.target.value as "draw" | "upload",
-                                    removeUploadedSignature,
-                                    clearSignature,
-                                    handleInputChange
-                                  )
-                                }
-                                className="h-4 w-4 text-red-600"
-                              />
-                              <Label
-                                htmlFor="signature_draw"
-                                className="text-gray-700 dark:text-gray-300"
-                              >
-                                🖊️ Draw signature
-                              </Label>
-                            </div>
-                            <div className="flex items-center space-x-3">
-                              <input
-                                type="radio"
-                                id="signature_upload"
-                                name="signatureMethod"
-                                value="upload"
-                                checked={signatureMethod === "upload"}
-                                onChange={(e) =>
-                                  handleSignatureMethodChange(
-                                    e.target.value as "draw" | "upload",
-                                    removeUploadedSignature,
-                                    clearSignature,
-                                    handleInputChange
-                                  )
-                                }
-                                className="h-4 w-4 text-red-600"
-                              />
-                              <Label
-                                htmlFor="signature_upload"
-                                className="text-gray-700 dark:text-gray-300"
-                              >
-                                📁 Upload signature image
-                              </Label>
-                            </div>
-                          </div>
-                        </div>
-                        {signatureMethod === "draw" && (
-                          <div className="space-y-3">
-                            <p className="text-xs text-blue-600 dark:text-blue-400 italic">
-                              💡 Click and drag in the box below to create your
-                              signature
+                    <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
+                      <p>
+                        I hereby agree that once I become a Student
+                        Assistant/Student marshal, I will comply with the
+                        following conditions:
+                      </p>
+                      <ol className="list-decimal list-inside space-y-2 ml-4">
+                        <li>
+                          That I will comply with the 130-hour training before
+                          the effectiveness of my scholarship.
+                        </li>
+                        <li>
+                          I will enroll the maximum number of 18 units per
+                          semester to avail of the 100% discount. Units more
+                          than 18 units shall be on my account.
+                        </li>
+                        <li>
+                          I will religiously attend my 5-hour duty every day
+                          from Monday to Saturday at the office where I am
+                          deployed.
+                        </li>
+                      </ol>
+
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <div className="mt-4 space-y-3">
+                          <label className="flex items-start space-x-3">
+                            <input
+                              type="checkbox"
+                              checked={formData.agreedToTerms || false}
+                              onChange={(e) =>
+                                handleInputChange(
+                                  "agreedToTerms",
+                                  e.target.checked
+                                )
+                              }
+                              className="h-4 w-4 text-red-600 mt-1"
+                            />
+                            <span className="text-gray-700 dark:text-gray-300">
+                              I have read, understood, and accept all the
+                              foregoing stipulations.
+                            </span>
+                          </label>
+                          {errors.agreedToTerms && (
+                            <p className="text-red-600 text-sm mt-1">
+                              {errors.agreedToTerms}
                             </p>
-                            <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 overflow-hidden w-full max-w-lg mx-auto">
-                              {isSignaturePadReady ? (
-                                <SignaturePad
-                                  ref={signatureRef}
-                                  value={signatureData}
-                                  onChange={(dataUrl) => {
-                                    setSignatureData(dataUrl);
-                                    handleInputChange("signature", dataUrl);
-                                  }}
-                                />
-                              ) : (
-                                <div className="w-full h-48 flex items-center justify-center text-gray-500">
-                                  <div className="text-center">
-                                    <div className="animate-spin h-6 w-6 border-2 border-red-600 border-t-transparent rounded-full mx-auto mb-2"></div>
-                                    <p>Loading signature pad...</p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                          )}
 
-                            <div className="flex gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  if (signatureRef.current) {
-                                    signatureRef.current.clear();
-                                  }
-                                  setSignatureData("");
-                                  handleInputChange("signature", "");
-                                }}
-                                className="text-red-600 hover:bg-green-200 hover:dark:bg-green-500 border rounded px-3 py-2 mt-2"
-                              >
-                                Clear Signature
-                              </Button>
-                              {signatureData && signatureMethod === "draw" && (
-                                <div className="flex items-center gap-2 text-sm text-green-600">
-                                  <CheckCircle className="h-4 w-4" />
-                                  Signature captured
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        {signatureMethod === "upload" && (
-                          <div className="space-y-3">
-                            <p className="text-xs text-blue-600 dark:text-blue-400 italic">
-                              📷 Upload a clear image of your signature (PNG,
-                              JPG, etc.)
+                          <label className="flex items-start space-x-3">
+                            <input
+                              type="checkbox"
+                              id="conformity-checkbox"
+                              checked={!!(formData as any).conformity}
+                              onChange={(
+                                e: React.ChangeEvent<HTMLInputElement>
+                              ) =>
+                                handleInputChange(
+                                  "conformity" as any,
+                                  e.target.checked
+                                )
+                              }
+                              className="h-4 w-4 text-red-600 mt-1"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                              I certify that the information provided is true
+                              and correct to the best of my knowledge. I
+                              understand that providing false information may
+                              lead to disqualification or revocation of the
+                              scholarship.
+                            </span>
+                          </label>
+                          {(errors as any).conformity && (
+                            <p className="text-red-600 text-sm mt-1">
+                              {(errors as any).conformity}
                             </p>
-
-                            {uploadedSignature ? (
-                              <div className="space-y-3">
-                                <div className="border-2 border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800">
-                                  <div className="flex items-center justify-center">
-                                    <img
-                                      src={signaturePreviewUrl}
-                                      alt="Uploaded signature"
-                                      className="max-w-full max-h-32 object-contain border rounded"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() =>
-                                      removeUploadedSignature(handleInputChange)
-                                    }
-                                    className="text-red-600 border-red-300 hover:bg-red-50"
-                                  >
-                                    <X className="h-4 w-4 mr-1" />
-                                    Remove Signature
-                                  </Button>
-                                  <div className="flex items-center gap-2 text-sm text-green-600">
-                                    <CheckCircle className="h-4 w-4" />
-                                    Signature uploaded
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-red-400 transition-colors">
-                                <label
-                                  htmlFor="signature-upload"
-                                  className="cursor-pointer w-full h-full flex flex-col items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors rounded"
-                                >
-                                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleSignatureUpload(
-                                        e.target.files,
-                                        handleInputChange,
-                                        setErrors,
-                                        errors
-                                      )
-                                    }
-                                    className="hidden"
-                                    id="signature-upload"
-                                  />
-                                  <span className="text-red-600 hover:text-red-700 font-medium">
-                                    Upload Signature Image
-                                  </span>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    Accepted formats: PNG, JPG, GIF (Max 5MB)
-                                  </p>
-                                </label>
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {errors.signature && (
-                          <p className="text-red-600 text-sm mt-2">
-                            {errors.signature}
-                          </p>
-                        )}
-
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          <p className="mb-2">
-                            <strong>Applicant's Name:</strong>{" "}
-                            {formData.firstName} {formData.lastName}
-                          </p>
-                          <p>
-                            <strong>Date:</strong>{" "}
-                            {new Date().toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })}
-                          </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1073,28 +888,79 @@ function Application() {
                             Parent / Guardian Valid ID (Upload ONE)
                           </Label>
                           <div className="mt-1">
-                            <input
-                              id="parent-id-upload"
-                              type="file"
-                              accept="image/*,application/pdf"
-                              onChange={(
-                                e: React.ChangeEvent<HTMLInputElement>
-                              ) => {
-                                const file =
-                                  e.target.files && e.target.files[0];
-                                // store as File object in formData if handler expects it
-                                handleInputChange(
-                                  "parentID" as any,
-                                  file ?? null
-                                );
-                              }}
-                              className="w-full"
-                            />
-                            {(errors as any).parentID && (
-                              <p className="text-red-600 text-sm mt-1">
-                                {(errors as any).parentID}
-                              </p>
-                            )}
+                            {/* Highlighted upload area */}
+                            <div className="mt-2">
+                              <label
+                                htmlFor="parent-id-upload"
+                                className="group flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-md p-4 cursor-pointer hover:border-red-500 transition-colors bg-white dark:bg-gray-900"
+                              >
+                                <div className="flex items-center gap-3">
+                                  {/* Upload icon */}
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-6 w-6 text-gray-400 group-hover:text-red-600"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M7 16v-4a4 4 0 014-4h2a4 4 0 014 4v4M12 12v8m0-8l-3 3m3-3l3 3"
+                                    />
+                                  </svg>
+                                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                                    <div className="font-medium text-gray-800 dark:text-gray-100">
+                                      Click to upload or drag and drop
+                                    </div>
+                                    <div className="text-xs mt-1">
+                                      Accepted: JPG, PNG, PDF. Max 10MB.
+                                    </div>
+                                  </div>
+                                </div>
+                                <input
+                                  id="parent-id-upload"
+                                  type="file"
+                                  accept="image/*,application/pdf"
+                                  onChange={(
+                                    e: React.ChangeEvent<HTMLInputElement>
+                                  ) => {
+                                    const file =
+                                      e.target.files && e.target.files[0];
+                                    handleInputChange(
+                                      "parentID" as any,
+                                      file ?? null
+                                    );
+                                  }}
+                                  className="sr-only"
+                                />
+                              </label>
+
+                              {/* Show selected file name with remove option */}
+                              {(formData as any).parentID ? (
+                                <div className="mt-2 flex items-center justify-between gap-2">
+                                  <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                    {(formData as any).parentID.name}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleInputChange("parentID" as any, null)
+                                    }
+                                    className="text-sm text-red-600 hover:underline"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              ) : null}
+
+                              {(errors as any).parentID && (
+                                <p className="text-red-600 text-sm mt-2">
+                                  {(errors as any).parentID}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

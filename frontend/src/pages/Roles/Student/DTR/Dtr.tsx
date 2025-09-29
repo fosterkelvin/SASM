@@ -94,13 +94,7 @@ const Dtr: React.FC = () => {
 
               <div className="mt-6 space-y-3 text-sm">
                 <div className="border-t pt-2">
-                  <div>
-                    Student Assistant's Signature over Printed Name:
-                    ____________________________
-                  </div>
-                </div>
-                <div className="border-t pt-2">
-                  <div>Checked by: ____________________________</div>
+                  <div>Checked by: </div>
                 </div>
               </div>
             </CardContent>

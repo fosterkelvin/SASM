@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import StudentSidebar from "@/components/sidebar/StudentSidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import RequirementsList from "./components/RequirementsList";
+import { Button } from "@/components/ui/button";
 
 export type Requirement = {
   id: string;
@@ -169,6 +170,10 @@ const Requirements: React.FC = () => {
     setSubmitSuccess(null);
   };
 
+  function handleSave(event: React.MouseEvent<HTMLButtonElement>): void {
+    throw new Error("Function not implemented.");
+  }
+
   // Clear/export moved/removed with the import area — checklist persists per-item
 
   return (
@@ -238,19 +243,28 @@ const Requirements: React.FC = () => {
                     )}
 
                     <div className="flex items-center gap-3">
-                      <button
+                      <Button
+                        variant="ghost"
+                        type="button"
+                        className="bg-gray-400 hover:bg-gray-500"
+                        onClick={handleReset}
+                      >
+                        Reset Form
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        type="button"
+                        onClick={handleSave}
+                        className="bg-gray-400 hover:bg-gray-500"
+                      >
+                        Save
+                      </Button>
+                      <Button
                         type="submit"
-                        className="px-4 py-2 bg-red-600 text-white rounded"
+                        className="bg-red-600 hover:bg-red-700 text-white"
                       >
                         Submit Requirements
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleReset}
-                        className="px-4 py-2 border rounded"
-                      >
-                        Reset form
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </form>

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { LeaveRecord, LeaveFormValues } from "./types";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   record?: LeaveRecord | null;
@@ -58,21 +59,15 @@ export default function LeaveForm({ record, open, onClose, onSave }: Props) {
             </div>
 
             <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={onClose}
-                className="px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 text-sm"
-              >
+              <Button variant="outline" className="bg-gray-400 hover:bg-gray-500" onClick={onClose}>
                 Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (record) onSave(record.id, { hrNote: note });
-                  onClose();
-                }}
-                className="px-3 py-2 rounded-md bg-red-600 text-white text-sm"
+              </Button>
+              <Button
+                className="bg-red-600 text-white hover:bg-red-700"
+                onClick={() => onSave(record.id, { hrNote: note })}
               >
                 Save
-              </button>
+              </Button>
             </div>
           </div>
         ) : (

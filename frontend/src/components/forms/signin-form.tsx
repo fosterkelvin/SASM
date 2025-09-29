@@ -348,7 +348,7 @@ export function SigninForm({
               <Button
                 type="submit"
                 disabled={isPending || !email || password.length < 8}
-                className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-medium py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                className="w-full bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white font-medium py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
               >
                 {isPending ? (
                   <span className="flex items-center gap-2">
@@ -387,9 +387,9 @@ export function SigninForm({
             </div>
           </form>
 
-          <div className="relative hidden bg-gray-100 dark:bg-slate-800 md:block">
+          <div className="relative hidden bg-gray-100 dark:bg-slate-500 md:block">
             <img
-              src="/SI.png"
+              src="/HR_LOGO.png"
               alt="Image"
               className="absolute inset-0 h-full w-full object-cover"
             />

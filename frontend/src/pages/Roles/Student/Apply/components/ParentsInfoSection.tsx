@@ -1,3 +1,4 @@
+import React, { useEffect, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,86 @@ export default function ParentsInfoSection({
   errors,
   handleInputChange,
 }: AddressSectionProps) {
+  // Local state to handle "Father Unknown / N/A" checkbox and preserve previous values
+  const [isFatherUnknown, setIsFatherUnknown] = useState<boolean>(false);
+  const prevFather = useRef<{ name?: string; occ?: string }>({
+    name: formData.fatherName,
+    occ: formData.fatherOccupation,
+  });
+  const [isMotherOccUnknown, setIsMotherOccUnknown] = useState<boolean>(false);
+  const prevMotherOcc = useRef<string | undefined>(formData.motherOccupation);
+  const [isFatherOccUnknown, setIsFatherOccUnknown] = useState<boolean>(false);
+  const prevFatherOcc = useRef<string | undefined>(formData.fatherOccupation);
+  const [isMotherNameUnknown, setIsMotherNameUnknown] =
+    useState<boolean>(false);
+  const prevMotherName = useRef<string | undefined>(formData.motherName);
+
+  useEffect(() => {
+    // keep prevFather up to date if formData changes while not unknown
+    if (!isFatherUnknown) {
+      prevFather.current = {
+        name: formData.fatherName,
+        occ: formData.fatherOccupation,
+      };
+    }
+  }, [formData.fatherName, formData.fatherOccupation, isFatherUnknown]);
+
+  function toggleFatherUnknown(checked: boolean) {
+    setIsFatherUnknown(checked);
+    // store/restore values
+    if (checked) {
+      prevFather.current = {
+        name: formData.fatherName,
+        occ: formData.fatherOccupation,
+      };
+      handleInputChange("fatherName", "");
+      handleInputChange("fatherOccupation", "");
+      handleInputChange("fatherNameUnknown", true);
+      handleInputChange("fatherOccupationUnknown", true);
+    } else {
+      handleInputChange("fatherName", prevFather.current.name || "");
+      handleInputChange("fatherOccupation", prevFather.current.occ || "");
+      handleInputChange("fatherNameUnknown", false);
+      handleInputChange("fatherOccupationUnknown", false);
+    }
+  }
+
+  function toggleMotherOccUnknown(checked: boolean) {
+    setIsMotherOccUnknown(checked);
+    if (checked) {
+      prevMotherOcc.current = formData.motherOccupation;
+      handleInputChange("motherOccupation", "");
+      handleInputChange("motherOccupationUnknown", true);
+    } else {
+      handleInputChange("motherOccupation", prevMotherOcc.current || "");
+      handleInputChange("motherOccupationUnknown", false);
+    }
+  }
+
+  function toggleFatherOccUnknown(checked: boolean) {
+    setIsFatherOccUnknown(checked);
+    if (checked) {
+      prevFatherOcc.current = formData.fatherOccupation;
+      handleInputChange("fatherOccupation", "");
+      handleInputChange("fatherOccupationUnknown", true);
+    } else {
+      handleInputChange("fatherOccupation", prevFatherOcc.current || "");
+      handleInputChange("fatherOccupationUnknown", false);
+    }
+  }
+
+  function toggleMotherNameUnknown(checked: boolean) {
+    setIsMotherNameUnknown(checked);
+    if (checked) {
+      prevMotherName.current = formData.motherName;
+      handleInputChange("motherName", "");
+      handleInputChange("motherNameUnknown", true);
+    } else {
+      handleInputChange("motherName", prevMotherName.current || "");
+      handleInputChange("motherNameUnknown", false);
+    }
+  }
+
   return (
     <div className="space-y-6 p-4 rounded-lg border">
       <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
@@ -21,29 +102,52 @@ export default function ParentsInfoSection({
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label
-            htmlFor="fatherName"
-            className="text-gray-700 dark:text-gray-300"
-          >
-            Father's Name
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label
+              htmlFor="fatherName"
+              className="text-gray-700 dark:text-gray-300"
+            >
+              Father's Name
+            </Label>
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={isFatherUnknown}
+                onChange={(e) => toggleFatherUnknown(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span>Unknown / Not Applicable</span>
+            </label>
+          </div>
           <Input
             id="fatherName"
             value={formData.fatherName || ""}
             onChange={(e) => handleInputChange("fatherName", e.target.value)}
             className={errors.fatherName ? "border-red-500" : ""}
+            disabled={isFatherUnknown}
           />
-          {errors.fatherName && (
+          {!isFatherUnknown && errors.fatherName && (
             <p className="text-red-600 text-sm mt-1">{errors.fatherName}</p>
           )}
         </div>
         <div>
-          <Label
-            htmlFor="fatherOccupation"
-            className="text-gray-700 dark:text-gray-300"
-          >
-            Father's Occupation
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label
+              htmlFor="fatherOccupation"
+              className="text-gray-700 dark:text-gray-300"
+            >
+              Father's Occupation
+            </Label>
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={isFatherOccUnknown}
+                onChange={(e) => toggleFatherOccUnknown(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span>Unknown / Not Applicable</span>
+            </label>
+          </div>
           <Input
             id="fatherOccupation"
             value={formData.fatherOccupation || ""}
@@ -51,37 +155,62 @@ export default function ParentsInfoSection({
               handleInputChange("fatherOccupation", e.target.value)
             }
             className={errors.fatherOccupation ? "border-red-500" : ""}
+            disabled={isFatherUnknown || isFatherOccUnknown}
           />
-          {errors.fatherOccupation && (
-            <p className="text-red-600 text-sm mt-1">
-              {errors.fatherOccupation}
-            </p>
-          )}
+          {!(isFatherUnknown || isFatherOccUnknown) &&
+            errors.fatherOccupation && (
+              <p className="text-red-600 text-sm mt-1">
+                {errors.fatherOccupation}
+              </p>
+            )}
         </div>
         <div>
-          <Label
-            htmlFor="motherName"
-            className="text-gray-700 dark:text-gray-300"
-          >
-            Mother's Name
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label
+              htmlFor="motherName"
+              className="text-gray-700 dark:text-gray-300"
+            >
+              Mother's Name
+            </Label>
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={isMotherNameUnknown}
+                onChange={(e) => toggleMotherNameUnknown(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span>Unknown / Not Applicable</span>
+            </label>
+          </div>
           <Input
             id="motherName"
             value={formData.motherName || ""}
             onChange={(e) => handleInputChange("motherName", e.target.value)}
             className={errors.motherName ? "border-red-500" : ""}
+            disabled={isMotherNameUnknown}
           />
-          {errors.motherName && (
+          {!isMotherNameUnknown && errors.motherName && (
             <p className="text-red-600 text-sm mt-1">{errors.motherName}</p>
           )}
         </div>
         <div>
-          <Label
-            htmlFor="motherOccupation"
-            className="text-gray-700 dark:text-gray-300"
-          >
-            Mother's Occupation
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label
+              htmlFor="motherOccupation"
+              className="text-gray-700 dark:text-gray-300"
+            >
+              Mother's Occupation
+            </Label>
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={isMotherOccUnknown}
+                onChange={(e) => toggleMotherOccUnknown(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span>Unknown / Not Applicable</span>
+            </label>
+          </div>
           <Input
             id="motherOccupation"
             value={formData.motherOccupation || ""}
@@ -89,8 +218,9 @@ export default function ParentsInfoSection({
               handleInputChange("motherOccupation", e.target.value)
             }
             className={errors.motherOccupation ? "border-red-500" : ""}
+            disabled={isMotherOccUnknown}
           />
-          {errors.motherOccupation && (
+          {!isMotherOccUnknown && errors.motherOccupation && (
             <p className="text-red-600 text-sm mt-1">
               {errors.motherOccupation}
             </p>

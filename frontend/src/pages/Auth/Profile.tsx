@@ -817,7 +817,7 @@ const Profile = () => {
                             !!user.pendingEmail ||
                             isEmailBlocked
                           }
-                          className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white disabled:opacity-50"
+                          className="w-full bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white disabled:opacity-50"
                           size="sm"
                         >
                           {changeEmailMutation.isPending ? (
@@ -858,7 +858,7 @@ const Profile = () => {
               >
                 <CardContent className="p-6">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-orange-700 dark:from-orange-700 dark:to-orange-900 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-red-700 dark:from-red-700 dark:to-red-900 rounded-lg flex items-center justify-center">
                       <Key size={22} className="text-white" />
                     </div>
                     <h2 className="text-lg font-semibold text-gray-800 dark:text-orange-200">
@@ -1018,7 +1018,7 @@ const Profile = () => {
                     <Button
                       type="submit"
                       disabled={changePasswordMutation.isPending}
-                      className="w-full bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-800 text-white"
+                      className="w-full bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white"
                     >
                       {changePasswordMutation.isPending ? (
                         <div className="flex items-center gap-2">

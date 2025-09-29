@@ -4,6 +4,7 @@ import {
   CriterionEvaluation,
   defaultCriteria,
 } from "./types";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   scholarId: string;
@@ -80,7 +81,7 @@ const EvaluationForm: React.FC<Props> = ({ scholarId }) => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-2/3 lg:w-1/2">
               <select
                 value={it.rating ?? ""}
                 onChange={(e) =>
@@ -89,7 +90,7 @@ const EvaluationForm: React.FC<Props> = ({ scholarId }) => {
                     e.target.value ? parseInt(e.target.value, 10) : undefined
                   )
                 }
-                className="border px-2 py-1 rounded"
+                className="border px-2 py-1 rounded w-20 flex-shrink-0"
               >
                 <option value="">--</option>
                 <option value={1}>1</option>
@@ -99,11 +100,16 @@ const EvaluationForm: React.FC<Props> = ({ scholarId }) => {
                 <option value={5}>5</option>
               </select>
 
-              <input
-                className="border px-2 py-1 rounded w-64"
+              <textarea
+                className="border px-2 py-1 rounded flex-1 min-w-0 resize-none max-h-72"
                 placeholder="Optional comment"
                 value={it.comment ?? ""}
                 onChange={(e) => updateComment(idx, e.target.value)}
+                onInput={(e) => {
+                  const ta = e.currentTarget as HTMLTextAreaElement;
+                  ta.style.height = "auto";
+                  ta.style.height = Math.min(360, ta.scrollHeight) + "px";
+                }}
               />
             </div>
           </div>
@@ -111,12 +117,12 @@ const EvaluationForm: React.FC<Props> = ({ scholarId }) => {
       </div>
 
       <div className="mt-4 flex justify-end gap-2">
-        <button
+        <Button
+          className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white"
           onClick={handleSave}
-          className="px-4 py-2 bg-blue-600 text-white rounded"
         >
           Save Evaluation
-        </button>
+        </Button>
       </div>
     </div>
   );

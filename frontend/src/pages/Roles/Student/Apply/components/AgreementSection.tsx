@@ -15,7 +15,7 @@ const AgreementSection: React.FC<AgreementSectionProps> = ({
 }) => (
   <div className="bg-red-50 dark:bg-red-900/20 p-6 rounded-lg border border-red-200 dark:border-red-800">
     <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-      AGREEMENT
+      AGREEMENT <span className="text-red-600"> *</span>
     </h3>
     <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
       <p>
