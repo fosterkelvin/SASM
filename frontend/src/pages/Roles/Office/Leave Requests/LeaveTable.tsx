@@ -51,7 +51,7 @@ const LeaveTable: React.FC<Props> = ({ data, onOpenActions }) => {
               <td className="px-4 py-3">
                 <button
                   onClick={() => onOpenActions(r)}
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+                  className="px-3 py-1 bg-red-600 text-white rounded text-sm"
                 >
                   Actions
                 </button>

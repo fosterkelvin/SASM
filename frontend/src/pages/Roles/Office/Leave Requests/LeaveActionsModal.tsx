@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { LeaveRequest, LeaveStatus } from "./types";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   request: LeaveRequest | null;
@@ -40,9 +41,6 @@ export const LeaveActionsModal: React.FC<Props> = ({
           <h3 id="leave-actions-title" className="text-lg font-semibold">
             Actions - {request.studentName}
           </h3>
-          <button onClick={onClose} className="text-gray-500">
-            Close
-          </button>
         </div>
 
         <div className="mt-3 text-sm text-gray-700">
@@ -108,18 +106,19 @@ export const LeaveActionsModal: React.FC<Props> = ({
         </div>
 
         <div className="mt-4 flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-1 rounded border">
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              onSubmit(request.id, status, remarks.trim() || undefined);
-              onClose();
-            }}
-            className="px-3 py-1 bg-blue-600 text-white rounded"
+          <Button
+            variant="outline"
+            className="bg-gray-400 hover:bg-gray-500"
+            onClick={onClose}
           >
-            Save
-          </button>
+            Cancel
+          </Button>
+          <Button
+            className="bg-red-600 hover:bg-red-700 text-white"
+            onClick={() => onSubmit(request.id, status, remarks)}
+          >
+            Submit
+          </Button>
         </div>
       </div>
     </div>

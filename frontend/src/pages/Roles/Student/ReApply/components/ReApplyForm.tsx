@@ -49,10 +49,10 @@ const ReApplyForm: React.FC = () => {
       <SignatureSection data={data} onChange={handleChange} />
 
       <div className="flex justify-end gap-3">
-        <Button variant="ghost" type="button" onClick={handleReset}>
+        <Button variant="ghost" type="button" className="bg-gray-400 hover:bg-gray-500" onClick={handleReset}>
           Reset
         </Button>
-        <Button type="submit">Submit Re-Application</Button>
+        <Button type="submit" className="bg-red-600 hover:bg-red-700 text-white">Submit Re-Application</Button>
       </div>
     </form>
   );

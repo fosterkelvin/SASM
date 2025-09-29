@@ -14,6 +14,7 @@ import {
 } from "../constants/http";
 import {
   createApplicationSchema,
+  createApplicationSchemaWithConditional,
   updateApplicationStatusSchema,
   getApplicationsSchema,
 } from "./application.schemas";
@@ -51,22 +52,45 @@ export const createApplicationHandler = catchErrors(
       requestBody.age = parseInt(requestBody.age, 10);
     }
 
-    if (
-      requestBody.hasRelativeWorking &&
-      typeof requestBody.hasRelativeWorking === "string"
-    ) {
-      requestBody.hasRelativeWorking =
-        requestBody.hasRelativeWorking === "true";
+    // Helper to normalize boolean-like values coming from FormData
+    const parseBooleanLike = (val: any): boolean | undefined => {
+      if (val === undefined || val === null) return undefined;
+      if (typeof val === "boolean") return val;
+      if (Array.isArray(val)) {
+        // If multiple entries exist for the same field, consider true if any entry equals 'true' or boolean true
+        try {
+          return val.some((v) => String(v) === "true" || v === true);
+        } catch (err) {
+          return undefined;
+        }
+      }
+      if (typeof val === "string") return val === "true";
+      return Boolean(val);
+    };
+
+    // Normalize common boolean fields that may come from FormData as strings or arrays
+    requestBody.hasRelativeWorking = parseBooleanLike(
+      requestBody.hasRelativeWorking
+    );
+    requestBody.agreedToTerms = parseBooleanLike(requestBody.agreedToTerms);
+    // conformity may be present from the frontend
+    requestBody.conformity = parseBooleanLike(requestBody.conformity);
+
+    // Normalize unknown flag values that may come from FormData as strings/arrays
+    const booleanFlags = [
+      "fatherNameUnknown",
+      "fatherOccupationUnknown",
+      "motherNameUnknown",
+      "motherOccupationUnknown",
+    ];
+    for (const f of booleanFlags) {
+      if (requestBody[f] !== undefined) {
+        requestBody[f] = parseBooleanLike(requestBody[f]);
+      }
     }
 
-    if (
-      requestBody.agreedToTerms &&
-      typeof requestBody.agreedToTerms === "string"
-    ) {
-      requestBody.agreedToTerms = requestBody.agreedToTerms === "true";
-    }
-
-    const requestData = createApplicationSchema.parse(requestBody);
+    const requestData =
+      createApplicationSchemaWithConditional.parse(requestBody);
 
     // Check if user exists
     const user = await UserModel.findById(userID);
@@ -261,6 +285,14 @@ export const createApplicationHandler = catchErrors(
     } catch (err) {
       console.error("[DEBUG] Error logging final certificates:", err);
     }
+
+    // Defensive: convert parent fields to null when flagged Unknown so Mongoose won't fail on empty strings
+    if (requestData.fatherNameUnknown) requestData.fatherName = undefined;
+    if (requestData.fatherOccupationUnknown)
+      requestData.fatherOccupation = undefined;
+    if (requestData.motherNameUnknown) requestData.motherName = undefined;
+    if (requestData.motherOccupationUnknown)
+      requestData.motherOccupation = undefined;
 
     // Create the application
     const application = await ApplicationModel.create({

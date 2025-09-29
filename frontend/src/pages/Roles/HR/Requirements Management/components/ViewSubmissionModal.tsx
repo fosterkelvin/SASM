@@ -18,26 +18,19 @@ const ViewSubmissionModal: React.FC<Props> = ({ submission, onClose }) => {
   if (!submission) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black opacity-40" onClick={onClose} />
-
-      <div className="relative w-full max-w-3xl mx-4 bg-white dark:bg-gray-800 rounded shadow-lg overflow-auto max-h-[80vh]">
-        <div className="p-4 border-b dark:border-gray-700 flex items-start justify-between">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
+      <div className="bg-white dark:bg-gray-900 rounded max-w-2xl w-full mx-4 p-6">
+        <div className="flex justify-between items-start">
           <div>
-            <div className="text-lg font-semibold">
+            <h2 className="text-xl font-semibold">Submission Details</h2>
+            <div className="text-sm text-muted-foreground">
               {submission.studentName}
             </div>
             <div className="text-sm text-gray-500">{submission.date}</div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-sm px-3 py-1 border rounded"
-          >
-            Close
-          </button>
         </div>
 
-        <div className="p-4 space-y-4">
+        <div className="mt-4 space-y-3">
           {submission.items.map((it, i) => (
             <div
               key={i}
@@ -95,6 +88,15 @@ const ViewSubmissionModal: React.FC<Props> = ({ submission, onClose }) => {
               {submission.note}
             </div>
           )}
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-3 py-1 rounded bg-gray-400 hover:bg-gray-500 text-white"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>

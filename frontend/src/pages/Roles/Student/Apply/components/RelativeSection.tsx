@@ -46,8 +46,8 @@ const RelativeSection: React.FC<RelativeSectionProps> = ({
             className="h-4 w-4 text-red-600"
           />
           <span className="text-gray-700 dark:text-gray-300">
-            Do You Have a Relative Who is currently working as a Student
-            Assistant?
+            Do you have a relative who is currently working as a Student
+            Assistant/Student Marshal in the University?
           </span>
         </label>
       </div>

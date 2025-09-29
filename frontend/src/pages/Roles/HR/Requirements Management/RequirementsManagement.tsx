@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import HRSidebar from "@/components/sidebar/HRSidebar";
-import { Card, CardContent } from "@/components/ui/card";
 import Toolbar from "./components/Toolbar";
 import { Submission } from "./components/HRRequirementsList";
 import ViewSubmissionModal from "./components/ViewSubmissionModal";
@@ -78,55 +77,53 @@ const RequirementsManagement: React.FC = () => {
         </div>
 
         <div className="p-6 md:p-10">
-          <Card>
-            <CardContent>
-              <div className="mb-2 text-sm text-gray-600"></div>
+          <div>
+            <div className="mb-2 text-sm text-gray-600"></div>
 
-              <Toolbar query={query} onQueryChange={setQuery} />
+            <Toolbar query={query} onQueryChange={setQuery} />
 
-              <div className="mt-4">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="text-sm text-gray-500 border-b">
-                        <th className="py-3">Applicant</th>
-                        <th className="py-3">Items</th>
-                        <th className="py-3">Submitted</th>
-                        <th className="py-3 text-right">Actions</th>
+            <div className="mt-2">
+              <div className="overflow-x-auto bg-white dark:bg-gray-800 rounded border">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="text-left">
+                      <th className="px-4 py-3">Applicant</th>
+                      <th className="px-4 py-3">Items</th>
+                      <th className="px-4 py-3">Submitted</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((s) => (
+                      <tr key={s.id} className="border-t">
+                        <td className="px-4 py-3">
+                          <div className="font-medium">{s.studentName}</div>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700">
+                          {s.items.length} items
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700">
+                          {s.date}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => setSelected(s)}
+                            className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700"
+                          >
+                            View
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {filtered.map((s) => (
-                        <tr key={s.id} className="border-b last:border-b-0">
-                          <td className="py-4">
-                            <div className="font-medium">{s.studentName}</div>
-                          </td>
-                          <td className="py-4 text-sm text-gray-700">
-                            {s.items.length} items
-                          </td>
-                          <td className="py-4 text-sm text-gray-700">
-                            {s.date}
-                          </td>
-                          <td className="py-4 text-right">
-                            <button
-                              onClick={() => setSelected(s)}
-                              className="px-3 py-1 border rounded text-sm text-red-600"
-                            >
-                              View
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <ViewSubmissionModal
-                submission={selected}
-                onClose={() => setSelected(null)}
-              />
-            </CardContent>
-          </Card>
+            </div>
+            <ViewSubmissionModal
+              submission={selected}
+              onClose={() => setSelected(null)}
+            />
+          </div>
         </div>
       </div>
     </div>

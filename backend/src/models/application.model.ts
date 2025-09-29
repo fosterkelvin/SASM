@@ -32,10 +32,15 @@ export interface ApplicationDocument extends mongoose.Document {
   citizenship: string;
 
   // Parents Information
-  fatherName: string;
-  fatherOccupation: string;
-  motherName: string;
-  motherOccupation: string;
+  fatherName?: string | null;
+  fatherOccupation?: string | null;
+  motherName?: string | null;
+  motherOccupation?: string | null;
+  // Unknown flags (if true, corresponding field may be empty)
+  fatherNameUnknown?: boolean;
+  fatherOccupationUnknown?: boolean;
+  motherNameUnknown?: boolean;
+  motherOccupationUnknown?: boolean;
 
   // Emergency Contact
   emergencyContact: string;
@@ -222,23 +227,45 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
     // Parents Information
     fatherName: {
       type: String,
-      required: true,
       trim: true,
+      required: false,
+      default: null,
     },
     fatherOccupation: {
       type: String,
-      required: true,
       trim: true,
+      required: false,
+      default: null,
     },
     motherName: {
       type: String,
-      required: true,
       trim: true,
+      required: false,
+      default: null,
     },
     motherOccupation: {
       type: String,
-      required: true,
       trim: true,
+      required: false,
+      default: null,
+    },
+
+    // Unknown flags persisted if desired
+    fatherNameUnknown: {
+      type: Boolean,
+      default: false,
+    },
+    fatherOccupationUnknown: {
+      type: Boolean,
+      default: false,
+    },
+    motherNameUnknown: {
+      type: Boolean,
+      default: false,
+    },
+    motherOccupationUnknown: {
+      type: Boolean,
+      default: false,
     },
 
     // Emergency Contact

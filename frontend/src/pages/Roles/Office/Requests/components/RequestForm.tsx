@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import NumberRow from "./NumberRow";
 import RequestTypes from "./RequestTypes";
+import { Button } from "@/components/ui/button";
 
 type FormState = {
   total: number | "";
@@ -66,14 +67,9 @@ const RequestForm: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-3 justify-end">
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md shadow-sm hover:bg-blue-700 transition-colors"
-        >
-          Send Request
-        </button>
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() =>
             setState({
               total: "",
@@ -83,10 +79,16 @@ const RequestForm: React.FC = () => {
               notes: "",
             })
           }
-          className="px-3 py-2 border rounded-md bg-white dark:bg-gray-800"
+          className="bg-gray-400 hover:bg-gray-500"
         >
-          Reset
-        </button>
+          Clear
+        </Button>
+        <Button
+          type="submit"
+          className="bg-red-600 hover:bg-red-700 text-white"
+        >
+          Submit Request
+        </Button>
       </div>
     </form>
   );

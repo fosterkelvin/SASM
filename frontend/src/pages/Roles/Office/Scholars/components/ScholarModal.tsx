@@ -49,10 +49,10 @@ const ScholarModal: React.FC<Props> = ({
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" className="bg-gray-400 hover:bg-gray-500" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={() => onSave(scholar)}>Save</Button>
+            <Button onClick={() => onSave(scholar)} className="bg-red-600 hover:bg-red-700 text-white">Save</Button>
           </div>
         </div>
       </div>

@@ -20,11 +20,15 @@ const ApplicationWithdrawnScreen: React.FC<ApplicationWithdrawnScreenProps> = ({
   <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
     {renderSidebar()}
     <div
-      className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
+      className={`flex-1 pt-20 transition-all duration-300 ${
         isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
       }`}
     >
-      <div className="hidden md:block bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-700/60 p-4 md:p-6">
+      <div
+        className={`hidden md:flex fixed top-0 right-0 z-30 items-center bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-700/60 p-4 md:p-6 transition-all duration-300 ${
+          isSidebarCollapsed ? "md:left-20" : "md:left-64"
+        }`}
+      >
         <h1 className="text-2xl font-bold text-white dark:text-white">
           Application Withdrawn Successfully
         </h1>

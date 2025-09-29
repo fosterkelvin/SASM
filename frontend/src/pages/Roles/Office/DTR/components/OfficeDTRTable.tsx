@@ -54,7 +54,7 @@ const OfficeDTRTable: React.FC<OfficeDTRTableProps> = ({
               </td>
               <td className="border px-2 py-1 text-sm text-center">
                 <button
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+                  className="px-3 py-1 bg-red-600 text-white rounded text-sm"
                   onClick={() => {
                     // For frontend-only, we simply persist the status change already handled by selector.
                     // When status was derived (e.g. Unconfirmed) it may not be saved in the entry yet.

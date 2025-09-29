@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { z } from "zod";
-import { applicationSchema } from "../applicationSchema";
+import { applicationSchemaWithConditional } from "../applicationSchema";
 
 export default function useApplicationForm(initialData: any) {
   const [formData, setFormData] = useState(initialData);
@@ -18,7 +18,7 @@ export default function useApplicationForm(initialData: any) {
 
   const validate = (data: any) => {
     try {
-      applicationSchema.parse(data);
+      applicationSchemaWithConditional.parse(data);
       setErrors({});
       return true;
     } catch (error) {

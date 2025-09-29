@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import ScholarList from "./components/ScholarList";
 import EvaluationForm from "./components/EvaluationForm";
 import { Scholar } from "./components/types";
+import { Button } from "@/components/ui/button";
 
 const OfficeEvaluationPage: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -87,12 +88,7 @@ const OfficeEvaluationPage: React.FC = () => {
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <button
-                          onClick={() => setSelected(null)}
-                          className="px-3 py-1 border rounded text-sm"
-                        >
-                          Back
-                        </button>
+                        <Button variant="outline" className="bg-gray-400 hover:bg-gray-500" onClick={() => setSelected(null)}>Back</Button>
                       </div>
                       <div className="text-right">
                         <div className="font-semibold">{selected.name}</div>

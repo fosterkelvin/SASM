@@ -304,12 +304,12 @@ const ReApplicationManagement: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={closeModal}>
+                <Button variant="outline" className="bg-gray-400 hover:bg-gray-500" onClick={closeModal}>
                   Cancel
                 </Button>
                 <Button
                   onClick={() => updateStatus(selected._id, selected.status)}
-                  className="bg-red-600 text-white"
+                  className="bg-red-600 text-white hover:bg-red-700"
                 >
                   Update Status
                 </Button>

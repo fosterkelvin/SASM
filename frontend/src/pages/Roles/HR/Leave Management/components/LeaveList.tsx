@@ -1,4 +1,5 @@
 // React JSX runtime used — no named React imports needed
+import { Button } from "@/components/ui/button";
 import { LeaveRecord, LeaveStatus } from "./types";
 
 interface Props {
@@ -46,18 +47,19 @@ export default function LeaveList({ leaves, onChangeStatus, onOpen }: Props) {
                 {l.status}
               </div>
               <div className="flex items-center gap-2">
-                <button
+                <Button
+                  variant="outline"
+                  className="bg-gray-400 hover:bg-gray-500 text-sm"
                   onClick={() => onOpen(l.id)}
-                  className="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-300"
                 >
                   Edit
-                </button>
+                </Button>
                 <select
                   value={l.status}
                   onChange={(e) =>
                     onChangeStatus(l.id, e.target.value as LeaveStatus)
                   }
-                  className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-sm"
+                  className="px-2 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-sm"
                 >
                   <option value="pending">pending</option>
                   <option value="approved">approved</option>

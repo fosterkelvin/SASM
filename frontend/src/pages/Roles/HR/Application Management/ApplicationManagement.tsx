@@ -2591,7 +2591,7 @@ const ApplicationManagement = () => {
               <Button
                 variant="outline"
                 onClick={() => closeStatusModal()}
-                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-gray-400 hover:bg-gray-500 dark:border-gray-600 dark:hover:bg-gray-800"
               >
                 Cancel
               </Button>

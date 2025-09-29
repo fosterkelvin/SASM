@@ -31,10 +31,15 @@ export const applicationSchema = z.object({
     .min(10, "Baguio/Benguet contact number is required"),
   email: z.string().email("Valid email is required"),
   citizenship: z.string().min(2, "Citizenship is required"),
-  fatherName: z.string().min(2, "Father's name is required"),
-  fatherOccupation: z.string().min(2, "Father's occupation is required"),
-  motherName: z.string().min(2, "Mother's name is required"),
-  motherOccupation: z.string().min(2, "Mother's occupation is required"),
+  fatherName: z.string().optional(),
+  fatherOccupation: z.string().optional(),
+  motherName: z.string().optional(),
+  motherOccupation: z.string().optional(),
+  // Unknown / Not Applicable flags — when true, the corresponding field may be empty
+  fatherNameUnknown: z.boolean().optional(),
+  fatherOccupationUnknown: z.boolean().optional(),
+  motherNameUnknown: z.boolean().optional(),
+  motherOccupationUnknown: z.boolean().optional(),
   emergencyContact: z.string().min(2, "Emergency contact name is required"),
   emergencyContactNumber: z
     .string()
@@ -64,7 +69,10 @@ export const applicationSchema = z.object({
   agreedToTerms: z.boolean().refine((val) => val === true, {
     message: "You must agree to the terms and conditions",
   }),
-  signature: z.string().min(1, "Electronic signature is required"),
+  // signature removed; replaced by conformity checkbox
+  conformity: z.boolean().refine((val) => val === true, {
+    message: "You must confirm that the information provided is true",
+  }),
   profilePhoto: z.any().refine((file) => file !== null && file !== undefined, {
     message: "2x2 picture is required",
   }),
@@ -72,4 +80,52 @@ export const applicationSchema = z.object({
   certificates: z.any().optional(),
 });
 
-export type ApplicationFormData = z.infer<typeof applicationSchema>;
+// Add cross-field validation to enforce required fields only when not marked Unknown
+export const applicationSchemaWithConditional = applicationSchema.superRefine(
+  (data, ctx) => {
+    // fatherName
+    if (!data.fatherNameUnknown) {
+      if (!data.fatherName || data.fatherName.trim().length < 2) {
+        ctx.addIssue({
+          path: ["fatherName"],
+          message: "Father's name is required",
+          code: z.ZodIssueCode.custom,
+        });
+      }
+    }
+    // fatherOccupation
+    if (!data.fatherOccupationUnknown) {
+      if (!data.fatherOccupation || data.fatherOccupation.trim().length < 2) {
+        ctx.addIssue({
+          path: ["fatherOccupation"],
+          message: "Father's occupation is required",
+          code: z.ZodIssueCode.custom,
+        });
+      }
+    }
+    // motherName
+    if (!data.motherNameUnknown) {
+      if (!data.motherName || data.motherName.trim().length < 2) {
+        ctx.addIssue({
+          path: ["motherName"],
+          message: "Mother's name is required",
+          code: z.ZodIssueCode.custom,
+        });
+      }
+    }
+    // motherOccupation
+    if (!data.motherOccupationUnknown) {
+      if (!data.motherOccupation || data.motherOccupation.trim().length < 2) {
+        ctx.addIssue({
+          path: ["motherOccupation"],
+          message: "Mother's occupation is required",
+          code: z.ZodIssueCode.custom,
+        });
+      }
+    }
+  }
+);
+
+export type ApplicationFormData = z.infer<
+  typeof applicationSchemaWithConditional
+>;
