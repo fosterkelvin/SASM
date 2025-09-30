@@ -348,7 +348,7 @@ const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
             {user && (
               <button
                 onClick={handleProfileClick}
-                className="w-full flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-gradient-to-r from-red-50 to-red-100 dark:from-gray-900 dark:to-gray-800 border border-red-200 dark:border-red-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 hover:bg-red-100 dark:hover:bg-gray-900/30 transition-all duration-200"
+                className="w-full flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border border-gray-200 hover:border-gray-400 dark:border-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 hover:bg-gray-100 dark:hover:bg-red-900/30 dark:hover:border-red-700 transition-all duration-200"
                 style={{ userSelect: "none" }}
                 aria-label="View Profile"
                 title="View Profile"
@@ -359,13 +359,13 @@ const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
                     <img
                       src={user.avatar}
                       alt="User Avatar"
-                      className="w-10 h-10 rounded-full object-cover border-2 border-red-400 dark:border-red-600 shadow"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-gray-400 dark:border-gray-600 shadow"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-red-200 dark:bg-red-900 flex items-center justify-center border-2 border-red-400 dark:border-red-600 shadow">
+                    <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-900 flex items-center justify-center border-2 border-gray-400 dark:border-gray-600 shadow">
                       <User
                         size={22}
-                        className="text-red-600 dark:text-red-300"
+                        className="text-gray-600 dark:text-gray-300"
                       />
                     </div>
                   )}
@@ -391,7 +391,7 @@ const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
             )}
             <button
               onClick={() => setDarkMode(!darkMode)}
-              className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-blue-700 dark:hover:text-blue-400 hover:border-blue-400 dark:hover:border-blue-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className="group w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-400 hover:border-gray-400 dark:hover:border-gray-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
               aria-label={darkMode ? "Light Mode" : "Dark Mode"}
               title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
             >
@@ -399,7 +399,7 @@ const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
                 <>
                   <Sun
                     size={16}
-                    className="text-yellow-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
+                    className="text-gray-200 group-hover:scale-110 transition-transform duration-200 drop-shadow"
                   />
                   <span className="font-medium">Light Mode</span>
                 </>
@@ -407,7 +407,7 @@ const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
                 <>
                   <Moon
                     size={16}
-                    className="text-blue-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
+                    className="text-gray-500 group-hover:scale-110 transition-transform duration-200 drop-shadow"
                   />
                   <span className="font-medium">Dark Mode</span>
                 </>

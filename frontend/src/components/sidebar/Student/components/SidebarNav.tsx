@@ -1,6 +1,6 @@
 import React from "react";
 import SidebarItem from "./SidebarItem";
-import { Home, Bell, BookOpen, FileText, Calendar } from "lucide-react";
+import { Home, Bell, BookOpen, FileText, Calendar, CalendarClock, FileEdit, RefreshCw, CalendarMinus, ClipboardList } from "lucide-react";
 
 interface NavProps {
   unreadCount?: number;
@@ -42,7 +42,7 @@ const SidebarNav: React.FC<NavProps> = ({ unreadCount = 0, handlers }) => {
           <SidebarItem
             label="DTR"
             onClick={handlers.dtr}
-            IconComponent={FileText}
+            IconComponent={CalendarClock}
           />
         </li>
         <li>
@@ -56,28 +56,28 @@ const SidebarNav: React.FC<NavProps> = ({ unreadCount = 0, handlers }) => {
           <SidebarItem
             label="Apply"
             onClick={handlers.apply}
-            IconComponent={FileText}
+            IconComponent={FileEdit}
           />
         </li>
         <li>
           <SidebarItem
             label="Re-apply"
             onClick={handlers.reapply}
-            IconComponent={FileText}
+            IconComponent={RefreshCw}
           />
         </li>
         <li>
           <SidebarItem
             label="Leave"
             onClick={handlers.leave}
-            IconComponent={FileText}
+            IconComponent={CalendarMinus}
           />
         </li>
         <li>
           <SidebarItem
             label="Requirements"
             onClick={handlers.requirements}
-            IconComponent={FileText}
+            IconComponent={ClipboardList}
           />
         </li>
       </ul>

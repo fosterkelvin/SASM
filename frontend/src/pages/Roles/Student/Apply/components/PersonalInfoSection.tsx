@@ -18,7 +18,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
   <div className="space-y-4 md:space-y-6 p-4 rounded-lg border">
     <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
       {/* Icon can be added here if needed */}
-      <Users className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
+      <Users className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
       Personal Information <p className="text-red-600">*</p>
     </h3>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ">

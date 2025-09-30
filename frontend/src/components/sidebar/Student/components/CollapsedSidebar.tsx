@@ -10,6 +10,11 @@ import {
   Sun,
   Moon,
   LogOut,
+  CalendarClock,
+  FileEdit,
+  RefreshCw,
+  CalendarMinus,
+  ClipboardList,
 } from "lucide-react";
 
 interface Props {
@@ -89,7 +94,7 @@ const CollapsedSidebar: React.FC<Props> = ({
               aria-label="DTR"
               title="DTR"
             >
-              <FileText size={16} />
+              <CalendarClock size={16} />
             </button>
           </div>
           <div className="group relative">
@@ -109,37 +114,37 @@ const CollapsedSidebar: React.FC<Props> = ({
               aria-label="Apply"
               title="Apply"
             >
-              <FileText size={16} className="text-red-500" />
+              <FileEdit size={16} />
             </button>
           </div>
           <div className="group relative">
             <button
               onClick={handlers.reapply}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-200"
+              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
               aria-label="Re-apply"
               title="Re-apply"
             >
-              <FileText size={16} className="text-indigo-500" />
+              <RefreshCw size={16} />
             </button>
           </div>
           <div className="group relative">
             <button
               onClick={handlers.leave}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-yellow-50 dark:hover:bg-gray-700 hover:text-yellow-600 dark:hover:text-yellow-400 transition-all duration-200"
+              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-gray-400 transition-all duration-200"
               aria-label="Leave"
               title="Leave"
             >
-              <FileText size={16} className="text-yellow-500" />
+              <CalendarMinus size={16}/>
             </button>
           </div>
           <div className="group relative">
             <button
               onClick={handlers.requirements}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-gray-700 hover:text-green-600 dark:hover:text-green-400 transition-all duration-200"
+              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-gray-400 transition-all duration-200"
               aria-label="Requirements"
               title="Requirements"
             >
-              <FileText size={16} className="text-green-500" />
+              <ClipboardList size={16}/>
             </button>
           </div>
         </div>
@@ -163,9 +168,9 @@ const CollapsedSidebar: React.FC<Props> = ({
             title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
             {darkMode ? (
-              <Sun size={16} className="text-yellow-500" />
+              <Sun size={16} className="text-gray-200 hover:text-red-400" />
             ) : (
-              <Moon size={16} className="text-blue-500" />
+              <Moon size={16} className="text-gray-500 hover:text-red-400" />
             )}
           </button>
         </div>
