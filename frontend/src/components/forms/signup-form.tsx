@@ -223,7 +223,7 @@ export function SignupForm({
                   </div>
                   <Button
                     onClick={() => (window.location.href = "/signin")}
-                    className="mt-4 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white"
+                    className="mt-4 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white"
                   >
                     Go to Sign In
                   </Button>
@@ -588,7 +588,7 @@ export function SignupForm({
 
                   <Button
                     type="submit"
-                    className="w-full bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white font-medium py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                    className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white font-medium py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                     disabled={isFormEmpty || loading || !isUnder24Confirmed}
                   >
                     {loading ? (
