@@ -27,9 +27,9 @@ import {
 } from "@/lib/api";
 import { getUserApplications } from "@/lib/api";
 import { z } from "zod";
-import StudentSidebar from "@/components/sidebar/StudentSidebar";
-import HRSidebar from "@/components/sidebar/HRSidebar";
-import OfficeSidebar from "@/components/sidebar/OfficeSidebar";
+import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
+import HRSidebar from "@/components/sidebar/HR/HRSidebar";
+import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
 
 // Validation schema for password change
 const changePasswordSchema = z

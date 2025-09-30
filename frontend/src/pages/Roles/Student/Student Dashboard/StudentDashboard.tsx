@@ -1,7 +1,7 @@
 import { useState } from "react";
 // useNavigate removed - not needed in this file anymore
 import { useAuth } from "@/context/AuthContext";
-import StudentSidebar from "@/components/sidebar/StudentSidebar";
+import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import {
   WelcomeCard,
   VerificationAlert,

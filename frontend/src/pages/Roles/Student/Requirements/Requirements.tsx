@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import StudentSidebar from "@/components/sidebar/StudentSidebar";
+import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import RequirementsList from "./components/RequirementsList";
 import { Button } from "@/components/ui/button";

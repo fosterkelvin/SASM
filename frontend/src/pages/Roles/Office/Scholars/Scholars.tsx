@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import OfficeSidebar from "@/components/sidebar/OfficeSidebar";
+import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
 import ScholarsList from "./components/ScholarsList";
 import ScholarFilters from "./components/ScholarFilters";
 import ScholarModal from "./components/ScholarModal";

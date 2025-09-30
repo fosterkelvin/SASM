@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import HRSidebar from "@/components/sidebar/HRSidebar";
+import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import UsersList from "./components/UsersList";
 import UserFilters from "./components/UserFilters";
 import UserModal from "./components/UserModal";

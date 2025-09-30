@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import StudentSidebar from "@/components/sidebar/StudentSidebar";
+import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import HeaderInfo from "./components/HeaderInfo";
 import DTRTable from "./components/DTRTable";

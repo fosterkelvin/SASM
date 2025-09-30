@@ -100,7 +100,10 @@ export function SigninForm({
 
   return (
     <div
-      className={cn("flex flex-col gap-6 font-serif: Georgia", className)}
+      className={cn(
+        "no-select flex flex-col gap-6 font-serif: Georgia",
+        className
+      )}
       {...props}
     >
       <Card className="overflow-hidden bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-lg dark:shadow-slate-900/20">

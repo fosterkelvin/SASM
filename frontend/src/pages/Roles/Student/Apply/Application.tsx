@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import StudentSidebar from "@/components/sidebar/StudentSidebar";
+import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import useSeminars from "./hooks/useSeminars";
 import useFileUpload from "./hooks/useFileUpload";
 // signature removed: replaced with conformity checkbox
