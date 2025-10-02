@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
+import StudentSidebar from "@/components/sidebar/StudentSidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import LeaveForm from "./components/LeaveForm";

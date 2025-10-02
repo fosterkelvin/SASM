@@ -100,10 +100,7 @@ export function SigninForm({
 
   return (
     <div
-      className={cn(
-        "no-select flex flex-col gap-6 font-serif: Georgia",
-        className
-      )}
+      className={cn("flex flex-col gap-6 font-serif: Georgia", className)}
       {...props}
     >
       <Card className="overflow-hidden bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-lg dark:shadow-slate-900/20">
@@ -351,7 +348,7 @@ export function SigninForm({
               <Button
                 type="submit"
                 disabled={isPending || !email || password.length < 8}
-                className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white font-medium py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                className="w-full bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white font-medium py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
               >
                 {isPending ? (
                   <span className="flex items-center gap-2">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import HRSidebar from "@/components/sidebar/HR/HRSidebar";
+import HRSidebar from "@/components/sidebar/HRSidebar";
 import { WelcomeCard, StatsGrid } from "./components";
 import PieCard from "../Analytics/components/PieCard";
 import { getSummary } from "@/lib/analyticsService";

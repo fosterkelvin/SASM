@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileText, User, Eye, Calendar, Search } from "lucide-react";
-import HRSidebar from "@/components/sidebar/HR/HRSidebar";
+import HRSidebar from "@/components/sidebar/HRSidebar";
 
 // Frontend-only mock reapplications page. No backend.
 const mockReapplications = [
@@ -304,11 +304,7 @@ const ReApplicationManagement: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  className="bg-gray-400 hover:bg-gray-500"
-                  onClick={closeModal}
-                >
+                <Button variant="outline" className="bg-gray-400 hover:bg-gray-500" onClick={closeModal}>
                   Cancel
                 </Button>
                 <Button

@@ -18,9 +18,9 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllApplications, updateApplicationStatus } from "@/lib/api";
 import { useNotificationUpdater } from "@/hooks/useNotificationUpdater";
-import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
-import HRSidebar from "@/components/sidebar/HR/HRSidebar";
-import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
+import StudentSidebar from "@/components/sidebar/StudentSidebar";
+import HRSidebar from "@/components/sidebar/HRSidebar";
+import OfficeSidebar from "@/components/sidebar/OfficeSidebar";
 
 const ApplicationManagement = () => {
   const { user } = useAuth();

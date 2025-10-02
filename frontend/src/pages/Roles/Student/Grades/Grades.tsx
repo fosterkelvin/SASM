@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
+import StudentSidebar from "@/components/sidebar/StudentSidebar";
 import UploadGrades from "./components/UploadGrades";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
