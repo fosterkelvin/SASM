@@ -12,7 +12,7 @@ export default function PositionSection({ position, onChange, error }: PositionS
     <div className="p-4 md:p-6 rounded-lg border">
       <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
         <svg
-          className="h-4 w-4 md:h-5 md:w-5 text-gray-600"
+          className="h-4 w-4 md:h-5 md:w-5 text-green-600"
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
@@ -55,7 +55,7 @@ export default function PositionSection({ position, onChange, error }: PositionS
             htmlFor="student_marshal"
             className="text-sm md:text-base text-gray-700 dark:text-gray-300"
           >
-            Student Marshal
+            Student Marshal / Lady Marshal (Security Office)
           </Label>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
+import OfficeSidebar from "@/components/sidebar/OfficeSidebar";
 import { WelcomeCard } from "./components";
 
 const OfficeDashboard = () => {

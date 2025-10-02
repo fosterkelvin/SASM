@@ -1,5 +1,5 @@
 import * as React from "react";
-import HRSidebar from "@/components/sidebar/HR/HRSidebar";
+import HRSidebar from "@/components/sidebar/HRSidebar";
 import LeaveList from "./components/LeaveList";
 import LeaveFilters from "./components/LeaveFilters";
 import LeaveForm from "./components/LeaveForm";
@@ -79,12 +79,7 @@ export default function LeaveManagement() {
   };
 
   const resetData = () => {
-    if (
-      !confirm(
-        "Reset leave data to seeded defaults? This will overwrite any local changes."
-      )
-    )
-      return;
+    if (!confirm('Reset leave data to seeded defaults? This will overwrite any local changes.')) return;
     localStorage.removeItem(STORAGE_KEY);
     const seeded = seed();
     setLeaves(seeded);
@@ -148,12 +143,7 @@ export default function LeaveManagement() {
 
               <div className="flex items-center gap-3">
                 <LeaveFilters filters={filters} onChange={setFilters} />
-                <button
-                  onClick={resetData}
-                  className="px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 text-sm"
-                >
-                  Reset data
-                </button>
+                <button onClick={resetData} className="px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 text-sm">Reset data</button>
               </div>
             </div>
 

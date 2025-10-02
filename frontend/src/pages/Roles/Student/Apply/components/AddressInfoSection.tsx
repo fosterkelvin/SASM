@@ -36,7 +36,7 @@ export default function AddressInfoSection({
   return (
     <div className="space-y-4 md:space-y-6 p-4 rounded-lg border">
       <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
-        <MapPin className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
+        <MapPin className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
         Address Information<p className="text-red-600">*</p>
       </h3>
       {/* Home Address */}

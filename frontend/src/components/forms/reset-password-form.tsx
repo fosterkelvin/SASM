@@ -212,7 +212,7 @@ export function ResetPasswordForm({
 
                 <Button
                   type="submit"
-                  className="mt-4 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white transition-colors duration-200"
+                  className="mt-4 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-600 text-white transition-colors duration-200"
                   disabled={!password || !confirmPassword || isPending}
                 >
                   {isPending ? "Resetting..." : "Reset Password"}

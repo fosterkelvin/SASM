@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef } from "react";
 
 type Props = {
   onImport: (lines: string[]) => void;
@@ -24,20 +24,11 @@ const parseText = (text: string) => {
 
 const UploadArea: React.FC<Props> = ({ onImport, onClear, onExport }) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const [value, setValue] = useState<string>("");
-
-  const STORAGE_KEY = "requirements_upload_text";
 
   const handleFile = async (file: File | null) => {
     if (!file) return;
     const text = await file.text();
     const lines = parseText(text);
-    // persist raw text so it survives refresh
-    try {
-      localStorage.setItem(STORAGE_KEY, text);
-    } catch (e) {}
-    setValue(text);
-    if (textareaRef.current) textareaRef.current.value = text;
     onImport(lines);
   };
 
@@ -49,25 +40,9 @@ const UploadArea: React.FC<Props> = ({ onImport, onClear, onExport }) => {
 
   const handlePasteImport = () => {
     const v = textareaRef.current?.value || "";
-    try {
-      localStorage.setItem(STORAGE_KEY, v);
-    } catch (e) {}
-    setValue(v);
     const lines = parseText(v);
     onImport(lines);
   };
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY) || "";
-      if (raw && textareaRef.current) {
-        textareaRef.current.value = raw;
-        setValue(raw);
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, []);
 
   return (
     <div className="space-y-3">
@@ -88,8 +63,6 @@ const UploadArea: React.FC<Props> = ({ onImport, onClear, onExport }) => {
             ref={textareaRef}
             placeholder={`Paste the list here (one item per line) or paste a comma-separated line`}
             className="w-full h-28 p-2 border rounded-md bg-white dark:bg-gray-800"
-            defaultValue={value}
-            onChange={(e) => setValue(e.target.value)}
           />
           <div className="flex gap-2 mt-2">
             <button

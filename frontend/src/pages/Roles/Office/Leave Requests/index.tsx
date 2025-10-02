@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
+import OfficeSidebar from "@/components/sidebar/OfficeSidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { LeaveRequest } from "./types";
 import LeaveActionsModal from "./LeaveActionsModal";
