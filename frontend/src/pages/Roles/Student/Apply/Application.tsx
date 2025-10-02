@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import StudentSidebar from "@/components/sidebar/StudentSidebar";
+import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import useSeminars from "./hooks/useSeminars";
 import useFileUpload from "./hooks/useFileUpload";
 // signature removed: replaced with conformity checkbox
@@ -360,10 +360,7 @@ function Application() {
   };
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const renderSidebar = () => (
-    <StudentSidebar
-      currentPage="Application"
-      onCollapseChange={setIsSidebarCollapsed}
-    />
+    <StudentSidebar onCollapseChange={setIsSidebarCollapsed} />
   );
 
   if (submitSuccess) {
@@ -421,65 +418,73 @@ function Application() {
   if (user && !user.verified) {
     return (
       <>
-        <div className="flex-1 pt-24 md:pt-0 transition-all duration-300">
+        <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">
+          <StudentSidebar onCollapseChange={setIsSidebarCollapsed} />
           <div
-            className={`hidden md:flex items-center gap-4 fixed top-0 z-30 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 h-[73px] px-8 ${
-              isSidebarCollapsed
-                ? "md:ml-20 md:w-[calc(100%-5rem)]"
-                : "md:ml-64 md:w-[calc(100%-16rem)]"
+            className={`flex-1 pt-24 md:pt-0 transition-all duration-300 ${
+              isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
             }`}
           >
-            <img src="/UBLogo.svg" alt="Logo" className="h-10 w-auto" />
-            <h1 className="text-2xl font-bold text-white dark:text-white">
-              Email Verification Required
-            </h1>
-          </div>
-          <div className="p-4 md:p-10 flex items-center justify-center min-h-screen">
-            <Card className="max-w-2xl w-full mx-4">
-              <CardContent className="p-6 md:p-8 text-center">
-                <div className="flex flex-col items-center gap-6">
-                  <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
-                    <AlertTriangle className="w-10 h-10 text-yellow-600 dark:text-yellow-400" />
-                  </div>
-                  <div className="space-y-4">
-                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
-                      Verify Your Email First
-                    </h1>
-                    <p className="text-lg text-gray-600 dark:text-gray-400 max-w-md">
-                      You need to verify your email address before you can
-                      submit an application.
-                    </p>
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                      <div className="text-sm text-yellow-800 dark:text-yellow-200">
-                        <strong>Current Email:</strong> {user.email}
-                        <br />
-                        <br />
-                        Please check your inbox for a verification email and
-                        click the verification link.
-                        <br />
-                        <br />
-                        <strong>Next Steps:</strong>
-                        <ul className="list-decimal list-inside mt-2">
-                          <li>Check your email inbox (and spam folder)</li>
-                          <li>Click the verification link in the email</li>
-                          <li>Return here to complete your application</li>
-                        </ul>
+            {/* Top header bar - only visible on desktop */}
+            <div
+              className={`hidden md:flex items-center gap-4 fixed top-0 left-0 z-30 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 h-[81px] ${
+                isSidebarCollapsed
+                  ? "md:w-[calc(100%-5rem)] md:ml-20"
+                  : "md:w-[calc(100%-16rem)] md:ml-64"
+              }`}
+            >
+              <h1 className="text-2xl font-bold text-white dark:text-white ml-4">
+                Email Verification Required
+              </h1>
+            </div>
+
+            <div className="p-4 md:p-10 flex items-center justify-center min-h-screen">
+              <Card className="max-w-2xl w-full mx-4">
+                <CardContent className="p-6 md:p-8 text-center">
+                  <div className="flex flex-col items-center gap-6">
+                    <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+                      <AlertTriangle className="w-10 h-10 text-yellow-600 dark:text-yellow-400" />
+                    </div>
+                    <div className="space-y-4">
+                      <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+                        Verify Your Email First
+                      </h1>
+                      <p className="text-lg text-gray-600 dark:text-gray-400 max-w-md">
+                        You need to verify your email address before you can
+                        submit an application.
+                      </p>
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                        <div className="text-sm text-yellow-800 dark:text-yellow-200">
+                          <strong>Current Email:</strong> {user.email}
+                          <br />
+                          <br />
+                          Please check your inbox for a verification email and
+                          click the verification link.
+                          <br />
+                          <br />
+                          <strong>Next Steps:</strong>
+                          <ul className="list-decimal list-inside mt-2">
+                            <li>Check your email inbox (and spam folder)</li>
+                            <li>Click the verification link in the email</li>
+                            <li>Return here to complete your application</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full">
+                      <ResendVerificationButton email={user.email} />
+                      <Button
+                        onClick={() => window.location.reload()}
+                        variant="outline"
+                        className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      >
+                        Refresh Page
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-3 w-full">
-                    <ResendVerificationButton email={user.email} />
-                    <Button
-                      onClick={() => window.location.reload()}
-                      variant="outline"
-                      className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                    >
-                      Refresh Page
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </>
@@ -488,10 +493,7 @@ function Application() {
   if (activeApplication) {
     return (
       <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">
-        <StudentSidebar
-          currentPage="Application"
-          onCollapseChange={setIsSidebarCollapsed}
-        />
+        <StudentSidebar onCollapseChange={setIsSidebarCollapsed} />
         <div
           className={`flex-1 flex flex-col transition-all duration-300 ${
             isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
@@ -645,10 +647,7 @@ function Application() {
   return (
     <>
       <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">
-        <StudentSidebar
-          currentPage="Application"
-          onCollapseChange={setIsSidebarCollapsed}
-        />
+        <StudentSidebar onCollapseChange={setIsSidebarCollapsed} />
         <div
           className={`flex-1 transition-all duration-300 ${
             isSidebarCollapsed ? "md:ml-20" : "md:ml-64"

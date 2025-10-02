@@ -19,7 +19,7 @@ const NoAuthNav = () => {
   }, [darkMode]);
 
   return (
-    <Menubar className="fixed w-full shadow-md px-6 md:px-10 flex items-center justify-between bg-red-600 dark:bg-red-700 rounded-none border-none h-15">
+    <Menubar className="no-select fixed w-full shadow-md px-6 md:px-10 flex items-center justify-between bg-red-600 dark:bg-red-700 rounded-none border-none h-15">
       {/* Logo and Title (Left Side) */}
       <div className="flex items-center gap-2">
         <img src="/UBLogo.svg" alt="Logo" className="h-8 w-auto" />

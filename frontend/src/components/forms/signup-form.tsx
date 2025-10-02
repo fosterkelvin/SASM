@@ -197,7 +197,7 @@ export function SignupForm({
                   </p>
                 </div>
                 <div className="mt-4 space-y-2">
-                    <div className="rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 p-3 flex items-center gap-2">
+                  <div className="rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 p-3 flex items-center gap-2">
                     <svg
                       className="w-5 h-5 text-yellow-500 dark:text-yellow-400 flex-shrink-0"
                       fill="none"
@@ -205,23 +205,25 @@ export function SignupForm({
                       viewBox="0 0 24 24"
                     >
                       <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"
                       />
                     </svg>
                     <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                      Please check your email inbox and click the verification link to activate your account.
+                      Please check your email inbox and click the verification
+                      link to activate your account.
                       <br />
                       <span className="font-normal">
-                      Note: It may take a few minutes for the email to arrive. Also check the spam/junk folder.
+                        Note: It may take a few minutes for the email to arrive.
+                        Also check the spam/junk folder.
                       </span>
                     </p>
-                    </div>
+                  </div>
                   <Button
                     onClick={() => (window.location.href = "/signin")}
-                    className="mt-4 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white"
+                    className="mt-4 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white"
                   >
                     Go to Sign In
                   </Button>
@@ -569,7 +571,8 @@ export function SignupForm({
                       className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 rounded"
                     />
                     <span className="text-sm text-gray-700 dark:text-slate-300">
-                      I confirm that I am not over 24 years old and a senior highschool graduate.
+                      I confirm that I am a senior highschool graduate and 24
+                      years old or below.
                     </span>
                   </label>
                   {ageError && (
@@ -585,7 +588,7 @@ export function SignupForm({
 
                   <Button
                     type="submit"
-                    className="w-full bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 text-white font-medium py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                    className="w-full bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white font-medium py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                     disabled={isFormEmpty || loading || !isUnder24Confirmed}
                   >
                     {loading ? (

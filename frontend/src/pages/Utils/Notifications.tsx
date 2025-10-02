@@ -13,9 +13,9 @@ import {
   Check,
   X,
 } from "lucide-react";
-import StudentSidebar from "@/components/sidebar/StudentSidebar";
-import HRSidebar from "@/components/sidebar/HRSidebar";
-import OfficeSidebar from "@/components/sidebar/OfficeSidebar";
+import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
+import HRSidebar from "@/components/sidebar/HR/HRSidebar";
+import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
 import { useNotificationMutations } from "@/hooks/useNotificationMutations";
 import { useRealTimeNotifications } from "@/hooks/useRealTimeNotifications";
 
@@ -75,7 +75,6 @@ const Notifications = () => {
       default:
         return (
           <StudentSidebar
-            currentPage="Notifications"
             onCollapseChange={setIsSidebarCollapsed}
           />
         );
@@ -263,7 +262,7 @@ const Notifications = () => {
                     <Button
                       variant="outline"
                       onClick={toggleSelectionMode}
-                      className="text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      className="text-gray-600 border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/20"
                     >
                       <Check className="h-4 w-4 mr-2" />
                       Select
@@ -284,7 +283,7 @@ const Notifications = () => {
                   <Button
                     variant="outline"
                     onClick={refreshNotifications}
-                    className="text-red-600 border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    className="text-gray-600 border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/20"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Refresh
@@ -301,7 +300,7 @@ const Notifications = () => {
                     <Button
                       variant="outline"
                       onClick={selectAllNotifications}
-                      className="text-blue-600 border-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                      className="text-gray-600 border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900/20"
                     >
                       Select All
                     </Button>

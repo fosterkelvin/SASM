@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import HRSidebar from "@/components/sidebar/HRSidebar";
+import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import Toolbar from "./components/Toolbar";
 import { Submission } from "./components/HRRequirementsList";
 import ViewSubmissionModal from "./components/ViewSubmissionModal";

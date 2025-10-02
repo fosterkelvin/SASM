@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import OfficeSidebar from "@/components/sidebar/OfficeSidebar";
+import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import OfficeDTRTable from "./components/OfficeDTRTable";
 import { Entry } from "@/pages/Roles/Student/DTR/components/types";

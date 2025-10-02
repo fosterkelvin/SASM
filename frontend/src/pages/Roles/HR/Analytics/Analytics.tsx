@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import HRSidebar from "@/components/sidebar/HRSidebar";
+import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import PieCard from "./components/PieCard";
 import KPIs from "./components/KPIs";
 import Filters from "./components/Filters";
