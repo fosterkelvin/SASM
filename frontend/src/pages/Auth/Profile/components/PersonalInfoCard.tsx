@@ -216,10 +216,56 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
           <div className="space-y-1">
             <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
             <div className="flex items-center gap-2">
-              <span className="font-medium text-gray-800 dark:text-gray-200">
-                Active
-              </span>
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
+              {/* Compute a friendly status label and color from the user object */}
+              {(() => {
+                const statusRaw = user?.status ?? null;
+
+                let label = "Active";
+                let dotClass = "bg-green-500";
+
+                // Accepted users (e.g., accepted application) should show "Accepted"
+                const hasAcceptedApplication =
+                  (user?.applications &&
+                    user.applications.some(
+                      (a: any) => a.status === "accepted"
+                    )) ||
+                  user?.status === "accepted" ||
+                  user?.isAccepted === true;
+
+                if (hasAcceptedApplication) {
+                  label = "Accepted";
+                  dotClass = "bg-green-600";
+                } else if (
+                  statusRaw === "trainee" ||
+                  user?.isTrainee === true
+                ) {
+                  label = "Trainee";
+                  dotClass = "bg-blue-500";
+                } else if (
+                  statusRaw === "applicant" ||
+                  user?.isApplicant ||
+                  (user?.applications && user.applications.length > 0)
+                ) {
+                  label = "Applicant";
+                  dotClass = "bg-yellow-500";
+                } else if (
+                  statusRaw === "inactive" ||
+                  statusRaw === "not_active" ||
+                  user?.active === false
+                ) {
+                  label = "Inactive";
+                  dotClass = "bg-gray-400 dark:bg-gray-600";
+                }
+
+                return (
+                  <>
+                    <span className="font-medium text-gray-800 dark:text-gray-200 capitalize">
+                      {label}
+                    </span>
+                    <div className={`w-2 h-2 rounded-full ${dotClass}`} />
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

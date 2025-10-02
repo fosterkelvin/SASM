@@ -4,7 +4,6 @@ import {
   Home,
   Bell,
   BookOpen,
-  FileText,
   Calendar,
   User,
   Sun,
@@ -24,6 +23,8 @@ interface Props {
   darkMode: boolean;
   onToggleTheme: () => void;
   onSignout: () => void;
+  isVerified?: boolean;
+  isApplicant?: boolean;
 }
 
 const CollapsedSidebar: React.FC<Props> = ({
@@ -33,6 +34,8 @@ const CollapsedSidebar: React.FC<Props> = ({
   darkMode,
   onToggleTheme,
   onSignout,
+  isVerified = false,
+  isApplicant = false,
 }) => {
   return (
     <div
@@ -77,36 +80,42 @@ const CollapsedSidebar: React.FC<Props> = ({
               )}
             </button>
           </div>
-          <div className="group relative">
-            <button
-              onClick={handlers.grades}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-              aria-label="Grades"
-              title="Grades"
-            >
-              <BookOpen size={16} />
-            </button>
-          </div>
-          <div className="group relative">
-            <button
-              onClick={handlers.dtr}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-              aria-label="DTR"
-              title="DTR"
-            >
-              <CalendarClock size={16} />
-            </button>
-          </div>
-          <div className="group relative">
-            <button
-              onClick={handlers.schedule}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-              aria-label="Schedule"
-              title="Schedule"
-            >
-              <Calendar size={16} />
-            </button>
-          </div>
+          {isVerified && (
+            <>
+              <div className="group relative">
+                <button
+                  onClick={handlers.grades}
+                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  aria-label="Grades"
+                  title="Grades"
+                >
+                  <BookOpen size={16} />
+                </button>
+              </div>
+              {!isApplicant && (
+                <div className="group relative">
+                  <button
+                    onClick={handlers.dtr}
+                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    aria-label="DTR"
+                    title="DTR"
+                  >
+                    <CalendarClock size={16} />
+                  </button>
+                </div>
+              )}
+              <div className="group relative">
+                <button
+                  onClick={handlers.schedule}
+                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  aria-label="Schedule"
+                  title="Schedule"
+                >
+                  <Calendar size={16} />
+                </button>
+              </div>
+            </>
+          )}
           <div className="group relative">
             <button
               onClick={handlers.apply}
@@ -117,36 +126,44 @@ const CollapsedSidebar: React.FC<Props> = ({
               <FileEdit size={16} />
             </button>
           </div>
-          <div className="group relative">
-            <button
-              onClick={handlers.reapply}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-              aria-label="Re-apply"
-              title="Re-apply"
-            >
-              <RefreshCw size={16} />
-            </button>
-          </div>
-          <div className="group relative">
-            <button
-              onClick={handlers.leave}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-gray-400 transition-all duration-200"
-              aria-label="Leave"
-              title="Leave"
-            >
-              <CalendarMinus size={16}/>
-            </button>
-          </div>
-          <div className="group relative">
-            <button
-              onClick={handlers.requirements}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-gray-400 transition-all duration-200"
-              aria-label="Requirements"
-              title="Requirements"
-            >
-              <ClipboardList size={16}/>
-            </button>
-          </div>
+          {isVerified && (
+            <>
+              {!isApplicant && (
+                <>
+                  <div className="group relative">
+                    <button
+                      onClick={handlers.reapply}
+                      className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                      aria-label="Re-apply"
+                      title="Re-apply"
+                    >
+                      <RefreshCw size={16} />
+                    </button>
+                  </div>
+                  <div className="group relative">
+                    <button
+                      onClick={handlers.leave}
+                      className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-gray-400 transition-all duration-200"
+                      aria-label="Leave"
+                      title="Leave"
+                    >
+                      <CalendarMinus size={16} />
+                    </button>
+                  </div>
+                </>
+              )}
+              <div className="group relative">
+                <button
+                  onClick={handlers.requirements}
+                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-gray-400 transition-all duration-200"
+                  aria-label="Requirements"
+                  title="Requirements"
+                >
+                  <ClipboardList size={16} />
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
       <div className="w-full flex flex-col items-center gap-2 pb-6">

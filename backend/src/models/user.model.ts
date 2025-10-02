@@ -7,6 +7,7 @@ export interface UserDocument extends mongoose.Document {
   email: string;
   password: string;
   role: "student" | "hr" | "office";
+  status: string;
   verified: boolean;
   pendingEmail?: string;
   createdAt: Date;
@@ -19,6 +20,7 @@ export interface UserDocument extends mongoose.Document {
     | "lastname"
     | "email"
     | "role"
+    | "status"
     | "verified"
     | "pendingEmail"
     | "createdAt"
@@ -53,6 +55,11 @@ const userSchema = new mongoose.Schema<UserDocument>(
       type: String,
       enum: ["student", "hr", "office"],
       default: "student",
+      required: true,
+    },
+    status: {
+      type: String,
+      default: "applicant",
       required: true,
     },
     pendingEmail: {

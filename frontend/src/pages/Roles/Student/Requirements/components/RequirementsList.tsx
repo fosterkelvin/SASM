@@ -7,6 +7,10 @@ type Props = {
   onSetFile: (id: string, files: FileList | null) => void | Promise<void>;
   onRemoveFile: (itemId: string) => void;
   errors?: Record<string, string>;
+  unsavedIds?: Record<string, boolean>;
+  isSubmitted?: boolean;
+  removedItemsMap?: Record<string, string>;
+  undoRemove?: (itemId: string) => void;
 };
 
 const RequirementsList: React.FC<Props> = ({
@@ -14,6 +18,10 @@ const RequirementsList: React.FC<Props> = ({
   onSetFile,
   onRemoveFile,
   errors = {},
+  unsavedIds = {},
+  isSubmitted = false,
+  removedItemsMap = {},
+  undoRemove,
 }) => {
   if (items.length === 0) {
     return (
@@ -25,7 +33,6 @@ const RequirementsList: React.FC<Props> = ({
 
   return (
     <div>
-
       <ul className="space-y-2">
         {items.map((it) => (
           <RequirementItem
@@ -34,6 +41,10 @@ const RequirementsList: React.FC<Props> = ({
             onSetFile={onSetFile}
             onRemoveFile={onRemoveFile}
             error={errors[it.id]}
+            isSubmitted={isSubmitted}
+            hasUnsaved={unsavedIds ? !!unsavedIds[it.id] : false}
+            stagedForRemoval={!!removedItemsMap[it.id]}
+            undoRemove={undoRemove}
           />
         ))}
       </ul>
