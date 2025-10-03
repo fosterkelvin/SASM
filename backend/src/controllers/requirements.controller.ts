@@ -98,7 +98,7 @@ export const createRequirementsSubmission = catchErrors(
                 String(f.originalname).endsWith(requested)
             );
         }
-        // Removed positional fallback to avoid accidental cross-item mapping.
+        // (Positional fallback removed to avoid wrong item being replaced)
 
         // Determine URL: multer-storage-cloudinary adds `path`, `url` or `secure_url` and public_id
         let url: string | undefined;
@@ -148,9 +148,6 @@ export const createRequirementsSubmission = catchErrors(
           return null;
         }
 
-        const cleanedOriginal = file?.originalname
-          ? file.originalname.replace(/^\d+__/, "")
-          : undefined;
         return {
           label:
             it.label ||
@@ -159,13 +156,10 @@ export const createRequirementsSubmission = catchErrors(
           note: it.note,
           url,
           publicId,
-          originalName: cleanedOriginal,
+          originalName: file?.originalname,
           mimetype: file?.mimetype,
           size: file?.size,
-          clientId:
-            it.clientId ||
-            (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) ||
-            undefined,
+          clientId: it.clientId || (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) || undefined,
         };
       })
       .filter((v: any) => v !== null) as any[];
@@ -490,7 +484,7 @@ export const saveDraftRequirements = catchErrors(
               String(f.originalname).endsWith(requested)
           );
         }
-  // Removed positional fallback (draft) to avoid mis-mapping.
+  // (Positional fallback removed to avoid incorrect mapping)
         let url: string | undefined;
         if (file) {
           // @ts-ignore
@@ -517,15 +511,12 @@ export const saveDraftRequirements = catchErrors(
         // @ts-ignore
         const publicId = (file as any)?.public_id || (file as any)?.publicId;
         if (!url) return null;
-        const cleanedOriginal = file?.originalname
-          ? file.originalname.replace(/^\d+__/, "")
-          : undefined;
         return {
           label: it.label || (itemsJson && itemsJson[idx] && (itemsJson[idx].text || itemsJson[idx].label)) || `Item ${idx + 1}`,
           note: it.note,
           url,
           publicId,
-          originalName: cleanedOriginal,
+          originalName: file?.originalname,
           mimetype: file?.mimetype,
           size: file?.size,
           clientId: it.clientId || (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) || undefined,
