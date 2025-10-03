@@ -98,8 +98,8 @@ export const createRequirementsSubmission = catchErrors(
                 String(f.originalname).endsWith(requested)
             );
         }
-        // Positional fallback: if no file matched by name but there is a file at same index
-        if (!file && files[idx]) {
+        // Positional fallback: only if this item provided *no* filename at all (so we rely on ordering)
+        if (!file && !it?.filename && files[idx]) {
           file = files[idx];
         }
 
@@ -151,6 +151,9 @@ export const createRequirementsSubmission = catchErrors(
           return null;
         }
 
+        const cleanedOriginal = file?.originalname
+          ? file.originalname.replace(/^\d+__/, "")
+          : undefined;
         return {
           label:
             it.label ||
@@ -159,10 +162,13 @@ export const createRequirementsSubmission = catchErrors(
           note: it.note,
           url,
           publicId,
-          originalName: file?.originalname,
+          originalName: cleanedOriginal,
           mimetype: file?.mimetype,
           size: file?.size,
-          clientId: it.clientId || (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) || undefined,
+          clientId:
+            it.clientId ||
+            (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) ||
+            undefined,
         };
       })
       .filter((v: any) => v !== null) as any[];
@@ -487,7 +493,7 @@ export const saveDraftRequirements = catchErrors(
               String(f.originalname).endsWith(requested)
           );
         }
-        if (!file && files[idx]) file = files[idx];
+  if (!file && !it?.filename && files[idx]) file = files[idx];
         let url: string | undefined;
         if (file) {
           // @ts-ignore
@@ -514,12 +520,15 @@ export const saveDraftRequirements = catchErrors(
         // @ts-ignore
         const publicId = (file as any)?.public_id || (file as any)?.publicId;
         if (!url) return null;
+        const cleanedOriginal = file?.originalname
+          ? file.originalname.replace(/^\d+__/, "")
+          : undefined;
         return {
           label: it.label || (itemsJson && itemsJson[idx] && (itemsJson[idx].text || itemsJson[idx].label)) || `Item ${idx + 1}`,
           note: it.note,
           url,
           publicId,
-          originalName: file?.originalname,
+          originalName: cleanedOriginal,
           mimetype: file?.mimetype,
           size: file?.size,
           clientId: it.clientId || (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) || undefined,
