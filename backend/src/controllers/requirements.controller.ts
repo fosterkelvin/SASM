@@ -83,68 +83,42 @@ export const createRequirementsSubmission = catchErrors(
       `[requirements] user=${userID} files=${files.length} itemsParsed=${items.length} itemsJson=${itemsJson ? itemsJson.length : 0}`
     );
 
-    // Map uploaded files to items strictly by filename (no positional fallback to avoid wrong replacements)
-    let mappedItems = items
-      .map((it: any, idx: number) => {
-        if (!it || !it.filename) return null;
-        const requestedRaw = String(it.filename);
-        const requested = requestedRaw.replace(/^\d+__/, "");
-        const file = files.find(
-          (f) =>
-            f.originalname === requested ||
-            decodeURIComponent(String(f.originalname)) === requested ||
-            String(f.originalname).endsWith(requested)
-        );
-        if (!file) return null; // no explicit match -> do not map
-
-        // Determine URL: multer-storage-cloudinary adds `path`, `url` or `secure_url` and public_id
-        let url: string | undefined;
-        if (file) {
-          // prefer secure_url
-          // @ts-ignore
-          url =
-            (file as any).secure_url || (file as any).url || (file as any).path;
-          // If still missing but public_id exists, construct via cloudinary
-          // @ts-ignore
-          if (!url && (file as any).public_id) {
-            try {
-              // @ts-ignore
-              url = cloudinary.url((file as any).public_id, { secure: true });
-            } catch (err) {
-              // ignore
-            }
-          }
-        }
-
-        // capture public_id if provided by multer-storage-cloudinary (ensure positional fallback still captures id)
-        // @ts-ignore
-        const publicId = (file as any)?.public_id || (file as any)?.publicId;
-
-        // Require actual file upload
-        if (!url) return null;
-        return {
-          label:
-            it.label ||
-            (itemsJson?.[idx] &&
-              (itemsJson[idx].text || itemsJson[idx].label)) ||
-            `Item ${idx + 1}`,
-          note: it.note,
-          url,
-          publicId,
-          originalName: file?.originalname,
-          mimetype: file?.mimetype,
-          size: file?.size,
-          clientId:
-            it.clientId ||
-            (itemsJson?.[idx] &&
-              (itemsJson[idx].id || itemsJson[idx].clientId)) ||
-            undefined,
-        };
-      })
-      .filter((v: any) => v !== null) as any[];
+    // Sequential mapping: consume uploaded files only for items flagged with hasFile
+    const uploadTargets = items.filter(
+      (it: any) => it && (it.hasFile === "1" || it.hasFile === 1)
+    );
+    let fileCursor = 0;
+    const mappedItems = uploadTargets.map((it: any, idx: number) => {
+      const file = files[fileCursor++];
+      if (!file) return null; // safeguard
+      // Determine URL
+      // @ts-ignore
+      let url = (file as any).secure_url || (file as any).url || (file as any).path;
+      // @ts-ignore
+      const publicId = (file as any)?.public_id || (file as any)?.publicId;
+      if (!url && publicId) {
+        try {
+          url = cloudinary.url(publicId, { secure: true });
+        } catch (e) {}
+      }
+      if (!url) return null;
+      return {
+        label:
+          it.label ||
+          (itemsJson && itemsJson[idx] && (itemsJson[idx].text || itemsJson[idx].label)) ||
+          `Item ${idx + 1}`,
+        note: it.note,
+        url,
+        publicId,
+        originalName: file.originalname || file.filename,
+        mimetype: file.mimetype,
+        size: file.size,
+        clientId: it.clientId || (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) || undefined,
+      };
+    }).filter((v: any) => v !== null) as any[];
 
     // If there are uploaded files but mappedItems is empty, create items from files directly
-    if (mappedItems.length === 0 && files.length > 0) {
+  if (mappedItems.length === 0 && files.length > 0) {
       const filesAsItems: any[] = files
         .map((file, idx) => {
           // try to get filename
