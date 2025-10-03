@@ -656,7 +656,9 @@ const Requirements: React.FC = () => {
       items.forEach((it, idx) => {
         form.append(`items[${idx}][label]`, it.text);
         if (it.note) form.append(`items[${idx}][note]`, it.note);
-        try { form.append(`items[${idx}][clientId]`, it.id); } catch (e) {}
+        try {
+          form.append(`items[${idx}][clientId]`, it.id);
+        } catch (e) {}
         const f = filesRef.current[it.id];
         // Only append file if present in filesRef (new upload) - saved drafts will already have remote URLs
         if (f) {
@@ -786,8 +788,7 @@ const Requirements: React.FC = () => {
                       const matched = serverItems.find(
                         (si: any) =>
                           (si.clientId && si.clientId === tmpl.id) ||
-                          String(si.label).trim() ===
-                            String(tmpl.text).trim()
+                          String(si.label).trim() === String(tmpl.text).trim()
                       );
                       if (matched && matched.url) {
                         return {

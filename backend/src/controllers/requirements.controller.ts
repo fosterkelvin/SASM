@@ -86,19 +86,32 @@ export const createRequirementsSubmission = catchErrors(
     // Map uploaded files to items. If filename matching fails, fall back to positional mapping (files[idx])
     let mappedItems = items
       .map((it: any, idx: number) => {
-        // Attempt filename-based match first
         let file: Express.Multer.File | undefined;
+        // 1. If filename provided, strip numeric prefix for matching
+        let requestedRaw: string | null = null;
         if (it && it.filename) {
-          const requestedRaw = String(it.filename);
-          const requested = requestedRaw.replace(/^\d+__/, "");
-            file = files.find(
-              (f) =>
-                f.originalname === requested ||
-                decodeURIComponent(String(f.originalname)) === requested ||
-                String(f.originalname).endsWith(requested)
-            );
+            requestedRaw = String(it.filename);
         }
-        // (Positional fallback removed to avoid wrong item being replaced)
+        // 2. Attempt explicit numeric prefix mapping first (e.g. 4__filename -> index 4)
+        if (!file && requestedRaw) {
+          const m = requestedRaw.match(/^(\d+)__/);
+          if (m) {
+            const forcedIndex = parseInt(m[1], 10);
+            if (!isNaN(forcedIndex) && files[forcedIndex]) {
+              file = files[forcedIndex];
+            }
+          }
+        }
+        // 3. Filename-based search (strip prefix)
+        if (!file && requestedRaw) {
+          const requested = requestedRaw.replace(/^\d+__/, "");
+          file = files.find(
+            (f) =>
+              f.originalname === requested ||
+              decodeURIComponent(String(f.originalname)) === requested ||
+              String(f.originalname).endsWith(requested)
+          );
+        }
 
         // Determine URL: multer-storage-cloudinary adds `path`, `url` or `secure_url` and public_id
         let url: string | undefined;
@@ -119,9 +132,9 @@ export const createRequirementsSubmission = catchErrors(
           }
         }
 
-  // capture public_id if provided by multer-storage-cloudinary (ensure positional fallback still captures id)
-  // @ts-ignore
-  const publicId = (file as any)?.public_id || (file as any)?.publicId;
+        // capture public_id if provided by multer-storage-cloudinary (ensure positional fallback still captures id)
+        // @ts-ignore
+        const publicId = (file as any)?.public_id || (file as any)?.publicId;
 
         // If we don't have an uploaded file URL, fallback to itemsJson (client preview which may contain data URL or remote url)
         if (
@@ -151,7 +164,9 @@ export const createRequirementsSubmission = catchErrors(
         return {
           label:
             it.label ||
-            (itemsJson && itemsJson[idx] && (itemsJson[idx].text || itemsJson[idx].label)) ||
+            (itemsJson &&
+              itemsJson[idx] &&
+              (itemsJson[idx].text || itemsJson[idx].label)) ||
             `Item ${idx + 1}`,
           note: it.note,
           url,
@@ -159,7 +174,12 @@ export const createRequirementsSubmission = catchErrors(
           originalName: file?.originalname,
           mimetype: file?.mimetype,
           size: file?.size,
-          clientId: it.clientId || (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) || undefined,
+          clientId:
+            it.clientId ||
+            (itemsJson &&
+              itemsJson[idx] &&
+              (itemsJson[idx].id || itemsJson[idx].clientId)) ||
+            undefined,
         };
       })
       .filter((v: any) => v !== null) as any[];
@@ -297,7 +317,9 @@ export const createRequirementsSubmission = catchErrors(
         for (const newIt of mappedItems) {
           if (!newIt) continue;
           const idx = merged.findIndex(
-            (m) => (newIt.clientId && m.clientId === newIt.clientId) || m.label === newIt.label
+            (m) =>
+              (newIt.clientId && m.clientId === newIt.clientId) ||
+              m.label === newIt.label
           );
           if (idx !== -1) {
             const old = merged[idx];
@@ -474,8 +496,22 @@ export const saveDraftRequirements = catchErrors(
     let mappedItems = items
       .map((it: any, idx: number) => {
         let file: Express.Multer.File | undefined;
+        let requestedRaw: string | null = null;
         if (it && it.filename) {
-          const requestedRaw = String(it.filename);
+          requestedRaw = String(it.filename);
+        }
+        // numeric prefix mapping (e.g. 5__foo.jpg -> index 5)
+        if (!file && requestedRaw) {
+          const m = requestedRaw.match(/^(\d+)__/);
+          if (m) {
+            const forcedIndex = parseInt(m[1], 10);
+            if (!isNaN(forcedIndex) && files[forcedIndex]) {
+              file = files[forcedIndex];
+            }
+          }
+        }
+        // filename-based search after stripping prefix
+        if (!file && requestedRaw) {
           const requested = requestedRaw.replace(/^\d+__/, "");
           file = files.find(
             (f) =>
@@ -484,7 +520,6 @@ export const saveDraftRequirements = catchErrors(
               String(f.originalname).endsWith(requested)
           );
         }
-  // (Positional fallback removed to avoid incorrect mapping)
         let url: string | undefined;
         if (file) {
           // @ts-ignore
@@ -512,14 +547,24 @@ export const saveDraftRequirements = catchErrors(
         const publicId = (file as any)?.public_id || (file as any)?.publicId;
         if (!url) return null;
         return {
-          label: it.label || (itemsJson && itemsJson[idx] && (itemsJson[idx].text || itemsJson[idx].label)) || `Item ${idx + 1}`,
+          label:
+            it.label ||
+            (itemsJson &&
+              itemsJson[idx] &&
+              (itemsJson[idx].text || itemsJson[idx].label)) ||
+            `Item ${idx + 1}`,
           note: it.note,
           url,
           publicId,
           originalName: file?.originalname,
           mimetype: file?.mimetype,
           size: file?.size,
-          clientId: it.clientId || (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) || undefined,
+          clientId:
+            it.clientId ||
+            (itemsJson &&
+              itemsJson[idx] &&
+              (itemsJson[idx].id || itemsJson[idx].clientId)) ||
+            undefined,
         };
       })
       .filter((v: any) => v !== null) as any[];
@@ -650,11 +695,13 @@ export const saveDraftRequirements = catchErrors(
         );
       }
       const merged: any[] = [...(existingDraft.items || [])];
-        for (const newIt of mappedItems) {
+      for (const newIt of mappedItems) {
         if (!newIt) continue;
-          const idx = merged.findIndex(
-            (m) => (newIt.clientId && m.clientId === newIt.clientId) || m.label === newIt.label
-          );
+        const idx = merged.findIndex(
+          (m) =>
+            (newIt.clientId && m.clientId === newIt.clientId) ||
+            m.label === newIt.label
+        );
         if (idx !== -1) {
           const old = merged[idx];
           if (
@@ -694,7 +741,7 @@ export const saveDraftRequirements = catchErrors(
         existingNormalized.items = existingNormalized.items.map((it: any) => ({
           label: it.label,
           note: it.note,
-            url: it.url,
+          url: it.url,
           publicId: it.publicId || it.public_id || it.publicid || null,
           originalName: it.originalName || it.originalname || null,
           mimetype: it.mimetype || it.mimeType || null,
@@ -938,11 +985,9 @@ export const replaceRequirementItem = catchErrors(
         console.debug(
           `[requirements][replace] user=${userID} no target document (draft/submitted) found`
         );
-        return res
-          .status(404)
-          .json({
-            message: "No requirements document found to replace item in",
-          });
+        return res.status(404).json({
+          message: "No requirements document found to replace item in",
+        });
       }
     }
     if (!targetDoc) {
