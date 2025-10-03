@@ -426,65 +426,34 @@ export const saveDraftRequirements = catchErrors(
       }
     }
 
-    let mappedItems = items
+    const draftUploadTargets = items.filter(
+      (it: any) => it && (it.hasFile === "1" || it.hasFile === 1)
+    );
+    let draftCursor = 0;
+    let mappedItems = draftUploadTargets
       .map((it: any, idx: number) => {
-        let file: Express.Multer.File | undefined;
-        if (it && it.filename) {
-          const requestedRaw = String(it.filename);
-          const requested = requestedRaw.replace(/^\d+__/, "");
-          file = files.find(
-            (f) =>
-              f.originalname === requested ||
-              decodeURIComponent(String(f.originalname)) === requested ||
-              String(f.originalname).endsWith(requested)
-          );
-        }
-        if (!file && files[idx]) file = files[idx];
-        let url: string | undefined;
-        if (file) {
-          // @ts-ignore
-          url =
-            (file as any).secure_url || (file as any).url || (file as any).path;
-        }
-        // fallback to itemsJson preview url if provided
-        if (
-          !url &&
-          itemsJson &&
-          itemsJson[idx] &&
-          itemsJson[idx].file &&
-          itemsJson[idx].file.url
-        ) {
-          url = itemsJson[idx].file.url;
-          const possiblePublicId = itemsJson[idx].file.id;
-          if (possiblePublicId) {
-            // @ts-ignore
-            file = file || ({} as Express.Multer.File);
-            // @ts-ignore
-            (file as any).public_id = possiblePublicId;
-          }
-        }
+        const file = files[draftCursor++];
+        if (!file) return null;
+        // @ts-ignore
+        let url = (file as any).secure_url || (file as any).url || (file as any).path;
         // @ts-ignore
         const publicId = (file as any)?.public_id || (file as any)?.publicId;
+        if (!url && publicId) {
+          try { url = cloudinary.url(publicId, { secure: true }); } catch (e) {}
+        }
         if (!url) return null;
         return {
           label:
             it.label ||
-            (itemsJson &&
-              itemsJson[idx] &&
-              (itemsJson[idx].text || itemsJson[idx].label)) ||
+            (itemsJson && itemsJson[idx] && (itemsJson[idx].text || itemsJson[idx].label)) ||
             `Item ${idx + 1}`,
           note: it.note,
           url,
           publicId,
-          originalName: file?.originalname,
-          mimetype: file?.mimetype,
-          size: file?.size,
-          clientId:
-            it.clientId ||
-            (itemsJson &&
-              itemsJson[idx] &&
-              (itemsJson[idx].id || itemsJson[idx].clientId)) ||
-            undefined,
+          originalName: file.originalname || file.filename,
+          mimetype: file.mimetype,
+          size: file.size,
+          clientId: it.clientId || (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) || undefined,
         };
       })
       .filter((v: any) => v !== null) as any[];
