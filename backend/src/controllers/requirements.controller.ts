@@ -98,10 +98,7 @@ export const createRequirementsSubmission = catchErrors(
                 String(f.originalname).endsWith(requested)
             );
         }
-        // Positional fallback: only if this item provided *no* filename at all (so we rely on ordering)
-        if (!file && !it?.filename && files[idx]) {
-          file = files[idx];
-        }
+        // Removed positional fallback to avoid accidental cross-item mapping.
 
         // Determine URL: multer-storage-cloudinary adds `path`, `url` or `secure_url` and public_id
         let url: string | undefined;
@@ -493,7 +490,7 @@ export const saveDraftRequirements = catchErrors(
               String(f.originalname).endsWith(requested)
           );
         }
-  if (!file && !it?.filename && files[idx]) file = files[idx];
+  // Removed positional fallback (draft) to avoid mis-mapping.
         let url: string | undefined;
         if (file) {
           // @ts-ignore
