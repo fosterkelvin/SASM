@@ -8,6 +8,7 @@ export interface RequirementsFile {
   originalName?: string;
   mimetype?: string;
   size?: number;
+  clientId?: string; // stable client-side identifier for precise mapping
 }
 
 export interface RequirementsSubmissionDocument extends mongoose.Document {
@@ -26,6 +27,7 @@ const RequirementsFileSchema = new mongoose.Schema<RequirementsFile>(
     originalName: { type: String },
     mimetype: { type: String },
     size: { type: Number },
+    clientId: { type: String },
   },
   { _id: false }
 );

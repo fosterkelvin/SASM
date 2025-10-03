@@ -162,6 +162,7 @@ export const createRequirementsSubmission = catchErrors(
           originalName: file?.originalname,
           mimetype: file?.mimetype,
           size: file?.size,
+          clientId: it.clientId || (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) || undefined,
         };
       })
       .filter((v: any) => v !== null) as any[];
@@ -298,7 +299,9 @@ export const createRequirementsSubmission = catchErrors(
         }
         for (const newIt of mappedItems) {
           if (!newIt) continue;
-          const idx = merged.findIndex((m) => m.label === newIt.label);
+          const idx = merged.findIndex(
+            (m) => (newIt.clientId && m.clientId === newIt.clientId) || m.label === newIt.label
+          );
           if (idx !== -1) {
             const old = merged[idx];
             if (
@@ -519,6 +522,7 @@ export const saveDraftRequirements = catchErrors(
           originalName: file?.originalname,
           mimetype: file?.mimetype,
           size: file?.size,
+          clientId: it.clientId || (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) || undefined,
         };
       })
       .filter((v: any) => v !== null) as any[];
@@ -580,6 +584,7 @@ export const saveDraftRequirements = catchErrors(
             originalName,
             mimetype: file.mimetype,
             size: file.size,
+            clientId: undefined,
           };
         })
         .filter((it) => it.url);
@@ -648,9 +653,11 @@ export const saveDraftRequirements = catchErrors(
         );
       }
       const merged: any[] = [...(existingDraft.items || [])];
-      for (const newIt of mappedItems) {
+        for (const newIt of mappedItems) {
         if (!newIt) continue;
-        const idx = merged.findIndex((m) => m.label === newIt.label);
+          const idx = merged.findIndex(
+            (m) => (newIt.clientId && m.clientId === newIt.clientId) || m.label === newIt.label
+          );
         if (idx !== -1) {
           const old = merged[idx];
           if (
