@@ -83,35 +83,19 @@ export const createRequirementsSubmission = catchErrors(
       `[requirements] user=${userID} files=${files.length} itemsParsed=${items.length} itemsJson=${itemsJson ? itemsJson.length : 0}`
     );
 
-    // Map uploaded files to items. If filename matching fails, fall back to positional mapping (files[idx])
+    // Map uploaded files to items strictly by filename (no positional fallback to avoid wrong replacements)
     let mappedItems = items
       .map((it: any, idx: number) => {
-        let file: Express.Multer.File | undefined;
-        // 1. If filename provided, strip numeric prefix for matching
-        let requestedRaw: string | null = null;
-        if (it && it.filename) {
-            requestedRaw = String(it.filename);
-        }
-        // 2. Attempt explicit numeric prefix mapping first (e.g. 4__filename -> index 4)
-        if (!file && requestedRaw) {
-          const m = requestedRaw.match(/^(\d+)__/);
-          if (m) {
-            const forcedIndex = parseInt(m[1], 10);
-            if (!isNaN(forcedIndex) && files[forcedIndex]) {
-              file = files[forcedIndex];
-            }
-          }
-        }
-        // 3. Filename-based search (strip prefix)
-        if (!file && requestedRaw) {
-          const requested = requestedRaw.replace(/^\d+__/, "");
-          file = files.find(
-            (f) =>
-              f.originalname === requested ||
-              decodeURIComponent(String(f.originalname)) === requested ||
-              String(f.originalname).endsWith(requested)
-          );
-        }
+        if (!it || !it.filename) return null;
+        const requestedRaw = String(it.filename);
+        const requested = requestedRaw.replace(/^\d+__/, "");
+        const file = files.find(
+          (f) =>
+            f.originalname === requested ||
+            decodeURIComponent(String(f.originalname)) === requested ||
+            String(f.originalname).endsWith(requested)
+        );
+        if (!file) return null; // no explicit match -> do not map
 
         // Determine URL: multer-storage-cloudinary adds `path`, `url` or `secure_url` and public_id
         let url: string | undefined;
@@ -136,36 +120,12 @@ export const createRequirementsSubmission = catchErrors(
         // @ts-ignore
         const publicId = (file as any)?.public_id || (file as any)?.publicId;
 
-        // If we don't have an uploaded file URL, fallback to itemsJson (client preview which may contain data URL or remote url)
-        if (
-          !url &&
-          itemsJson &&
-          itemsJson[idx] &&
-          itemsJson[idx].file &&
-          itemsJson[idx].file.url
-        ) {
-          url = itemsJson[idx].file.url;
-          // If the client provided a remote url, try to treat it as already-saved; set publicId from id if present
-          const possiblePublicId = itemsJson[idx].file.id;
-          // prefer publicId only if it looks like a cloud id (no strict check here)
-          if (possiblePublicId) {
-            // @ts-ignore
-            file = file || ({} as Express.Multer.File);
-            // @ts-ignore
-            (file as any).public_id = possiblePublicId;
-          }
-        }
-
-        if (!url) {
-          // skip items without uploaded file URL
-          return null;
-        }
-
+        // Require actual file upload
+        if (!url) return null;
         return {
           label:
             it.label ||
-            (itemsJson &&
-              itemsJson[idx] &&
+            (itemsJson?.[idx] &&
               (itemsJson[idx].text || itemsJson[idx].label)) ||
             `Item ${idx + 1}`,
           note: it.note,
@@ -176,8 +136,7 @@ export const createRequirementsSubmission = catchErrors(
           size: file?.size,
           clientId:
             it.clientId ||
-            (itemsJson &&
-              itemsJson[idx] &&
+            (itemsJson?.[idx] &&
               (itemsJson[idx].id || itemsJson[idx].clientId)) ||
             undefined,
         };
@@ -496,22 +455,8 @@ export const saveDraftRequirements = catchErrors(
     let mappedItems = items
       .map((it: any, idx: number) => {
         let file: Express.Multer.File | undefined;
-        let requestedRaw: string | null = null;
         if (it && it.filename) {
-          requestedRaw = String(it.filename);
-        }
-        // numeric prefix mapping (e.g. 5__foo.jpg -> index 5)
-        if (!file && requestedRaw) {
-          const m = requestedRaw.match(/^(\d+)__/);
-          if (m) {
-            const forcedIndex = parseInt(m[1], 10);
-            if (!isNaN(forcedIndex) && files[forcedIndex]) {
-              file = files[forcedIndex];
-            }
-          }
-        }
-        // filename-based search after stripping prefix
-        if (!file && requestedRaw) {
+          const requestedRaw = String(it.filename);
           const requested = requestedRaw.replace(/^\d+__/, "");
           file = files.find(
             (f) =>
@@ -520,6 +465,7 @@ export const saveDraftRequirements = catchErrors(
               String(f.originalname).endsWith(requested)
           );
         }
+        if (!file && files[idx]) file = files[idx];
         let url: string | undefined;
         if (file) {
           // @ts-ignore
