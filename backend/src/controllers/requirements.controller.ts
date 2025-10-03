@@ -89,7 +89,8 @@ export const createRequirementsSubmission = catchErrors(
         // Attempt filename-based match first
         let file: Express.Multer.File | undefined;
         if (it && it.filename) {
-          const requested = String(it.filename);
+          const requestedRaw = String(it.filename);
+          const requested = requestedRaw.replace(/^\d+__/, "");
             file = files.find(
               (f) =>
                 f.originalname === requested ||
@@ -474,7 +475,8 @@ export const saveDraftRequirements = catchErrors(
       .map((it: any, idx: number) => {
         let file: Express.Multer.File | undefined;
         if (it && it.filename) {
-          const requested = String(it.filename);
+          const requestedRaw = String(it.filename);
+          const requested = requestedRaw.replace(/^\d+__/, "");
           file = files.find(
             (f) =>
               f.originalname === requested ||
@@ -482,6 +484,7 @@ export const saveDraftRequirements = catchErrors(
               String(f.originalname).endsWith(requested)
           );
         }
+        if (!file && files[idx]) file = files[idx];
         let url: string | undefined;
         if (file) {
           // @ts-ignore
@@ -509,7 +512,7 @@ export const saveDraftRequirements = catchErrors(
         const publicId = (file as any)?.public_id || (file as any)?.publicId;
         if (!url) return null;
         return {
-          label: it.label || `Item ${idx + 1}`,
+          label: it.label || (itemsJson && itemsJson[idx] && (itemsJson[idx].text || itemsJson[idx].label)) || `Item ${idx + 1}`,
           note: it.note,
           url,
           publicId,
