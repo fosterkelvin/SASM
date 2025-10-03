@@ -715,7 +715,13 @@ const Requirements: React.FC = () => {
         },
       })
         .then((res) => {
-          setSubmitSuccess("Requirements submitted successfully.");
+          const serverMsg = String(res?.data?.message || "").toLowerCase();
+          const wasResubmit = serverMsg.includes("resubmitted") || resubmitMode;
+          setSubmitSuccess(
+            wasResubmit
+              ? "Requirements resubmitted successfully."
+              : "Requirements submitted successfully."
+          );
           // Replace any local data: URLs with canonical remote URLs returned by the server
           try {
             const submission = res?.data?.submission;
@@ -760,6 +766,58 @@ const Requirements: React.FC = () => {
           } catch (e) {
             // non-fatal if mapping fails
           }
+          // After initial mapping, fetch latest submissions to force refresh (ensures updated URLs after resubmit)
+          try {
+            API.get("/requirements").then((r) => {
+              try {
+                const subs = r?.data?.submissions || [];
+                const submitted =
+                  Array.isArray(subs) &&
+                  subs.find((s: any) => s.status === "submitted");
+                if (submitted && Array.isArray(submitted.items)) {
+                  const serverItems: any[] = submitted.items;
+                  setItems((prev) =>
+                    prev.map((tmpl) => {
+                      const matched = serverItems.find(
+                        (si: any) =>
+                          String(si.label).trim() ===
+                          String(tmpl.text).trim()
+                      );
+                      if (matched && matched.url) {
+                        return {
+                          ...tmpl,
+                          file: {
+                            id:
+                              matched.publicId ||
+                              matched.public_id ||
+                              matched.publicid ||
+                              tmpl.file?.id ||
+                              "",
+                            name:
+                              matched.originalName ||
+                              matched.originalname ||
+                              tmpl.file?.name ||
+                              matched.label ||
+                              tmpl.text,
+                            size: matched.size || tmpl.file?.size || 0,
+                            type:
+                              matched.mimetype ||
+                              matched.mimeType ||
+                              tmpl.file?.type ||
+                              "",
+                            url: matched.url,
+                          },
+                        } as Requirement;
+                      }
+                      return tmpl;
+                    })
+                  );
+                }
+              } catch (e) {
+                // ignore mapping errors
+              }
+            });
+          } catch (e) {}
           // clear the local draft storage so user sees the submitted state
           try {
             localStorage.removeItem(`${STORAGE_KEY_USER}_draft`);
