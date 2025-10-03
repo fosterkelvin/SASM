@@ -3,6 +3,12 @@ import catchErrors from "../utils/catchErrors";
 import RequirementsSubmissionModel from "../models/requirementsSubmission.model";
 import { CREATED, OK } from "../constants/http";
 import cloudinary from "../config/cloudinary";
+import {
+  findDraft,
+  findSubmitted,
+  saveSubmission,
+} from "../services/requirements.service";
+import mongoose from "mongoose";
 
 // Create a new requirements submission
 export const createRequirementsSubmission = catchErrors(
@@ -226,7 +232,8 @@ export const createRequirementsSubmission = catchErrors(
     });
 
     // If this is an explicit resubmit against an already-submitted document,
-    // merge uploaded items into the submitted document and update its submittedAt.
+    // merge any existing draft items FIRST (so prior replace operations in draft are honored),
+    // then merge newly uploaded files, then apply removals, update submittedAt.
     if (alreadySubmitted && isResubmit) {
       // parse removedPublicIds if present (resubmit clients may stage deletions)
       let removedPublicIdsForResubmit: string[] = [];
@@ -240,7 +247,20 @@ export const createRequirementsSubmission = catchErrors(
         }
       }
       try {
+        // Start with submitted items
         let merged: any[] = [...(alreadySubmitted.items || [])];
+        // If a draft exists, overlay draft items into merged (draft considered source of truth for replaced items)
+        if (existingDraft && Array.isArray(existingDraft.items)) {
+          for (const draftItem of existingDraft.items) {
+            const idx = merged.findIndex((m) => m.label === draftItem.label);
+            if (idx !== -1) {
+              // if label match, replace entire item with draft version
+              merged[idx] = { ...merged[idx], ...draftItem };
+            } else {
+              merged.push(draftItem);
+            }
+          }
+        }
         // If client requested removals, attempt to destroy those publicIds
         // and remove matching items from the merged array.
         if (
@@ -298,6 +318,16 @@ export const createRequirementsSubmission = catchErrors(
         alreadySubmitted.items = merged;
         alreadySubmitted.submittedAt = new Date();
         await alreadySubmitted.save();
+        // Clean up draft after successful resubmit (optional; remove to keep historical draft)
+        if (existingDraft) {
+          try {
+            await RequirementsSubmissionModel.deleteOne({
+              _id: existingDraft._id,
+            });
+          } catch (err) {
+            // ignore draft cleanup errors
+          }
+        }
         return res.status(CREATED).json({
           message: "Requirements resubmitted",
           submission: alreadySubmitted,
@@ -836,5 +866,193 @@ export const deleteRequirementFile = catchErrors(
     return res
       .status(OK)
       .json({ message: "File removed", doc, destroyed: destroyResp });
+  }
+);
+
+// Replace a single requirement item (works against draft if present else submitted doc -> resubmit semantics)
+export const replaceRequirementItem = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+    const files = (req.files as Express.Multer.File[]) || [];
+    const file = files[0];
+    const {
+      label,
+      publicId: existingPublicId,
+      note,
+    } = req.body as {
+      label?: string;
+      publicId?: string;
+      note?: string;
+    };
+
+    if (!file) {
+      return res.status(400).json({ message: "File is required" });
+    }
+    if (!label && !existingPublicId) {
+      return res.status(400).json({ message: "label or publicId required" });
+    }
+
+    // prefer modifying draft first; else modify submitted (resubmit semantics)
+    // Cast string userID to ObjectId for service helpers
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userObjectId =
+      (req as any).userObjectId ||
+      (mongoose.Types.ObjectId.isValid(userID)
+        ? new mongoose.Types.ObjectId(userID)
+        : (userID as any));
+    let targetDoc = await findDraft(userObjectId);
+    let isDraft = true;
+    if (!targetDoc) {
+      // No draft. Check submitted.
+      const submitted = await findSubmitted(userObjectId);
+      if (submitted) {
+        // Auto-create draft clone so future resubmit merges reliably.
+        const draftClone = new RequirementsSubmissionModel({
+          userID: submitted.userID,
+          items: submitted.items.map((it: any) => ({ ...it })),
+          status: "draft",
+        });
+        await draftClone.save();
+        targetDoc = draftClone as any;
+        isDraft = true;
+        console.debug(
+          `[requirements][replace] user=${userID} auto-created draft from submitted ${submitted._id}`
+        );
+      } else {
+        console.debug(
+          `[requirements][replace] user=${userID} no target document (draft/submitted) found`
+        );
+        return res
+          .status(404)
+          .json({
+            message: "No requirements document found to replace item in",
+          });
+      }
+    }
+    if (!targetDoc) {
+      return res
+        .status(500)
+        .json({ message: "Unexpected missing target document" });
+    }
+    console.debug(
+      `[requirements][replace] user=${userID} targetingDoc=${targetDoc._id} isDraft=${isDraft} existingItems=${targetDoc.items.length}`
+    );
+
+    // locate existing item index by label or publicId
+    let idx = -1;
+    if (existingPublicId) {
+      idx = targetDoc.items.findIndex(
+        (it: any) =>
+          it.publicId === existingPublicId ||
+          (it.publicId || "").endsWith(existingPublicId)
+      );
+    }
+    if (idx === -1 && label) {
+      idx = targetDoc.items.findIndex((it: any) => it.label === label);
+    }
+
+    // Build new item metadata from uploaded file
+    // @ts-ignore
+    const secureUrl =
+      (file as any).secure_url || (file as any).url || (file as any).path;
+    // @ts-ignore
+    const newPublicId = (file as any).public_id || (file as any).publicId;
+    let newUrl: string | undefined = secureUrl;
+    if (!newUrl && newPublicId) {
+      try {
+        const isPdf = file.mimetype === "application/pdf";
+        newUrl = cloudinary.url(newPublicId, {
+          secure: true,
+          resource_type: isPdf ? "raw" : "image",
+          format: isPdf ? "pdf" : undefined,
+        });
+      } catch {
+        // ignore
+      }
+    }
+    if (!newUrl) {
+      return res
+        .status(500)
+        .json({ message: "Unable to determine uploaded file URL" });
+    }
+
+    const replacement = {
+      label:
+        label ||
+        (idx !== -1
+          ? targetDoc!.items[idx].label
+          : file.originalname || "Item"),
+      note: note ?? (idx !== -1 ? targetDoc!.items[idx].note : undefined),
+      url: newUrl,
+      publicId: newPublicId,
+      originalName: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+    };
+
+    // Delete old cloudinary resource if replacing existing
+    if (idx !== -1) {
+      const old = targetDoc!.items[idx];
+      if (old && old.publicId && old.publicId !== newPublicId) {
+        try {
+          const isPdf = (old.mimetype || "").includes("pdf");
+          // @ts-ignore
+          await cloudinary.uploader.destroy(old.publicId, {
+            resource_type: isPdf ? "raw" : "image",
+          });
+        } catch {
+          // ignore deletion errors
+        }
+      }
+      targetDoc!.items[idx] = { ...old, ...replacement } as any;
+      console.debug(
+        `[requirements][replace] user=${userID} replaced index=${idx} label=${replacement.label}`
+      );
+    } else {
+      // append new item if not found (treat as addition)
+      targetDoc!.items.push(replacement as any);
+      console.debug(
+        `[requirements][replace] user=${userID} appended label=${replacement.label}`
+      );
+    }
+
+    // If modifying a submitted document, bump submittedAt to reflect resubmission semantics
+    if (!isDraft) {
+      targetDoc!.submittedAt = new Date();
+    }
+
+    // mark items modified explicitly (edge cases with nested arrays sometimes need this)
+    try {
+      (targetDoc as any).markModified &&
+        (targetDoc as any).markModified("items");
+    } catch {}
+    await saveSubmission(targetDoc!);
+    // refetch to ensure we return persisted, not in-memory mutated doc
+    const fresh = await RequirementsSubmissionModel.findById(targetDoc!._id);
+    if (fresh) {
+      targetDoc = fresh as any;
+    }
+    console.debug(
+      `[requirements][replace] user=${userID} finalItems=${targetDoc ? targetDoc.items.length : "n/a"}`
+    );
+
+    return res.status(OK).json({
+      message:
+        idx !== -1 ? "Requirement item replaced" : "Requirement item added",
+      status: targetDoc!.status,
+      submission: targetDoc!,
+    });
+  }
+);
+
+// Get current draft and submitted documents separately for debugging / UI clarity
+export const getCurrentRequirementsStatus = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+    const [draft, submitted] = await Promise.all([
+      RequirementsSubmissionModel.findOne({ userID, status: "draft" }),
+      RequirementsSubmissionModel.findOne({ userID, status: "submitted" }),
+    ]);
+    return res.status(OK).json({ draft, submitted });
   }
 );

@@ -714,8 +714,52 @@ const Requirements: React.FC = () => {
           setSubmitSuccess(`Uploading requirements... ${pct}%`);
         },
       })
-        .then(() => {
+        .then((res) => {
           setSubmitSuccess("Requirements submitted successfully.");
+          // Replace any local data: URLs with canonical remote URLs returned by the server
+          try {
+            const submission = res?.data?.submission;
+            if (submission && Array.isArray(submission.items)) {
+              const serverItems: any[] = submission.items;
+              setItems((prev) =>
+                prev.map((it) => {
+                  const found = serverItems.find(
+                    (si: any) =>
+                      String(si.label).trim() === String(it.text).trim()
+                  );
+                  if (found && found.url) {
+                    return {
+                      ...it,
+                      file: {
+                        id:
+                          found.publicId ||
+                          found.public_id ||
+                          found.publicid ||
+                          it.file?.id ||
+                          "",
+                        name:
+                          found.originalName ||
+                          found.originalname ||
+                          it.file?.name ||
+                          found.label ||
+                          it.text,
+                        size: found.size || it.file?.size || 0,
+                        type:
+                          found.mimetype ||
+                          found.mimeType ||
+                          it.file?.type ||
+                          "",
+                        url: found.url,
+                      },
+                    } as Requirement;
+                  }
+                  return it;
+                })
+              );
+            }
+          } catch (e) {
+            // non-fatal if mapping fails
+          }
           // clear the local draft storage so user sees the submitted state
           try {
             localStorage.removeItem(`${STORAGE_KEY_USER}_draft`);

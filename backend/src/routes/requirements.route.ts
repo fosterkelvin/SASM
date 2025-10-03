@@ -6,6 +6,8 @@ import {
   saveDraftRequirements,
   deleteRequirementFile,
   getUserRequirementsSubmissions,
+  replaceRequirementItem,
+  getCurrentRequirementsStatus,
 } from "../controllers/requirements.controller";
 
 const router = express.Router();
@@ -25,5 +27,12 @@ router.post(
 );
 router.delete("/file", authenticate, deleteRequirementFile);
 router.get("/", authenticate, getUserRequirementsSubmissions);
+router.get("/current", authenticate, getCurrentRequirementsStatus);
+router.put(
+  "/item/replace",
+  authenticate,
+  uploadRequirementsFiles,
+  replaceRequirementItem
+);
 
 export default router;
