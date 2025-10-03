@@ -735,6 +735,7 @@ const Requirements: React.FC = () => {
                 prev.map((it) => {
                   const found = serverItems.find(
                     (si: any) =>
+                      (si.clientId && si.clientId === it.id) ||
                       String(si.label).trim() === String(it.text).trim()
                   );
                   if (found && found.url) {
@@ -784,8 +785,9 @@ const Requirements: React.FC = () => {
                     prev.map((tmpl) => {
                       const matched = serverItems.find(
                         (si: any) =>
+                          (si.clientId && si.clientId === tmpl.id) ||
                           String(si.label).trim() ===
-                          String(tmpl.text).trim()
+                            String(tmpl.text).trim()
                       );
                       if (matched && matched.url) {
                         return {
