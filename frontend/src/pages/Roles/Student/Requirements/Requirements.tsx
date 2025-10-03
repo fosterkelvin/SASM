@@ -659,8 +659,11 @@ const Requirements: React.FC = () => {
         const f = filesRef.current[it.id];
         // Only append file if present in filesRef (new upload) - saved drafts will already have remote URLs
         if (f) {
-          const safeName = sanitizeFilename(f.name || `file-${idx}`);
-          form.append("files", f, safeName);
+          const baseName = f.name || `file-${idx}`;
+          const indexedName = `${idx}__${baseName}`; // add deterministic index prefix
+          const safeName = sanitizeFilename(indexedName);
+          const fileForAppend = new File([f], safeName, { type: f.type });
+          form.append("files", fileForAppend, safeName);
           form.append(`items[${idx}][filename]`, safeName);
         }
       });
