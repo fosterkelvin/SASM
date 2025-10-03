@@ -697,11 +697,12 @@ export const saveDraftRequirements = catchErrors(
         existingNormalized.items = existingNormalized.items.map((it: any) => ({
           label: it.label,
           note: it.note,
-          url: it.url,
+            url: it.url,
           publicId: it.publicId || it.public_id || it.publicid || null,
           originalName: it.originalName || it.originalname || null,
           mimetype: it.mimetype || it.mimeType || null,
           size: it.size || null,
+          clientId: it.clientId || null,
         }));
       }
       return res.status(OK).json({
@@ -727,6 +728,7 @@ export const saveDraftRequirements = catchErrors(
         originalName: it.originalName || it.originalname || null,
         mimetype: it.mimetype || it.mimeType || null,
         size: it.size || null,
+        clientId: it.clientId || null,
       }));
     }
     return res.status(OK).json({
