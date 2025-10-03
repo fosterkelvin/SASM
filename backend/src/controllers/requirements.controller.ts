@@ -84,41 +84,41 @@ export const createRequirementsSubmission = catchErrors(
     );
 
     // Sequential mapping: consume uploaded files only for items flagged with hasFile
-    const uploadTargets = items.filter(
-      (it: any) => it && (it.hasFile === "1" || it.hasFile === 1)
-    );
     let fileCursor = 0;
-    const mappedItems = uploadTargets.map((it: any, idx: number) => {
-      const file = files[fileCursor++];
-      if (!file) return null; // safeguard
-      // Determine URL
-      // @ts-ignore
-      let url = (file as any).secure_url || (file as any).url || (file as any).path;
-      // @ts-ignore
-      const publicId = (file as any)?.public_id || (file as any)?.publicId;
-      if (!url && publicId) {
-        try {
-          url = cloudinary.url(publicId, { secure: true });
-        } catch (e) {}
-      }
-      if (!url) return null;
-      return {
-        label:
-          it.label ||
-          (itemsJson && itemsJson[idx] && (itemsJson[idx].text || itemsJson[idx].label)) ||
-          `Item ${idx + 1}`,
-        note: it.note,
-        url,
-        publicId,
-        originalName: file.originalname || file.filename,
-        mimetype: file.mimetype,
-        size: file.size,
-        clientId: it.clientId || (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) || undefined,
-      };
-    }).filter((v: any) => v !== null) as any[];
+    const mappedItems = items
+      .map((it: any, originalIndex: number) => {
+        if (!it || (it.hasFile !== "1" && it.hasFile !== 1)) return null;
+        const file = files[fileCursor++];
+        if (!file) {
+          console.debug('[requirements][map] no file available for hasFile item', { originalIndex, label: it.label, clientId: it.clientId });
+          return null;
+        }
+        // @ts-ignore
+        let url = (file as any).secure_url || (file as any).url || (file as any).path;
+        // @ts-ignore
+        const publicId = (file as any)?.public_id || (file as any)?.publicId;
+        if (!url && publicId) {
+          try { url = cloudinary.url(publicId, { secure: true }); } catch (e) {}
+        }
+        if (!url) return null;
+        const label = it.label || (itemsJson && itemsJson[originalIndex] && (itemsJson[originalIndex].text || itemsJson[originalIndex].label)) || `Item ${originalIndex + 1}`;
+        const clientId = it.clientId || (itemsJson && itemsJson[originalIndex] && (itemsJson[originalIndex].id || itemsJson[originalIndex].clientId)) || undefined;
+        console.debug('[requirements][map] mapped', { originalIndex, label, clientId, assignedFile: file.originalname });
+        return {
+          label,
+          note: it.note,
+          url,
+          publicId,
+          originalName: file.originalname || file.filename,
+          mimetype: file.mimetype,
+          size: file.size,
+          clientId,
+        };
+      })
+      .filter((v: any) => v !== null) as any[];
 
     // If there are uploaded files but mappedItems is empty, create items from files directly
-  if (mappedItems.length === 0 && files.length > 0) {
+    if (mappedItems.length === 0 && files.length > 0) {
       const filesAsItems: any[] = files
         .map((file, idx) => {
           // try to get filename
@@ -435,17 +435,22 @@ export const saveDraftRequirements = catchErrors(
         const file = files[draftCursor++];
         if (!file) return null;
         // @ts-ignore
-        let url = (file as any).secure_url || (file as any).url || (file as any).path;
+        let url =
+          (file as any).secure_url || (file as any).url || (file as any).path;
         // @ts-ignore
         const publicId = (file as any)?.public_id || (file as any)?.publicId;
         if (!url && publicId) {
-          try { url = cloudinary.url(publicId, { secure: true }); } catch (e) {}
+          try {
+            url = cloudinary.url(publicId, { secure: true });
+          } catch (e) {}
         }
         if (!url) return null;
         return {
           label:
             it.label ||
-            (itemsJson && itemsJson[idx] && (itemsJson[idx].text || itemsJson[idx].label)) ||
+            (itemsJson &&
+              itemsJson[idx] &&
+              (itemsJson[idx].text || itemsJson[idx].label)) ||
             `Item ${idx + 1}`,
           note: it.note,
           url,
@@ -453,7 +458,12 @@ export const saveDraftRequirements = catchErrors(
           originalName: file.originalname || file.filename,
           mimetype: file.mimetype,
           size: file.size,
-          clientId: it.clientId || (itemsJson && itemsJson[idx] && (itemsJson[idx].id || itemsJson[idx].clientId)) || undefined,
+          clientId:
+            it.clientId ||
+            (itemsJson &&
+              itemsJson[idx] &&
+              (itemsJson[idx].id || itemsJson[idx].clientId)) ||
+            undefined,
         };
       })
       .filter((v: any) => v !== null) as any[];
