@@ -83,19 +83,23 @@ export const createRequirementsSubmission = catchErrors(
       `[requirements] user=${userID} files=${files.length} itemsParsed=${items.length} itemsJson=${itemsJson ? itemsJson.length : 0}`
     );
 
-    // Map uploaded files to items. Frontend provides items[*][filename] with original file name.
+    // Map uploaded files to items. If filename matching fails, fall back to positional mapping (files[idx])
     let mappedItems = items
       .map((it: any, idx: number) => {
-        // find matching uploaded file by the provided filename (frontend sets items[N][filename] when a file is sent)
+        // Attempt filename-based match first
         let file: Express.Multer.File | undefined;
         if (it && it.filename) {
           const requested = String(it.filename);
-          file = files.find(
-            (f) =>
-              f.originalname === requested ||
-              decodeURIComponent(String(f.originalname)) === requested ||
-              String(f.originalname).endsWith(requested)
-          );
+            file = files.find(
+              (f) =>
+                f.originalname === requested ||
+                decodeURIComponent(String(f.originalname)) === requested ||
+                String(f.originalname).endsWith(requested)
+            );
+        }
+        // Positional fallback: if no file matched by name but there is a file at same index
+        if (!file && files[idx]) {
+          file = files[idx];
         }
 
         // Determine URL: multer-storage-cloudinary adds `path`, `url` or `secure_url` and public_id
@@ -117,9 +121,9 @@ export const createRequirementsSubmission = catchErrors(
           }
         }
 
-        // capture public_id if provided by multer-storage-cloudinary
-        // @ts-ignore
-        const publicId = (file as any)?.public_id || (file as any)?.publicId;
+  // capture public_id if provided by multer-storage-cloudinary (ensure positional fallback still captures id)
+  // @ts-ignore
+  const publicId = (file as any)?.public_id || (file as any)?.publicId;
 
         // If we don't have an uploaded file URL, fallback to itemsJson (client preview which may contain data URL or remote url)
         if (
@@ -147,7 +151,10 @@ export const createRequirementsSubmission = catchErrors(
         }
 
         return {
-          label: it.label || `Item ${idx + 1}`,
+          label:
+            it.label ||
+            (itemsJson && itemsJson[idx] && (itemsJson[idx].text || itemsJson[idx].label)) ||
+            `Item ${idx + 1}`,
           note: it.note,
           url,
           publicId,
