@@ -652,6 +652,12 @@ const Requirements: React.FC = () => {
         return;
       }
       // Build FormData to send only files that are new (data URLs are previews and not remote)
+      console.debug('[requirements] filesRef.current:', Object.keys(filesRef.current).map(k => ({
+        itemId: k,
+        hasFile: !!filesRef.current[k],
+        fileName: filesRef.current[k]?.name
+      })));
+      console.debug('[requirements] items order:', items.map((it, idx) => ({ idx, id: it.id, text: it.text })));
       const form = new FormData();
       items.forEach((it, idx) => {
         form.append(`items[${idx}][label]`, it.text);
@@ -666,7 +672,9 @@ const Requirements: React.FC = () => {
           // Use original filename untouched
           const safeName = sanitizeFilename(f.name || `file-${idx}`);
           const fileForAppend = new File([f], safeName, { type: f.type });
-          form.append("files", fileForAppend, safeName);
+          // Use item-specific field name to properly map files to their requirements
+          form.append(`file_item_${idx}`, fileForAppend, safeName);
+          console.debug(`[requirements] appending file for item ${idx} (${it.text}): fieldname=file_item_${idx}, filename=${safeName}, itemId=${it.id}`);
         }
       });
       // Include the current items state as JSON so server can use any existing preview URLs
@@ -698,8 +706,8 @@ const Requirements: React.FC = () => {
           );
         } catch (e) {}
       }
-      // If we're in resubmitMode, tell the server this is an intentional resubmit
-      if (resubmitMode) {
+      // If we're in resubmitMode OR if we're already submitted and have new files, tell the server this is an intentional resubmit
+      if (resubmitMode || isSubmitted) {
         try {
           form.append("resubmit", "true");
         } catch (e) {}

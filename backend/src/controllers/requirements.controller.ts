@@ -82,28 +82,106 @@ export const createRequirementsSubmission = catchErrors(
     console.debug(
       `[requirements] user=${userID} files=${files.length} itemsParsed=${items.length} itemsJson=${itemsJson ? itemsJson.length : 0}`
     );
+    console.debug(
+      "[requirements] file fieldnames:",
+      files.map((f) => ({
+        fieldname: f.fieldname,
+        originalname: f.originalname,
+      }))
+    );
 
-    // Sequential mapping: consume uploaded files only for items flagged with hasFile
-    let fileCursor = 0;
+    // Map files by fieldname to their corresponding requirement items
+    console.debug("[requirements] items array:", items.map((it: any, idx: number) => ({
+      idx,
+      label: it?.label,
+      hasFile: it?.hasFile,
+      clientId: it?.clientId
+    })));
+    console.debug("[requirements] files received:", files.map((f: any) => ({
+      fieldname: f.fieldname,
+      originalname: f.originalname,
+      size: f.size
+    })));
+
+    // Create a comprehensive map of all items (from itemsJson) to maintain full context
+    const fullItemsMap = new Map<number, any>();
+    if (itemsJson && Array.isArray(itemsJson)) {
+      itemsJson.forEach((jsonItem: any, idx: number) => {
+        fullItemsMap.set(idx, {
+          ...jsonItem,
+          originalIndex: idx,
+        });
+      });
+    }
+
     const mappedItems = items
       .map((it: any, originalIndex: number) => {
-        if (!it || (it.hasFile !== "1" && it.hasFile !== 1)) return null;
-        const file = files[fileCursor++];
+        if (!it || (it.hasFile !== "1" && it.hasFile !== 1)) {
+          // If this item doesn't have a new file upload but exists in itemsJson with a remote URL, preserve it
+          const jsonItem = fullItemsMap.get(originalIndex);
+          if (jsonItem && jsonItem.file && jsonItem.file.url && !jsonItem.file.url.startsWith("data:")) {
+            console.debug("[requirements][map] preserving existing remote file", {
+              originalIndex,
+              label: it.label || jsonItem.text,
+              url: jsonItem.file.url,
+            });
+            return {
+              label: it.label || jsonItem.text || jsonItem.label,
+              note: it.note || jsonItem.note,
+              url: jsonItem.file.url,
+              publicId: jsonItem.file.id || null,
+              originalName: jsonItem.file.name || it.label || jsonItem.text,
+              mimetype: jsonItem.file.type || null,
+              size: jsonItem.file.size || 0,
+              clientId: it.clientId || jsonItem.id,
+            };
+          }
+          return null;
+        }
+
+        // Look for a file with the expected fieldname for this item
+        const expectedFieldname = `file_item_${originalIndex}`;
+        const file = files.find((f: any) => f.fieldname === expectedFieldname);
         if (!file) {
-          console.debug('[requirements][map] no file available for hasFile item', { originalIndex, label: it.label, clientId: it.clientId });
+          console.debug("[requirements][map] no file found for fieldname", {
+            originalIndex,
+            expectedFieldname,
+            label: it.label,
+            clientId: it.clientId,
+          });
           return null;
         }
         // @ts-ignore
-        let url = (file as any).secure_url || (file as any).url || (file as any).path;
+        let url =
+          (file as any).secure_url || (file as any).url || (file as any).path;
         // @ts-ignore
         const publicId = (file as any)?.public_id || (file as any)?.publicId;
         if (!url && publicId) {
-          try { url = cloudinary.url(publicId, { secure: true }); } catch (e) {}
+          try {
+            url = cloudinary.url(publicId, { secure: true });
+          } catch (e) {}
         }
         if (!url) return null;
-        const label = it.label || (itemsJson && itemsJson[originalIndex] && (itemsJson[originalIndex].text || itemsJson[originalIndex].label)) || `Item ${originalIndex + 1}`;
-        const clientId = it.clientId || (itemsJson && itemsJson[originalIndex] && (itemsJson[originalIndex].id || itemsJson[originalIndex].clientId)) || undefined;
-        console.debug('[requirements][map] mapped', { originalIndex, label, clientId, assignedFile: file.originalname });
+        const label =
+          it.label ||
+          (itemsJson &&
+            itemsJson[originalIndex] &&
+            (itemsJson[originalIndex].text ||
+              itemsJson[originalIndex].label)) ||
+          `Item ${originalIndex + 1}`;
+        const clientId =
+          it.clientId ||
+          (itemsJson &&
+            itemsJson[originalIndex] &&
+            (itemsJson[originalIndex].id ||
+              itemsJson[originalIndex].clientId)) ||
+          undefined;
+        console.debug("[requirements][map] mapped new upload", {
+          originalIndex,
+          label,
+          clientId,
+          assignedFile: file.originalname,
+        });
         return {
           label,
           note: it.note,
@@ -121,9 +199,17 @@ export const createRequirementsSubmission = catchErrors(
     if (mappedItems.length === 0 && files.length > 0) {
       const filesAsItems: any[] = files
         .map((file, idx) => {
+          // Extract item index from fieldname if it follows our pattern (file_item_N)
+          const fieldnameMatch = (file.fieldname || "").match(
+            /^file_item_(\d+)$/
+          );
+          const itemIndex = fieldnameMatch
+            ? parseInt(fieldnameMatch[1], 10)
+            : idx;
+
           // try to get filename
           const originalName =
-            file.originalname || file.filename || `file-${idx}`;
+            file.originalname || file.filename || `file-${itemIndex}`;
           // prefer secure_url/url/path if provided by multer-storage-cloudinary
           // otherwise, if public_id exists, construct a cloudinary url
           // @ts-ignore
@@ -247,6 +333,8 @@ export const createRequirementsSubmission = catchErrors(
             (m) => !removedPublicIdsForResubmit.includes(m.publicId)
           );
         }
+        // Since mappedItems now contains ALL items (both new and preserved), we can directly use it
+        // but we need to ensure we delete any old files that are being replaced
         for (const newIt of mappedItems) {
           if (!newIt) continue;
           const idx = merged.findIndex(
@@ -256,6 +344,7 @@ export const createRequirementsSubmission = catchErrors(
           );
           if (idx !== -1) {
             const old = merged[idx];
+            // Only destroy old cloud resource if we have a NEW upload (different publicId)
             if (
               old &&
               old.publicId &&
@@ -269,16 +358,20 @@ export const createRequirementsSubmission = catchErrors(
                 await cloudinary.uploader.destroy(old.publicId, {
                   resource_type: isPdf ? "raw" : "image",
                 });
+                console.debug("[requirements][resubmit] destroyed old publicId", {
+                  oldPublicId: old.publicId,
+                  newPublicId: newIt.publicId,
+                  label: newIt.label,
+                });
               } catch (err) {
                 // ignore deletion errors
+                console.debug("[requirements][resubmit] failed to destroy old publicId", err);
               }
             }
-            merged[idx] = { ...merged[idx], ...newIt };
-          } else {
-            merged.push(newIt);
           }
         }
-        alreadySubmitted.items = merged;
+        // Replace the entire items array with mappedItems (which contains the complete, updated set)
+        alreadySubmitted.items = mappedItems;
         alreadySubmitted.submittedAt = new Date();
         await alreadySubmitted.save();
         // Clean up draft after successful resubmit (optional; remove to keep historical draft)
