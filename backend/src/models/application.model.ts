@@ -55,12 +55,12 @@ export interface ApplicationDocument extends mongoose.Document {
   }>;
 
   // Educational Background
-  elementary?: string;
-  elementaryYears?: string;
-  highSchool?: string;
-  highSchoolYears?: string;
-  college?: string;
-  collegeYears?: string;
+  elementary: string;
+  elementaryYears: string;
+  highSchool: string;
+  highSchoolYears: string;
+  college: string;
+  collegeYears: string;
   others?: string;
   othersYears?: string;
 
@@ -87,6 +87,12 @@ export interface ApplicationDocument extends mongoose.Document {
 
   // Agreement
   agreedToTerms: boolean;
+  conformity?: boolean;
+
+  // Parent/Guardian Consent
+  parentConsent?: boolean;
+  parentGuardianName?: string;
+  parentID?: string;
 
   // File uploads
   profilePhoto?: string;
@@ -297,26 +303,32 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
     // Educational Background
     elementary: {
       type: String,
+      required: true,
       trim: true,
     },
     elementaryYears: {
       type: String,
+      required: true,
       trim: true,
     },
     highSchool: {
       type: String,
+      required: true,
       trim: true,
     },
     highSchoolYears: {
       type: String,
+      required: true,
       trim: true,
     },
     college: {
       type: String,
+      required: true,
       trim: true,
     },
     collegeYears: {
       type: String,
+      required: true,
       trim: true,
     },
     others: {
@@ -379,6 +391,26 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
         },
         message: "You must agree to the terms and conditions",
       },
+    },
+
+    // Conformity checkbox
+    conformity: {
+      type: Boolean,
+      default: false,
+    },
+
+    // Parent/Guardian Consent
+    parentConsent: {
+      type: Boolean,
+      default: false,
+    },
+    parentGuardianName: {
+      type: String,
+      trim: true,
+    },
+    parentID: {
+      type: String,
+      default: null,
     },
 
     // File uploads (store file paths)

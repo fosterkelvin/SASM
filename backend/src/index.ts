@@ -15,6 +15,7 @@ import sessionRoutes from "./routes/session.route";
 import applicationRoutes from "./routes/application.route";
 import notificationRoutes from "./routes/notification.route";
 import requirementsRoutes from "./routes/requirements.route";
+import userDataRoutes from "./routes/userdata.route";
 
 const app = express();
 
@@ -70,6 +71,7 @@ app.use("/auth", authRoutes);
 
 // Protected Routes
 app.use("/user", authenticate, userRoutes);
+app.use("/userdata", authenticate, userDataRoutes);
 app.use("/sessions", authenticate, sessionRoutes);
 app.use("/applications", applicationRoutes);
 app.use("/notifications", authenticate, notificationRoutes);

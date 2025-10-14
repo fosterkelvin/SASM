@@ -75,6 +75,8 @@ export const createApplicationHandler = catchErrors(
     requestBody.agreedToTerms = parseBooleanLike(requestBody.agreedToTerms);
     // conformity may be present from the frontend
     requestBody.conformity = parseBooleanLike(requestBody.conformity);
+    // parentConsent for parent/guardian consent
+    requestBody.parentConsent = parseBooleanLike(requestBody.parentConsent);
 
     // Normalize unknown flag values that may come from FormData as strings/arrays
     const booleanFlags = [
@@ -129,6 +131,7 @@ export const createApplicationHandler = catchErrors(
     let idDocument: string | undefined;
     let certificates: string[] = [];
     let signature: string | undefined;
+    let parentIDUrl: string | undefined;
 
     if (files) {
       // Helper: prefer secure_url/url over path and append .pdf when mimetype is PDF
@@ -254,6 +257,11 @@ export const createApplicationHandler = catchErrors(
       if (files.idDocument && files.idDocument[0]) {
         idDocument = ensurePdfExt(files.idDocument[0]);
       }
+      // Handle parentID file upload
+      if (files.parentID && files.parentID[0]) {
+        parentIDUrl = ensurePdfExt(files.parentID[0]);
+        requestBody.parentID = parentIDUrl;
+      }
       if (files.certificates) {
         certificates = files.certificates
           .map((f) => {
@@ -302,6 +310,7 @@ export const createApplicationHandler = catchErrors(
       idDocument,
       certificates,
       signature,
+      parentID: requestBody.parentID || parentIDUrl,
     });
 
     // Populate user information

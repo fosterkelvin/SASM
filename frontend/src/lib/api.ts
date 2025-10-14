@@ -177,3 +177,25 @@ export const getUnreadNotificationCount = async () => {
   const response = await API.get("/notifications/unread-count");
   return response.data;
 };
+
+// UserData API
+export const getUserData = async () => {
+  const response = await API.get("/userdata");
+  return response.data;
+};
+
+export const upsertUserData = async (data: {
+  gender?: string;
+  birthdate?: string;
+  civilStatus?: string;
+  phoneNumber?: string;
+  address?: string;
+}) => {
+  const response = await API.post("/userdata", data);
+  return response.data;
+};
+
+export const deleteUserData = async () => {
+  const response = await API.delete("/userdata");
+  return response.data;
+};

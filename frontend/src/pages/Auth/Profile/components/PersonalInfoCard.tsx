@@ -3,6 +3,8 @@ import { User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { getUserData, upsertUserData } from "@/lib/api";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 type Props = {
   user: any;
@@ -13,65 +15,69 @@ type LocalPersonal = {
   gender?: string | null;
   birthdate?: string | null; // ISO date string
   civilStatus?: string | null;
+  phoneNumber?: string | null;
+  address?: string | null;
 };
 
-const STORAGE_PREFIX = "sasm_personal_info_";
-
 export default function PersonalInfoCard({ user, colorScheme }: Props) {
-  const storageKey = `${STORAGE_PREFIX}${user?.id ?? user?._id ?? "anon"}`;
-
   const [editing, setEditing] = useState(false);
   const [local, setLocal] = useState<LocalPersonal>({
     gender: null,
     birthdate: null,
     civilStatus: null,
+    phoneNumber: null,
+    address: null,
+  });
+  const [age, setAge] = useState<number | null>(null);
+
+  // Fetch user data from backend
+  const { data: userData, refetch } = useQuery({
+    queryKey: ["userData"],
+    queryFn: getUserData,
+    enabled: !!user,
   });
 
-  // Load persisted values from localStorage on mount / when user changes
+  // Mutation to save user data
+  const saveUserDataMutation = useMutation({
+    mutationFn: upsertUserData,
+    onSuccess: (data) => {
+      setAge(data.data.age);
+      refetch();
+      setEditing(false);
+    },
+    onError: (error) => {
+      console.error("Failed to save user data:", error);
+    },
+  });
+
+  // Load data when userData is fetched
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as LocalPersonal;
-        setLocal((prev) => ({ ...prev, ...parsed }));
-      } else {
-        // initialize from user object if available
-        setLocal({
-          gender: (user?.gender as string) || null,
-          birthdate: user?.birthdate || null,
-          civilStatus: (user?.civilStatus as string) || null,
-        });
-      }
-    } catch (err) {
-      // ignore JSON errors
+    if (userData) {
+      setLocal({
+        gender: userData.gender || null,
+        birthdate: userData.birthdate ? userData.birthdate.split('T')[0] : null,
+        civilStatus: userData.civilStatus || null,
+        phoneNumber: userData.phoneNumber || null,
+        address: userData.address || null,
+      });
+      setAge(userData.age);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storageKey]);
+  }, [userData]);
 
   const handleSave = () => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(local));
-      setEditing(false);
-    } catch (err) {
-      // ignore
-    }
+    saveUserDataMutation.mutate(local);
   };
 
   const handleCancel = () => {
-    // reload from storage (discard changes)
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        setLocal(JSON.parse(raw));
-      } else {
-        setLocal({
-          gender: (user?.gender as string) || null,
-          birthdate: user?.birthdate || null,
-          civilStatus: (user?.civilStatus as string) || null,
-        });
-      }
-    } catch (err) {
-      // ignore
+    // Reset to server data
+    if (userData) {
+      setLocal({
+        gender: userData.gender || null,
+        birthdate: userData.birthdate ? userData.birthdate.split('T')[0] : null,
+        civilStatus: userData.civilStatus || null,
+        phoneNumber: userData.phoneNumber || null,
+        address: userData.address || null,
+      });
     }
     setEditing(false);
   };
@@ -128,7 +134,7 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Gender</p>
               {!editing ? (
-                <p className="font-medium text-gray-800 dark:text-gray-200">
+                <p className="font-medium text-gray-800 dark:text-gray-200 capitalize">
                   {local.gender || "Not specified"}
                 </p>
               ) : (
@@ -171,12 +177,21 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
               )}
             </div>
 
-            <div className="md:col-span-2">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Age
+              </p>
+              <p className="font-medium text-gray-800 dark:text-gray-200">
+                {age !== null ? `${age} years old` : "Not available"}
+              </p>
+            </div>
+
+            <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Civil Status
               </p>
               {!editing ? (
-                <p className="font-medium text-gray-800 dark:text-gray-200">
+                <p className="font-medium text-gray-800 dark:text-gray-200 capitalize">
                   {local.civilStatus || "Not specified"}
                 </p>
               ) : (

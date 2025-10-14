@@ -3,10 +3,8 @@ import authenticate from "../middleware/authenticate";
 import { uploadRequirementsFiles } from "../middleware/fileUpload";
 import {
   createRequirementsSubmission,
-  saveDraftRequirements,
   deleteRequirementFile,
   getUserRequirementsSubmissions,
-  replaceRequirementItem,
   getCurrentRequirementsStatus,
 } from "../controllers/requirements.controller";
 
@@ -19,20 +17,8 @@ router.post(
   uploadRequirementsFiles,
   createRequirementsSubmission
 );
-router.post(
-  "/draft",
-  authenticate,
-  uploadRequirementsFiles,
-  saveDraftRequirements
-);
 router.delete("/file", authenticate, deleteRequirementFile);
 router.get("/", authenticate, getUserRequirementsSubmissions);
 router.get("/current", authenticate, getCurrentRequirementsStatus);
-router.put(
-  "/item/replace",
-  authenticate,
-  uploadRequirementsFiles,
-  replaceRequirementItem
-);
 
 export default router;

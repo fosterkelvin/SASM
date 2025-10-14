@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getUserApplications, createApplication } from "@/lib/api";
+import { getUserApplications, createApplication, getUserData } from "@/lib/api";
 import ApplicationSuccessScreen from "./components/ApplicationSuccessScreen";
 import ApplicationWithdrawnScreen from "./components/ApplicationWithdrawnScreen";
 import ResendVerificationButton from "./components/ResendVerificationButton";
@@ -44,6 +44,13 @@ function Application() {
       !["failed_interview", "rejected", "withdrawn"].includes(app.status)
   );
 
+  // Fetch user data for auto-population
+  const { data: userData } = useQuery({
+    queryKey: ["userData"],
+    queryFn: getUserData,
+    enabled: !!user,
+  });
+
   const [hasRelativeWorking, setHasRelativeWorking] = useState(false);
   const [relatives, setRelatives] = useState([
     { name: "", department: "", relationship: "" },
@@ -57,6 +64,21 @@ function Application() {
     agreedToTerms: false,
     conformity: false,
   });
+
+  // Auto-populate form data from userData when it's loaded
+  useEffect(() => {
+    if (userData) {
+      setFormData((prev) => ({
+        ...prev,
+        firstName: user?.firstname || "",
+        lastName: user?.lastname || "",
+        email: user?.email || "",
+        age: userData.age || prev.age,
+        gender: userData.gender ? userData.gender.charAt(0).toUpperCase() + userData.gender.slice(1) : prev.gender,
+        civilStatus: userData.civilStatus ? userData.civilStatus.charAt(0).toUpperCase() + userData.civilStatus.slice(1) : prev.civilStatus,
+      }));
+    }
+  }, [userData, user]);
 
   const [errors, setErrors] = useState<
     Partial<Record<keyof ApplicationFormData, string>>
@@ -248,6 +270,11 @@ function Application() {
     if (seminarErrors.length > 0) {
       setSubmitMessage(seminarErrors.join(" "));
       setIsSubmitting(false);
+      // Scroll to seminars section
+      const seminarsSection = document.querySelector('[data-section="seminars"]');
+      if (seminarsSection) {
+        seminarsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
     setIsSubmitting(true);
@@ -261,6 +288,11 @@ function Application() {
       }));
       setSubmitMessage("Please upload your 2x2 picture before submitting.");
       setIsSubmitting(false);
+      // Scroll to file upload section
+      const fileSection = document.querySelector('[data-section="fileUpload"]');
+      if (fileSection) {
+        fileSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
 
@@ -281,6 +313,11 @@ function Application() {
           "Please provide at least one relative with all fields filled."
         );
         setIsSubmitting(false);
+        // Scroll to relatives section
+        const relativesSection = document.querySelector('[data-section="relatives"]');
+        if (relativesSection) {
+          relativesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
         return;
       }
     }
@@ -294,6 +331,7 @@ function Application() {
         seminars: seminarsToSubmit,
         age: formData.age ? Number(formData.age) : undefined,
         profilePhoto: uploadedFiles.profilePhoto,
+        parentID: formData.parentID,
         relatives: hasRelativeWorking ? relatives : [],
       });
       if (!parsed.success) {
@@ -304,8 +342,73 @@ function Application() {
           newErrors[field] = err.message;
         });
         setErrors(newErrors);
-        setSubmitMessage("Please fill in all required fields.");
         setIsSubmitting(false);
+
+        // Map fields to their sections for better scrolling
+        const fieldToSection: Record<string, string> = {
+          position: 'position',
+          firstName: 'personal',
+          lastName: 'personal',
+          age: 'personal',
+          gender: 'personal',
+          civilStatus: 'personal',
+          homeAddress: 'address',
+          homeBarangay: 'address',
+          homeCity: 'address',
+          homeProvince: 'address',
+          baguioAddress: 'address',
+          baguioBarangay: 'address',
+          baguioCity: 'address',
+          homeContact: 'contact',
+          baguioContact: 'contact',
+          email: 'contact',
+          citizenship: 'contact',
+          emergencyContact: 'contact',
+          emergencyContactNumber: 'contact',
+          fatherName: 'parents',
+          fatherOccupation: 'parents',
+          motherName: 'parents',
+          motherOccupation: 'parents',
+          elementary: 'education',
+          elementaryYears: 'education',
+          highSchool: 'education',
+          highSchoolYears: 'education',
+          college: 'education',
+          collegeYears: 'education',
+          profilePhoto: 'fileUpload',
+          parentGuardianName: 'parentConsent',
+          parentID: 'parentConsent',
+          parentConsent: 'parentConsent',
+          agreedToTerms: 'agreement',
+          conformity: 'agreement',
+        };
+
+        // Get first error field and its section
+        const firstErrorField = Object.keys(newErrors)[0];
+        const sectionName = fieldToSection[firstErrorField] || firstErrorField;
+
+        // Count total errors
+        const errorCount = Object.keys(newErrors).length;
+        setSubmitMessage(`Please fix ${errorCount} required field${errorCount > 1 ? 's' : ''} before submitting.`);
+
+        // Scroll to the section containing the first error
+        const section = document.querySelector(`[data-section="${sectionName}"]`);
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+          // After scrolling, try to focus the specific field
+          setTimeout(() => {
+            const element = document.getElementById(firstErrorField) ||
+                           document.querySelector(`[name="${firstErrorField}"]`) ||
+                           document.querySelector(`input[id*="${firstErrorField}"]`) ||
+                           document.querySelector(`select[id*="${firstErrorField}"]`) ||
+                           document.querySelector(`textarea[id*="${firstErrorField}"]`);
+
+            if (element) {
+              (element as HTMLElement).focus();
+            }
+          }, 600);
+        }
         return;
       }
 
@@ -320,7 +423,8 @@ function Application() {
         } else if (
           key === "hasRelativeWorking" ||
           key === "agreedToTerms" ||
-          key === "conformity"
+          key === "conformity" ||
+          key === "parentConsent"
         ) {
           if (value !== undefined && value !== null) {
             formDataToSubmit.append(key, Boolean(value).toString());
@@ -329,6 +433,9 @@ function Application() {
           if (value) {
             formDataToSubmit.append(key, value.toString());
           }
+        } else if (key === "parentID") {
+          // Skip parentID here, will be added separately as file
+          return;
         } else if (value !== undefined && value !== null) {
           formDataToSubmit.append(key, value.toString());
         }
@@ -340,6 +447,11 @@ function Application() {
 
       if (uploadedFiles.profilePhoto) {
         formDataToSubmit.append("profilePhoto", uploadedFiles.profilePhoto);
+      }
+
+      // Append parent ID file if present
+      if (formData.parentID) {
+        formDataToSubmit.append("parentID", formData.parentID);
       }
       if (uploadedCertificates.certificates.length > 0) {
         uploadedCertificates.certificates.forEach((file) => {
@@ -695,65 +807,84 @@ function Application() {
                   onSubmit={handleSubmit}
                   className="space-y-6 md:space-y-8"
                 >
-                  <PositionSection
-                    position={formData.position ?? ""}
-                    onChange={(value) => handleInputChange("position", value)}
-                    error={errors.position}
-                  />
-                  <PersonalInfoSection
-                    formData={formData}
-                    errors={errors}
-                    handleInputChange={handleInputChange}
-                  />
-                  <AddressInfoSection
-                    formData={formData}
-                    errors={errors}
-                    handleInputChange={handleInputChange}
-                  />
-                  <ContactInfoSection
-                    formData={formData}
-                    errors={errors}
-                    handleInputChange={handleInputChange}
-                    user={user}
-                  />
-                  <ParentsInfoSection
-                    formData={formData}
-                    errors={errors}
-                    handleInputChange={handleInputChange}
-                  />
-                  <RelativeSection
-                    hasRelativeWorking={hasRelativeWorking}
-                    relatives={relatives}
-                    setHasRelativeWorking={setHasRelativeWorking}
-                    updateRelative={updateRelative}
-                    addRelative={addRelative}
-                    removeRelative={removeRelative}
-                    handleInputChange={handleInputChange}
-                  />
-                  <EducationInfoSection
-                    formData={formData}
-                    errors={errors}
-                    handleInputChange={handleInputChange}
-                  />
-                  <SeminarsSection
-                    seminars={seminars}
-                    updateSeminar={updateSeminar}
-                    addSeminar={addSeminar}
-                    removeSeminar={removeSeminar}
-                  />
+                  <div data-section="position">
+                    <PositionSection
+                      position={formData.position ?? ""}
+                      onChange={(value) => handleInputChange("position", value)}
+                      error={errors.position}
+                    />
+                  </div>
+                  {/* Personal Info Section - Hidden but data still submitted */}
+                  <div style={{ display: 'none' }}>
+                    <PersonalInfoSection
+                      formData={formData}
+                      errors={errors}
+                      handleInputChange={handleInputChange}
+                    />
+                  </div>
+                  <div data-section="address">
+                    <AddressInfoSection
+                      formData={formData}
+                      errors={errors}
+                      handleInputChange={handleInputChange}
+                    />
+                  </div>
+                  <div data-section="contact">
+                    <ContactInfoSection
+                      formData={formData}
+                      errors={errors}
+                      handleInputChange={handleInputChange}
+                      user={user}
+                    />
+                  </div>
+                  <div data-section="parents">
+                    <ParentsInfoSection
+                      formData={formData}
+                      errors={errors}
+                      handleInputChange={handleInputChange}
+                    />
+                  </div>
+                  <div data-section="relatives">
+                    <RelativeSection
+                      hasRelativeWorking={hasRelativeWorking}
+                      relatives={relatives}
+                      setHasRelativeWorking={setHasRelativeWorking}
+                      updateRelative={updateRelative}
+                      addRelative={addRelative}
+                      removeRelative={removeRelative}
+                      handleInputChange={handleInputChange}
+                    />
+                  </div>
+                  <div data-section="education">
+                    <EducationInfoSection
+                      formData={formData}
+                      errors={errors}
+                      handleInputChange={handleInputChange}
+                    />
+                  </div>
+                  <div data-section="seminars">
+                    <SeminarsSection
+                      seminars={seminars}
+                      updateSeminar={updateSeminar}
+                      addSeminar={addSeminar}
+                      removeSeminar={removeSeminar}
+                    />
+                  </div>
                   <CertificatesSection
                     certificateFiles={uploadedCertificates.certificates}
                     certificatePreviewUrls={certificatePreviewUrls.certificates}
                     handleCertificateUpload={handleCertificatesUpload}
                     removeCertificate={removeCertificate}
                   />
-                  <FileUploadSection
-                    filePreviewUrl={filePreviewUrls?.profilePhoto}
-                    handleFileUpload={handleFileUpload}
-                    removeFile={removeFile}
-                    error={errors.profilePhoto}
-                  />
-                  <div className="space-y-6 p-4 rounded-lg border">
+                  <div data-section="fileUpload">
+                    <FileUploadSection
+                      filePreviewUrl={filePreviewUrls?.profilePhoto}
+                      handleFileUpload={handleFileUpload}
+                      removeFile={removeFile}
+                      error={errors.profilePhoto}
+                    />
+                  </div>
+                  <div data-section="agreement" className="space-y-6 p-4 rounded-lg border">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
                       Agreement & Applicant's Conformity{" "}
                       <span className="text-red-600"> *</span>
@@ -840,7 +971,7 @@ function Application() {
                     </div>
                   </div>
                   {/* Parent/Guardian Consent Section */}
-                  <div className="space-y-6 p-4 rounded-lg border">
+                  <div data-section="parentConsent" className="space-y-6 p-4 rounded-lg border">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
                       Parent/Guardian's Consent
                       <span className="text-red-600"> *</span>
