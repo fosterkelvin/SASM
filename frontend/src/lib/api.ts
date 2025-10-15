@@ -199,3 +199,74 @@ export const deleteUserData = async () => {
   const response = await API.delete("/userdata");
   return response.data;
 };
+
+// Netflix-Style Profile Management APIs
+export const getProfiles = async () => {
+  const response = await API.get("/office/profiles");
+  return response.data;
+};
+
+export const createProfile = async (data: {
+  profileName: string;
+  profilePIN: string;
+  permissions?: any;
+}) => {
+  const response = await API.post("/office/profiles", data);
+  return response.data;
+};
+
+export const selectProfile = async (data: {
+  profileID: string;
+  profilePIN: string;
+}) => {
+  const response = await API.post("/office/profiles/select", data);
+  return response.data;
+};
+
+export const updateProfile = async (profileID: string, updates: {
+  profileName?: string;
+  profilePIN?: string;
+  permissions?: any;
+  isActive?: boolean;
+  avatar?: string;
+}) => {
+  const response = await API.patch(`/office/profiles/${profileID}`, updates);
+  return response.data;
+};
+
+export const deleteProfile = async (profileID: string) => {
+  const response = await API.delete(`/office/profiles/${profileID}`);
+  return response.data;
+};
+
+export const resetProfilePIN = async (data: {
+  profileID: string;
+  accountPassword: string;
+  newPIN: string;
+}) => {
+  const response = await API.post("/office/profiles/reset-pin", data);
+  return response.data;
+};
+
+// Audit Log APIs
+export const getAuditLogs = async (params?: {
+  profileID?: string;
+  module?: string;
+  action?: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  skip?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.profileID) searchParams.append("profileID", params.profileID);
+  if (params?.module) searchParams.append("module", params.module);
+  if (params?.action) searchParams.append("action", params.action);
+  if (params?.startDate) searchParams.append("startDate", params.startDate);
+  if (params?.endDate) searchParams.append("endDate", params.endDate);
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+  if (params?.skip) searchParams.append("skip", params.skip.toString());
+
+  const response = await API.get(`/office/audit-logs?${searchParams.toString()}`);
+  return response.data;
+};

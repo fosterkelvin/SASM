@@ -16,6 +16,8 @@ import applicationRoutes from "./routes/application.route";
 import notificationRoutes from "./routes/notification.route";
 import requirementsRoutes from "./routes/requirements.route";
 import userDataRoutes from "./routes/userdata.route";
+import officeProfileRoutes from "./routes/officeProfile.route";
+import auditLogRoutes from "./routes/auditLog.route";
 
 const app = express();
 
@@ -77,6 +79,10 @@ app.use("/applications", applicationRoutes);
 app.use("/notifications", authenticate, notificationRoutes);
 // Requirements submissions (students upload requirements)
 app.use("/requirements", requirementsRoutes);
+// Office profile management routes (Netflix-style profiles)
+app.use("/office/profiles", authenticate, officeProfileRoutes);
+// Office audit logs
+app.use("/office/audit-logs", authenticate, auditLogRoutes);
 
 app.use(errorHandler);
 

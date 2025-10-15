@@ -140,12 +140,9 @@ export const signinUser = async ({
   const isValid = await user.comparePassword(password);
   appAssert(isValid, UNAUTHORIZED, "Invalid email or password.");
 
-  // Note: Email verification check removed - users can sign in without verification
-
-  const userID = user._id;
-
+  // Create session
   const session = await SessionModel.create({
-    userID,
+    userID: user._id,
     userAgent,
   });
 
@@ -160,7 +157,9 @@ export const signinUser = async ({
     userID: user._id,
   });
 
-  const redirectUrl = getRoleBasedRedirect(user.role);
+  // OFFICE users ALWAYS go to profile selector
+  // Other roles go to their respective dashboards
+  const redirectUrl = user.role === "office" ? "/profile-selector" : getRoleBasedRedirect(user.role);
 
   return {
     user: user.omitPassword(),

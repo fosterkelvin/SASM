@@ -6,7 +6,6 @@ import CollapsedSidebar from "./components/CollapsedSidebar";
 import MobileHeader from "./components/MobileHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { getRoleBasedRedirect } from "@/lib/roleUtils";
 
 interface OfficeSidebarProps {
   currentPage?: string;
@@ -94,8 +93,8 @@ const OfficeSidebar = ({
 
   // Handlers
   const handleDashboardClick = () => {
-    const dashboardRoute = getRoleBasedRedirect("office");
-    navigate(dashboardRoute);
+    // Navigate directly to office dashboard (profile already selected at this point)
+    navigate("/office-dashboard");
     setIsOpen(false);
   };
 
@@ -105,7 +104,7 @@ const OfficeSidebar = ({
   };
 
   const handleProfileClick = () => {
-    navigate("/profile");
+    navigate("/office/profile");
     setIsOpen(false);
   };
 
@@ -262,16 +261,13 @@ const OfficeSidebar = ({
           <CollapsedSidebar
             onExpand={() => setIsDesktopCollapsed(false)}
             handlers={{
-              dashboard: () => {
-                const route = getRoleBasedRedirect("office");
-                navigate(route);
-              },
+              dashboard: () => navigate("/office-dashboard"),
               dtr: () => navigate("/office/dtr"),
               evaluation: () => navigate("/office/evaluation"),
               leave: () => navigate("/office/leave-requests"),
               requests: () => navigate("/office/requests"),
               scholars: () => navigate("/office/scholars"),
-              profile: () => navigate("/profile"),
+              profile: () => navigate("/office/profile"),
             }}
             darkMode={darkMode}
             onToggleTheme={() => setDarkMode(!darkMode)}
@@ -312,9 +308,9 @@ const OfficeSidebar = ({
                       ? `${user.firstname} ${user.lastname}`
                       : user?.email || "User"}
                   </span>
-                  {user?.email && (
+                  {user?.profileName && (
                     <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {user.email}
+                      Profile: {user.profileName}
                     </span>
                   )}
                   {user?.role && (

@@ -10,7 +10,8 @@ export const getRoleBasedRedirect = (role: string): string => {
     case "hr":
       return "/hr-dashboard";
     case "office":
-      return "/office-dashboard";
+      // OFFICE users ALWAYS go to profile selector first
+      return "/profile-selector";
     default:
       return "/student-dashboard"; // Default to student dashboard
   }
@@ -55,6 +56,7 @@ export const hasRouteAccess = (userRole: string, route: string): boolean => {
       "/office/scholars",
       "/office/requests",
       "/office/leave-requests",
+      "/profile-selector",
       ...commonRoutes,
     ],
   };

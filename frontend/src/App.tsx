@@ -35,6 +35,9 @@ import Schedule from "./pages/Roles/Student/Schedule/Schedule";
 import Dtr from "./pages/Roles/Student/DTR/Dtr";
 import Requirements from "./pages/Roles/Student/Requirements/Requirements";
 import HRRequirementsManagement from "./pages/Roles/HR/Requirements Management/RequirementsManagement";
+import ProfileSelector from "./pages/Auth/ProfileSelector/ProfileSelector";
+import AuditLogs from "./pages/Roles/Office/AuditLogs/AuditLogs";
+import OfficeProfile from "./pages/Roles/Office/Profile/OfficeProfile";
 // Small layout components to group routes
 const PublicLayout = (): ReactElement => <Outlet />;
 
@@ -155,12 +158,27 @@ function App(): ReactElement {
         />
         <Route path="/office/requests" element={<OfficeRequests />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/office/profile" element={<OfficeProfile />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/applications" element={<HRApplicationManagement />} />
         <Route path="/leave-management" element={<LeaveManagement />} />
         <Route path="/reapplications" element={<ReApplicationManagement />} />
         <Route path="/hr/users" element={<Users />} />
         <Route path="/hr/evaluations" element={<EvaluationManagement />} />
+
+        {/* Netflix-style Profile Selector - Must be outside AppContainer for full-screen effect */}
+      </Route>
+
+      {/* Profile Selector - Full screen layout (outside AppContainer) */}
+      <Route
+        element={
+          <RoleProtectedRoute>
+            <Outlet />
+          </RoleProtectedRoute>
+        }
+      >
+        <Route path="/profile-selector" element={<ProfileSelector />} />
+        <Route path="/office/audit-logs" element={<AuditLogs />} />
       </Route>
 
       {/* Fallback */}
