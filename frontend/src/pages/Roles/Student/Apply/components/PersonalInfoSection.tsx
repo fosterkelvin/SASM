@@ -17,11 +17,17 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
 }) => (
   <div className="space-y-4 md:space-y-6 p-4 rounded-lg border bg-gray-50 dark:bg-gray-800/50">
     <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
+<<<<<<< HEAD
+      {/* Icon can be added here if needed */}
+      <Users className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
+      Personal Information <p className="text-red-600">*</p>
+=======
       <Users className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
       Personal Information
       <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
         (Auto-populated from your profile)
       </span>
+>>>>>>> testv2
     </h3>
 
     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
