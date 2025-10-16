@@ -1,13 +1,34 @@
 import React from "react";
 import SidebarItem from "./SidebarItem";
-import { Home, Bell, BookOpen, FileText, Calendar, CalendarClock, FileEdit, RefreshCw, CalendarMinus, ClipboardList } from "lucide-react";
+import {
+  Home,
+  Bell,
+  BookOpen,
+  Calendar,
+  CalendarClock,
+  FileEdit,
+  RefreshCw,
+  CalendarMinus,
+  ClipboardList,
+} from "lucide-react";
 
 interface NavProps {
   unreadCount?: number;
   handlers: Record<string, () => void>;
+  isVerified?: boolean;
+  isApplicant?: boolean;
+  isAccepted?: boolean;
+  isEmailUpdateRequired?: boolean;
 }
 
-const SidebarNav: React.FC<NavProps> = ({ unreadCount = 0, handlers }) => {
+const SidebarNav: React.FC<NavProps> = ({
+  unreadCount = 0,
+  handlers,
+  isVerified = false,
+  isApplicant = false,
+  isAccepted = false,
+  isEmailUpdateRequired = false,
+}) => {
   return (
     <nav
       className={`transition-all duration-300 p-4 flex-1 overflow-y-auto mt-0`}
@@ -19,6 +40,7 @@ const SidebarNav: React.FC<NavProps> = ({ unreadCount = 0, handlers }) => {
             label="Dashboard"
             onClick={handlers.dashboard}
             IconComponent={Home}
+            disabled={isEmailUpdateRequired}
           />
         </li>
         <li>
@@ -29,57 +51,82 @@ const SidebarNav: React.FC<NavProps> = ({ unreadCount = 0, handlers }) => {
             badge={
               unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount) : null
             }
+            disabled={false}
           />
         </li>
-        <li>
-          <SidebarItem
-            label="Grades"
-            onClick={handlers.grades}
-            IconComponent={BookOpen}
-          />
-        </li>
-        <li>
-          <SidebarItem
-            label="DTR"
-            onClick={handlers.dtr}
-            IconComponent={CalendarClock}
-          />
-        </li>
-        <li>
-          <SidebarItem
-            label="Schedule"
-            onClick={handlers.schedule}
-            IconComponent={Calendar}
-          />
-        </li>
-        <li>
-          <SidebarItem
-            label="Apply"
-            onClick={handlers.apply}
-            IconComponent={FileEdit}
-          />
-        </li>
-        <li>
-          <SidebarItem
-            label="Re-apply"
-            onClick={handlers.reapply}
-            IconComponent={RefreshCw}
-          />
-        </li>
-        <li>
-          <SidebarItem
-            label="Leave"
-            onClick={handlers.leave}
-            IconComponent={CalendarMinus}
-          />
-        </li>
-        <li>
-          <SidebarItem
-            label="Requirements"
-            onClick={handlers.requirements}
-            IconComponent={ClipboardList}
-          />
-        </li>
+        {isVerified && (
+          <>
+            <li>
+              <SidebarItem
+                label="Grades"
+                onClick={handlers.grades}
+                IconComponent={BookOpen}
+                disabled={isEmailUpdateRequired}
+              />
+            </li>
+            {!isApplicant && (
+              <li>
+                <SidebarItem
+                  label="DTR"
+                  onClick={handlers.dtr}
+                  IconComponent={CalendarClock}
+                  disabled={isEmailUpdateRequired}
+                />
+              </li>
+            )}
+            <li>
+              <SidebarItem
+                label="Schedule"
+                onClick={handlers.schedule}
+                IconComponent={Calendar}
+                disabled={isEmailUpdateRequired}
+              />
+            </li>
+          </>
+        )}
+
+        {!isAccepted && (
+          <li>
+            <SidebarItem
+              label="Apply"
+              onClick={handlers.apply}
+              IconComponent={FileEdit}
+              disabled={isEmailUpdateRequired}
+            />
+          </li>
+        )}
+        {isVerified && (
+          <>
+            {!isApplicant && (
+              <>
+                <li>
+                  <SidebarItem
+                    label="Re-apply"
+                    onClick={handlers.reapply}
+                    IconComponent={RefreshCw}
+                    disabled={isEmailUpdateRequired}
+                  />
+                </li>
+                <li>
+                  <SidebarItem
+                    label="Leave"
+                    onClick={handlers.leave}
+                    IconComponent={CalendarMinus}
+                    disabled={isEmailUpdateRequired}
+                  />
+                </li>
+              </>
+            )}
+            <li>
+              <SidebarItem
+                label="Requirements"
+                onClick={handlers.requirements}
+                IconComponent={ClipboardList}
+                disabled={isEmailUpdateRequired}
+              />
+            </li>
+          </>
+        )}
       </ul>
     </nav>
   );

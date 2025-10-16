@@ -7,8 +7,11 @@ export interface UserDocument extends mongoose.Document {
   email: string;
   password: string;
   role: "student" | "hr" | "office";
+  status: string;
   verified: boolean;
   pendingEmail?: string;
+  office?: string;
+  officeName?: string; // For office users: "OSAS", "OSA", etc.
   createdAt: Date;
   updatedAt: Date;
   comparePassword(val: string): Promise<boolean>;
@@ -19,8 +22,11 @@ export interface UserDocument extends mongoose.Document {
     | "lastname"
     | "email"
     | "role"
+    | "status"
     | "verified"
     | "pendingEmail"
+    | "office"
+    | "officeName"
     | "createdAt"
     | "updatedAt"
   >;
@@ -55,9 +61,24 @@ const userSchema = new mongoose.Schema<UserDocument>(
       default: "student",
       required: true,
     },
+    status: {
+      type: String,
+      default: "applicant",
+      required: true,
+    },
     pendingEmail: {
       type: String,
       required: false,
+    },
+    office: {
+      type: String,
+      required: false,
+    },
+    officeName: {
+      type: String,
+      required: false,
+      default: "", // Shows field in MongoDB even if empty
+      trim: true,
     },
   },
   {

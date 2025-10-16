@@ -8,6 +8,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { getRoleBasedRedirect } from "@/lib/roleUtils";
 import { useUnreadNotificationCount } from "@/hooks/useUnreadNotificationCount";
+import { useQuery } from "@tanstack/react-query";
+import { getUserApplications } from "@/lib/api";
+import { checkEmailRequirement } from "@/lib/emailRequirement";
 
 interface StudentSidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
@@ -20,6 +23,24 @@ const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
   const navigate = useNavigate();
   const { data: unreadCountData } = useUnreadNotificationCount();
   const unreadCount = unreadCountData?.unreadCount || 0;
+
+  // Fetch user applications to check if any application is accepted
+  const { data: userApplicationsData } = useQuery({
+    queryKey: ["userApplications"],
+    queryFn: getUserApplications,
+    enabled: !!user,
+  });
+
+  // Check if user has an accepted application
+  const hasAcceptedApplication =
+    userApplicationsData?.applications?.some(
+      (app: any) => app.status === "accepted"
+    ) || false;
+
+  // Check if email update is required (blocks all features except profile/notifications)
+  const applications = userApplicationsData?.applications || [];
+  const { isEmailUpdateRequired } = checkEmailRequirement(user, applications);
+
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
@@ -175,15 +196,35 @@ const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
   // Now define menuItems after handlers
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
-    { label: "Grades", handler: handleGradesClick },
-    { label: "DTR", handler: handleDtrClick },
-    { label: "Schedule", handler: handleScheduleClick },
+    // Only include these if the user's email is verified
+    ...(user?.verified
+      ? [
+          { label: "Grades", handler: handleGradesClick },
+          // Hide DTR for applicants
+          ...(user?.status === "applicant"
+            ? []
+            : [{ label: "DTR", handler: handleDtrClick }]),
+          { label: "Schedule", handler: handleScheduleClick },
+        ]
+      : []),
     { label: "Profile", handler: handleProfileClick },
     { label: "Notifications", handler: handleNotificationsClick },
-    { label: "Apply", handler: handleApplyClick },
-    { label: "Re-apply", handler: handleReapplyClick },
-    { label: "Leave", handler: handleLeaveClick },
-    { label: "Requirements", handler: handleRequirementsClick },
+    // Hide Apply for accepted students
+    ...(hasAcceptedApplication
+      ? []
+      : [{ label: "Apply", handler: handleApplyClick }]),
+    ...(user?.verified
+      ? [
+          // If the user is an applicant, don't include re-apply or leave
+          ...(user?.status === "applicant"
+            ? [{ label: "Requirements", handler: handleRequirementsClick }]
+            : [
+                { label: "Re-apply", handler: handleReapplyClick },
+                { label: "Leave", handler: handleLeaveClick },
+                { label: "Requirements", handler: handleRequirementsClick },
+              ]),
+        ]
+      : []),
     { label: "Sign out", handler: handleSignout },
   ];
   // icons for forms were removed — individual items used inline
@@ -304,6 +345,10 @@ const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
         <div className={isDesktopCollapsed ? "md:hidden" : ""}>
           <SidebarNav
             unreadCount={unreadCount}
+            isVerified={!!user?.verified}
+            isApplicant={user?.status === "applicant"}
+            isAccepted={hasAcceptedApplication}
+            isEmailUpdateRequired={isEmailUpdateRequired}
             handlers={{
               dashboard: handleDashboardClick,
               notifications: handleNotificationsClick,
@@ -334,6 +379,10 @@ const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
               requirements: handleCollapsedRequirementsClick,
               profile: handleCollapsedProfileClick,
             }}
+            isVerified={!!user?.verified}
+            isApplicant={user?.status === "applicant"}
+            isAccepted={hasAcceptedApplication}
+            isEmailUpdateRequired={isEmailUpdateRequired}
             darkMode={darkMode}
             onToggleTheme={() => setDarkMode(!darkMode)}
             onSignout={handleCollapsedSignout}

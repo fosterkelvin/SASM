@@ -1,5 +1,6 @@
 import { useState } from "react";
-// useNavigate removed - not needed in this file anymore
+import { useQuery } from "@tanstack/react-query";
+import { getUserApplications } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import {
@@ -13,11 +14,22 @@ const StudentDashboard = () => {
   const { user } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
+  // Fetch user's application to get trainee office information
+  const { data: userApplicationsData } = useQuery({
+    queryKey: ["userApplications"],
+    queryFn: getUserApplications,
+    enabled: !!user,
+  });
+
+  // Find the active application (trainee or training_completed status)
+  const activeApplication = userApplicationsData?.applications?.find(
+    (app: any) =>
+      app.status === "trainee" || app.status === "training_completed"
+  );
+
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">
-      <StudentSidebar
-        onCollapseChange={setIsSidebarCollapsed}
-      />
+      <StudentSidebar onCollapseChange={setIsSidebarCollapsed} />
       {/* Main content area with dynamic margin based on sidebar state */}
       <div
         className={`flex-1 pt-16 md:pt-[81px] transition-all duration-300 ${
@@ -39,7 +51,10 @@ const StudentDashboard = () => {
 
         {/* Main content */}
         <div className="p-6 md:p-10">
-          <WelcomeCard />
+          <WelcomeCard
+            traineeOffice={activeApplication?.traineeOffice}
+            traineeStatus={activeApplication?.status}
+          />
 
           {/* Email Verification Alert - Show only if not verified */}
           {user && !user.verified && <VerificationAlert email={user.email} />}

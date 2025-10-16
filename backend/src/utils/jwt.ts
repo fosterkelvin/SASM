@@ -8,8 +8,9 @@ export type RefreshTokenPayload = {
 };
 
 export type AccessTokenPayload = {
-  userID: UserDocument["_id"]
+  userID: UserDocument["_id"];
   sessionID: SessionDocument["_id"];
+  profileID?: string; // Netflix-style profile ID
 };
 
 type SignOptionsAndSecret = SignOptions & {

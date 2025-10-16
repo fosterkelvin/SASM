@@ -1,0 +1,277 @@
+import { Request, Response } from "express";
+import catchErrors from "../utils/catchErrors";
+import RequirementsSubmissionModel from "../models/requirementsSubmission.model";
+import { CREATED, OK } from "../constants/http";
+import cloudinary from "../config/cloudinary";
+import mongoose from "mongoose";
+
+// Helper to extract URL from uploaded file
+const getFileUrl = (file: any): string | null => {
+  const url = file.secure_url || file.url || file.path;
+  if (url) return url;
+
+  const publicId = file.public_id || file.publicId;
+  if (publicId) {
+    try {
+      return cloudinary.url(publicId, { secure: true });
+    } catch (e) {
+      return null;
+    }
+  }
+  return null;
+};
+
+// Helper to extract public ID from file
+const getFilePublicId = (file: any): string | null => {
+  return file.public_id || file.publicId || null;
+};
+
+// Create or update requirements submission
+export const createRequirementsSubmission = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+    const files = (req.files as Express.Multer.File[]) || [];
+
+    // Check if this is a resubmit
+    const isResubmit = req.body.resubmit === "true";
+
+    // Parse itemsJson (contains all items with their current state)
+    let itemsJson: any[] = [];
+    if (req.body.itemsJson) {
+      try {
+        itemsJson = typeof req.body.itemsJson === "string"
+          ? JSON.parse(req.body.itemsJson)
+          : req.body.itemsJson;
+      } catch (err) {
+        console.error("[requirements] Failed to parse itemsJson", err);
+      }
+    }
+
+    console.log("[requirements] Processing submission:", {
+      userID,
+      isResubmit,
+      filesCount: files.length,
+      itemsCount: itemsJson.length,
+      fileFieldnames: files.map(f => f.fieldname),
+    });
+
+    // Build the complete items array
+    const processedItems: any[] = [];
+
+    for (let idx = 0; idx < itemsJson.length; idx++) {
+      const jsonItem = itemsJson[idx];
+      const expectedFieldname = `file_item_${idx}`;
+
+      // Check if there's a new file upload for this item
+      const uploadedFile = files.find(f => f.fieldname === expectedFieldname);
+
+      if (uploadedFile) {
+        // New file uploaded - use it
+        const url = getFileUrl(uploadedFile);
+        const publicId = getFilePublicId(uploadedFile);
+
+        if (!url) {
+          console.error(`[requirements] No URL for uploaded file at index ${idx}`);
+          continue;
+        }
+
+        console.log(`[requirements] New upload at index ${idx}:`, {
+          label: jsonItem.text || jsonItem.label,
+          fieldname: expectedFieldname,
+          filename: uploadedFile.originalname,
+        });
+
+        processedItems.push({
+          label: jsonItem.text || jsonItem.label || `Item ${idx + 1}`,
+          note: jsonItem.note || null,
+          url,
+          publicId,
+          originalName: uploadedFile.originalname,
+          mimetype: uploadedFile.mimetype,
+          size: uploadedFile.size,
+          clientId: jsonItem.id,
+        });
+      } else if (jsonItem.file && jsonItem.file.url && !jsonItem.file.url.startsWith("data:")) {
+        // No new upload - preserve existing file
+        console.log(`[requirements] Preserving existing file at index ${idx}:`, {
+          label: jsonItem.text || jsonItem.label,
+          url: jsonItem.file.url,
+        });
+
+        processedItems.push({
+          label: jsonItem.text || jsonItem.label || `Item ${idx + 1}`,
+          note: jsonItem.note || null,
+          url: jsonItem.file.url,
+          publicId: jsonItem.file.id || null,
+          originalName: jsonItem.file.name || jsonItem.text || jsonItem.label,
+          mimetype: jsonItem.file.type || null,
+          size: jsonItem.file.size || 0,
+          clientId: jsonItem.id,
+        });
+      } else {
+        // No file for this item (should not happen if frontend validates)
+        console.warn(`[requirements] No file at index ${idx}:`, {
+          label: jsonItem.text || jsonItem.label,
+        });
+      }
+    }
+
+    console.log("[requirements] Processed items count:", processedItems.length);
+
+    if (processedItems.length === 0) {
+      return res.status(400).json({
+        message: "No valid items to submit"
+      });
+    }
+
+    // Find existing submission
+    let existingSubmission = await RequirementsSubmissionModel.findOne({
+      userID,
+      status: "submitted",
+    });
+
+    if (existingSubmission) {
+      if (!isResubmit) {
+        return res.status(403).json({
+          message: "Requirements already submitted. Use resubmit to update.",
+        });
+      }
+
+      // Resubmit - delete old files that are being replaced
+      console.log("[requirements] Resubmit - checking for old files to delete");
+
+      for (let idx = 0; idx < processedItems.length; idx++) {
+        const newItem = processedItems[idx];
+        const oldItem = existingSubmission.items[idx];
+
+        if (oldItem && oldItem.publicId && newItem.publicId && oldItem.publicId !== newItem.publicId) {
+          // Different file - delete the old one
+          try {
+            const isPdf = (oldItem.mimetype || "").includes("pdf");
+            await cloudinary.uploader.destroy(oldItem.publicId, {
+              resource_type: isPdf ? "raw" : "image",
+            });
+            console.log(`[requirements] Deleted old file: ${oldItem.publicId}`);
+          } catch (err) {
+            console.error(`[requirements] Failed to delete old file: ${oldItem.publicId}`, err);
+          }
+        }
+      }
+
+      // Update existing submission
+      existingSubmission.items = processedItems as any;
+      existingSubmission.submittedAt = new Date();
+      await existingSubmission.save();
+
+      console.log("[requirements] Resubmit successful");
+
+      return res.status(OK).json({
+        message: "Requirements resubmitted successfully",
+        submission: existingSubmission,
+      });
+    }
+
+    // Initial submission - create new
+    const newSubmission = await RequirementsSubmissionModel.create({
+      userID,
+      items: processedItems,
+      status: "submitted",
+      submittedAt: new Date(),
+    });
+
+    console.log("[requirements] Initial submission successful");
+
+    return res.status(CREATED).json({
+      message: "Requirements submitted successfully",
+      submission: newSubmission,
+    });
+  }
+);
+
+// Get current user's submissions
+export const getUserRequirementsSubmissions = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+
+    const subs = await RequirementsSubmissionModel.find({ userID }).sort({
+      submittedAt: -1,
+    });
+    return res.status(OK).json({ submissions: subs });
+  }
+);
+
+// Delete a specific file from the user's submission by publicId
+export const deleteRequirementFile = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+    const { publicId } = req.body;
+
+    if (!publicId) {
+      return res.status(400).json({ message: "publicId required" });
+    }
+
+    // Find the submission
+    const submission = await RequirementsSubmissionModel.findOne({
+      userID,
+      status: "submitted",
+    });
+
+    if (!submission) {
+      return res.status(404).json({ message: "No submission found" });
+    }
+
+    // Find and remove the item
+    const itemIndex = submission.items.findIndex(
+      (it: any) => it.publicId === publicId
+    );
+
+    if (itemIndex === -1) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    const removed = submission.items[itemIndex];
+
+    // Delete from Cloudinary
+    try {
+      const isPdf = (removed.mimetype || "").includes("pdf");
+      await cloudinary.uploader.destroy(publicId, {
+        resource_type: isPdf ? "raw" : "image",
+      });
+    } catch (err) {
+      console.error("[requirements] Failed to delete from cloudinary", err);
+    }
+
+    // Remove from array
+    submission.items.splice(itemIndex, 1);
+    await submission.save();
+
+    return res.status(OK).json({
+      message: "File removed successfully",
+      submission
+    });
+  }
+);
+
+// Get current requirements status
+export const getCurrentRequirementsStatus = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+
+    const submission = await RequirementsSubmissionModel.findOne({
+      userID,
+      status: "submitted"
+    });
+
+    return res.status(OK).json({
+      submitted: submission,
+      draft: null
+    });
+  }
+);
+
+export default {
+  createRequirementsSubmission,
+  getUserRequirementsSubmissions,
+  deleteRequirementFile,
+  getCurrentRequirementsStatus,
+};

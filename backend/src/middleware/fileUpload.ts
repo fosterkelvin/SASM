@@ -47,8 +47,8 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-    files: 10, // Maximum 10 files per request
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+    files: 15, // Maximum 15 files per request
   },
 });
 
@@ -56,8 +56,12 @@ const upload = multer({
 export const uploadApplicationFiles = upload.fields([
   { name: "profilePhoto", maxCount: 1 },
   { name: "idDocument", maxCount: 1 },
+  { name: "parentID", maxCount: 1 },
   { name: "certificates", maxCount: 5 },
   { name: "signature", maxCount: 1 },
 ]);
+
+// Generic any-files middleware for endpoints that accept dynamic file fields
+export const uploadRequirementsFiles = upload.any();
 
 export default upload;

@@ -93,12 +93,30 @@ export const createApplicationSchema = z.object({
     .optional(),
 
   // Educational Background
-  elementary: z.string().max(200).optional(),
-  elementaryYears: z.string().max(20).optional(),
-  highSchool: z.string().max(200).optional(),
-  highSchoolYears: z.string().max(20).optional(),
-  college: z.string().max(200).optional(),
-  collegeYears: z.string().max(20).optional(),
+  elementary: z
+    .string()
+    .min(2, "Elementary school is required")
+    .max(200),
+  elementaryYears: z
+    .string()
+    .min(2, "Elementary years attended is required")
+    .max(20),
+  highSchool: z
+    .string()
+    .min(2, "High school is required")
+    .max(200),
+  highSchoolYears: z
+    .string()
+    .min(2, "High school years attended is required")
+    .max(20),
+  college: z
+    .string()
+    .min(2, "College/University is required")
+    .max(200),
+  collegeYears: z
+    .string()
+    .min(2, "College years attended is required")
+    .max(20),
   others: z.string().max(200).optional(),
   othersYears: z.string().max(20).optional(),
 
@@ -110,7 +128,21 @@ export const createApplicationSchema = z.object({
     message: "You must agree to the terms and conditions",
   }),
 
-  // E-Signature
+  // Conformity checkbox (replacing signature)
+  conformity: z.boolean().refine((val) => val === true, {
+    message: "You must confirm that the information provided is true",
+  }),
+
+  // Parent/Guardian Consent
+  parentConsent: z.boolean().refine((val) => val === true, {
+    message: "Parent/Guardian consent is required",
+  }),
+  parentGuardianName: z
+    .string()
+    .min(2, "Parent/Guardian name is required")
+    .max(100),
+
+  // E-Signature (optional - replaced by conformity)
   signature: z.string().min(1, "Electronic signature is required").optional(),
 });
 
@@ -119,19 +151,32 @@ export const updateApplicationStatusSchema = z.object({
   status: z.enum([
     "pending",
     "under_review",
+    "psychometric_scheduled",
+    "psychometric_completed",
+    "psychometric_passed",
+    "psychometric_failed",
     "interview_scheduled",
-    "passed_interview",
-    "failed_interview",
-    "hours_completed",
+    "interview_completed",
+    "interview_passed",
+    "interview_failed",
+    "trainee",
+    "training_completed",
     "accepted",
     "rejected",
     "withdrawn",
     "on_hold",
   ]),
   hrComments: z.string().max(1000).optional(),
+  // Psychometric test scheduling fields
+  psychometricTestDate: z.string().optional(),
+  psychometricTestTime: z.string().optional(),
+  psychometricTestLocation: z.string().optional(),
+  psychometricTestWhatToBring: z.string().max(1000).optional(),
+  // Interview scheduling fields
   interviewDate: z.string().optional(),
   interviewTime: z.string().optional(),
   interviewLocation: z.string().optional(),
+  interviewWhatToBring: z.string().max(1000).optional(),
   interviewNotes: z.string().max(1000).optional(),
 });
 
@@ -141,10 +186,16 @@ export const getApplicationsSchema = z.object({
     .enum([
       "pending",
       "under_review",
+      "psychometric_scheduled",
+      "psychometric_completed",
+      "psychometric_passed",
+      "psychometric_failed",
       "interview_scheduled",
-      "passed_interview",
-      "failed_interview",
-      "hours_completed",
+      "interview_completed",
+      "interview_passed",
+      "interview_failed",
+      "trainee",
+      "training_completed",
       "accepted",
       "rejected",
       "withdrawn",
@@ -154,6 +205,13 @@ export const getApplicationsSchema = z.object({
   position: z.enum(["student_assistant", "student_marshal"]).optional(),
   page: z.string().regex(/^\d+$/).transform(Number).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).optional(),
+  assignedTo: z.string().optional(),
+  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+  minRating: z.string().regex(/^\d+$/).transform(Number).optional(),
+  maxRating: z.string().regex(/^\d+$/).transform(Number).optional(),
+  sortBy: z.enum(["createdAt", "rating", "priority", "submittedAt"]).optional(),
+  sortOrder: z.enum(["asc", "desc"]).optional(),
+  search: z.string().optional(),
 });
 
 export type CreateApplicationData = z.infer<typeof createApplicationSchema>;

@@ -3,6 +3,8 @@ import { User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { getUserData, upsertUserData } from "@/lib/api";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 type Props = {
   user: any;
@@ -10,68 +12,72 @@ type Props = {
 };
 
 type LocalPersonal = {
-  gender?: string | null;
-  birthdate?: string | null; // ISO date string
-  civilStatus?: string | null;
+  gender?: string;
+  birthdate?: string; // ISO date string
+  civilStatus?: string;
+  phoneNumber?: string;
+  address?: string;
 };
 
-const STORAGE_PREFIX = "sasm_personal_info_";
-
 export default function PersonalInfoCard({ user, colorScheme }: Props) {
-  const storageKey = `${STORAGE_PREFIX}${user?.id ?? user?._id ?? "anon"}`;
-
   const [editing, setEditing] = useState(false);
   const [local, setLocal] = useState<LocalPersonal>({
-    gender: null,
-    birthdate: null,
-    civilStatus: null,
+    gender: undefined,
+    birthdate: undefined,
+    civilStatus: undefined,
+    phoneNumber: undefined,
+    address: undefined,
+  });
+  const [age, setAge] = useState<number | null>(null);
+
+  // Fetch user data from backend
+  const { data: userData, refetch } = useQuery({
+    queryKey: ["userData"],
+    queryFn: getUserData,
+    enabled: !!user,
   });
 
-  // Load persisted values from localStorage on mount / when user changes
+  // Mutation to save user data
+  const saveUserDataMutation = useMutation({
+    mutationFn: upsertUserData,
+    onSuccess: (data) => {
+      setAge(data.data.age);
+      refetch();
+      setEditing(false);
+    },
+    onError: (error) => {
+      console.error("Failed to save user data:", error);
+    },
+  });
+
+  // Load data when userData is fetched
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw) as LocalPersonal;
-        setLocal((prev) => ({ ...prev, ...parsed }));
-      } else {
-        // initialize from user object if available
-        setLocal({
-          gender: (user?.gender as string) || null,
-          birthdate: user?.birthdate || null,
-          civilStatus: (user?.civilStatus as string) || null,
-        });
-      }
-    } catch (err) {
-      // ignore JSON errors
+    if (userData) {
+      setLocal({
+        gender: userData.gender || undefined,
+        birthdate: userData.birthdate ? userData.birthdate.split('T')[0] : undefined,
+        civilStatus: userData.civilStatus || undefined,
+        phoneNumber: userData.phoneNumber || undefined,
+        address: userData.address || undefined,
+      });
+      setAge(userData.age);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storageKey]);
+  }, [userData]);
 
   const handleSave = () => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(local));
-      setEditing(false);
-    } catch (err) {
-      // ignore
-    }
+    saveUserDataMutation.mutate(local);
   };
 
   const handleCancel = () => {
-    // reload from storage (discard changes)
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        setLocal(JSON.parse(raw));
-      } else {
-        setLocal({
-          gender: (user?.gender as string) || null,
-          birthdate: user?.birthdate || null,
-          civilStatus: (user?.civilStatus as string) || null,
-        });
-      }
-    } catch (err) {
-      // ignore
+    // Reset to server data
+    if (userData) {
+      setLocal({
+        gender: userData.gender || undefined,
+        birthdate: userData.birthdate ? userData.birthdate.split('T')[0] : undefined,
+        civilStatus: userData.civilStatus || undefined,
+        phoneNumber: userData.phoneNumber || undefined,
+        address: userData.address || undefined,
+      });
     }
     setEditing(false);
   };
@@ -128,7 +134,7 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Gender</p>
               {!editing ? (
-                <p className="font-medium text-gray-800 dark:text-gray-200">
+                <p className="font-medium text-gray-800 dark:text-gray-200 capitalize">
                   {local.gender || "Not specified"}
                 </p>
               ) : (
@@ -136,7 +142,7 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
                   className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-sm"
                   value={local.gender ?? ""}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                    setLocal((s) => ({ ...s, gender: e.target.value || null }))
+                    setLocal((s) => ({ ...s, gender: e.target.value || undefined }))
                   }
                 >
                   <option value="">Prefer not to say</option>
@@ -164,19 +170,28 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
                   onChange={(e) =>
                     setLocal((s) => ({
                       ...s,
-                      birthdate: e.target.value || null,
+                      birthdate: e.target.value || undefined,
                     }))
                   }
                 />
               )}
             </div>
 
-            <div className="md:col-span-2">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Age
+              </p>
+              <p className="font-medium text-gray-800 dark:text-gray-200">
+                {age !== null ? `${age} years old` : "Not available"}
+              </p>
+            </div>
+
+            <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Civil Status
               </p>
               {!editing ? (
-                <p className="font-medium text-gray-800 dark:text-gray-200">
+                <p className="font-medium text-gray-800 dark:text-gray-200 capitalize">
                   {local.civilStatus || "Not specified"}
                 </p>
               ) : (
@@ -186,7 +201,7 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                     setLocal((s) => ({
                       ...s,
-                      civilStatus: e.target.value || null,
+                      civilStatus: e.target.value || undefined,
                     }))
                   }
                 >
@@ -216,10 +231,68 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
           <div className="space-y-1">
             <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
             <div className="flex items-center gap-2">
-              <span className="font-medium text-gray-800 dark:text-gray-200">
-                Active
-              </span>
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
+              {/* Compute a friendly status label and color from the user object */}
+              {(() => {
+                const statusRaw = user?.status ?? null;
+
+                let label = "Active";
+                let dotClass = "bg-green-500";
+
+                // Check for Student Assistant or Student Marshal status
+                if (statusRaw === "SA") {
+                  label = "Student Assistant";
+                  dotClass = "bg-green-600";
+                } else if (statusRaw === "SM") {
+                  label = "Student Marshal";
+                  dotClass = "bg-green-600";
+                } else if (
+                  statusRaw === "trainee" ||
+                  user?.isTrainee === true
+                ) {
+                  label = "Trainee";
+                  dotClass = "bg-blue-500";
+                } else if (
+                  statusRaw === "training_completed"
+                ) {
+                  label = "Training Completed";
+                  dotClass = "bg-purple-500";
+                } else if (
+                  statusRaw === "applicant" ||
+                  user?.isApplicant ||
+                  (user?.applications && user.applications.length > 0)
+                ) {
+                  label = "Applicant";
+                  dotClass = "bg-yellow-500";
+                }
+                // Accepted users (e.g., accepted application) should show "Accepted"
+                else if (
+                  (user?.applications &&
+                    user.applications.some(
+                      (a: any) => a.status === "accepted"
+                    )) ||
+                  user?.status === "accepted" ||
+                  user?.isAccepted === true
+                ) {
+                  label = "Accepted";
+                  dotClass = "bg-green-600";
+                } else if (
+                  statusRaw === "inactive" ||
+                  statusRaw === "not_active" ||
+                  user?.active === false
+                ) {
+                  label = "Inactive";
+                  dotClass = "bg-gray-400 dark:bg-gray-600";
+                }
+
+                return (
+                  <>
+                    <span className="font-medium text-gray-800 dark:text-gray-200 capitalize">
+                      {label}
+                    </span>
+                    <div className={`w-2 h-2 rounded-full ${dotClass}`} />
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

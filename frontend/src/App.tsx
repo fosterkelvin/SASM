@@ -4,7 +4,6 @@ import Signup from "./pages/Auth/SignupPage";
 import StudentDashboard from "./pages/Roles/Student/Student Dashboard/StudentDashboard";
 import HRDashboard from "./pages/Roles/HR/HR Dashboard/HRDashboard";
 import OfficeDashboard from "./pages/Roles/Office/Office Dashboard/OfficeDashboard";
-import OfficeDTRPage from "./pages/Roles/Office/DTR/DTR";
 import OfficeEvaluationPage from "./pages/Roles/Office/Evaluation/Evaluation";
 import OfficeLeaveRequests from "./pages/Roles/Office/Leave Requests";
 import OfficeRequests from "./pages/Roles/Office/Requests/Requests";
@@ -16,7 +15,11 @@ import LeaveManagement from "./pages/Roles/HR/Leave Management/LeaveManagement";
 import ReApplicationManagement from "./pages/Roles/HR/ReApplication Management/ReApplicationManagement";
 import Users from "./pages/Roles/HR/Users/Users";
 import EvaluationManagement from "./pages/Roles/HR/Evaluation Management/EvaluationManagement";
+import TraineeManagement from "./pages/Roles/HR/Trainee Management/TraineeManagement";
 import Scholars from "./pages/Roles/Office/Scholars/Scholars";
+import MyTrainees from "./pages/Roles/Office/MyTrainees";
+import OfficeDTRCheck from "./pages/Roles/Office/OfficeDTRCheck";
+import HRDTRCheck from "./pages/Roles/HR/DTR Check/HRDTRCheck";
 import Notifications from "./pages/Utils/Notifications";
 import Analytics from "./pages/Roles/HR/Analytics/Analytics";
 import PublicRoute from "./routes/PublicRoute";
@@ -35,6 +38,9 @@ import Schedule from "./pages/Roles/Student/Schedule/Schedule";
 import Dtr from "./pages/Roles/Student/DTR/Dtr";
 import Requirements from "./pages/Roles/Student/Requirements/Requirements";
 import HRRequirementsManagement from "./pages/Roles/HR/Requirements Management/RequirementsManagement";
+import ProfileSelector from "./pages/Auth/ProfileSelector/ProfileSelector";
+import AuditLogs from "./pages/Roles/Office/AuditLogs/AuditLogs";
+import OfficeProfile from "./pages/Roles/Office/Profile/OfficeProfile";
 // Small layout components to group routes
 const PublicLayout = (): ReactElement => <Outlet />;
 
@@ -146,21 +152,39 @@ function App(): ReactElement {
         <Route path="/hr/analytics" element={<Analytics />} />
         <Route path="/hr-dashboard" element={<HRDashboard />} />
         <Route path="/office-dashboard" element={<OfficeDashboard />} />
-        <Route path="/office/dtr" element={<OfficeDTRPage />} />
+        <Route path="/office/dtr-check" element={<OfficeDTRCheck />} />
         <Route path="/office/evaluation" element={<OfficeEvaluationPage />} />
         <Route path="/office/scholars" element={<Scholars />} />
+        <Route path="/office/my-trainees" element={<MyTrainees />} />
         <Route
           path="/office/leave-requests"
           element={<OfficeLeaveRequests />}
         />
         <Route path="/office/requests" element={<OfficeRequests />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/office/profile" element={<OfficeProfile />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/applications" element={<HRApplicationManagement />} />
         <Route path="/leave-management" element={<LeaveManagement />} />
         <Route path="/reapplications" element={<ReApplicationManagement />} />
         <Route path="/hr/users" element={<Users />} />
         <Route path="/hr/evaluations" element={<EvaluationManagement />} />
+        <Route path="/hr/trainees" element={<TraineeManagement />} />
+        <Route path="/hr/dtr-check" element={<HRDTRCheck />} />
+
+        {/* Netflix-style Profile Selector - Must be outside AppContainer for full-screen effect */}
+      </Route>
+
+      {/* Profile Selector - Full screen layout (outside AppContainer) */}
+      <Route
+        element={
+          <RoleProtectedRoute>
+            <Outlet />
+          </RoleProtectedRoute>
+        }
+      >
+        <Route path="/profile-selector" element={<ProfileSelector />} />
+        <Route path="/office/audit-logs" element={<AuditLogs />} />
       </Route>
 
       {/* Fallback */}

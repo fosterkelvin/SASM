@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getUserApplications, createApplication } from "@/lib/api";
+import { getUserApplications, createApplication, getUserData } from "@/lib/api";
 import ApplicationSuccessScreen from "./components/ApplicationSuccessScreen";
 import ApplicationWithdrawnScreen from "./components/ApplicationWithdrawnScreen";
 import ResendVerificationButton from "./components/ResendVerificationButton";
@@ -44,6 +44,13 @@ function Application() {
       !["failed_interview", "rejected", "withdrawn"].includes(app.status)
   );
 
+  // Fetch user data for auto-population
+  const { data: userData } = useQuery({
+    queryKey: ["userData"],
+    queryFn: getUserData,
+    enabled: !!user,
+  });
+
   const [hasRelativeWorking, setHasRelativeWorking] = useState(false);
   const [relatives, setRelatives] = useState([
     { name: "", department: "", relationship: "" },
@@ -57,6 +64,21 @@ function Application() {
     agreedToTerms: false,
     conformity: false,
   });
+
+  // Auto-populate form data from userData when it's loaded
+  useEffect(() => {
+    if (userData) {
+      setFormData((prev) => ({
+        ...prev,
+        firstName: user?.firstname || "",
+        lastName: user?.lastname || "",
+        email: user?.email || "",
+        age: userData.age || prev.age,
+        gender: userData.gender ? userData.gender.charAt(0).toUpperCase() + userData.gender.slice(1) : prev.gender,
+        civilStatus: userData.civilStatus ? userData.civilStatus.charAt(0).toUpperCase() + userData.civilStatus.slice(1) : prev.civilStatus,
+      }));
+    }
+  }, [userData, user]);
 
   const [errors, setErrors] = useState<
     Partial<Record<keyof ApplicationFormData, string>>
@@ -100,8 +122,8 @@ function Application() {
     if (!activeApplication) return;
     setIsWithdrawing(true);
     try {
-      const { deleteApplication } = await import("@/lib/api");
-      await deleteApplication(activeApplication._id);
+      const { withdrawApplication } = await import("@/lib/api");
+      await withdrawApplication(activeApplication._id);
       // Clear any uploaded client-side files/previews when withdrawing
       try {
         clearCertificates();
@@ -248,6 +270,11 @@ function Application() {
     if (seminarErrors.length > 0) {
       setSubmitMessage(seminarErrors.join(" "));
       setIsSubmitting(false);
+      // Scroll to seminars section
+      const seminarsSection = document.querySelector('[data-section="seminars"]');
+      if (seminarsSection) {
+        seminarsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
     setIsSubmitting(true);
@@ -261,6 +288,11 @@ function Application() {
       }));
       setSubmitMessage("Please upload your 2x2 picture before submitting.");
       setIsSubmitting(false);
+      // Scroll to file upload section
+      const fileSection = document.querySelector('[data-section="fileUpload"]');
+      if (fileSection) {
+        fileSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
 
@@ -281,6 +313,11 @@ function Application() {
           "Please provide at least one relative with all fields filled."
         );
         setIsSubmitting(false);
+        // Scroll to relatives section
+        const relativesSection = document.querySelector('[data-section="relatives"]');
+        if (relativesSection) {
+          relativesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
         return;
       }
     }
@@ -294,6 +331,7 @@ function Application() {
         seminars: seminarsToSubmit,
         age: formData.age ? Number(formData.age) : undefined,
         profilePhoto: uploadedFiles.profilePhoto,
+        parentID: formData.parentID,
         relatives: hasRelativeWorking ? relatives : [],
       });
       if (!parsed.success) {
@@ -304,8 +342,73 @@ function Application() {
           newErrors[field] = err.message;
         });
         setErrors(newErrors);
-        setSubmitMessage("Please fill in all required fields.");
         setIsSubmitting(false);
+
+        // Map fields to their sections for better scrolling
+        const fieldToSection: Record<string, string> = {
+          position: 'position',
+          firstName: 'personal',
+          lastName: 'personal',
+          age: 'personal',
+          gender: 'personal',
+          civilStatus: 'personal',
+          homeAddress: 'address',
+          homeBarangay: 'address',
+          homeCity: 'address',
+          homeProvince: 'address',
+          baguioAddress: 'address',
+          baguioBarangay: 'address',
+          baguioCity: 'address',
+          homeContact: 'contact',
+          baguioContact: 'contact',
+          email: 'contact',
+          citizenship: 'contact',
+          emergencyContact: 'contact',
+          emergencyContactNumber: 'contact',
+          fatherName: 'parents',
+          fatherOccupation: 'parents',
+          motherName: 'parents',
+          motherOccupation: 'parents',
+          elementary: 'education',
+          elementaryYears: 'education',
+          highSchool: 'education',
+          highSchoolYears: 'education',
+          college: 'education',
+          collegeYears: 'education',
+          profilePhoto: 'fileUpload',
+          parentGuardianName: 'parentConsent',
+          parentID: 'parentConsent',
+          parentConsent: 'parentConsent',
+          agreedToTerms: 'agreement',
+          conformity: 'agreement',
+        };
+
+        // Get first error field and its section
+        const firstErrorField = Object.keys(newErrors)[0];
+        const sectionName = fieldToSection[firstErrorField] || firstErrorField;
+
+        // Count total errors
+        const errorCount = Object.keys(newErrors).length;
+        setSubmitMessage(`Please fix ${errorCount} required field${errorCount > 1 ? 's' : ''} before submitting.`);
+
+        // Scroll to the section containing the first error
+        const section = document.querySelector(`[data-section="${sectionName}"]`);
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+          // After scrolling, try to focus the specific field
+          setTimeout(() => {
+            const element = document.getElementById(firstErrorField) ||
+                           document.querySelector(`[name="${firstErrorField}"]`) ||
+                           document.querySelector(`input[id*="${firstErrorField}"]`) ||
+                           document.querySelector(`select[id*="${firstErrorField}"]`) ||
+                           document.querySelector(`textarea[id*="${firstErrorField}"]`);
+
+            if (element) {
+              (element as HTMLElement).focus();
+            }
+          }, 600);
+        }
         return;
       }
 
@@ -320,7 +423,8 @@ function Application() {
         } else if (
           key === "hasRelativeWorking" ||
           key === "agreedToTerms" ||
-          key === "conformity"
+          key === "conformity" ||
+          key === "parentConsent"
         ) {
           if (value !== undefined && value !== null) {
             formDataToSubmit.append(key, Boolean(value).toString());
@@ -329,6 +433,9 @@ function Application() {
           if (value) {
             formDataToSubmit.append(key, value.toString());
           }
+        } else if (key === "parentID") {
+          // Skip parentID here, will be added separately as file
+          return;
         } else if (value !== undefined && value !== null) {
           formDataToSubmit.append(key, value.toString());
         }
@@ -340,6 +447,11 @@ function Application() {
 
       if (uploadedFiles.profilePhoto) {
         formDataToSubmit.append("profilePhoto", uploadedFiles.profilePhoto);
+      }
+
+      // Append parent ID file if present
+      if (formData.parentID) {
+        formDataToSubmit.append("parentID", formData.parentID);
       }
       if (uploadedCertificates.certificates.length > 0) {
         uploadedCertificates.certificates.forEach((file) => {
@@ -360,10 +472,7 @@ function Application() {
   };
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const renderSidebar = () => (
-    <StudentSidebar
-      currentPage="Application"
-      onCollapseChange={setIsSidebarCollapsed}
-    />
+    <StudentSidebar onCollapseChange={setIsSidebarCollapsed} />
   );
 
   if (submitSuccess) {
@@ -421,65 +530,73 @@ function Application() {
   if (user && !user.verified) {
     return (
       <>
-        <div className="flex-1 pt-24 md:pt-0 transition-all duration-300">
+        <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">
+          <StudentSidebar onCollapseChange={setIsSidebarCollapsed} />
           <div
-            className={`hidden md:flex items-center gap-4 fixed top-0 z-30 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 h-[73px] px-8 ${
-              isSidebarCollapsed
-                ? "md:ml-20 md:w-[calc(100%-5rem)]"
-                : "md:ml-64 md:w-[calc(100%-16rem)]"
+            className={`flex-1 pt-24 md:pt-0 transition-all duration-300 ${
+              isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
             }`}
           >
-            <img src="/UBLogo.svg" alt="Logo" className="h-10 w-auto" />
-            <h1 className="text-2xl font-bold text-white dark:text-white">
-              Email Verification Required
-            </h1>
-          </div>
-          <div className="p-4 md:p-10 flex items-center justify-center min-h-screen">
-            <Card className="max-w-2xl w-full mx-4">
-              <CardContent className="p-6 md:p-8 text-center">
-                <div className="flex flex-col items-center gap-6">
-                  <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
-                    <AlertTriangle className="w-10 h-10 text-yellow-600 dark:text-yellow-400" />
-                  </div>
-                  <div className="space-y-4">
-                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
-                      Verify Your Email First
-                    </h1>
-                    <p className="text-lg text-gray-600 dark:text-gray-400 max-w-md">
-                      You need to verify your email address before you can
-                      submit an application.
-                    </p>
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                      <div className="text-sm text-yellow-800 dark:text-yellow-200">
-                        <strong>Current Email:</strong> {user.email}
-                        <br />
-                        <br />
-                        Please check your inbox for a verification email and
-                        click the verification link.
-                        <br />
-                        <br />
-                        <strong>Next Steps:</strong>
-                        <ul className="list-decimal list-inside mt-2">
-                          <li>Check your email inbox (and spam folder)</li>
-                          <li>Click the verification link in the email</li>
-                          <li>Return here to complete your application</li>
-                        </ul>
+            {/* Top header bar - only visible on desktop */}
+            <div
+              className={`hidden md:flex items-center gap-4 fixed top-0 left-0 z-30 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 h-[81px] ${
+                isSidebarCollapsed
+                  ? "md:w-[calc(100%-5rem)] md:ml-20"
+                  : "md:w-[calc(100%-16rem)] md:ml-64"
+              }`}
+            >
+              <h1 className="text-2xl font-bold text-white dark:text-white ml-4">
+                Email Verification Required
+              </h1>
+            </div>
+
+            <div className="p-4 md:p-10 flex items-center justify-center min-h-screen">
+              <Card className="max-w-2xl w-full mx-4">
+                <CardContent className="p-6 md:p-8 text-center">
+                  <div className="flex flex-col items-center gap-6">
+                    <div className="w-20 h-20 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+                      <AlertTriangle className="w-10 h-10 text-yellow-600 dark:text-yellow-400" />
+                    </div>
+                    <div className="space-y-4">
+                      <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+                        Verify Your Email First
+                      </h1>
+                      <p className="text-lg text-gray-600 dark:text-gray-400 max-w-md">
+                        You need to verify your email address before you can
+                        submit an application.
+                      </p>
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                        <div className="text-sm text-yellow-800 dark:text-yellow-200">
+                          <strong>Current Email:</strong> {user.email}
+                          <br />
+                          <br />
+                          Please check your inbox for a verification email and
+                          click the verification link.
+                          <br />
+                          <br />
+                          <strong>Next Steps:</strong>
+                          <ul className="list-decimal list-inside mt-2">
+                            <li>Check your email inbox (and spam folder)</li>
+                            <li>Click the verification link in the email</li>
+                            <li>Return here to complete your application</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full">
+                      <ResendVerificationButton email={user.email} />
+                      <Button
+                        onClick={() => window.location.reload()}
+                        variant="outline"
+                        className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      >
+                        Refresh Page
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-3 w-full">
-                    <ResendVerificationButton email={user.email} />
-                    <Button
-                      onClick={() => window.location.reload()}
-                      variant="outline"
-                      className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                    >
-                      Refresh Page
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </>
@@ -488,10 +605,7 @@ function Application() {
   if (activeApplication) {
     return (
       <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">
-        <StudentSidebar
-          currentPage="Application"
-          onCollapseChange={setIsSidebarCollapsed}
-        />
+        <StudentSidebar onCollapseChange={setIsSidebarCollapsed} />
         <div
           className={`flex-1 flex flex-col transition-all duration-300 ${
             isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
@@ -532,7 +646,9 @@ function Application() {
                   />
                 </div>
                 <div className="mt-4 px-8 pb-8">
-                  {activeApplication.status === "pending" && (
+                  {activeApplication.status !== "accepted" &&
+                   activeApplication.status !== "rejected" &&
+                   activeApplication.status !== "withdrawn" && (
                     <div className="flex justify-center mt-6">
                       <Button
                         variant="outline"
@@ -593,14 +709,13 @@ function Application() {
                                 <p className="font-medium mb-1">Warning:</p>
                                 <ul className="list-disc list-inside space-y-1">
                                   <li>
-                                    Your application will be permanently deleted
+                                    Your application status will be marked as withdrawn
                                   </li>
                                   <li>
-                                    All submitted documents will be removed
+                                    Your submitted documents will be kept on file
                                   </li>
                                   <li>
-                                    You'll need to start over if you want to
-                                    reapply
+                                    This action cannot be undone
                                   </li>
                                 </ul>
                               </div>
@@ -645,10 +760,7 @@ function Application() {
   return (
     <>
       <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">
-        <StudentSidebar
-          currentPage="Application"
-          onCollapseChange={setIsSidebarCollapsed}
-        />
+        <StudentSidebar onCollapseChange={setIsSidebarCollapsed} />
         <div
           className={`flex-1 transition-all duration-300 ${
             isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
@@ -696,65 +808,84 @@ function Application() {
                   onSubmit={handleSubmit}
                   className="space-y-6 md:space-y-8"
                 >
-                  <PositionSection
-                    position={formData.position ?? ""}
-                    onChange={(value) => handleInputChange("position", value)}
-                    error={errors.position}
-                  />
-                  <PersonalInfoSection
-                    formData={formData}
-                    errors={errors}
-                    handleInputChange={handleInputChange}
-                  />
-                  <AddressInfoSection
-                    formData={formData}
-                    errors={errors}
-                    handleInputChange={handleInputChange}
-                  />
-                  <ContactInfoSection
-                    formData={formData}
-                    errors={errors}
-                    handleInputChange={handleInputChange}
-                    user={user}
-                  />
-                  <ParentsInfoSection
-                    formData={formData}
-                    errors={errors}
-                    handleInputChange={handleInputChange}
-                  />
-                  <RelativeSection
-                    hasRelativeWorking={hasRelativeWorking}
-                    relatives={relatives}
-                    setHasRelativeWorking={setHasRelativeWorking}
-                    updateRelative={updateRelative}
-                    addRelative={addRelative}
-                    removeRelative={removeRelative}
-                    handleInputChange={handleInputChange}
-                  />
-                  <EducationInfoSection
-                    formData={formData}
-                    errors={errors}
-                    handleInputChange={handleInputChange}
-                  />
-                  <SeminarsSection
-                    seminars={seminars}
-                    updateSeminar={updateSeminar}
-                    addSeminar={addSeminar}
-                    removeSeminar={removeSeminar}
-                  />
+                  <div data-section="position">
+                    <PositionSection
+                      position={formData.position ?? ""}
+                      onChange={(value) => handleInputChange("position", value)}
+                      error={errors.position}
+                    />
+                  </div>
+                  {/* Personal Info Section - Hidden but data still submitted */}
+                  <div style={{ display: 'none' }}>
+                    <PersonalInfoSection
+                      formData={formData}
+                      errors={errors}
+                      handleInputChange={handleInputChange}
+                    />
+                  </div>
+                  <div data-section="address">
+                    <AddressInfoSection
+                      formData={formData}
+                      errors={errors}
+                      handleInputChange={handleInputChange}
+                    />
+                  </div>
+                  <div data-section="contact">
+                    <ContactInfoSection
+                      formData={formData}
+                      errors={errors}
+                      handleInputChange={handleInputChange}
+                      user={user}
+                    />
+                  </div>
+                  <div data-section="parents">
+                    <ParentsInfoSection
+                      formData={formData}
+                      errors={errors}
+                      handleInputChange={handleInputChange}
+                    />
+                  </div>
+                  <div data-section="relatives">
+                    <RelativeSection
+                      hasRelativeWorking={hasRelativeWorking}
+                      relatives={relatives}
+                      setHasRelativeWorking={setHasRelativeWorking}
+                      updateRelative={updateRelative}
+                      addRelative={addRelative}
+                      removeRelative={removeRelative}
+                      handleInputChange={handleInputChange}
+                    />
+                  </div>
+                  <div data-section="education">
+                    <EducationInfoSection
+                      formData={formData}
+                      errors={errors}
+                      handleInputChange={handleInputChange}
+                    />
+                  </div>
+                  <div data-section="seminars">
+                    <SeminarsSection
+                      seminars={seminars}
+                      updateSeminar={updateSeminar}
+                      addSeminar={addSeminar}
+                      removeSeminar={removeSeminar}
+                    />
+                  </div>
                   <CertificatesSection
                     certificateFiles={uploadedCertificates.certificates}
                     certificatePreviewUrls={certificatePreviewUrls.certificates}
                     handleCertificateUpload={handleCertificatesUpload}
                     removeCertificate={removeCertificate}
                   />
-                  <FileUploadSection
-                    filePreviewUrl={filePreviewUrls?.profilePhoto}
-                    handleFileUpload={handleFileUpload}
-                    removeFile={removeFile}
-                    error={errors.profilePhoto}
-                  />
-                  <div className="space-y-6 p-4 rounded-lg border">
+                  <div data-section="fileUpload">
+                    <FileUploadSection
+                      filePreviewUrl={filePreviewUrls?.profilePhoto}
+                      handleFileUpload={handleFileUpload}
+                      removeFile={removeFile}
+                      error={errors.profilePhoto}
+                    />
+                  </div>
+                  <div data-section="agreement" className="space-y-6 p-4 rounded-lg border">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
                       Agreement & Applicant's Conformity{" "}
                       <span className="text-red-600"> *</span>
@@ -841,7 +972,7 @@ function Application() {
                     </div>
                   </div>
                   {/* Parent/Guardian Consent Section */}
-                  <div className="space-y-6 p-4 rounded-lg border">
+                  <div data-section="parentConsent" className="space-y-6 p-4 rounded-lg border">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
                       Parent/Guardian's Consent
                       <span className="text-red-600"> *</span>
