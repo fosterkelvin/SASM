@@ -3,11 +3,13 @@
 ## Backend Deployment Steps
 
 ### 1. ✅ Code Changes Applied (Already Done)
+
 - [x] `backend/src/models/session.model.ts` - Added `profileID` field
 - [x] `backend/src/services/officeProfile.service.ts` - Store profileID in session
 - [x] `backend/src/services/auth.service.ts` - Include profileID in token refresh
 
 ### 2. 🔴 **CRITICAL: Deploy Backend Changes**
+
 **You MUST deploy these backend changes for the fix to work!**
 
 ```bash
@@ -23,6 +25,7 @@ git push
 ```
 
 ### 3. 🔴 **CRITICAL: Clear Old Sessions in Database**
+
 After deploying backend, you need to clear old sessions that don't have profileID:
 
 ```javascript
@@ -41,6 +44,7 @@ db.sessions.deleteMany({ profileID: { $exists: false } });
 ### 4. 🔴 **CRITICAL: Set Production Environment Variable**
 
 #### If deploying to **Vercel**:
+
 1. Go to: https://vercel.com/[your-username]/[your-project]/settings/environment-variables
 2. Add environment variable:
    - **Key:** `VITE_API`
@@ -50,17 +54,21 @@ db.sessions.deleteMany({ profileID: { $exists: false } });
 4. Redeploy from Vercel dashboard
 
 #### If deploying to **Netlify**:
+
 1. Site settings → Environment variables
 2. Add: `VITE_API` = `https://your-backend-url.com`
 3. Redeploy
 
 #### If using **Custom Server**:
+
 Edit `frontend/.env.production`:
+
 ```bash
 VITE_API=https://your-actual-backend-url.com
 ```
 
 ### 5. 🔴 **CRITICAL: Rebuild Frontend**
+
 ```bash
 cd d:\CODE\SASM-1\frontend
 npm run build
@@ -99,8 +107,10 @@ Before proceeding, diagnose the issue:
 ## Common Issues & Solutions
 
 ### Issue: "Profile: kel" not showing (profileName missing)
+
 **Cause:** Backend not deployed OR old session still active OR profileID not in session
-**Solution:** 
+**Solution:**
+
 1. **Deploy backend code** (CRITICAL - must be done first!)
 2. **Clear all sessions** in database: `db.sessions.deleteMany({})`
 3. **Sign out** from deployed site
@@ -109,18 +119,23 @@ Before proceeding, diagnose the issue:
 6. Profile should now show "Profile: kel"
 
 ### Issue: CORS errors in console
+
 **Cause:** Backend CORS not configured for frontend domain
 **Solution:** Update backend CORS settings to allow your frontend domain
 
 ### Issue: API requests going to localhost
+
 **Cause:** Environment variable not set or not rebuilding
-**Solution:** 
+**Solution:**
+
 - Set `VITE_API` in production environment
 - Rebuild frontend completely
 
 ### Issue: 401 Unauthorized errors
+
 **Cause:** Cookies not being sent cross-domain
-**Solution:** 
+**Solution:**
+
 - Ensure backend and frontend are on same domain or proper CORS setup
 - Check `withCredentials: true` in axios config
 - Verify cookie `sameSite` settings in backend
@@ -128,6 +143,7 @@ Before proceeding, diagnose the issue:
 ## Backend Environment Check
 
 Ensure your backend `.env` has:
+
 ```env
 # CORS - Must include your frontend domain
 APP_ORIGIN=https://sasm.site
@@ -139,6 +155,7 @@ NODE_ENV=production
 ## Expected Result
 
 After completing ALL steps above:
+
 - User selects profile → sees profile name in sidebar ✅
 - Profile persists after page refresh ✅
 - Profile persists even after 15+ minutes (token refresh) ✅
