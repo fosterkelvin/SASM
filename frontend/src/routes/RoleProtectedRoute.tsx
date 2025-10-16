@@ -2,13 +2,6 @@ import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { hasRouteAccess, getRoleBasedRedirect } from "@/lib/roleUtils";
-import { useQuery } from "@tanstack/react-query";
-import { getUserApplications } from "@/lib/api";
-import {
-  checkEmailRequirement,
-  isRouteAllowedWithEmailRequirement,
-} from "@/lib/emailRequirement";
-import EmailRequirementBlocker from "@/components/EmailRequirementBlocker";
 
 const RoleProtectedRoute: React.FC<{
   children: React.ReactNode;
@@ -16,13 +9,6 @@ const RoleProtectedRoute: React.FC<{
 }> = ({ children }) => {
   const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
-
-  // Fetch user applications to check email requirement (only for students)
-  const { data: applicationsData, isLoading: appsLoading } = useQuery({
-    queryKey: ["userApplications"],
-    queryFn: getUserApplications,
-    enabled: !!user && user.role === "student",
-  });
 
   if (isLoading) return <div>Loading...</div>;
 
@@ -33,32 +19,13 @@ const RoleProtectedRoute: React.FC<{
   const userRole = user?.role || "";
   const currentPath = location.pathname;
 
-  // Check if user has route access based on role
-  if (!hasRouteAccess(userRole, currentPath)) {
-    return <Navigate to={getRoleBasedRedirect(userRole)} replace />;
+  // Allow access if role utility says so
+  if (hasRouteAccess(userRole, currentPath)) {
+    return <>{children}</>;
   }
 
-  // For student users, check if email update is required
-  if (userRole === "student" && !appsLoading) {
-    const applications = applicationsData?.applications || [];
-    const { isEmailUpdateRequired } = checkEmailRequirement(user, applications);
-
-    // If email update is required and user is not on an allowed route
-    if (
-      isEmailUpdateRequired &&
-      !isRouteAllowedWithEmailRequirement(currentPath)
-    ) {
-      // Show blocker overlay instead of redirecting
-      return (
-        <>
-          {children}
-          <EmailRequirementBlocker />
-        </>
-      );
-    }
-  }
-
-  return <>{children}</>;
+  // Otherwise redirect to their dashboard
+  return <Navigate to={getRoleBasedRedirect(userRole)} replace />;
 };
 
 export default RoleProtectedRoute;

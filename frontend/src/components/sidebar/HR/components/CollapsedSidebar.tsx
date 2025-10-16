@@ -10,9 +10,6 @@ import {
   Sun,
   Moon,
   LogOut,
-  GraduationCap,
-  ClipboardCheck,
-  Bell,
 } from "lucide-react";
 
 interface Props {
@@ -116,45 +113,12 @@ const CollapsedSidebar: React.FC<Props> = ({
 
           <div className="group relative">
             <button
-              onClick={handlers.trainees}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-              aria-label="Trainees"
-              title="Trainees"
-            >
-              <GraduationCap size={16} />
-            </button>
-          </div>
-
-          <div className="group relative">
-            <button
               onClick={handlers.leaves}
               className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
               aria-label="Leave Management"
               title="Leave Management"
             >
               <Calendar size={16} />
-            </button>
-          </div>
-
-          <div className="group relative">
-            <button
-              onClick={handlers.dtrCheck}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-              aria-label="DTR Check"
-              title="DTR Check"
-            >
-              <ClipboardCheck size={16} />
-            </button>
-          </div>
-
-          <div className="group relative">
-            <button
-              onClick={handlers.notifications}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-              aria-label="Notifications"
-              title="Notifications"
-            >
-              <Bell size={16} />
             </button>
           </div>
         </div>

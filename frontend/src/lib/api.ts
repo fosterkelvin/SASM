@@ -99,28 +99,12 @@ export const getAllApplications = async (params?: {
   position?: string;
   page?: number;
   limit?: number;
-  assignedTo?: string;
-  priority?: string;
-  minRating?: number;
-  maxRating?: number;
-  sortBy?: string;
-  sortOrder?: string;
-  search?: string;
 }) => {
   const searchParams = new URLSearchParams();
   if (params?.status) searchParams.append("status", params.status);
   if (params?.position) searchParams.append("position", params.position);
   if (params?.page) searchParams.append("page", params.page.toString());
   if (params?.limit) searchParams.append("limit", params.limit.toString());
-  if (params?.assignedTo) searchParams.append("assignedTo", params.assignedTo);
-  if (params?.priority) searchParams.append("priority", params.priority);
-  if (params?.minRating !== undefined)
-    searchParams.append("minRating", params.minRating.toString());
-  if (params?.maxRating !== undefined)
-    searchParams.append("maxRating", params.maxRating.toString());
-  if (params?.sortBy) searchParams.append("sortBy", params.sortBy);
-  if (params?.sortOrder) searchParams.append("sortOrder", params.sortOrder);
-  if (params?.search) searchParams.append("search", params.search);
 
   const response = await API.get(
     `/applications/all?${searchParams.toString()}`
@@ -139,11 +123,6 @@ export const updateApplicationStatus = async (
   return response.data;
 };
 
-export const withdrawApplication = async (id: string) => {
-  const response = await API.put(`/applications/${id}/withdraw`);
-  return response.data;
-};
-
 export const deleteApplication = async (id: string) => {
   const response = await API.delete(`/applications/${id}`);
   return response.data;
@@ -151,317 +130,6 @@ export const deleteApplication = async (id: string) => {
 
 export const getApplicationStats = async () => {
   const response = await API.get("/applications/stats");
-  return response.data;
-};
-
-// New HR Application Management APIs
-export const assignApplication = async (
-  id: string,
-  assignedTo: string | null
-) => {
-  const response = await API.put(`/applications/${id}/assign`, { assignedTo });
-  return response.data;
-};
-
-export const rateApplication = async (
-  id: string,
-  rating: number,
-  ratingNotes?: string
-) => {
-  const response = await API.put(`/applications/${id}/rate`, {
-    rating,
-    ratingNotes,
-  });
-  return response.data;
-};
-
-export const addApplicationNote = async (id: string, notes: string) => {
-  const response = await API.post(`/applications/${id}/notes`, { notes });
-  return response.data;
-};
-
-export const updateApplicationPriority = async (
-  id: string,
-  priority: string
-) => {
-  const response = await API.put(`/applications/${id}/priority`, { priority });
-  return response.data;
-};
-
-export const bulkUpdateApplications = async (
-  applicationIds: string[],
-  action: string,
-  data: any
-) => {
-  const response = await API.post("/applications/bulk-update", {
-    applicationIds,
-    action,
-    data,
-  });
-  return response.data;
-};
-
-// Get all HR staff for assignment dropdown
-export const getHRStaff = async () => {
-  const response = await API.get("/users?role=hr,office");
-  return response.data;
-};
-
-// Get all office users for trainee deployment dropdown
-export const getOfficeUsers = async () => {
-  const response = await API.get("/users?role=office");
-  return response.data;
-};
-
-// ===== NEW WORKFLOW APIs =====
-
-// Psychometric Test Workflow
-export const schedulePsychometricTest = async (
-  applicationId: string,
-  data: {
-    psychometricTestDate: string;
-    psychometricTestTime: string;
-    psychometricTestLocation?: string;
-    psychometricTestLink?: string;
-    psychometricTestNotes?: string;
-  }
-) => {
-  const response = await API.post(
-    `/workflow/applications/${applicationId}/psychometric/schedule`,
-    data
-  );
-  return response.data;
-};
-
-export const submitPsychometricTestScore = async (
-  applicationId: string,
-  data: {
-    psychometricTestScore: number;
-    psychometricTestPassed: boolean;
-    psychometricTestNotes?: string;
-  }
-) => {
-  const response = await API.post(
-    `/workflow/applications/${applicationId}/psychometric/score`,
-    data
-  );
-  return response.data;
-};
-
-// Interview Workflow
-export const scheduleInterview = async (
-  applicationId: string,
-  data: {
-    interviewDate: string;
-    interviewTime: string;
-    interviewLocation?: string;
-    interviewMode: "in-person" | "virtual" | "phone";
-    interviewLink?: string;
-    interviewNotes?: string;
-  }
-) => {
-  const response = await API.post(
-    `/workflow/applications/${applicationId}/interview/schedule`,
-    data
-  );
-  return response.data;
-};
-
-export const submitInterviewResult = async (
-  applicationId: string,
-  data: {
-    interviewScore: number;
-    interviewPassed: boolean;
-    interviewNotes?: string;
-  }
-) => {
-  const response = await API.post(
-    `/workflow/applications/${applicationId}/interview/result`,
-    data
-  );
-  return response.data;
-};
-
-// Trainee Workflow
-export const setAsTrainee = async (
-  applicationId: string,
-  data: {
-    traineeStartDate: string;
-    requiredHours: number;
-    traineeOffice?: string;
-    traineeSupervisor?: string;
-    traineeNotes?: string;
-  }
-) => {
-  const response = await API.post(
-    `/workflow/applications/${applicationId}/trainee/set`,
-    data
-  );
-  return response.data;
-};
-
-export const updateTraineeHours = async (
-  applicationId: string,
-  data: {
-    completedHours: number;
-    traineeNotes?: string;
-  }
-) => {
-  const response = await API.put(
-    `/workflow/applications/${applicationId}/trainee/hours`,
-    data
-  );
-  return response.data;
-};
-
-// ===== TRAINEE DEPLOYMENT & MANAGEMENT APIs =====
-
-// Get all trainees (HR only)
-export const getAllTrainees = async (params?: {
-  office?: string;
-  status?: string;
-}) => {
-  const searchParams = new URLSearchParams();
-  if (params?.office) searchParams.append("office", params.office);
-  if (params?.status) searchParams.append("status", params.status);
-
-  const response = await API.get(`/trainees/all?${searchParams.toString()}`);
-  return response.data;
-};
-
-// Get trainees for specific office (Office staff and HR)
-export const getOfficeTrainees = async (params?: { office?: string }) => {
-  const searchParams = new URLSearchParams();
-  if (params?.office) searchParams.append("office", params.office);
-
-  const response = await API.get(`/trainees/office?${searchParams.toString()}`);
-  return response.data;
-};
-
-// Deploy trainee to office (HR only)
-export const deployTrainee = async (
-  applicationId: string,
-  data: {
-    traineeOffice: string;
-    traineeSupervisor?: string;
-    traineeStartDate: string;
-    traineeEndDate?: string;
-    requiredHours: number;
-    traineeNotes?: string;
-  }
-) => {
-  const response = await API.post(`/trainees/${applicationId}/deploy`, data);
-  return response.data;
-};
-
-// Update trainee deployment (HR only)
-export const updateTraineeDeployment = async (
-  applicationId: string,
-  data: {
-    traineeOffice?: string;
-    traineeSupervisor?: string;
-    traineeStartDate?: string;
-    traineeEndDate?: string;
-    requiredHours?: number;
-    completedHours?: number;
-    traineeNotes?: string;
-    traineePerformanceRating?: number;
-  }
-) => {
-  const response = await API.put(`/trainees/${applicationId}/deployment`, data);
-  return response.data;
-};
-
-// Update trainee hours (Office staff)
-export const updateTraineeHoursOffice = async (
-  applicationId: string,
-  data: {
-    completedHours: number;
-    notes?: string;
-  }
-) => {
-  const response = await API.put(`/trainees/${applicationId}/hours`, data);
-  return response.data;
-};
-
-// Get student's own trainee deployment info
-export const getMyTraineeDeployment = async () => {
-  const response = await API.get("/trainees/my-deployment");
-  return response.data;
-};
-
-// Schedule deployment interview (Office staff)
-export const scheduleDeploymentInterview = async (
-  applicationId: string,
-  data: {
-    deploymentInterviewDate: string;
-    deploymentInterviewTime: string;
-    deploymentInterviewLocation?: string;
-    deploymentInterviewMode: "in-person" | "virtual" | "phone";
-    deploymentInterviewLink?: string;
-    deploymentInterviewNotes?: string;
-  }
-) => {
-  const response = await API.post(
-    `/trainees/${applicationId}/deployment/interview/schedule`,
-    data
-  );
-  return response.data;
-};
-
-// Accept deployment (Office staff)
-export const acceptDeployment = async (
-  applicationId: string,
-  data?: {
-    notes?: string;
-  }
-) => {
-  const response = await API.post(
-    `/trainees/${applicationId}/deployment/accept`,
-    data || {}
-  );
-  return response.data;
-};
-
-// Reject deployment (Office staff)
-export const rejectDeployment = async (
-  applicationId: string,
-  data: {
-    rejectionReason: string;
-  }
-) => {
-  const response = await API.post(
-    `/trainees/${applicationId}/deployment/reject`,
-    data
-  );
-  return response.data;
-};
-
-// Final Actions
-export const acceptApplication = async (
-  applicationId: string,
-  data: {
-    traineePerformanceRating?: number;
-    hrComments?: string;
-  }
-) => {
-  const response = await API.post(
-    `/workflow/applications/${applicationId}/accept`,
-    data
-  );
-  return response.data;
-};
-
-export const rejectApplication = async (
-  applicationId: string,
-  data: {
-    rejectionReason: string;
-  }
-) => {
-  const response = await API.post(
-    `/workflow/applications/${applicationId}/reject`,
-    data
-  );
   return response.data;
 };
 
@@ -555,16 +223,13 @@ export const selectProfile = async (data: {
   return response.data;
 };
 
-export const updateProfile = async (
-  profileID: string,
-  updates: {
-    profileName?: string;
-    profilePIN?: string;
-    permissions?: any;
-    isActive?: boolean;
-    avatar?: string;
-  }
-) => {
+export const updateProfile = async (profileID: string, updates: {
+  profileName?: string;
+  profilePIN?: string;
+  permissions?: any;
+  isActive?: boolean;
+  avatar?: string;
+}) => {
   const response = await API.patch(`/office/profiles/${profileID}`, updates);
   return response.data;
 };
@@ -602,8 +267,6 @@ export const getAuditLogs = async (params?: {
   if (params?.limit) searchParams.append("limit", params.limit.toString());
   if (params?.skip) searchParams.append("skip", params.skip.toString());
 
-  const response = await API.get(
-    `/office/audit-logs?${searchParams.toString()}`
-  );
+  const response = await API.get(`/office/audit-logs?${searchParams.toString()}`);
   return response.data;
 };

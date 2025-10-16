@@ -1,15 +1,6 @@
 import React from "react";
 import SidebarItem from "../../Student/components/SidebarItem";
-import {
-  Home,
-  FileText,
-  BarChart,
-  Users,
-  Calendar,
-  GraduationCap,
-  ClipboardCheck,
-  Bell,
-} from "lucide-react";
+import { Home, FileText, BarChart, Users, Calendar } from "lucide-react";
 
 interface NavProps {
   handlers: Record<string, () => void>;
@@ -66,30 +57,9 @@ const SidebarNav: React.FC<NavProps> = ({ handlers }) => {
         </li>
         <li>
           <SidebarItem
-            label="Trainees"
-            onClick={handlers.trainees}
-            IconComponent={GraduationCap}
-          />
-        </li>
-        <li>
-          <SidebarItem
             label="Leave Management"
             onClick={handlers.leaves}
             IconComponent={Calendar}
-          />
-        </li>
-        <li>
-          <SidebarItem
-            label="DTR Check"
-            onClick={handlers.dtrCheck}
-            IconComponent={ClipboardCheck}
-          />
-        </li>
-        <li>
-          <SidebarItem
-            label="Notifications"
-            onClick={handlers.notifications}
-            IconComponent={Bell}
           />
         </li>
       </ul>

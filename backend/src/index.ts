@@ -18,9 +18,6 @@ import requirementsRoutes from "./routes/requirements.route";
 import userDataRoutes from "./routes/userdata.route";
 import officeProfileRoutes from "./routes/officeProfile.route";
 import auditLogRoutes from "./routes/auditLog.route";
-import workflowRoutes from "./routes/workflow.route";
-import traineeRoutes from "./routes/trainee.route";
-import dtrRoutes from "./routes/dtr.route";
 
 const app = express();
 
@@ -76,7 +73,6 @@ app.use("/auth", authRoutes);
 
 // Protected Routes
 app.use("/user", authenticate, userRoutes);
-app.use("/users", authenticate, userRoutes); // For getting multiple users (e.g., by role)
 app.use("/userdata", authenticate, userDataRoutes);
 app.use("/sessions", authenticate, sessionRoutes);
 app.use("/applications", applicationRoutes);
@@ -87,12 +83,6 @@ app.use("/requirements", requirementsRoutes);
 app.use("/office/profiles", authenticate, officeProfileRoutes);
 // Office audit logs
 app.use("/office/audit-logs", authenticate, auditLogRoutes);
-// Application workflow routes (psychometric test, interview, trainee management)
-app.use("/workflow", workflowRoutes);
-// Trainee deployment and management
-app.use("/trainees", authenticate, traineeRoutes);
-// DTR (Daily Time Record) management
-app.use("/dtr", dtrRoutes);
 
 app.use(errorHandler);
 

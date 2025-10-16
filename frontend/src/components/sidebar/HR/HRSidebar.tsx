@@ -121,24 +121,8 @@ const HRSidebar = ({
     navigate("/hr/users");
     setIsOpen(false);
   };
-
-  const handleTraineesClick = () => {
-    navigate("/hr/trainees");
-    setIsOpen(false);
-  };
-
   const handleLeavesClick = () => {
     navigate("/leave-management");
-    setIsOpen(false);
-  };
-
-  const handleDTRCheckClick = () => {
-    navigate("/hr/dtr-check");
-    setIsOpen(false);
-  };
-
-  const handleNotificationsClick = () => {
-    navigate("/notifications");
     setIsOpen(false);
   };
 
@@ -147,16 +131,11 @@ const HRSidebar = ({
   const handleCollapsedDashboardClick = () =>
     navigate(getRoleBasedRedirect(user?.role || "hr"));
   const handleCollapsedSignout = () => logout();
-  const handleCollapsedAnalyticsClick = () => navigate("/hr/analytics");
   const handleCollapsedApplicationsClick = () => navigate("/applications");
   const handleCollapsedRequirementsClick = () => navigate("/hr/requirements");
   const handleCollapsedReapplicationsClick = () => navigate("/reapplications");
   const handleCollapsedEvaluationsClick = () => navigate("/hr/evaluations");
-  const handleCollapsedUsersClick = () => navigate("/hr/users");
-  const handleCollapsedTraineesClick = () => navigate("/hr/trainees");
   const handleCollapsedLeavesClick = () => navigate("/leave-management");
-  const handleCollapsedDTRCheckClick = () => navigate("/hr/dtr-check");
-  const handleCollapsedNotificationsClick = () => navigate("/notifications");
 
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
@@ -164,10 +143,7 @@ const HRSidebar = ({
     { label: "Analytics", handler: handleAnalyticsClick },
     { label: "Applications", handler: handleApplicationsClick },
     { label: "Reapplications", handler: handleReapplicationsClick },
-    { label: "Trainees", handler: handleTraineesClick },
     { label: "Leave Management", handler: handleLeavesClick },
-    { label: "DTR Check", handler: handleDTRCheckClick },
-    { label: "Notifications", handler: handleNotificationsClick },
     { label: "Profile", handler: handleProfileClick },
     { label: "Sign out", handler: handleSignout },
   ];
@@ -262,10 +238,7 @@ const HRSidebar = ({
               reapplications: handleReapplicationsClick,
               requirements: handleRequirementsClick,
               users: handleUsersClick,
-              trainees: handleTraineesClick,
               leaves: handleLeavesClick,
-              dtrCheck: handleDTRCheckClick,
-              notifications: handleNotificationsClick,
             }}
           />
         </div>
@@ -275,16 +248,12 @@ const HRSidebar = ({
             onExpand={() => setIsDesktopCollapsed(false)}
             handlers={{
               dashboard: handleCollapsedDashboardClick,
-              analytics: handleCollapsedAnalyticsClick,
               applications: handleCollapsedApplicationsClick,
               reapplications: handleCollapsedReapplicationsClick,
               requirements: handleCollapsedRequirementsClick,
               evaluations: handleCollapsedEvaluationsClick,
-              users: handleCollapsedUsersClick,
-              trainees: handleCollapsedTraineesClick,
               leaves: handleCollapsedLeavesClick,
-              dtrCheck: handleCollapsedDTRCheckClick,
-              notifications: handleCollapsedNotificationsClick,
+              users: handleCollapsedDashboardClick,
               profile: handleCollapsedProfileClick,
             }}
             darkMode={darkMode}

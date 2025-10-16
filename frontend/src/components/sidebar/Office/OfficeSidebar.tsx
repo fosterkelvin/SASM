@@ -108,11 +108,6 @@ const OfficeSidebar = ({
     setIsOpen(false);
   };
 
-  const handleNotificationsClick = () => {
-    navigate("/notifications");
-    setIsOpen(false);
-  };
-
   // (Removed Records/Documents/Applications/Reports/Administration handlers)
 
   // Handlers for collapsed sidebar that don't expand the sidebar
@@ -124,9 +119,9 @@ const OfficeSidebar = ({
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
     {
-      label: "DTR Check",
+      label: "DTR",
       handler: () => {
-        navigate("/office/dtr-check");
+        navigate("/office/dtr");
         setIsOpen(false);
       },
     },
@@ -158,14 +153,6 @@ const OfficeSidebar = ({
         setIsOpen(false);
       },
     },
-    {
-      label: "My Trainees",
-      handler: () => {
-        navigate("/office/my-trainees");
-        setIsOpen(false);
-      },
-    },
-    { label: "Notifications", handler: handleNotificationsClick },
     { label: "Sign out", handler: handleSignout },
   ];
 
@@ -245,8 +232,8 @@ const OfficeSidebar = ({
           <SidebarNav
             handlers={{
               dashboard: handleDashboardClick,
-              dtrCheck: () => {
-                navigate("/office/dtr-check");
+              dtr: () => {
+                navigate("/office/dtr");
                 setIsOpen(false);
               },
               evaluation: () => {
@@ -265,11 +252,6 @@ const OfficeSidebar = ({
                 navigate("/office/scholars");
                 setIsOpen(false);
               },
-              trainees: () => {
-                navigate("/office/my-trainees");
-                setIsOpen(false);
-              },
-              notifications: handleNotificationsClick,
             }}
           />
         </div>
@@ -280,13 +262,11 @@ const OfficeSidebar = ({
             onExpand={() => setIsDesktopCollapsed(false)}
             handlers={{
               dashboard: () => navigate("/office-dashboard"),
-              dtrCheck: () => navigate("/office/dtr-check"),
+              dtr: () => navigate("/office/dtr"),
               evaluation: () => navigate("/office/evaluation"),
               leave: () => navigate("/office/leave-requests"),
               requests: () => navigate("/office/requests"),
               scholars: () => navigate("/office/scholars"),
-              trainees: () => navigate("/office/my-trainees"),
-              notifications: () => navigate("/notifications"),
               profile: () => navigate("/office/profile"),
             }}
             darkMode={darkMode}
@@ -324,9 +304,7 @@ const OfficeSidebar = ({
                 </div>
                 <div className="flex flex-col min-w-0 text-left">
                   <span className="text-base font-bold text-gray-800 dark:text-gray-100 truncate">
-                    {user?.role === "office" && user?.officeName
-                      ? user.officeName
-                      : user?.firstname && user?.lastname
+                    {user?.firstname && user?.lastname
                       ? `${user.firstname} ${user.lastname}`
                       : user?.email || "User"}
                   </span>

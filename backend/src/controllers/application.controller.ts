@@ -417,66 +417,21 @@ export const getAllApplicationsHandler = catchErrors(
 
     // Parse query parameters
     const query = getApplicationsSchema.parse(req.query);
-    const {
-      status,
-      position,
-      page = 1,
-      limit = 10,
-      assignedTo,
-      priority,
-      minRating,
-      maxRating,
-      sortBy = "createdAt",
-      sortOrder = "desc",
-      search,
-    } = query;
+    const { status, position, page = 1, limit = 10 } = query;
 
     // Build filter object
     const filter: any = {};
     if (status) filter.status = status;
     if (position) filter.position = position;
-    if (assignedTo) filter.assignedTo = assignedTo;
-    if (priority) filter.priority = priority;
-
-    // Rating range filter
-    if (minRating !== undefined || maxRating !== undefined) {
-      filter.rating = {};
-      if (minRating !== undefined) filter.rating.$gte = minRating;
-      if (maxRating !== undefined) filter.rating.$lte = maxRating;
-    }
-
-    // Search filter (searches in applicant name, email)
-    if (search && search.trim()) {
-      const searchRegex = new RegExp(search.trim(), "i");
-      filter.$or = [
-        { firstName: searchRegex },
-        { lastName: searchRegex },
-        { email: searchRegex },
-      ];
-    }
 
     // Calculate pagination
     const skip = (page - 1) * limit;
-
-    // Build sort object
-    const sortObj: any = {};
-    if (sortBy === "priority") {
-      // Custom priority sorting: urgent > high > medium > low
-      sortObj.priority = sortOrder === "asc" ? 1 : -1;
-    } else if (sortBy === "rating") {
-      sortObj.rating = sortOrder === "asc" ? 1 : -1;
-    } else if (sortBy === "submittedAt") {
-      sortObj.submittedAt = sortOrder === "asc" ? 1 : -1;
-    } else {
-      sortObj.createdAt = sortOrder === "asc" ? 1 : -1;
-    }
 
     // Get applications with pagination
     const applications = await ApplicationModel.find(filter)
       .populate("userID", "firstname lastname email role")
       .populate("reviewedBy", "firstname lastname email role")
-      .populate("assignedTo", "firstname lastname email role")
-      .sort(sortObj)
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
@@ -519,81 +474,32 @@ export const updateApplicationStatusHandler = catchErrors(
 
     const statusChanged = currentApplication.status !== updateData.status;
 
-    // Add timeline entry for status change
-    if (statusChanged) {
-      const timelineEntry = {
-        action: "status_updated",
-        performedBy: userID,
-        performedByName: `${user.firstname} ${user.lastname}`,
-        timestamp: new Date(),
-        previousStatus: currentApplication.status,
-        newStatus: updateData.status,
-        notes:
-          updateData.hrComments || `Status changed to ${updateData.status}`,
-      };
-
-      currentApplication.timeline = currentApplication.timeline || [];
-      currentApplication.timeline.push(timelineEntry as any);
-    }
-
-    // Update student's user status when application status changes to "trainee"
-    if (statusChanged && updateData.status === "trainee") {
-      const student = await UserModel.findById(currentApplication.userID);
-      console.log(
-        "🔍 Updating student status to trainee (from Application Management):"
-      );
-      console.log("- Student found:", !!student);
-      console.log("- Student ID:", currentApplication.userID);
-      if (student) {
-        console.log("- Previous student status:", student.status);
-        student.status = "trainee";
-        await student.save();
-        console.log("✅ Student status updated to:", student.status);
-      } else {
-        console.log("❌ Student not found!");
-      }
-    }
-
-    // Update student's user status when application status changes to "training_completed"
-    if (statusChanged && updateData.status === "training_completed") {
-      const student = await UserModel.findById(currentApplication.userID);
-      if (student) {
-        console.log("✅ Updating student status to training_completed");
-        student.status = "training_completed";
-        await student.save();
-      }
-    }
-
-    // Update student's user status when application is accepted (SA or SM based on position)
-    if (statusChanged && updateData.status === "accepted") {
+    // If attempting to mark as accepted, ensure the applicant has an academic email
+    // ending with @s.ubaguio.edu. Check both current email and pendingEmail.
+    if (updateData.status === "accepted") {
       try {
-        const student = await UserModel.findById(currentApplication.userID);
-        console.log("🔍 Accept Applicant - Processing status change:");
-        console.log("- Application ID:", applicationId);
-        console.log("- Student ID:", currentApplication.userID);
-        console.log("- Student found:", !!student);
-        console.log("- Application position:", currentApplication.position);
-        console.log("- Current student status:", student?.status);
+        const applicantId =
+          (currentApplication.userID as any)?._id || currentApplication.userID;
+        const applicant = await UserModel.findById(applicantId);
+        appAssert(applicant, NOT_FOUND, "Applicant not found");
 
-        if (student) {
-          // Determine status based on position
-          const newStatus = currentApplication.position === "student_assistant" ? "SA" : "SM";
-          console.log(`✅ Updating student status from '${student.status}' to '${newStatus}' (position: ${currentApplication.position})`);
-          
-          student.status = newStatus;
-          await student.save();
-          console.log("✅ Student status successfully updated to:", student.status);
-          
-          // Update timeline entry to include the new status
-          if (currentApplication.timeline && currentApplication.timeline.length > 0) {
-            const lastEntry = currentApplication.timeline[currentApplication.timeline.length - 1] as any;
-            lastEntry.notes = `${lastEntry.notes} - User status updated from trainee to ${newStatus}`;
-          }
-        } else {
-          console.error("❌ Student not found for ID:", currentApplication.userID);
+        const candidateEmail = (
+          applicant.pendingEmail ||
+          applicant.email ||
+          ""
+        ).toLowerCase();
+        if (!candidateEmail.endsWith("@s.ubaguio.edu")) {
+          return res.status(BAD_REQUEST).json({
+            message:
+              "Applicant must have an academic email ending with @s.ubaguio.edu before being marked as accepted. Please ask the applicant to update their email.",
+          });
         }
-      } catch (error) {
-        console.error("❌ Error updating student status during acceptance:", error);
+      } catch (err) {
+        console.error("Error verifying applicant email for hiring:", err);
+        return res.status(BAD_REQUEST).json({
+          message:
+            "Unable to verify applicant email. Acceptance is blocked until the applicant's academic email is confirmed.",
+        });
       }
     }
 
@@ -604,13 +510,11 @@ export const updateApplicationStatusHandler = catchErrors(
         ...updateData,
         reviewedBy: userID,
         reviewedAt: new Date(),
-        timeline: currentApplication.timeline,
       },
       { new: true }
     )
       .populate("userID", "firstname lastname email role")
-      .populate("reviewedBy", "firstname lastname email role")
-      .populate("assignedTo", "firstname lastname email role");
+      .populate("reviewedBy", "firstname lastname email role");
 
     appAssert(application, NOT_FOUND, "Application not found");
 
@@ -631,20 +535,7 @@ export const updateApplicationStatusHandler = catchErrors(
                 interviewDate: updateData.interviewDate,
                 interviewTime: updateData.interviewTime,
                 interviewLocation: updateData.interviewLocation,
-                interviewWhatToBring: updateData.interviewWhatToBring,
                 interviewNotes: updateData.interviewNotes,
-              }
-            : undefined;
-
-        // Prepare psychometric test details if status is psychometric_scheduled
-        const psychometricTestDetails =
-          updateData.status === "psychometric_scheduled"
-            ? {
-                psychometricTestDate: updateData.psychometricTestDate,
-                psychometricTestTime: updateData.psychometricTestTime,
-                psychometricTestLocation: updateData.psychometricTestLocation,
-                psychometricTestWhatToBring:
-                  updateData.psychometricTestWhatToBring,
               }
             : undefined;
 
@@ -654,8 +545,7 @@ export const updateApplicationStatusHandler = catchErrors(
           updateData.status,
           application.position,
           updateData.hrComments,
-          interviewDetails,
-          psychometricTestDetails
+          interviewDetails
         );
       } catch (error) {
         console.error("Failed to create notification:", error);
@@ -665,58 +555,6 @@ export const updateApplicationStatusHandler = catchErrors(
 
     return res.status(OK).json({
       message: "Application status updated successfully",
-      application,
-    });
-  }
-);
-
-// Withdraw application (user can withdraw their own application at any time except accepted)
-export const withdrawApplicationHandler = catchErrors(
-  async (req: Request, res: Response) => {
-    const userID = req.userID!;
-    const applicationId = req.params.id;
-
-    // Find the application
-    const application = await ApplicationModel.findOne({
-      _id: applicationId,
-      userID,
-    });
-
-    appAssert(application, NOT_FOUND, "Application not found");
-
-    // Prevent withdrawal of already accepted, rejected, or withdrawn applications
-    appAssert(
-      application.status !== "accepted" &&
-        application.status !== "rejected" &&
-        application.status !== "withdrawn",
-      BAD_REQUEST,
-      "You cannot withdraw an application that has been accepted, rejected, or already withdrawn"
-    );
-
-    // Get user info for timeline
-    const user = await UserModel.findById(userID);
-    const userName = user ? `${user.firstname} ${user.lastname}` : "Applicant";
-
-    // Add timeline entry
-    const timelineEntry = {
-      action: "withdrawn",
-      performedBy: userID,
-      performedByName: userName,
-      timestamp: new Date(),
-      previousStatus: application.status,
-      newStatus: "withdrawn",
-      notes: "Application withdrawn by applicant",
-    };
-
-    application.status = "withdrawn";
-    application.timeline = application.timeline || [];
-    application.timeline.push(timelineEntry as any);
-    await application.save();
-
-    // Do NOT delete the profilePhoto (2x2 pic) - keep all files intact
-
-    return res.status(OK).json({
-      message: "Application withdrawn successfully",
       application,
     });
   }
@@ -860,333 +698,6 @@ export const getApplicationStatsHandler = catchErrors(
       statusStats: stats,
       positionStats,
       recentApplications,
-    });
-  }
-);
-
-// Assign application to HR staff
-export const assignApplicationHandler = catchErrors(
-  async (req: Request, res: Response) => {
-    const userID = req.userID!;
-    const applicationId = req.params.id;
-    const { assignedTo } = req.body;
-
-    // Check if user has permission
-    const user = await UserModel.findById(userID);
-    appAssert(user, NOT_FOUND, "User not found");
-    appAssert(
-      user.role === "hr" || user.role === "office",
-      FORBIDDEN,
-      "Access denied. Only HR and Office staff can assign applications."
-    );
-
-    // Verify assigned user exists and is HR/Office
-    if (assignedTo) {
-      const assignedUser = await UserModel.findById(assignedTo);
-      appAssert(assignedUser, NOT_FOUND, "Assigned user not found");
-      appAssert(
-        assignedUser.role === "hr" || assignedUser.role === "office",
-        BAD_REQUEST,
-        "Can only assign to HR or Office staff"
-      );
-    }
-
-    const application = await ApplicationModel.findById(applicationId);
-    appAssert(application, NOT_FOUND, "Application not found");
-
-    // Add timeline entry
-    const timelineEntry = {
-      action: assignedTo ? "assigned" : "unassigned",
-      performedBy: userID,
-      performedByName: `${user.firstname} ${user.lastname}`,
-      timestamp: new Date(),
-      notes: assignedTo
-        ? `Assigned to ${(await UserModel.findById(assignedTo))?.firstname} ${(await UserModel.findById(assignedTo))?.lastname}`
-        : "Assignment removed",
-    };
-
-    application.assignedTo = assignedTo || undefined;
-    application.assignedAt = assignedTo ? new Date() : undefined;
-    application.timeline = application.timeline || [];
-    application.timeline.push(timelineEntry as any);
-    await application.save();
-
-    await application.populate([
-      { path: "userID", select: "firstname lastname email role" },
-      { path: "assignedTo", select: "firstname lastname email role" },
-      { path: "reviewedBy", select: "firstname lastname email role" },
-    ]);
-
-    return res.status(OK).json({
-      message: "Application assignment updated successfully",
-      application,
-    });
-  }
-);
-
-// Rate application
-export const rateApplicationHandler = catchErrors(
-  async (req: Request, res: Response) => {
-    const userID = req.userID!;
-    const applicationId = req.params.id;
-    const { rating, ratingNotes } = req.body;
-
-    // Check if user has permission
-    const user = await UserModel.findById(userID);
-    appAssert(user, NOT_FOUND, "User not found");
-    appAssert(
-      user.role === "hr" || user.role === "office",
-      FORBIDDEN,
-      "Access denied. Only HR and Office staff can rate applications."
-    );
-
-    // Validate rating
-    appAssert(
-      rating >= 1 && rating <= 5,
-      BAD_REQUEST,
-      "Rating must be between 1 and 5"
-    );
-
-    const application = await ApplicationModel.findById(applicationId);
-    appAssert(application, NOT_FOUND, "Application not found");
-
-    // Add timeline entry
-    const timelineEntry = {
-      action: "rated",
-      performedBy: userID,
-      performedByName: `${user.firstname} ${user.lastname}`,
-      timestamp: new Date(),
-      notes: `Rated ${rating}/5${ratingNotes ? `: ${ratingNotes}` : ""}`,
-    };
-
-    application.rating = rating;
-    application.ratingNotes = ratingNotes || application.ratingNotes;
-    application.timeline = application.timeline || [];
-    application.timeline.push(timelineEntry as any);
-    await application.save();
-
-    await application.populate([
-      { path: "userID", select: "firstname lastname email role" },
-      { path: "assignedTo", select: "firstname lastname email role" },
-      { path: "reviewedBy", select: "firstname lastname email role" },
-    ]);
-
-    return res.status(OK).json({
-      message: "Application rated successfully",
-      application,
-    });
-  }
-);
-
-// Add note to application timeline
-export const addApplicationNoteHandler = catchErrors(
-  async (req: Request, res: Response) => {
-    const userID = req.userID!;
-    const applicationId = req.params.id;
-    const { notes } = req.body;
-
-    // Check if user has permission
-    const user = await UserModel.findById(userID);
-    appAssert(user, NOT_FOUND, "User not found");
-    appAssert(
-      user.role === "hr" || user.role === "office",
-      FORBIDDEN,
-      "Access denied. Only HR and Office staff can add notes."
-    );
-
-    appAssert(notes && notes.trim(), BAD_REQUEST, "Note content is required");
-
-    const application = await ApplicationModel.findById(applicationId);
-    appAssert(application, NOT_FOUND, "Application not found");
-
-    // Add timeline entry
-    const timelineEntry = {
-      action: "note_added",
-      performedBy: userID,
-      performedByName: `${user.firstname} ${user.lastname}`,
-      timestamp: new Date(),
-      notes: notes.trim(),
-    };
-
-    application.timeline = application.timeline || [];
-    application.timeline.push(timelineEntry as any);
-    await application.save();
-
-    await application.populate([
-      { path: "userID", select: "firstname lastname email role" },
-      { path: "assignedTo", select: "firstname lastname email role" },
-      { path: "reviewedBy", select: "firstname lastname email role" },
-    ]);
-
-    return res.status(OK).json({
-      message: "Note added successfully",
-      application,
-    });
-  }
-);
-
-// Update application priority
-export const updateApplicationPriorityHandler = catchErrors(
-  async (req: Request, res: Response) => {
-    const userID = req.userID!;
-    const applicationId = req.params.id;
-    const { priority } = req.body;
-
-    // Check if user has permission
-    const user = await UserModel.findById(userID);
-    appAssert(user, NOT_FOUND, "User not found");
-    appAssert(
-      user.role === "hr" || user.role === "office",
-      FORBIDDEN,
-      "Access denied. Only HR and Office staff can update priority."
-    );
-
-    const validPriorities = ["low", "medium", "high", "urgent"];
-    appAssert(
-      validPriorities.includes(priority),
-      BAD_REQUEST,
-      "Invalid priority value"
-    );
-
-    const application = await ApplicationModel.findById(applicationId);
-    appAssert(application, NOT_FOUND, "Application not found");
-
-    const oldPriority = application.priority || "medium";
-
-    // Add timeline entry
-    const timelineEntry = {
-      action: "priority_updated",
-      performedBy: userID,
-      performedByName: `${user.firstname} ${user.lastname}`,
-      timestamp: new Date(),
-      notes: `Priority changed from ${oldPriority} to ${priority}`,
-    };
-
-    application.priority = priority;
-    application.timeline = application.timeline || [];
-    application.timeline.push(timelineEntry as any);
-    await application.save();
-
-    await application.populate([
-      { path: "userID", select: "firstname lastname email role" },
-      { path: "assignedTo", select: "firstname lastname email role" },
-      { path: "reviewedBy", select: "firstname lastname email role" },
-    ]);
-
-    return res.status(OK).json({
-      message: "Priority updated successfully",
-      application,
-    });
-  }
-);
-
-// Bulk update applications
-export const bulkUpdateApplicationsHandler = catchErrors(
-  async (req: Request, res: Response) => {
-    const userID = req.userID!;
-    const { applicationIds, action, data } = req.body;
-
-    // Check if user has permission
-    const user = await UserModel.findById(userID);
-    appAssert(user, NOT_FOUND, "User not found");
-    appAssert(
-      user.role === "hr" || user.role === "office",
-      FORBIDDEN,
-      "Access denied. Only HR and Office staff can bulk update applications."
-    );
-
-    appAssert(
-      Array.isArray(applicationIds) && applicationIds.length > 0,
-      BAD_REQUEST,
-      "Application IDs array is required"
-    );
-
-    const validActions = [
-      "assign",
-      "update_status",
-      "update_priority",
-      "add_tag",
-    ];
-    appAssert(validActions.includes(action), BAD_REQUEST, "Invalid action");
-
-    const results = {
-      success: 0,
-      failed: 0,
-      errors: [] as string[],
-    };
-
-    for (const appId of applicationIds) {
-      try {
-        const application = await ApplicationModel.findById(appId);
-        if (!application) {
-          results.failed++;
-          results.errors.push(`Application ${appId} not found`);
-          continue;
-        }
-
-        const timelineEntry: any = {
-          action: `bulk_${action}`,
-          performedBy: userID,
-          performedByName: `${user.firstname} ${user.lastname}`,
-          timestamp: new Date(),
-        };
-
-        switch (action) {
-          case "assign":
-            if (data.assignedTo) {
-              const assignedUser = await UserModel.findById(data.assignedTo);
-              if (
-                assignedUser &&
-                (assignedUser.role === "hr" || assignedUser.role === "office")
-              ) {
-                application.assignedTo = data.assignedTo;
-                application.assignedAt = new Date();
-                timelineEntry.notes = `Bulk assigned to ${assignedUser.firstname} ${assignedUser.lastname}`;
-              }
-            }
-            break;
-
-          case "update_status":
-            if (data.status) {
-              timelineEntry.previousStatus = application.status;
-              timelineEntry.newStatus = data.status;
-              application.status = data.status;
-              timelineEntry.notes = `Bulk status update: ${data.status}`;
-            }
-            break;
-
-          case "update_priority":
-            if (data.priority) {
-              const oldPriority = application.priority || "medium";
-              application.priority = data.priority;
-              timelineEntry.notes = `Bulk priority update: ${oldPriority} → ${data.priority}`;
-            }
-            break;
-
-          case "add_tag":
-            if (data.tag) {
-              application.tags = application.tags || [];
-              if (!application.tags.includes(data.tag)) {
-                application.tags.push(data.tag);
-                timelineEntry.notes = `Bulk tag added: ${data.tag}`;
-              }
-            }
-            break;
-        }
-
-        application.timeline = application.timeline || [];
-        application.timeline.push(timelineEntry);
-        await application.save();
-        results.success++;
-      } catch (error: any) {
-        results.failed++;
-        results.errors.push(`Application ${appId}: ${error.message}`);
-      }
-    }
-
-    return res.status(OK).json({
-      message: `Bulk update completed. Success: ${results.success}, Failed: ${results.failed}`,
-      results,
     });
   }
 );
