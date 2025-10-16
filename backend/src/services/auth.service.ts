@@ -159,7 +159,10 @@ export const signinUser = async ({
 
   // OFFICE users ALWAYS go to profile selector
   // Other roles go to their respective dashboards
-  const redirectUrl = user.role === "office" ? "/profile-selector" : getRoleBasedRedirect(user.role);
+  const redirectUrl =
+    user.role === "office"
+      ? "/profile-selector"
+      : getRoleBasedRedirect(user.role);
 
   return {
     user: user.omitPassword(),

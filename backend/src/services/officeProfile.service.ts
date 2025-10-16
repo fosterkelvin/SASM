@@ -2,7 +2,12 @@ import OfficeProfileModel from "../models/officeProfile.model";
 import UserModel from "../models/user.model";
 import SessionModel from "../models/session.model";
 import appAssert from "../utils/appAssert";
-import { NOT_FOUND, UNAUTHORIZED, BAD_REQUEST, CONFLICT } from "../constants/http";
+import {
+  NOT_FOUND,
+  UNAUTHORIZED,
+  BAD_REQUEST,
+  CONFLICT,
+} from "../constants/http";
 import { signToken, refreshTokenSignOptions } from "../utils/jwt";
 import { createAuditLog } from "./auditLog.service";
 
@@ -12,7 +17,11 @@ const MAX_PROFILES_PER_ACCOUNT = 5; // Netflix-style limit
 export const getProfiles = async (accountID: string) => {
   const account = await UserModel.findById(accountID);
   appAssert(account, NOT_FOUND, "Account not found");
-  appAssert(account.role === "office", UNAUTHORIZED, "Only OFFICE accounts can have profiles");
+  appAssert(
+    account.role === "office",
+    UNAUTHORIZED,
+    "Only OFFICE accounts can have profiles"
+  );
 
   const profiles = await OfficeProfileModel.find({
     accountID,
@@ -42,7 +51,11 @@ export const createProfile = async (params: {
 }) => {
   const account = await UserModel.findById(params.accountID);
   appAssert(account, NOT_FOUND, "Account not found");
-  appAssert(account.role === "office", UNAUTHORIZED, "Only OFFICE accounts can have profiles");
+  appAssert(
+    account.role === "office",
+    UNAUTHORIZED,
+    "Only OFFICE accounts can have profiles"
+  );
 
   // Check profile limit
   const profileCount = await OfficeProfileModel.countDocuments({
@@ -66,7 +79,11 @@ export const createProfile = async (params: {
     accountID: params.accountID,
     profileName: params.profileName,
   });
-  appAssert(!existingProfile, CONFLICT, "A profile with this name already exists");
+  appAssert(
+    !existingProfile,
+    CONFLICT,
+    "A profile with this name already exists"
+  );
 
   // Create profile with all permissions enabled by default
   const profile = await OfficeProfileModel.create({
@@ -214,7 +231,11 @@ export const updateProfile = async (params: {
       profileName: params.profileName,
       _id: { $ne: params.profileID },
     });
-    appAssert(!existingProfile, CONFLICT, "A profile with this name already exists");
+    appAssert(
+      !existingProfile,
+      CONFLICT,
+      "A profile with this name already exists"
+    );
 
     oldValues.profileName = profile.profileName;
     newValues.profileName = params.profileName;
