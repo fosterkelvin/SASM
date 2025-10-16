@@ -1,10 +1,11 @@
 import { RequestHandler, Request } from "express";
 
-// Extend the Request interface to include userID and sessionID
+// Extend the Request interface to include userID, sessionID, and profileID
 declare module "express-serve-static-core" {
   interface Request {
     userID?: string;
     sessionID?: string;
+    profileID?: string;
   }
 }
 import appAssert from "../utils/appAssert";
@@ -46,6 +47,7 @@ const authenticate: RequestHandler = catchErrors(async (req, res, next) => {
 
   req.userID = payload.userID as string;
   req.sessionID = payload.sessionID as string | undefined;
+  req.profileID = payload.profileID as string | undefined;
   next();
 });
 

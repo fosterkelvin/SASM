@@ -21,6 +21,7 @@ import {
   getApplicationStatusEmailTemplate,
   getInterviewScheduledEmailTemplate,
   getInterviewResultEmailTemplate,
+  getPsychometricTestScheduledEmailTemplate,
 } from "../utils/emailTemplate";
 
 interface CreateNotificationParams {
@@ -156,7 +157,14 @@ export const createApplicationStatusNotification = async (
     interviewDate?: string;
     interviewTime?: string;
     interviewLocation?: string;
+    interviewWhatToBring?: string;
     interviewNotes?: string;
+  },
+  psychometricTestDetails?: {
+    psychometricTestDate?: string;
+    psychometricTestTime?: string;
+    psychometricTestLocation?: string;
+    psychometricTestWhatToBring?: string;
   }
 ) => {
   let title = "";
@@ -171,6 +179,50 @@ export const createApplicationStatusNotification = async (
       title = "Application Under Review";
       message = `Your application for ${positionTitle} position is now under review. We will notify you of any updates.`;
       type = "info";
+      break;
+    case "psychometric_scheduled":
+      title = "Psychometric Test Scheduled";
+      if (
+        psychometricTestDetails &&
+        psychometricTestDetails.psychometricTestDate &&
+        psychometricTestDetails.psychometricTestTime &&
+        psychometricTestDetails.psychometricTestLocation
+      ) {
+        const formattedDate = new Date(
+          psychometricTestDetails.psychometricTestDate
+        ).toLocaleDateString("en-US", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        const formattedTime = new Date(
+          `2000-01-01T${psychometricTestDetails.psychometricTestTime}`
+        ).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true,
+        });
+        message = `Great news! A psychometric test has been scheduled for your ${positionTitle} application.\n\n📅 Date: ${formattedDate}\n🕐 Time: ${formattedTime}\n📍 Location: ${psychometricTestDetails.psychometricTestLocation}\n\nPlease check your email for complete details and what to bring.`;
+      } else {
+        message = `Great news! A psychometric test has been scheduled for your ${positionTitle} application. Please check your email for details.`;
+      }
+      type = "info";
+      break;
+    case "psychometric_completed":
+      title = "Psychometric Test Completed";
+      message = `Thank you for completing the psychometric test for the ${positionTitle} position. We are reviewing your results and will notify you of the next steps soon.`;
+      type = "info";
+      break;
+    case "psychometric_passed":
+      title = "Psychometric Test Passed! 🎉";
+      message = `Congratulations! You have successfully passed the psychometric test for the ${positionTitle} position. Your application will proceed to the next stage.`;
+      type = "success";
+      break;
+    case "psychometric_failed":
+      title = "Psychometric Test Results";
+      message = `Thank you for taking the psychometric test for the ${positionTitle} position. Unfortunately, we will not be moving forward at this time.`;
+      type = "error";
       break;
     case "interview_scheduled":
       title = "Interview Scheduled";
@@ -265,13 +317,30 @@ export const createApplicationStatusNotification = async (
 
       let emailTemplate;
 
-      // Use special interview email template if status is interview_scheduled and details are provided
+      // Use special psychometric test email template if status is psychometric_scheduled
       if (
+        status === "psychometric_scheduled" &&
+        psychometricTestDetails &&
+        psychometricTestDetails.psychometricTestDate &&
+        psychometricTestDetails.psychometricTestTime &&
+        psychometricTestDetails.psychometricTestLocation &&
+        psychometricTestDetails.psychometricTestWhatToBring
+      ) {
+        emailTemplate = getPsychometricTestScheduledEmailTemplate(
+          applicantName,
+          positionTitle,
+          psychometricTestDetails.psychometricTestDate,
+          psychometricTestDetails.psychometricTestTime,
+          psychometricTestDetails.psychometricTestLocation,
+          psychometricTestDetails.psychometricTestWhatToBring
+        );
+      } else if (
         status === "interview_scheduled" &&
         interviewDetails &&
         interviewDetails.interviewDate &&
         interviewDetails.interviewTime &&
-        interviewDetails.interviewLocation
+        interviewDetails.interviewLocation &&
+        interviewDetails.interviewWhatToBring
       ) {
         emailTemplate = getInterviewScheduledEmailTemplate(
           applicantName,
@@ -279,6 +348,7 @@ export const createApplicationStatusNotification = async (
           interviewDetails.interviewDate,
           interviewDetails.interviewTime,
           interviewDetails.interviewLocation,
+          interviewDetails.interviewWhatToBring,
           interviewDetails.interviewNotes
         );
       } else if (

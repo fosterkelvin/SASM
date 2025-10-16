@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { resetPassword } from "@/lib/api";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 
 // Zod schema for validation
@@ -38,7 +38,9 @@ export function ResetPasswordForm({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(3);
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const code = searchParams.get("code");
 
   // Real-time password validation
@@ -63,6 +65,7 @@ export function ResetPasswordForm({
     mutationFn: resetPassword,
     onSuccess: () => {
       setError(null);
+      setCountdown(3);
     },
     onError: (error: any) => {
       // Check if the error is about same password
@@ -76,6 +79,18 @@ export function ResetPasswordForm({
       }
     },
   });
+
+  // Countdown timer and auto-redirect after successful password reset
+  useEffect(() => {
+    if (isSuccess && countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (isSuccess && countdown === 0) {
+      navigate("/signin");
+    }
+  }, [isSuccess, countdown, navigate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,14 +127,17 @@ export function ResetPasswordForm({
                 <p className="text-sm text-muted-foreground">
                   Your password has been successfully reset.
                 </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Redirecting to sign in page in <span className="font-bold text-blue-600 dark:text-blue-400">{countdown}</span> seconds...
+                </p>
                 <div className="text-center text-sm">
-                  Go to{" "}
-                  <a
-                    href="/signin"
+                  Or{" "}
+                  <button
+                    onClick={() => navigate("/signin")}
                     className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
                   >
-                    Sign in
-                  </a>
+                    click here to sign in now
+                  </button>
                 </div>
               </div>
             ) : (

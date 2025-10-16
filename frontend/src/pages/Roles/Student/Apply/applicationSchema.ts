@@ -48,12 +48,12 @@ export const applicationSchema = z.object({
   relativeName: z.string().optional(),
   relativeDepartment: z.string().optional(),
   relativeRelationship: z.string().optional(),
-  elementary: z.string().optional(),
-  elementaryYears: z.string().optional(),
-  highSchool: z.string().optional(),
-  highSchoolYears: z.string().optional(),
-  college: z.string().optional(),
-  collegeYears: z.string().optional(),
+  elementary: z.string().min(2, "Elementary school is required"),
+  elementaryYears: z.string().min(2, "Elementary years attended is required"),
+  highSchool: z.string().min(2, "High school is required"),
+  highSchoolYears: z.string().min(2, "High school years attended is required"),
+  college: z.string().min(2, "College/University is required"),
+  collegeYears: z.string().min(2, "College years attended is required"),
   others: z.string().optional(),
   othersYears: z.string().optional(),
   seminars: z
@@ -69,9 +69,20 @@ export const applicationSchema = z.object({
   agreedToTerms: z.boolean().refine((val) => val === true, {
     message: "You must agree to the terms and conditions",
   }),
-  // signature removed; replaced by conformity checkbox
+  // Conformity checkbox (replacing signature)
   conformity: z.boolean().refine((val) => val === true, {
     message: "You must confirm that the information provided is true",
+  }),
+  // Parent/Guardian Consent
+  parentConsent: z.boolean().refine((val) => val === true, {
+    message: "Parent/Guardian consent is required",
+  }),
+  parentGuardianName: z
+    .string()
+    .min(2, "Parent/Guardian name is required")
+    .max(100),
+  parentID: z.any().refine((file) => file !== null && file !== undefined, {
+    message: "Parent/Guardian ID is required",
   }),
   profilePhoto: z.any().refine((file) => file !== null && file !== undefined, {
     message: "2x2 picture is required",

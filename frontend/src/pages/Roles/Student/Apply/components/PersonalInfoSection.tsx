@@ -15,41 +15,28 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
   errors,
   handleInputChange,
 }) => (
-  <div className="space-y-4 md:space-y-6 p-4 rounded-lg border">
+  <div className="space-y-4 md:space-y-6 p-4 rounded-lg border bg-gray-50 dark:bg-gray-800/50">
     <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
-      {/* Icon can be added here if needed */}
-      <Users className="h-4 w-4 md:h-5 md:w-5 text-green-600" />
-      Personal Information <p className="text-red-600">*</p>
+      <Users className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
+      Personal Information
+      <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+        (Auto-populated from your profile)
+      </span>
     </h3>
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ">
-      <div>
-        <Label htmlFor="firstName" className="text-gray-700 dark:text-gray-300">
-          First Name
-        </Label>
-        <Input
-          id="firstName"
-          value={formData.firstName || ""}
-          onChange={(e) => handleInputChange("firstName", e.target.value)}
-          className={errors.firstName ? "border-red-500" : ""}
-        />
-        {errors.firstName && (
-          <p className="text-red-600 text-sm mt-1">{errors.firstName}</p>
-        )}
-      </div>
-      <div>
-        <Label htmlFor="lastName" className="text-gray-700 dark:text-gray-300">
-          Last Name
-        </Label>
-        <Input
-          id="lastName"
-          value={formData.lastName || ""}
-          onChange={(e) => handleInputChange("lastName", e.target.value)}
-          className={errors.lastName ? "border-red-500" : ""}
-        />
-        {errors.lastName && (
-          <p className="text-red-600 text-sm mt-1">{errors.lastName}</p>
-        )}
-      </div>
+
+    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+      <p className="text-sm text-blue-800 dark:text-blue-200">
+        <strong>Note:</strong> This information is automatically filled from your profile settings.
+        To update these details, please visit your{" "}
+        <a href="/profile" className="underline hover:text-blue-600">Profile Settings</a>.
+      </p>
+    </div>
+
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Hidden fields for firstName and lastName - still submitted but not shown */}
+      <input type="hidden" name="firstName" value={formData.firstName || ""} />
+      <input type="hidden" name="lastName" value={formData.lastName || ""} />
+
       <div>
         <Label htmlFor="age" className="text-gray-700 dark:text-gray-300">
           Age
@@ -57,21 +44,16 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
         <Input
           id="age"
           type="number"
-          min="15"
-          max="30"
           value={formData.age || ""}
-          onChange={(e) =>
-            handleInputChange(
-              "age",
-              e.target.value ? Number(e.target.value) : ""
-            )
-          }
-          className={errors.age ? "border-red-500" : ""}
+          disabled
+          className="bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
+          title="Update your birthdate in Profile Settings to change this"
         />
         {errors.age && (
           <p className="text-red-600 text-sm mt-1">{errors.age}</p>
         )}
       </div>
+
       <div>
         <Label htmlFor="gender" className="text-gray-700 dark:text-gray-300">
           Gender
@@ -79,17 +61,11 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
         <select
           id="gender"
           value={formData.gender || ""}
-          onChange={(e) =>
-            handleInputChange(
-              "gender",
-              e.target.value === "" ? undefined : e.target.value
-            )
-          }
-          className={`w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.gender ? "border-red-500" : ""
-          } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
+          disabled
+          className="w-full rounded-md border px-3 py-2 bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-900 dark:text-gray-100"
+          title="Update this in Profile Settings"
         >
-          <option value="">Select</option>
+          <option value="">Not specified</option>
           <option value="Male">Male</option>
           <option value="Female">Female</option>
           <option value="Other">Other</option>
@@ -98,6 +74,7 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           <p className="text-red-600 text-sm mt-1">{errors.gender}</p>
         )}
       </div>
+
       <div>
         <Label
           htmlFor="civilStatus"
@@ -108,17 +85,11 @@ const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
         <select
           id="civilStatus"
           value={formData.civilStatus || ""}
-          onChange={(e) =>
-            handleInputChange(
-              "civilStatus",
-              e.target.value === "" ? undefined : e.target.value
-            )
-          }
-          className={`w-full rounded-md border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.gender ? "border-red-500" : ""
-          } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
+          disabled
+          className="w-full rounded-md border px-3 py-2 bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-900 dark:text-gray-100"
+          title="Update this in Profile Settings"
         >
-          <option value="">Select</option>
+          <option value="">Not specified</option>
           <option value="Single">Single</option>
           <option value="Married">Married</option>
           <option value="Widowed">Widowed</option>
