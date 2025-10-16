@@ -79,7 +79,6 @@ app.use("/auth", authRoutes);
 
 // Protected Routes
 app.use("/user", authenticate, userRoutes);
-app.use("/users", authenticate, userRoutes); // For getting multiple users (e.g., by role)
 app.use("/userdata", authenticate, userDataRoutes);
 app.use("/sessions", authenticate, sessionRoutes);
 app.use("/applications", applicationRoutes);
