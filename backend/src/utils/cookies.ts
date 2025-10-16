@@ -5,10 +5,13 @@ import { COOKIE_DOMAIN } from "../constants/env";
 export const REFRESH_PATH = "/auth/refresh";
 const secure = process.env.NODE_ENV !== "development";
 
+// For cross-origin requests (Render backend + Vercel frontend)
+// we need sameSite: "none" and secure: true
 const defaults: CookieOptions = {
   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
   httpOnly: true,
-  secure,
+  secure, // MUST be true in production for sameSite: "none"
+  // Only set domain if explicitly configured (usually not needed for cross-origin)
   ...(COOKIE_DOMAIN && { domain: COOKIE_DOMAIN }),
 };
 
