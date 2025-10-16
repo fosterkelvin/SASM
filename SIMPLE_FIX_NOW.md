@@ -20,7 +20,8 @@ APP_ORIGIN = https://sasm.site,https://www.sasm.site
 NODE_ENV = production
 ```
 
-**IMPORTANT:** 
+**IMPORTANT:**
+
 - Type EXACTLY as shown (case-sensitive!)
 - No spaces around the = sign
 - No trailing slashes in URLs
@@ -61,14 +62,16 @@ Both Render and Vercel will auto-deploy.
 ### ✅ Step 4: Clear Database Sessions (30 seconds)
 
 **Option A - MongoDB Atlas:**
+
 1. Go to https://cloud.mongodb.com
 2. Click "Browse Collections"
 3. Find `sessions` collection
 4. Click trash icon → "Delete All Documents"
 
 **Option B - MongoDB Shell:**
+
 ```javascript
-db.sessions.deleteMany({})
+db.sessions.deleteMany({});
 ```
 
 ### ✅ Step 5: Test (2 minutes)
@@ -101,10 +104,12 @@ Server listening on port 4004 in production environment.
 ```
 
 **If you see different values:**
+
 - Environment variables not set correctly
 - Go back to Step 1
 
 **If you see "CORS blocked origin":**
+
 - Your frontend URL is not in APP_ORIGIN
 - Add it and redeploy
 
@@ -115,19 +120,22 @@ Server listening on port 4004 in production environment.
 3. Type:
 
 ```javascript
-console.log('API:', import.meta.env.VITE_API);
-console.log('Cookies:', document.cookie);
+console.log("API:", import.meta.env.VITE_API);
+console.log("Cookies:", document.cookie);
 ```
 
 **Expected:**
+
 - API: `https://your-backend.onrender.com` (NOT localhost!)
 - Cookies: Should have `accessToken=...` (NOT empty!)
 
 **If API shows localhost:**
+
 - VITE_API not set in Vercel
 - Go back to Step 2
 
 **If Cookies are empty:**
+
 - Backend not setting cookies properly
 - Check Render environment variables (Step 1)
 - Make sure NODE_ENV=production (exact spelling!)
@@ -135,6 +143,7 @@ console.log('Cookies:', document.cookie);
 ## 🚨 Common Mistakes
 
 ### ❌ WRONG:
+
 ```
 APP_ORIGIN = https://sasm.site/
 NODE_ENV = Production
@@ -142,6 +151,7 @@ COOKIE_DOMAIN = sasm.site
 ```
 
 ### ✅ CORRECT:
+
 ```
 APP_ORIGIN = https://sasm.site,https://www.sasm.site
 NODE_ENV = production
@@ -153,14 +163,14 @@ COOKIE_DOMAIN = (leave blank/not set)
 After completing all steps, run this in browser console on https://sasm.site:
 
 ```javascript
-fetch(import.meta.env.VITE_API + '/user', { credentials: 'include' })
-  .then(r => r.json())
-  .then(data => {
-    console.log('✅ Success!');
-    console.log('profileName:', data.profileName); // Should be "kel"
-    console.log('profileID:', data.profileID); // Should have a value
+fetch(import.meta.env.VITE_API + "/user", { credentials: "include" })
+  .then((r) => r.json())
+  .then((data) => {
+    console.log("✅ Success!");
+    console.log("profileName:", data.profileName); // Should be "kel"
+    console.log("profileID:", data.profileID); // Should have a value
   })
-  .catch(err => console.error('❌ Error:', err));
+  .catch((err) => console.error("❌ Error:", err));
 ```
 
 **If you see `profileName: "kel"`** → SUCCESS! 🎉
@@ -181,11 +191,13 @@ If nothing works, open `diagnostic.html` in your browser:
 ## What You Changed
 
 **Files modified:**
+
 - `backend/src/utils/cookies.ts` - Added comments explaining cross-origin setup
 - Environment variables on Render - Added APP_ORIGIN and NODE_ENV
 - Environment variables on Vercel - Added VITE_API
 
 **Why it works now:**
+
 - Backend explicitly allows frontend domain (CORS)
 - Cookies use `sameSite: "none"` + `secure: true` for cross-origin
 - Session stores `profileID` (from previous fix)

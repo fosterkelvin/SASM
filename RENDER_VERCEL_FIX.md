@@ -3,6 +3,7 @@
 ## The Real Problem
 
 Your setup:
+
 - **Frontend:** Vercel (https://sasm.site)
 - **Backend:** Render (https://sasm-backend.onrender.com or similar)
 - **Issue:** Cookies not working across different domains
@@ -12,6 +13,7 @@ This is a **cross-origin cookie issue**, not a code issue. Localhost works becau
 ## Root Cause
 
 When backend and frontend are on different domains:
+
 - Browser security blocks cookies by default
 - Need special configuration: `sameSite: "none"` + `secure: true`
 - Backend must explicitly allow frontend domain in CORS
@@ -45,7 +47,8 @@ RESEND_API_KEY=your_key
 PORT=4004
 ```
 
-**IMPORTANT:** 
+**IMPORTANT:**
+
 - `APP_ORIGIN` must NOT have trailing slashes
 - `NODE_ENV` MUST be exactly "production" (lowercase)
 - Do NOT set `COOKIE_DOMAIN` - leave it blank
@@ -67,6 +70,7 @@ Replace `your-backend.onrender.com` with your actual Render backend URL.
 ### Step 3: Verify Backend CORS (Already Set)
 
 Your `backend/src/index.ts` already has:
+
 ```typescript
 cors({
   origin: function (origin, callback) {
@@ -78,7 +82,7 @@ cors({
     }
   },
   credentials: true, // ✅ This is critical!
-})
+});
 ```
 
 This is correct! ✅
@@ -86,6 +90,7 @@ This is correct! ✅
 ### Step 4: Verify Frontend API Config (Already Set)
 
 Your `frontend/src/config/apiClient.ts` already has:
+
 ```typescript
 const options = {
   baseURL: import.meta.env.VITE_API,
@@ -115,6 +120,7 @@ npm run build
 ```
 
 Then push to trigger Vercel deployment:
+
 ```bash
 git add .
 git commit -m "Fix: Update production API URL"
@@ -126,7 +132,7 @@ git push
 1. **Wait 2-3 minutes** for both deployments to complete
 2. **Clear sessions** in MongoDB:
    ```javascript
-   db.sessions.deleteMany({})
+   db.sessions.deleteMany({});
    ```
 3. **Close ALL browser tabs** of sasm.site
 4. **Clear browser data:**
@@ -145,30 +151,32 @@ Open browser console on https://sasm.site and run:
 
 ```javascript
 // Check API URL
-console.log('API URL:', import.meta.env.VITE_API);
+console.log("API URL:", import.meta.env.VITE_API);
 
 // Try login and check cookies
-fetch('https://your-backend.onrender.com/auth/signin', {
-  method: 'POST',
-  credentials: 'include',
-  headers: { 'Content-Type': 'application/json' },
+fetch("https://your-backend.onrender.com/auth/signin", {
+  method: "POST",
+  credentials: "include",
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    email: 'your-email@example.com',
-    password: 'your-password'
-  })
+    email: "your-email@example.com",
+    password: "your-password",
+  }),
 })
-.then(r => r.json())
-.then(data => {
-  console.log('Login response:', data);
-  console.log('Cookies:', document.cookie);
-})
+  .then((r) => r.json())
+  .then((data) => {
+    console.log("Login response:", data);
+    console.log("Cookies:", document.cookie);
+  });
 ```
 
 **Expected result:**
+
 - Response shows success
 - `document.cookie` shows `accessToken` and `refreshToken`
 
 **If cookies are empty:**
+
 - CORS issue or cookie configuration problem
 - Check Render logs for CORS errors
 
@@ -179,6 +187,7 @@ fetch('https://your-backend.onrender.com/auth/signin', {
 **Cause:** Cookie configuration or CORS issue
 
 **Solution:**
+
 1. Verify `NODE_ENV=production` on Render (EXACT spelling)
 2. Verify `APP_ORIGIN` includes your frontend URL
 3. Check Render logs for CORS errors
@@ -189,6 +198,7 @@ fetch('https://your-backend.onrender.com/auth/signin', {
 **Cause:** Frontend URL not in APP_ORIGIN
 
 **Solution:**
+
 ```env
 APP_ORIGIN=https://sasm.site,https://www.sasm.site
 ```
@@ -200,8 +210,9 @@ Include BOTH www and non-www versions.
 **Cause:** Old sessions without profileID
 
 **Solution:**
+
 ```javascript
-db.sessions.deleteMany({})
+db.sessions.deleteMany({});
 ```
 
 Then sign out and sign in again.
@@ -211,6 +222,7 @@ Then sign out and sign in again.
 After completing all steps:
 
 ### On Render Dashboard:
+
 - [ ] `NODE_ENV` = `production` (exact spelling)
 - [ ] `APP_ORIGIN` = `https://sasm.site,https://www.sasm.site`
 - [ ] `COOKIE_DOMAIN` is blank/not set
@@ -218,11 +230,13 @@ After completing all steps:
 - [ ] No errors in logs
 
 ### On Vercel Dashboard:
+
 - [ ] `VITE_API` = your Render backend URL
 - [ ] Latest commit deployed
 - [ ] Build successful
 
 ### In Browser:
+
 - [ ] Can sign in successfully
 - [ ] Cookies appear in DevTools → Application → Cookies
 - [ ] `/user` API call returns `profileName`
@@ -230,17 +244,18 @@ After completing all steps:
 
 ## Why Localhost Works But Production Doesn't
 
-| Aspect | Localhost | Production |
-|--------|-----------|------------|
-| Domain | Same (localhost) | Different (sasm.site ≠ onrender.com) |
-| Protocol | HTTP (insecure) | HTTPS (secure) required |
-| Cookies | `sameSite: lax` works | Needs `sameSite: none` |
-| Security | Relaxed | Strict (browser blocks by default) |
-| CORS | Not needed | Required |
+| Aspect   | Localhost             | Production                           |
+| -------- | --------------------- | ------------------------------------ |
+| Domain   | Same (localhost)      | Different (sasm.site ≠ onrender.com) |
+| Protocol | HTTP (insecure)       | HTTPS (secure) required              |
+| Cookies  | `sameSite: lax` works | Needs `sameSite: none`               |
+| Security | Relaxed               | Strict (browser blocks by default)   |
+| CORS     | Not needed            | Required                             |
 
 ## What Your Render Backend Logs Should Show
 
 After fixing:
+
 ```
 APP_ORIGIN from env: https://sasm.site,https://www.sasm.site
 Allowed CORS origins: ['https://sasm.site', 'https://www.sasm.site']
@@ -255,19 +270,19 @@ On your deployed frontend (https://sasm.site), open console:
 
 ```javascript
 // 1. Check environment
-console.log('API:', import.meta.env.VITE_API);
-console.log('Mode:', import.meta.env.MODE);
+console.log("API:", import.meta.env.VITE_API);
+console.log("Mode:", import.meta.env.MODE);
 
 // 2. Check cookies after login
-console.log('Cookies:', document.cookie);
+console.log("Cookies:", document.cookie);
 
 // 3. Test user endpoint
-fetch(import.meta.env.VITE_API + '/user', {
-  credentials: 'include'
+fetch(import.meta.env.VITE_API + "/user", {
+  credentials: "include",
 })
-.then(r => r.json())
-.then(d => console.log('User data:', d))
-.catch(e => console.error('Error:', e));
+  .then((r) => r.json())
+  .then((d) => console.log("User data:", d))
+  .catch((e) => console.error("Error:", e));
 ```
 
 ---
@@ -275,7 +290,7 @@ fetch(import.meta.env.VITE_API + '/user', {
 ## TL;DR - Quick Fix Checklist
 
 1. ☐ Set `APP_ORIGIN=https://sasm.site,https://www.sasm.site` on Render
-2. ☐ Set `NODE_ENV=production` on Render  
+2. ☐ Set `NODE_ENV=production` on Render
 3. ☐ Set `VITE_API=https://your-backend.onrender.com` on Vercel
 4. ☐ Remove/leave blank `COOKIE_DOMAIN` on Render
 5. ☐ Deploy backend (git push)
