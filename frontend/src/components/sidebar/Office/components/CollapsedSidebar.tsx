@@ -4,10 +4,13 @@ import {
   Home,
   Calendar,
   FileText,
+  Users,
   User,
   Sun,
   Moon,
   LogOut,
+  ClipboardCheck,
+  Bell,
 } from "lucide-react";
 
 interface Props {
@@ -55,12 +58,12 @@ const CollapsedSidebar: React.FC<Props> = ({
           </div>
           <div className="group relative">
             <button
-              onClick={handlers.dtr}
+              onClick={handlers.dtrCheck}
               className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-              aria-label="DTR"
-              title="DTR"
+              aria-label="DTR Check"
+              title="DTR Check"
             >
-              <Calendar size={16} />
+              <ClipboardCheck size={16} />
             </button>
           </div>
           <div className="group relative">
@@ -101,6 +104,27 @@ const CollapsedSidebar: React.FC<Props> = ({
               title="Scholars"
             >
               <FileText size={16} />
+            </button>
+          </div>
+          <div className="group relative">
+            <button
+              onClick={handlers.trainees}
+              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+              aria-label="My Trainees"
+              title="My Trainees"
+            >
+              <Users size={16} />
+            </button>
+          </div>
+
+          <div className="group relative">
+            <button
+              onClick={handlers.notifications}
+              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+              aria-label="Notifications"
+              title="Notifications"
+            >
+              <Bell size={16} />
             </button>
           </div>
         </div>

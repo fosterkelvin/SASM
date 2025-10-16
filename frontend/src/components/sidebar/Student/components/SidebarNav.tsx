@@ -17,6 +17,8 @@ interface NavProps {
   handlers: Record<string, () => void>;
   isVerified?: boolean;
   isApplicant?: boolean;
+  isAccepted?: boolean;
+  isEmailUpdateRequired?: boolean;
 }
 
 const SidebarNav: React.FC<NavProps> = ({
@@ -24,6 +26,8 @@ const SidebarNav: React.FC<NavProps> = ({
   handlers,
   isVerified = false,
   isApplicant = false,
+  isAccepted = false,
+  isEmailUpdateRequired = false,
 }) => {
   return (
     <nav
@@ -36,6 +40,7 @@ const SidebarNav: React.FC<NavProps> = ({
             label="Dashboard"
             onClick={handlers.dashboard}
             IconComponent={Home}
+            disabled={isEmailUpdateRequired}
           />
         </li>
         <li>
@@ -46,6 +51,7 @@ const SidebarNav: React.FC<NavProps> = ({
             badge={
               unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount) : null
             }
+            disabled={false}
           />
         </li>
         {isVerified && (
@@ -55,6 +61,7 @@ const SidebarNav: React.FC<NavProps> = ({
                 label="Grades"
                 onClick={handlers.grades}
                 IconComponent={BookOpen}
+                disabled={isEmailUpdateRequired}
               />
             </li>
             {!isApplicant && (
@@ -63,6 +70,7 @@ const SidebarNav: React.FC<NavProps> = ({
                   label="DTR"
                   onClick={handlers.dtr}
                   IconComponent={CalendarClock}
+                  disabled={isEmailUpdateRequired}
                 />
               </li>
             )}
@@ -71,18 +79,22 @@ const SidebarNav: React.FC<NavProps> = ({
                 label="Schedule"
                 onClick={handlers.schedule}
                 IconComponent={Calendar}
+                disabled={isEmailUpdateRequired}
               />
             </li>
           </>
         )}
 
-        <li>
-          <SidebarItem
-            label="Apply"
-            onClick={handlers.apply}
-            IconComponent={FileEdit}
-          />
-        </li>
+        {!isAccepted && (
+          <li>
+            <SidebarItem
+              label="Apply"
+              onClick={handlers.apply}
+              IconComponent={FileEdit}
+              disabled={isEmailUpdateRequired}
+            />
+          </li>
+        )}
         {isVerified && (
           <>
             {!isApplicant && (
@@ -92,6 +104,7 @@ const SidebarNav: React.FC<NavProps> = ({
                     label="Re-apply"
                     onClick={handlers.reapply}
                     IconComponent={RefreshCw}
+                    disabled={isEmailUpdateRequired}
                   />
                 </li>
                 <li>
@@ -99,6 +112,7 @@ const SidebarNav: React.FC<NavProps> = ({
                     label="Leave"
                     onClick={handlers.leave}
                     IconComponent={CalendarMinus}
+                    disabled={isEmailUpdateRequired}
                   />
                 </li>
               </>
@@ -108,6 +122,7 @@ const SidebarNav: React.FC<NavProps> = ({
                 label="Requirements"
                 onClick={handlers.requirements}
                 IconComponent={ClipboardList}
+                disabled={isEmailUpdateRequired}
               />
             </li>
           </>

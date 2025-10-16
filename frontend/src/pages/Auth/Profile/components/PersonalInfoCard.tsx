@@ -12,21 +12,21 @@ type Props = {
 };
 
 type LocalPersonal = {
-  gender?: string | null;
-  birthdate?: string | null; // ISO date string
-  civilStatus?: string | null;
-  phoneNumber?: string | null;
-  address?: string | null;
+  gender?: string;
+  birthdate?: string; // ISO date string
+  civilStatus?: string;
+  phoneNumber?: string;
+  address?: string;
 };
 
 export default function PersonalInfoCard({ user, colorScheme }: Props) {
   const [editing, setEditing] = useState(false);
   const [local, setLocal] = useState<LocalPersonal>({
-    gender: null,
-    birthdate: null,
-    civilStatus: null,
-    phoneNumber: null,
-    address: null,
+    gender: undefined,
+    birthdate: undefined,
+    civilStatus: undefined,
+    phoneNumber: undefined,
+    address: undefined,
   });
   const [age, setAge] = useState<number | null>(null);
 
@@ -54,11 +54,11 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
   useEffect(() => {
     if (userData) {
       setLocal({
-        gender: userData.gender || null,
-        birthdate: userData.birthdate ? userData.birthdate.split('T')[0] : null,
-        civilStatus: userData.civilStatus || null,
-        phoneNumber: userData.phoneNumber || null,
-        address: userData.address || null,
+        gender: userData.gender || undefined,
+        birthdate: userData.birthdate ? userData.birthdate.split('T')[0] : undefined,
+        civilStatus: userData.civilStatus || undefined,
+        phoneNumber: userData.phoneNumber || undefined,
+        address: userData.address || undefined,
       });
       setAge(userData.age);
     }
@@ -72,11 +72,11 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
     // Reset to server data
     if (userData) {
       setLocal({
-        gender: userData.gender || null,
-        birthdate: userData.birthdate ? userData.birthdate.split('T')[0] : null,
-        civilStatus: userData.civilStatus || null,
-        phoneNumber: userData.phoneNumber || null,
-        address: userData.address || null,
+        gender: userData.gender || undefined,
+        birthdate: userData.birthdate ? userData.birthdate.split('T')[0] : undefined,
+        civilStatus: userData.civilStatus || undefined,
+        phoneNumber: userData.phoneNumber || undefined,
+        address: userData.address || undefined,
       });
     }
     setEditing(false);
@@ -142,7 +142,7 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
                   className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-sm"
                   value={local.gender ?? ""}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                    setLocal((s) => ({ ...s, gender: e.target.value || null }))
+                    setLocal((s) => ({ ...s, gender: e.target.value || undefined }))
                   }
                 >
                   <option value="">Prefer not to say</option>
@@ -170,7 +170,7 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
                   onChange={(e) =>
                     setLocal((s) => ({
                       ...s,
-                      birthdate: e.target.value || null,
+                      birthdate: e.target.value || undefined,
                     }))
                   }
                 />
@@ -201,7 +201,7 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                     setLocal((s) => ({
                       ...s,
-                      civilStatus: e.target.value || null,
+                      civilStatus: e.target.value || undefined,
                     }))
                   }
                 >
@@ -238,17 +238,12 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
                 let label = "Active";
                 let dotClass = "bg-green-500";
 
-                // Accepted users (e.g., accepted application) should show "Accepted"
-                const hasAcceptedApplication =
-                  (user?.applications &&
-                    user.applications.some(
-                      (a: any) => a.status === "accepted"
-                    )) ||
-                  user?.status === "accepted" ||
-                  user?.isAccepted === true;
-
-                if (hasAcceptedApplication) {
-                  label = "Accepted";
+                // Check for Student Assistant or Student Marshal status
+                if (statusRaw === "SA") {
+                  label = "Student Assistant";
+                  dotClass = "bg-green-600";
+                } else if (statusRaw === "SM") {
+                  label = "Student Marshal";
                   dotClass = "bg-green-600";
                 } else if (
                   statusRaw === "trainee" ||
@@ -257,12 +252,29 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
                   label = "Trainee";
                   dotClass = "bg-blue-500";
                 } else if (
+                  statusRaw === "training_completed"
+                ) {
+                  label = "Training Completed";
+                  dotClass = "bg-purple-500";
+                } else if (
                   statusRaw === "applicant" ||
                   user?.isApplicant ||
                   (user?.applications && user.applications.length > 0)
                 ) {
                   label = "Applicant";
                   dotClass = "bg-yellow-500";
+                }
+                // Accepted users (e.g., accepted application) should show "Accepted"
+                else if (
+                  (user?.applications &&
+                    user.applications.some(
+                      (a: any) => a.status === "accepted"
+                    )) ||
+                  user?.status === "accepted" ||
+                  user?.isAccepted === true
+                ) {
+                  label = "Accepted";
+                  dotClass = "bg-green-600";
                 } else if (
                   statusRaw === "inactive" ||
                   statusRaw === "not_active" ||

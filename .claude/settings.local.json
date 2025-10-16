@@ -4,7 +4,12 @@
       "Bash(npm run build:*)",
       "Bash(netstat:*)",
       "Bash(findstr:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Read(//c/Users/vinke/Downloads/**)",
+      "Bash(npm run check-types:*)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

@@ -14,6 +14,7 @@ import {
   Calendar,
   Search,
   Mail,
+  X,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllApplications, updateApplicationStatus } from "@/lib/api";
@@ -21,6 +22,7 @@ import { useNotificationUpdater } from "@/hooks/useNotificationUpdater";
 import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
+import ApplicationTimeline from "@/components/ui/application-timeline";
 
 const ApplicationManagement = () => {
   const { user } = useAuth();
@@ -39,12 +41,18 @@ const ApplicationManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
+  const [activeTab, setActiveTab] = useState<"review" | "history">("review");
   const [statusUpdateData, setStatusUpdateData] = useState({
     status: "",
     hrComments: "",
+    psychometricTestDate: "",
+    psychometricTestTime: "",
+    psychometricTestLocation: "",
+    psychometricTestWhatToBring: "",
     interviewDate: "",
     interviewTime: "",
     interviewLocation: "",
+    interviewWhatToBring: "",
     interviewNotes: "",
   });
 
@@ -160,11 +168,16 @@ const ApplicationManagement = () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       // Trigger notification update since status changes create notifications
       triggerNotificationUpdate();
+      // Auto-close modal on success
+      setShowStatusUpdate(false);
       // Use centralized close helper to ensure consistent reset behavior
       closeStatusModal();
     },
     onError: (error: any) => {
       console.error("Failed to update application status:", error);
+      // Show error message to user
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to update application status";
+      alert(errorMessage);
     },
   });
 
@@ -180,12 +193,18 @@ const ApplicationManagement = () => {
   const closeStatusModal = () => {
     setShowStatusUpdate(false);
     setSelectedApplication(null);
+    setActiveTab("review"); // Reset to review tab
     setStatusUpdateData({
       status: "",
       hrComments: "",
+      psychometricTestDate: "",
+      psychometricTestTime: "",
+      psychometricTestLocation: "",
+      psychometricTestWhatToBring: "",
       interviewDate: "",
       interviewTime: "",
       interviewLocation: "",
+      interviewWhatToBring: "",
       interviewNotes: "",
     });
     // Prevent the next modal open from auto-filling hrComments from the
@@ -205,9 +224,15 @@ const ApplicationManagement = () => {
       setStatusUpdateData({
         status: application.status,
         hrComments: skipPopulateHrComments ? "" : application.hrComments || "",
+        psychometricTestDate: application.psychometricTestDate || "",
+        psychometricTestTime: application.psychometricTestTime || "",
+        psychometricTestLocation: application.psychometricTestLocation || "",
+        psychometricTestWhatToBring:
+          application.psychometricTestWhatToBring || "",
         interviewDate: application.interviewDate || "",
         interviewTime: application.interviewTime || "",
         interviewLocation: application.interviewLocation || "",
+        interviewWhatToBring: application.interviewWhatToBring || "",
         interviewNotes: application.interviewNotes || "",
       });
       // clear the flag after using it so subsequent opens behave normally
@@ -223,9 +248,15 @@ const ApplicationManagement = () => {
     setStatusUpdateData({
       status: initialStatus,
       hrComments: skipPopulateHrComments ? "" : application.hrComments || "",
+      psychometricTestDate: application.psychometricTestDate || "",
+      psychometricTestTime: application.psychometricTestTime || "",
+      psychometricTestLocation: application.psychometricTestLocation || "",
+      psychometricTestWhatToBring:
+        application.psychometricTestWhatToBring || "",
       interviewDate: application.interviewDate || "",
       interviewTime: application.interviewTime || "",
       interviewLocation: application.interviewLocation || "",
+      interviewWhatToBring: application.interviewWhatToBring || "",
       interviewNotes: application.interviewNotes || "",
     });
     if (skipPopulateHrComments) setSkipPopulateHrComments(false);
@@ -245,15 +276,53 @@ const ApplicationManagement = () => {
 
   const submitStatusUpdate = () => {
     if (selectedApplication && statusUpdateData.status) {
+      // Validate psychometric test scheduling fields if status is psychometric_scheduled
+      if (statusUpdateData.status === "psychometric_scheduled") {
+        if (
+          !statusUpdateData.psychometricTestDate ||
+          !statusUpdateData.psychometricTestTime ||
+          !statusUpdateData.psychometricTestLocation ||
+          !statusUpdateData.psychometricTestWhatToBring
+        ) {
+          alert(
+            "Please fill in all required psychometric test scheduling fields (Date, Time, Location, and What to Bring)."
+          );
+          return;
+        }
+        // Enforce test time window: 08:00 - 17:00 (inclusive)
+        try {
+          const t = statusUpdateData.psychometricTestTime; // expected format HH:MM
+          const [hhStr, mmStr] = (t || "").split(":");
+          const hh = parseInt(hhStr || "", 10);
+          const mm = parseInt(mmStr || "", 10);
+          if (
+            Number.isNaN(hh) ||
+            Number.isNaN(mm) ||
+            hh < 8 ||
+            hh > 17 ||
+            (hh === 17 && mm > 0)
+          ) {
+            alert("Psychometric test time must be between 08:00 and 17:00.");
+            return;
+          }
+        } catch (e) {
+          alert(
+            "Invalid test time. Please choose a time between 08:00 and 17:00."
+          );
+          return;
+        }
+      }
+
       // Validate interview scheduling fields if status is interview_scheduled
       if (statusUpdateData.status === "interview_scheduled") {
         if (
           !statusUpdateData.interviewDate ||
           !statusUpdateData.interviewTime ||
-          !statusUpdateData.interviewLocation
+          !statusUpdateData.interviewLocation ||
+          !statusUpdateData.interviewWhatToBring
         ) {
           alert(
-            "Please fill in all required interview scheduling fields (Date, Time, and Location)."
+            "Please fill in all required interview scheduling fields (Date, Time, Location, and What to Bring)."
           );
           return;
         }
@@ -289,29 +358,29 @@ const ApplicationManagement = () => {
   };
 
   const getStatusColor = (status: string) => {
+    // Using only white and gray colors as requested
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "under_review":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "psychometric_scheduled":
+      case "psychometric_completed":
       case "interview_scheduled":
-        return "bg-purple-100 text-purple-800 border-purple-200";
-      case "passed_interview":
-        return "bg-emerald-100 text-emerald-800 border-emerald-200";
-      case "hours_completed":
-        return "bg-teal-100 text-teal-800 border-teal-200";
-      case "failed_interview":
-        return "bg-orange-100 text-orange-800 border-orange-200";
-      case "accepted":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "rejected":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "withdrawn":
-        return "bg-gray-100 text-gray-800 border-gray-200";
+      case "interview_completed":
+      case "trainee":
+      case "training_completed":
       case "on_hold":
-        return "bg-indigo-100 text-indigo-800 border-indigo-200";
+        return "bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600";
+      case "psychometric_passed":
+      case "interview_passed":
+      case "accepted":
+        return "bg-gray-100 text-gray-900 border-gray-400 dark:bg-gray-700 dark:text-white dark:border-gray-500";
+      case "psychometric_failed":
+      case "interview_failed":
+      case "rejected":
+      case "withdrawn":
+        return "bg-gray-200 text-gray-600 border-gray-400 dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-white text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600";
     }
   };
 
@@ -365,7 +434,6 @@ const ApplicationManagement = () => {
       default:
         return (
           <StudentSidebar
-            currentPage="Application Management"
             onCollapseChange={setIsSidebarCollapsed}
           />
         );
@@ -386,8 +454,8 @@ const ApplicationManagement = () => {
             <Card className="max-w-2xl w-full">
               <CardContent className="p-8 text-center">
                 <div className="flex flex-col items-center gap-6">
-                  <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-                    <XCircle className="w-10 h-10 text-red-600 dark:text-red-400" />
+                  <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                    <XCircle className="w-10 h-10 text-gray-600 dark:text-gray-400" />
                   </div>
                   <div className="space-y-4">
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
@@ -735,8 +803,8 @@ const ApplicationManagement = () => {
 
                                     // Default avatar
                                     return (
-                                      <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                                        <User className="h-5 w-5 text-red-600 dark:text-red-400" />
+                                      <div className="h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                        <User className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                                       </div>
                                     );
                                   })()}
@@ -800,7 +868,7 @@ const ApplicationManagement = () => {
                                     onClick={() =>
                                       handleStatusUpdate(application)
                                     }
-                                    className="text-red-600 border-red-300 hover:bg-red-50"
+                                    className="text-gray-700 border-gray-300 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-800"
                                   >
                                     <Eye className="h-4 w-4 mr-1" />
                                     Review
@@ -858,7 +926,16 @@ const ApplicationManagement = () => {
       {/* Status Update Modal */}
       {showStatusUpdate && selectedApplication && (
         <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 md:p-6 w-full max-w-7xl mx-2 md:mx-4 max-h-[98vh] md:max-h-[95vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-4 md:p-6 w-full max-w-7xl mx-2 md:mx-4 max-h-[98vh] md:max-h-[95vh] overflow-y-auto relative">
+            {/* Close Button */}
+            <button
+              onClick={closeStatusModal}
+              className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors z-10"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            </button>
+
             {/* Header Section with Profile Photo */}
             <div className="flex flex-col sm:flex-row items-start gap-4 md:gap-6 mb-6 pb-6 border-b border-gray-200 dark:border-gray-600">
               <div className="flex-shrink-0 self-center sm:self-start">
@@ -902,7 +979,7 @@ const ApplicationManagement = () => {
                         <img
                           src={profileUrl}
                           alt="Profile Photo"
-                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-md cursor-pointer hover:shadow-lg transition-shadow"
                           onClick={() =>
                             profileUrl && window.open(profileUrl, "_blank")
                           }
@@ -986,7 +1063,7 @@ const ApplicationManagement = () => {
                         />
                       );
                     })()}
-                    <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-1">
+                    <div className="absolute -bottom-2 -right-2 bg-gray-700 dark:bg-gray-600 text-white rounded-full p-1">
                       <svg
                         className="w-4 h-4"
                         fill="currentColor"
@@ -999,7 +1076,7 @@ const ApplicationManagement = () => {
                         />
                       </svg>
                     </div>
-                    <div className="absolute -top-2 -left-2 bg-green-500 text-white rounded-full px-2 py-1 text-xs font-bold shadow-md">
+                    <div className="absolute -top-2 -left-2 bg-gray-700 dark:bg-gray-600 text-white rounded-full px-2 py-1 text-xs font-medium shadow-sm">
                       PROFILE
                     </div>
                   </div>
@@ -1052,7 +1129,7 @@ const ApplicationManagement = () => {
 
                       return isCertPdf ? (
                         <div
-                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-md cursor-pointer hover:shadow-lg transition-shadow"
                           onClick={() => {
                             if (!certUrl) return;
                             try {
@@ -1085,7 +1162,7 @@ const ApplicationManagement = () => {
                         <img
                           src={certUrl}
                           alt="2x2 Profile Photo"
-                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-4 border-red-100 dark:border-red-800 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+                          className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 object-cover rounded-xl border-2 border-gray-200 dark:border-gray-700 shadow-md cursor-pointer hover:shadow-lg transition-shadow"
                           onClick={() =>
                             certUrl && window.open(certUrl, "_blank")
                           }
@@ -1095,7 +1172,7 @@ const ApplicationManagement = () => {
                         />
                       );
                     })()}
-                    <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-1">
+                    <div className="absolute -bottom-2 -right-2 bg-gray-700 dark:bg-gray-600 text-white rounded-full p-1">
                       <svg
                         className="w-4 h-4"
                         fill="currentColor"
@@ -1108,13 +1185,13 @@ const ApplicationManagement = () => {
                         />
                       </svg>
                     </div>
-                    <div className="absolute -top-2 -left-2 bg-blue-500 text-white rounded-full px-2 py-1 text-xs font-bold shadow-md">
+                    <div className="absolute -top-2 -left-2 bg-gray-700 dark:bg-gray-600 text-white rounded-full px-2 py-1 text-xs font-medium shadow-sm">
                       2x2
                     </div>
                   </div>
                 ) : (
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900 dark:to-red-800 rounded-xl flex items-center justify-center border-4 border-red-100 dark:border-red-800 shadow-lg">
-                    <User className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 text-red-600 dark:text-red-400" />
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 shadow-md">
+                    <User className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 text-gray-400 dark:text-gray-500" />
                   </div>
                 )}
               </div>
@@ -1133,8 +1210,8 @@ const ApplicationManagement = () => {
                     {selectedApplication.status.replace("_", " ").toUpperCase()}
                   </span>
                   <span
-                    className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800"
-                    aria-label="Scholarship"
+                    className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
+                    aria-label="Position"
                   >
                     {selectedApplication.position === "student_assistant"
                       ? "Student Assistant"
@@ -1158,1431 +1235,2205 @@ const ApplicationManagement = () => {
               </div>
             </div>
 
-            {/* Personal Information */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 border border-gray-200 dark:border-gray-600">
-              <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 sm:mb-4 flex items-center gap-2">
-                <User className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
-                Personal Information
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                    Age
-                  </div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    {selectedApplication.age}
-                  </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                    Citizenship
-                  </div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    {selectedApplication.citizenship}
-                  </div>
-                </div>
-
-                {/* New: Gender */}
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                    Gender
-                  </div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    {selectedApplication.gender || (
-                      <span className="text-gray-500">No input data</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* New: Civil Status */}
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                    Civil Status
-                  </div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    {selectedApplication.civilStatus || (
-                      <span className="text-gray-500">No input data</span>
-                    )}
-                  </div>
-                </div>
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                    Home Address
-                  </div>
-                  <div className="text-sm text-gray-900 font-semibold dark:text-gray-100 leading-relaxed">
-                    {selectedApplication.homeAddress}
-                    {selectedApplication.homeStreet &&
-                      `, ${selectedApplication.homeStreet}`}
-                    <br />
-                    {selectedApplication.homeBarangay},{" "}
-                    {selectedApplication.homeCity},{" "}
-                    {selectedApplication.homeProvince}
-                  </div>
-                </div>
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                    Baguio/Benguet Address
-                  </div>
-                  <div className="text-sm text-gray-900 font-semibold dark:text-gray-100 leading-relaxed">
-                    {selectedApplication.baguioAddress}
-                    {selectedApplication.baguioStreet &&
-                      `, ${selectedApplication.baguioStreet}`}
-                    <br />
-                    {selectedApplication.baguioBarangay},{" "}
-                    {selectedApplication.baguioCity}
-                  </div>
-                </div>
-              </div>
+            {/* Tab Navigation */}
+            <div className="flex gap-2 mb-6 border-b border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setActiveTab("review")}
+                className={`px-4 py-2 font-medium text-sm transition-all ${
+                  activeTab === "review"
+                    ? "text-red-600 border-b-2 border-red-600"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                }`}
+              >
+                Review Application
+              </button>
+              <button
+                onClick={() => setActiveTab("history")}
+                className={`px-4 py-2 font-medium text-sm transition-all ${
+                  activeTab === "history"
+                    ? "text-red-600 border-b-2 border-red-600"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                }`}
+              >
+                Application History
+              </button>
             </div>
 
-            {/* Parents Information */}
-            <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 border border-green-200 dark:border-green-800">
-              <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 sm:mb-4 flex items-center gap-2">
-                <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5 text-green-600"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Parents Information
-              </h4>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">
-                    Father's Information
-                  </div>
-                  <div className="space-y-2">
-                    <div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        Name
-                      </div>
-                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {selectedApplication.fatherName}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        Occupation
-                      </div>
-                      <div className="text-sm text-gray-700 dark:text-gray-300">
-                        {selectedApplication.fatherOccupation}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-green-600 dark:text-green-400 mb-2">
-                    Mother's Information
-                  </div>
-                  <div className="space-y-2">
-                    <div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        Name
-                      </div>
-                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {selectedApplication.motherName}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        Occupation
-                      </div>
-                      <div className="text-sm text-gray-700 dark:text-gray-300">
-                        {selectedApplication.motherOccupation}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Emergency Contact */}
-            <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-6 mb-6 border border-orange-200 dark:border-orange-800">
-              <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-orange-600"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                </svg>
-                Emergency Contact
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                    Contact Person
-                  </div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    {selectedApplication.emergencyContact}
-                  </div>
-                </div>
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-                    Contact Number
-                  </div>
-                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    {selectedApplication.emergencyContactNumber}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Relative Information */}
-            {selectedApplication.hasRelativeWorking && (
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-3">
-                  Relative Working at University
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">Name:</span>{" "}
-                    {selectedApplication.relatives?.[0]?.name || (
-                      <span className="text-gray-500">No input data</span>
-                    )}
-                  </div>
-                  <div>
-                    <span className="font-medium">Department:</span>{" "}
-                    {selectedApplication.relatives?.[0]?.department || (
-                      <span className="text-gray-500">No input data</span>
-                    )}
-                  </div>
-                  <div>
-                    <span className="font-medium">Relationship:</span>{" "}
-                    {selectedApplication.relatives?.[0]?.relationship || (
-                      <span className="text-gray-500">No input data</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Educational Background */}
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-              <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-3">
-                Educational Background
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">Elementary:</span>{" "}
-                  {selectedApplication.elementary ? (
-                    <>
-                      {selectedApplication.elementary}
-                      {selectedApplication.elementaryYears &&
-                        ` (${selectedApplication.elementaryYears})`}
-                    </>
-                  ) : (
-                    <span className="text-gray-500">No input data</span>
-                  )}
-                </div>
-
-                <div>
-                  <span className="font-medium">High School:</span>{" "}
-                  {selectedApplication.highSchool ? (
-                    <>
-                      {selectedApplication.highSchool}
-                      {selectedApplication.highSchoolYears &&
-                        ` (${selectedApplication.highSchoolYears})`}
-                    </>
-                  ) : (
-                    <span className="text-gray-500">No input data</span>
-                  )}
-                </div>
-
-                <div>
-                  <span className="font-medium">College:</span>{" "}
-                  {selectedApplication.college ? (
-                    <>
-                      {selectedApplication.college}
-                      {selectedApplication.collegeYears &&
-                        ` (${selectedApplication.collegeYears})`}
-                    </>
-                  ) : (
-                    <span className="text-gray-500">No input data</span>
-                  )}
-                </div>
-
-                <div>
-                  <span className="font-medium">Others:</span>{" "}
-                  {selectedApplication.others ? (
-                    <>
-                      {selectedApplication.others}
-                      {selectedApplication.othersYears &&
-                        ` (${selectedApplication.othersYears})`}
-                    </>
-                  ) : (
-                    <span className="text-gray-500">No input data</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Seminars/Trainings */}
-            {selectedApplication.seminars &&
-              selectedApplication.seminars.length > 0 && (
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                  <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-3">
-                    Seminars/Trainings Attended
+            {/* Review Tab Content */}
+            {activeTab === "review" && (
+              <>
+                {/* Personal Information */}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 border border-gray-200 dark:border-gray-600">
+                  <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 sm:mb-4 flex items-center gap-2">
+                    <User className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
+                    Personal Information
                   </h4>
-                  <div className="space-y-3">
-                    {selectedApplication.seminars.map(
-                      (seminar: any, index: number) => (
-                        <div
-                          key={index}
-                          className="border-l-2 border-red-300 pl-3"
-                        >
-                          <div className="text-sm">
-                            <div>
-                              <span className="font-medium">Title:</span>{" "}
-                              {seminar.title}
-                            </div>
-                            <div>
-                              <span className="font-medium">
-                                Sponsoring Agency:
-                              </span>{" "}
-                              {seminar.sponsoringAgency}
-                            </div>
-                            <div>
-                              <span className="font-medium">Date:</span>{" "}
-                              {seminar.inclusiveDate}
-                            </div>
-                            <div>
-                              <span className="font-medium">Place:</span>{" "}
-                              {seminar.place}
-                            </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                        Age
+                      </div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {selectedApplication.age}
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                        Citizenship
+                      </div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {selectedApplication.citizenship}
+                      </div>
+                    </div>
+
+                    {/* New: Gender */}
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                        Gender
+                      </div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {selectedApplication.gender || (
+                          <span className="text-gray-500">No input data</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* New: Civil Status */}
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                        Civil Status
+                      </div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {selectedApplication.civilStatus || (
+                          <span className="text-gray-500">No input data</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                        Home Address
+                      </div>
+                      <div className="text-sm text-gray-900 font-semibold dark:text-gray-100 leading-relaxed">
+                        {selectedApplication.homeAddress}
+                        {selectedApplication.homeStreet &&
+                          `, ${selectedApplication.homeStreet}`}
+                        <br />
+                        {selectedApplication.homeBarangay},{" "}
+                        {selectedApplication.homeCity},{" "}
+                        {selectedApplication.homeProvince}
+                      </div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                        Baguio/Benguet Address
+                      </div>
+                      <div className="text-sm text-gray-900 font-semibold dark:text-gray-100 leading-relaxed">
+                        {selectedApplication.baguioAddress}
+                        {selectedApplication.baguioStreet &&
+                          `, ${selectedApplication.baguioStreet}`}
+                        <br />
+                        {selectedApplication.baguioBarangay},{" "}
+                        {selectedApplication.baguioCity}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Parents Information */}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 border border-gray-200 dark:border-gray-600">
+                  <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 sm:mb-4 flex items-center gap-2">
+                    <svg
+                      className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Parents Information
+                  </h4>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Father's Information
+                      </div>
+                      <div className="space-y-2">
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Name
+                          </div>
+                          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {selectedApplication.fatherName}
                           </div>
                         </div>
-                      )
-                    )}
-                  </div>
-                </div>
-              )}
-
-            {/* Uploaded Documents */}
-            {(selectedApplication.profilePhoto ||
-              selectedApplication.idDocument ||
-              (selectedApplication.certificates &&
-                selectedApplication.certificates.length > 0)) && (
-              <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 border border-purple-200 dark:border-purple-800">
-                <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 sm:mb-6 flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Uploaded Certificate
-                </h4>
-
-                <div className="space-y-4 sm:space-y-6">
-                  {/* Certificates */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {selectedApplication.certificates &&
-                    selectedApplication.certificates.length > 0 ? (
-                      selectedApplication.certificates.map(
-                        (cert: string, idx: number) => {
-                          let certUrl: string | undefined;
-                          const _cert = (cert || "").toString().trim();
-
-                          if (
-                            /^https?:\/\//i.test(_cert) ||
-                            /^\/\//.test(_cert)
-                          ) {
-                            certUrl = _cert.startsWith("//")
-                              ? `https:${_cert}`
-                              : _cert;
-                          } else if (
-                            /cloudinary/i.test(_cert) ||
-                            _cert.startsWith("res.cloudinary.com")
-                          ) {
-                            // cloudinary link stored without protocol
-                            certUrl = _cert.startsWith("//")
-                              ? `https:${_cert}`
-                              : `https://${_cert}`;
-
-                            // Normalize Cloudinary raw/upload paths which may include
-                            // a redundant 'uploads/' segment in the public_id and
-                            // cause 404s (e.g. /raw/upload/v1/uploads/...).
-                            if (
-                              certUrl &&
-                              /res\.cloudinary\.com/i.test(certUrl)
-                            ) {
-                              certUrl = certUrl
-                                .replace(
-                                  /(\/raw\/upload\/v\d+\/)uploads\//i,
-                                  "$1"
-                                )
-                                .replace(/(\/raw\/upload\/)uploads\//i, "$1");
-                            }
-                          } else if (_cert.includes("/")) {
-                            certUrl = `${import.meta.env.VITE_API}/${_cert}`;
-                          } else if (_cert) {
-                            certUrl = `${
-                              import.meta.env.VITE_API
-                            }/uploads/certificates/${_cert}`;
-                          }
-
-                          // Enhanced PDF detection (computed early so click handlers can use it)
-                          const isPdf = !!(
-                            certUrl &&
-                            (/\.pdf(\?|$)/i.test(certUrl) ||
-                              /\/raw\/upload/i.test(certUrl) ||
-                              /resource_type=raw/i.test(certUrl) ||
-                              /format=pdf/i.test(certUrl) ||
-                              /\.pdf\b/i.test(_cert) ||
-                              /\bpdf\b/i.test(_cert))
-                          );
-
-                          const handleCardClick = () => {
-                            if (!certUrl) return;
-                            if (isPdf) {
-                              openPreview(certUrl, `certificate-${idx + 1}`);
-                            } else {
-                              window.open(certUrl, "_blank");
-                            }
-                          };
-
-                          return (
-                            <div
-                              key={idx}
-                              className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700 flex flex-col items-stretch"
-                            >
-                              <div
-                                className="w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden cursor-pointer flex items-center justify-center"
-                                onClick={handleCardClick}
-                              >
-                                {isPdf ? (
-                                  <div className="flex flex-col items-center gap-2">
-                                    <svg
-                                      className="w-10 h-10 text-red-600"
-                                      fill="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12 12-5.373 12-12S18.628 0 12 0zm1 17h-2v-2h2v2zm0-4h-2V5h2v8z" />
-                                    </svg>
-                                    <div className="text-sm text-gray-700 dark:text-gray-300">
-                                      PDF Document
-                                    </div>
-                                    <div className="text-xs text-blue-600 dark:text-blue-400 underline">
-                                      Open
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <img
-                                    src={certUrl}
-                                    alt={`Certificate ${idx + 1}`}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      (
-                                        e.currentTarget as HTMLImageElement
-                                      ).src = "/placeholder-image.png";
-                                    }}
-                                  />
-                                )}
-                              </div>
-
-                              <div className="mt-2 flex items-center justify-between gap-2">
-                                <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                                  Certificate {idx + 1}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <a
-                                    href={certUrl}
-                                    onClick={(e) => {
-                                      if (!certUrl) return;
-                                      if (isPdf) {
-                                        e.preventDefault();
-                                        openPreview(
-                                          certUrl,
-                                          `certificate-${idx + 1}`
-                                        );
-                                      }
-                                    }}
-                                    rel="noreferrer"
-                                    className="text-xs text-blue-600 dark:text-blue-400 underline"
-                                  >
-                                    Open
-                                  </a>
-
-                                  {/* Download button - works for both PDFs and images */}
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (!certUrl) return;
-                                      try {
-                                        const pathPart = certUrl.split("?")[0];
-                                        const parts = pathPart.split("/");
-                                        let name =
-                                          parts[parts.length - 1] ||
-                                          `certificate-${idx + 1}`;
-                                        // default extension for images if none
-                                        if (!/\.[a-z0-9]{1,6}$/i.test(name)) {
-                                          name = isPdf
-                                            ? `${name}.pdf`
-                                            : `${name}.jpg`;
-                                        }
-                                        // @ts-ignore
-                                        downloadUrlAs(certUrl, name);
-                                      } catch (err) {
-                                        window.open(certUrl, "_blank");
-                                      }
-                                    }}
-                                    className="text-xs text-gray-700 dark:text-gray-300 underline"
-                                  >
-                                    Download
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        }
-                      )
-                    ) : (
-                      <div className="text-sm text-gray-500">
-                        No certificates uploaded.
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Occupation
+                          </div>
+                          <div className="text-sm text-gray-700 dark:text-gray-300">
+                            {selectedApplication.fatherOccupation}
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Electronic Signature */}
-            {selectedApplication.signature && (
-              <div className="bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 rounded-xl p-6 mb-6 border border-emerald-200 dark:border-emerald-800">
-                <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                  <svg
-                    className="w-5 h-5 text-emerald-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Electronic Signature
-                  <span className="ml-auto text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full">
-                    Verified
-                  </span>
-                </h4>
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                  <div className="flex flex-col items-center">
-                    <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 mb-4">
-                      <img
-                        src={selectedApplication.signature}
-                        alt="Electronic Signature"
-                        className="max-h-20 mx-auto"
-                        style={{ imageRendering: "pixelated" }}
-                      />
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className="text-sm text-blue-600 dark:text-blue-400 underline"
-                        onClick={async () => {
-                          const sig = selectedApplication.signature;
-                          if (!sig) return;
-                          try {
-                            if (sig.startsWith("data:")) {
-                              // data URL: convert to blob then download
-                              const res = await fetch(sig);
-                              const blob = await res.blob();
-                              const blobUrl = URL.createObjectURL(blob);
-                              const name = `signature-${
-                                selectedApplication._id || "sig"
-                              }.png`;
-                              // @ts-ignore
-                              downloadUrlAs(blobUrl, name);
-                              URL.revokeObjectURL(blobUrl);
-                            } else {
-                              // remote URL: use download helper which fetches and infers extension
-                              const parts = sig.split("?")[0].split("/");
-                              const name =
-                                parts[parts.length - 1] ||
-                                `signature-${selectedApplication._id || "sig"}`;
-                              // @ts-ignore
-                              downloadUrlAs(sig, name);
-                            }
-                          } catch (err) {
-                            window.open(sig, "_blank");
-                          }
-                        }}
-                      >
-                        Download Signature
-                      </button>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Digitally signed by {selectedApplication.firstName}{" "}
-                        {selectedApplication.lastName}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Signed on {formatDate(selectedApplication.submittedAt)}
-                      </p>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-3 sm:p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Mother's Information
+                      </div>
+                      <div className="space-y-2">
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Name
+                          </div>
+                          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {selectedApplication.motherName}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Occupation
+                          </div>
+                          <div className="text-sm text-gray-700 dark:text-gray-300">
+                            {selectedApplication.motherOccupation}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* Status Update Section - Only show for non-failed applications */}
-            {selectedApplication.status === "failed_interview" ||
-            selectedApplication.status === "rejected" ||
-            selectedApplication.status === "withdrawn" ? (
-              /* Read-only view for final status applications */
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20 rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-600">
-                <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                  <svg
-                    className="w-5 h-5 text-gray-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Application Status - Final Decision
-                </h4>
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-center p-8">
-                    <div className="text-center space-y-4">
-                      <div className="w-16 h-16 mx-auto bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                        {selectedApplication.status === "failed_interview" ? (
-                          <svg
-                            className="w-8 h-8 text-orange-500"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        ) : selectedApplication.status === "rejected" ? (
-                          <svg
-                            className="w-8 h-8 text-red-500"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        ) : (
-                          <svg
-                            className="w-8 h-8 text-gray-500"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
+                {/* Emergency Contact */}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-600">
+                  <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                    <svg
+                      className="w-5 h-5 text-gray-600 dark:text-gray-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                    Emergency Contact
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                        Contact Person
+                      </div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {selectedApplication.emergencyContact}
+                      </div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                        Contact Number
+                      </div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {selectedApplication.emergencyContactNumber}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Relative Information */}
+                {selectedApplication.hasRelativeWorking && (
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                    <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-3">
+                      Relative Working at University
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Name:</span>{" "}
+                        {selectedApplication.relatives?.[0]?.name || (
+                          <span className="text-gray-500">No input data</span>
                         )}
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                          {selectedApplication.status === "failed_interview"
-                            ? "Interview Failed"
-                            : selectedApplication.status === "rejected"
-                            ? "Application Rejected"
-                            : "Application Withdrawn"}
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                          This application has reached a final decision and
-                          cannot be modified further. All information is
-                          displayed in read-only mode for record-keeping
-                          purposes.
-                        </p>
+                        <span className="font-medium">Department:</span>{" "}
+                        {selectedApplication.relatives?.[0]?.department || (
+                          <span className="text-gray-500">No input data</span>
+                        )}
                       </div>
-                      {statusUpdateData.hrComments && (
-                        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                          <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            HR Comments:
+                      <div>
+                        <span className="font-medium">Relationship:</span>{" "}
+                        {selectedApplication.relatives?.[0]?.relationship || (
+                          <span className="text-gray-500">No input data</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Educational Background */}
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                  <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-3">
+                    Educational Background
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">Elementary:</span>{" "}
+                      {selectedApplication.elementary ? (
+                        <>
+                          {selectedApplication.elementary}
+                          {selectedApplication.elementaryYears &&
+                            ` (${selectedApplication.elementaryYears})`}
+                        </>
+                      ) : (
+                        <span className="text-gray-500">No input data</span>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="font-medium">High School:</span>{" "}
+                      {selectedApplication.highSchool ? (
+                        <>
+                          {selectedApplication.highSchool}
+                          {selectedApplication.highSchoolYears &&
+                            ` (${selectedApplication.highSchoolYears})`}
+                        </>
+                      ) : (
+                        <span className="text-gray-500">No input data</span>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="font-medium">College:</span>{" "}
+                      {selectedApplication.college ? (
+                        <>
+                          {selectedApplication.college}
+                          {selectedApplication.collegeYears &&
+                            ` (${selectedApplication.collegeYears})`}
+                        </>
+                      ) : (
+                        <span className="text-gray-500">No input data</span>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="font-medium">Others:</span>{" "}
+                      {selectedApplication.others ? (
+                        <>
+                          {selectedApplication.others}
+                          {selectedApplication.othersYears &&
+                            ` (${selectedApplication.othersYears})`}
+                        </>
+                      ) : (
+                        <span className="text-gray-500">No input data</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Seminars/Trainings */}
+                {selectedApplication.seminars &&
+                  selectedApplication.seminars.length > 0 && (
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                      <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-3">
+                        Seminars/Trainings Attended
+                      </h4>
+                      <div className="space-y-3">
+                        {selectedApplication.seminars.map(
+                          (seminar: any, index: number) => (
+                            <div
+                              key={index}
+                              className="border-l-2 border-red-300 pl-3"
+                            >
+                              <div className="text-sm">
+                                <div>
+                                  <span className="font-medium">Title:</span>{" "}
+                                  {seminar.title}
+                                </div>
+                                <div>
+                                  <span className="font-medium">
+                                    Sponsoring Agency:
+                                  </span>{" "}
+                                  {seminar.sponsoringAgency}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Date:</span>{" "}
+                                  {seminar.inclusiveDate}
+                                </div>
+                                <div>
+                                  <span className="font-medium">Place:</span>{" "}
+                                  {seminar.place}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Uploaded Documents */}
+                {(selectedApplication.profilePhoto ||
+                  selectedApplication.idDocument ||
+                  selectedApplication.parentID ||
+                  (selectedApplication.certificates &&
+                    selectedApplication.certificates.length > 0)) && (
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 border border-gray-200 dark:border-gray-600">
+                    <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 sm:mb-6 flex items-center gap-2">
+                      <svg
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Uploaded Certificate
+                    </h4>
+
+                    <div className="space-y-4 sm:space-y-6">
+                      {/* Certificates */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {selectedApplication.certificates &&
+                        selectedApplication.certificates.length > 0 ? (
+                          selectedApplication.certificates.map(
+                            (cert: string, idx: number) => {
+                              let certUrl: string | undefined;
+                              const _cert = (cert || "").toString().trim();
+
+                              if (
+                                /^https?:\/\//i.test(_cert) ||
+                                /^\/\//.test(_cert)
+                              ) {
+                                certUrl = _cert.startsWith("//")
+                                  ? `https:${_cert}`
+                                  : _cert;
+                              } else if (
+                                /cloudinary/i.test(_cert) ||
+                                _cert.startsWith("res.cloudinary.com")
+                              ) {
+                                // cloudinary link stored without protocol
+                                certUrl = _cert.startsWith("//")
+                                  ? `https:${_cert}`
+                                  : `https://${_cert}`;
+
+                                // Normalize Cloudinary raw/upload paths which may include
+                                // a redundant 'uploads/' segment in the public_id and
+                                // cause 404s (e.g. /raw/upload/v1/uploads/...).
+                                if (
+                                  certUrl &&
+                                  /res\.cloudinary\.com/i.test(certUrl)
+                                ) {
+                                  certUrl = certUrl
+                                    .replace(
+                                      /(\/raw\/upload\/v\d+\/)uploads\//i,
+                                      "$1"
+                                    )
+                                    .replace(
+                                      /(\/raw\/upload\/)uploads\//i,
+                                      "$1"
+                                    );
+                                }
+                              } else if (_cert.includes("/")) {
+                                certUrl = `${
+                                  import.meta.env.VITE_API
+                                }/${_cert}`;
+                              } else if (_cert) {
+                                certUrl = `${
+                                  import.meta.env.VITE_API
+                                }/uploads/certificates/${_cert}`;
+                              }
+
+                              // Enhanced PDF detection (computed early so click handlers can use it)
+                              const isPdf = !!(
+                                certUrl &&
+                                (/\.pdf(\?|$)/i.test(certUrl) ||
+                                  /\/raw\/upload/i.test(certUrl) ||
+                                  /resource_type=raw/i.test(certUrl) ||
+                                  /format=pdf/i.test(certUrl) ||
+                                  /\.pdf\b/i.test(_cert) ||
+                                  /\bpdf\b/i.test(_cert))
+                              );
+
+                              const handleCardClick = () => {
+                                if (!certUrl) return;
+                                if (isPdf) {
+                                  openPreview(
+                                    certUrl,
+                                    `certificate-${idx + 1}`
+                                  );
+                                } else {
+                                  window.open(certUrl, "_blank");
+                                }
+                              };
+
+                              return (
+                                <div
+                                  key={idx}
+                                  className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700 flex flex-col items-stretch"
+                                >
+                                  <div
+                                    className="w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden cursor-pointer flex items-center justify-center"
+                                    onClick={handleCardClick}
+                                  >
+                                    {isPdf ? (
+                                      <div className="flex flex-col items-center gap-2">
+                                        <svg
+                                          className="w-10 h-10 text-red-600"
+                                          fill="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path d="M12 0C5.372 0 0 5.373 0 12s5.372 12 12 12 12-5.373 12-12S18.628 0 12 0zm1 17h-2v-2h2v2zm0-4h-2V5h2v8z" />
+                                        </svg>
+                                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                                          PDF Document
+                                        </div>
+                                        <div className="text-xs text-gray-600 dark:text-gray-400 underline">
+                                          Open
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <img
+                                        src={certUrl}
+                                        alt={`Certificate ${idx + 1}`}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          (
+                                            e.currentTarget as HTMLImageElement
+                                          ).src = "/placeholder-image.png";
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+
+                                  <div className="mt-2 flex items-center justify-between gap-2">
+                                    <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                      Certificate {idx + 1}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <a
+                                        href={certUrl}
+                                        onClick={(e) => {
+                                          if (!certUrl) return;
+                                          if (isPdf) {
+                                            e.preventDefault();
+                                            openPreview(
+                                              certUrl,
+                                              `certificate-${idx + 1}`
+                                            );
+                                          }
+                                        }}
+                                        rel="noreferrer"
+                                        className="text-xs text-gray-600 dark:text-gray-400 underline hover:text-gray-800 dark:hover:text-gray-200"
+                                      >
+                                        Open
+                                      </a>
+
+                                      {/* Download button - works for both PDFs and images */}
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (!certUrl) return;
+                                          try {
+                                            const pathPart =
+                                              certUrl.split("?")[0];
+                                            const parts = pathPart.split("/");
+                                            let name =
+                                              parts[parts.length - 1] ||
+                                              `certificate-${idx + 1}`;
+                                            // default extension for images if none
+                                            if (
+                                              !/\.[a-z0-9]{1,6}$/i.test(name)
+                                            ) {
+                                              name = isPdf
+                                                ? `${name}.pdf`
+                                                : `${name}.jpg`;
+                                            }
+                                            // @ts-ignore
+                                            downloadUrlAs(certUrl, name);
+                                          } catch (err) {
+                                            window.open(certUrl, "_blank");
+                                          }
+                                        }}
+                                        className="text-xs text-gray-700 dark:text-gray-300 underline"
+                                      >
+                                        Download
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+                          )
+                        ) : (
+                          <div className="text-sm text-gray-500">
+                            No certificates uploaded.
                           </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            {statusUpdateData.hrComments}
+                        )}
+                      </div>
+
+                      {/* Parent/Guardian Valid ID */}
+                      {selectedApplication.parentID && (
+                        <div className="mt-6">
+                          <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                            Parent/Guardian Valid ID
+                          </h5>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {(() => {
+                              let parentIdUrl: string | undefined;
+                              const _parentId = (
+                                selectedApplication.parentID || ""
+                              )
+                                .toString()
+                                .trim();
+
+                              if (
+                                /^https?:\/\//i.test(_parentId) ||
+                                /^\/\//.test(_parentId)
+                              ) {
+                                parentIdUrl = _parentId.startsWith("//")
+                                  ? `https:${_parentId}`
+                                  : _parentId;
+                              } else if (
+                                /cloudinary/i.test(_parentId) ||
+                                _parentId.startsWith("res.cloudinary.com")
+                              ) {
+                                parentIdUrl = _parentId.startsWith("//")
+                                  ? `https:${_parentId}`
+                                  : `https://${_parentId}`;
+
+                                if (
+                                  parentIdUrl &&
+                                  /res\.cloudinary\.com/i.test(parentIdUrl)
+                                ) {
+                                  parentIdUrl = parentIdUrl
+                                    .replace(
+                                      /(\/raw\/upload\/v\d+\/)uploads\//i,
+                                      "$1"
+                                    )
+                                    .replace(
+                                      /(\/raw\/upload\/)uploads\//i,
+                                      "$1"
+                                    );
+                                }
+                              } else if (_parentId.includes("/")) {
+                                parentIdUrl = `${
+                                  import.meta.env.VITE_API
+                                }/${_parentId}`;
+                              } else if (_parentId) {
+                                parentIdUrl = `${
+                                  import.meta.env.VITE_API
+                                }/uploads/parent-ids/${_parentId}`;
+                              }
+
+                              const isPdf = !!(
+                                parentIdUrl &&
+                                (/\.pdf(\?|$)/i.test(parentIdUrl) ||
+                                  /\/raw\/upload/i.test(parentIdUrl) ||
+                                  /resource_type=raw/i.test(parentIdUrl) ||
+                                  /format=pdf/i.test(parentIdUrl) ||
+                                  /\.pdf\b/i.test(_parentId) ||
+                                  /\bpdf\b/i.test(_parentId))
+                              );
+
+                              const handleCardClick = () => {
+                                if (!parentIdUrl) return;
+                                if (isPdf) {
+                                  openPreview(parentIdUrl, "parent-valid-id");
+                                } else {
+                                  window.open(parentIdUrl, "_blank");
+                                }
+                              };
+
+                              return (
+                                <div
+                                  key="parent-id"
+                                  className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700 flex flex-col items-stretch"
+                                >
+                                  <div
+                                    className="w-full h-40 bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden cursor-pointer flex items-center justify-center"
+                                    onClick={handleCardClick}
+                                  >
+                                    {isPdf ? (
+                                      <svg
+                                        className="w-16 h-16 text-gray-400"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                      >
+                                        <path
+                                          fillRule="evenodd"
+                                          d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"
+                                          clipRule="evenodd"
+                                        />
+                                      </svg>
+                                    ) : (
+                                      <img
+                                        src={parentIdUrl}
+                                        alt="Parent Valid ID"
+                                        className="w-full h-full object-contain"
+                                        onError={(e) => {
+                                          console.error(
+                                            "Parent ID image failed to load:",
+                                            {
+                                              src: e.currentTarget.src,
+                                              originalPath:
+                                                selectedApplication.parentID,
+                                            }
+                                          );
+                                          e.currentTarget.style.display =
+                                            "none";
+                                          const parent =
+                                            e.currentTarget.parentElement;
+                                          if (parent) {
+                                            parent.innerHTML = `
+                                          <svg class="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                                          </svg>
+                                        `;
+                                          }
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+                                  <div className="mt-2 flex items-center justify-between">
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                      Parent/Guardian ID
+                                    </span>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (parentIdUrl)
+                                          window.open(parentIdUrl, "_blank");
+                                      }}
+                                      className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 underline"
+                                    >
+                                      Open
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                         </div>
                       )}
                     </div>
                   </div>
-                </div>
-              </div>
-            ) : (
-              /* Status Update Section for active applications */
-              <div className="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-xl p-6 mb-6 border border-red-200 dark:border-red-800">
-                <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                  <svg
-                    className="w-5 h-5 text-red-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Application Status Management
-                </h4>
-                <div className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-                  <div className="space-y-6">
-                    <div>
-                      <Label
-                        htmlFor="newStatus"
-                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                )}
+
+                {/* Electronic Signature */}
+                {selectedApplication.signature && (
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-600">
+                    <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                      <svg
+                        className="w-5 h-5 text-gray-600 dark:text-gray-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
                       >
-                        Update Status
-                      </Label>
-                      <select
-                        id="newStatus"
-                        value={statusUpdateData.status}
-                        onChange={(e) => {
-                          const newStatus = e.target.value;
-                          setStatusUpdateData((prev) => ({
-                            ...prev,
-                            status: newStatus,
-                            // Clear interview fields if status is not interview_scheduled
-                            ...(newStatus !== "interview_scheduled" && {
-                              interviewDate: "",
-                              interviewTime: "",
-                              interviewLocation: "",
-                              interviewNotes: "",
-                            }),
-                          }));
-                        }}
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-800 dark:text-gray-100"
-                      >
-                        {/* Status workflow based on current status */}
-                        {selectedApplication.status === "pending" && (
-                          <>
-                            <option value="pending">
-                              Keep as New Application
-                            </option>
-                            <option value="under_review">
-                              Continue Review
-                            </option>
-                            <option value="on_hold">Put on Hold</option>
-                            <option value="rejected">Reject Application</option>
-                          </>
-                        )}
-
-                        {selectedApplication.status === "under_review" && (
-                          <>
-                            <option value="under_review">
-                              Continue Review
-                            </option>
-                            <option value="interview_scheduled">
-                              Schedule Interview
-                            </option>
-                            <option value="on_hold">Put on Hold</option>
-                            <option value="rejected">Reject Application</option>
-                          </>
-                        )}
-
-                        {selectedApplication.status ===
-                          "interview_scheduled" && (
-                          <>
-                            <option value="interview_scheduled">
-                              Keep Interview Scheduled
-                            </option>
-                            <option value="passed_interview">
-                              Mark Interview as Passed
-                            </option>
-                            <option value="failed_interview">
-                              Mark Interview as Failed
-                            </option>
-                            <option value="on_hold">Put on Hold</option>
-                            <option value="rejected">Reject Application</option>
-                          </>
-                        )}
-
-                        {selectedApplication.status === "passed_interview" && (
-                          <>
-                            <option value="passed_interview">
-                              Keep as Interview Passed
-                            </option>
-                            <option value="hours_completed">
-                              Mark Required Hours as Completed
-                            </option>
-                            <option value="on_hold">Put on Hold</option>
-                            <option value="rejected">Reject Application</option>
-                          </>
-                        )}
-
-                        {selectedApplication.status === "hours_completed" && (
-                          <>
-                            <option value="hours_completed">
-                              Keep as Hours Completed
-                            </option>
-                            <option value="accepted">Accept Applicant</option>
-                            <option value="on_hold">Put on Hold</option>
-                            <option value="rejected">Reject Application</option>
-                          </>
-                        )}
-
-                        {selectedApplication.status === "failed_interview" && (
-                          <>
-                            <option value="failed_interview">
-                              Keep as Interview Failed
-                            </option>
-                            <option value="interview_scheduled">
-                              Reschedule Interview
-                            </option>
-                            <option value="rejected">Reject Application</option>
-                          </>
-                        )}
-
-                        {selectedApplication.status === "accepted" && (
-                          <option value="accepted">Already Accepted</option>
-                        )}
-
-                        {selectedApplication.status === "on_hold" && (
-                          <>
-                            <option value="on_hold">Keep on Hold</option>
-                            <option value="under_review">Resume Review</option>
-                            <option value="interview_scheduled">
-                              Schedule Interview
-                            </option>
-                            <option value="rejected">Reject Application</option>
-                          </>
-                        )}
-
-                        {(selectedApplication.status === "rejected" ||
-                          selectedApplication.status === "withdrawn") && (
-                          <option value={selectedApplication.status}>
-                            {selectedApplication.status === "rejected"
-                              ? "Already Rejected"
-                              : "Withdrawn by Applicant"}
-                          </option>
-                        )}
-                      </select>
-
-                      {/* Show specific guidance messages based on current status */}
-                      {selectedApplication.status === "pending" && (
-                        <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                          <div className="flex items-start gap-2">
-                            <svg
-                              className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            <div className="text-sm text-blue-700 dark:text-blue-300">
-                              <p className="font-medium">New Application</p>
-                              <p className="mt-1">
-                                Review the application details and move to
-                                "Continue Review" when ready to proceed.
-                              </p>
-                            </div>
-                          </div>
+                        <path
+                          fillRule="evenodd"
+                          d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Electronic Signature
+                      <span className="ml-auto text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded-full">
+                        Verified
+                      </span>
+                    </h4>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                      <div className="flex flex-col items-center">
+                        <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-800 mb-4">
+                          <img
+                            src={selectedApplication.signature}
+                            alt="Electronic Signature"
+                            className="max-h-20 mx-auto"
+                            style={{ imageRendering: "pixelated" }}
+                          />
                         </div>
-                      )}
-
-                      {selectedApplication.status === "under_review" && (
-                        <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                          <div className="flex items-start gap-2">
-                            <svg
-                              className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            <div className="text-sm text-blue-700 dark:text-blue-300">
-                              <p className="font-medium">Under Review</p>
-                              <p className="mt-1">
-                                If the application meets requirements, schedule
-                                an interview. Otherwise, put on hold or reject.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedApplication.status === "interview_scheduled" && (
-                        <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                          <div className="flex items-start gap-2">
-                            <svg
-                              className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            <div className="text-sm text-green-700 dark:text-green-300">
-                              <p className="font-medium">Interview Scheduled</p>
-                              <p className="mt-1">
-                                After conducting the interview, mark as passed
-                                or failed based on performance.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedApplication.status === "passed_interview" && (
-                        <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                          <div className="flex items-start gap-2">
-                            <svg
-                              className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            <div className="text-sm text-green-700 dark:text-green-300">
-                              <p className="font-medium">Interview Passed</p>
-                              <p className="mt-1">
-                                Student can now begin their required hours. Mark
-                                as completed when they finish.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedApplication.status === "hours_completed" && (
-                        <div className="mt-2 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-                          <div className="flex items-start gap-2">
-                            <svg
-                              className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            <div className="text-sm text-purple-700 dark:text-purple-300">
-                              <p className="font-medium">Hours Completed</p>
-                              <p className="mt-1">
-                                Student has completed their required hours and
-                                is ready to be accepted.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedApplication.status === "failed_interview" && (
-                        <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                          <div className="flex items-start gap-2">
-                            <svg
-                              className="w-4 h-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            <div className="text-sm text-red-700 dark:text-red-300">
-                              <p className="font-medium">Interview Failed</p>
-                              <p className="mt-1">
-                                You can give the applicant another chance by
-                                rescheduling or reject the application.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedApplication.status === "on_hold" && (
-                        <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                          <div className="flex items-start gap-2">
-                            <svg
-                              className="w-4 h-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            <div className="text-sm text-yellow-700 dark:text-yellow-300">
-                              <p className="font-medium">Application On Hold</p>
-                              <p className="mt-1">
-                                Resume review when ready or proceed to schedule
-                                interview if already reviewed.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {(selectedApplication.status === "accepted" ||
-                        selectedApplication.status === "rejected" ||
-                        selectedApplication.status === "withdrawn") && (
-                        <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
-                          <div className="flex items-start gap-2">
-                            <svg
-                              className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            <div className="text-sm text-gray-700 dark:text-gray-300">
-                              <p className="font-medium">Final Status</p>
-                              <p className="mt-1">
-                                This application has reached its final status
-                                and cannot be modified further.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label
-                        htmlFor="hrComments"
-                        className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                      >
-                        HR Comments (Optional)
-                      </Label>
-                      <textarea
-                        id="hrComments"
-                        rows={4}
-                        value={statusUpdateData.hrComments}
-                        onChange={(e) =>
-                          setStatusUpdateData((prev) => ({
-                            ...prev,
-                            hrComments: e.target.value,
-                          }))
-                        }
-                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-800 dark:text-gray-100"
-                        placeholder="Add any comments or notes about this application..."
-                      />
-                    </div>
-
-                    {/* Show message when interview is already scheduled */}
-                    {(selectedApplication.interviewDate ||
-                      selectedApplication.interviewTime ||
-                      selectedApplication.interviewLocation) && (
-                      <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-6 border border-green-200 dark:border-green-800">
-                        <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                          <svg
-                            className="w-5 h-5 text-green-600"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className="text-sm text-gray-600 dark:text-gray-400 underline hover:text-gray-800 dark:hover:text-gray-200"
+                            onClick={async () => {
+                              const sig = selectedApplication.signature;
+                              if (!sig) return;
+                              try {
+                                if (sig.startsWith("data:")) {
+                                  // data URL: convert to blob then download
+                                  const res = await fetch(sig);
+                                  const blob = await res.blob();
+                                  const blobUrl = URL.createObjectURL(blob);
+                                  const name = `signature-${
+                                    selectedApplication._id || "sig"
+                                  }.png`;
+                                  // @ts-ignore
+                                  downloadUrlAs(blobUrl, name);
+                                  URL.revokeObjectURL(blobUrl);
+                                } else {
+                                  // remote URL: use download helper which fetches and infers extension
+                                  const parts = sig.split("?")[0].split("/");
+                                  const name =
+                                    parts[parts.length - 1] ||
+                                    `signature-${
+                                      selectedApplication._id || "sig"
+                                    }`;
+                                  // @ts-ignore
+                                  downloadUrlAs(sig, name);
+                                }
+                              } catch (err) {
+                                window.open(sig, "_blank");
+                              }
+                            }}
                           >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          Interview Already Scheduled
-                        </h5>
-                        <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                          <div className="space-y-3">
-                            {selectedApplication.interviewDate && (
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                  📅 Date:
-                                </span>
-                                <span className="text-gray-900 dark:text-gray-100">
-                                  {new Date(
-                                    selectedApplication.interviewDate
-                                  ).toLocaleDateString("en-US", {
-                                    weekday: "long",
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  })}
-                                </span>
-                              </div>
-                            )}
-                            {selectedApplication.interviewTime && (
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                  🕐 Time:
-                                </span>
-                                <span className="text-gray-900 dark:text-gray-100">
-                                  {new Date(
-                                    `2000-01-01T${selectedApplication.interviewTime}`
-                                  ).toLocaleTimeString("en-US", {
-                                    hour: "numeric",
-                                    minute: "2-digit",
-                                    hour12: true,
-                                  })}
-                                </span>
-                              </div>
-                            )}
-                            {selectedApplication.interviewLocation && (
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                  📍 Location:
-                                </span>
-                                <span className="text-gray-900 dark:text-gray-100">
-                                  {selectedApplication.interviewLocation}
-                                </span>
-                              </div>
-                            )}
-                            {selectedApplication.interviewNotes && (
-                              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                  📝 Instructions:
-                                </span>
-                                <p className="text-gray-900 dark:text-gray-100 mt-1">
-                                  {selectedApplication.interviewNotes}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                            <div className="flex items-start gap-2">
+                            Download Signature
+                          </button>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Digitally signed by {selectedApplication.firstName}{" "}
+                            {selectedApplication.lastName}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Signed on{" "}
+                            {formatDate(selectedApplication.submittedAt)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Status Update Section - Only show for non-failed applications */}
+                {selectedApplication.status === "failed_interview" ||
+                selectedApplication.status === "rejected" ||
+                selectedApplication.status === "withdrawn" ? (
+                  /* Read-only view for final status applications */
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20 rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-600">
+                    <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                      <svg
+                        className="w-5 h-5 text-gray-600"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Application Status - Final Decision
+                    </h4>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-center p-8">
+                        <div className="text-center space-y-4">
+                          <div className="w-16 h-16 mx-auto bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                            {selectedApplication.status ===
+                            "failed_interview" ? (
                               <svg
-                                className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"
+                                className="w-8 h-8 text-orange-500"
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
                               >
                                 <path
                                   fillRule="evenodd"
-                                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
                                   clipRule="evenodd"
                                 />
                               </svg>
-                              <div className="text-sm text-blue-700 dark:text-blue-300">
-                                <p className="font-medium">
-                                  Interview Information
-                                </p>
-                                <p className="mt-1">
-                                  An interview has already been scheduled for
-                                  this application. The interview notification
-                                  email has been sent to the applicant.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Interview Scheduling Section - Only show when interview_scheduled is selected AND no interview is already scheduled */}
-                    {statusUpdateData.status === "interview_scheduled" &&
-                      !selectedApplication.interviewDate &&
-                      !selectedApplication.interviewTime &&
-                      !selectedApplication.interviewLocation && (
-                        <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-6 border border-purple-200 dark:border-purple-800">
-                          <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-                            <svg
-                              className="w-5 h-5 text-purple-600"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            Interview Scheduling Details
-                          </h5>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                              <Label
-                                htmlFor="interviewDate"
-                                className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                              >
-                                Interview Date *
-                              </Label>
-                              <input
-                                type="date"
-                                id="interviewDate"
-                                value={statusUpdateData.interviewDate}
-                                min={new Date().toISOString().split("T")[0]}
-                                onChange={(e) =>
-                                  setStatusUpdateData((prev) => ({
-                                    ...prev,
-                                    interviewDate: e.target.value,
-                                  }))
-                                }
-                                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
-                                required
-                              />
-                            </div>
-
-                            <div>
-                              <Label
-                                htmlFor="interviewTime"
-                                className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                              >
-                                Interview Time *
-                              </Label>
-                              <input
-                                type="time"
-                                id="interviewTime"
-                                value={statusUpdateData.interviewTime}
-                                onChange={(e) =>
-                                  setStatusUpdateData((prev) => ({
-                                    ...prev,
-                                    interviewTime: e.target.value,
-                                  }))
-                                }
-                                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
-                                min="08:00"
-                                max="17:00"
-                                title="Select a time between 08:00 and 17:00"
-                                required
-                              />
-                            </div>
-                          </div>
-
-                          <div className="mb-4">
-                            <Label
-                              htmlFor="interviewLocation"
-                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                            >
-                              Interview Location *
-                            </Label>
-                            <input
-                              type="text"
-                              id="interviewLocation"
-                              value={statusUpdateData.interviewLocation}
-                              onChange={(e) =>
-                                setStatusUpdateData((prev) => ({
-                                  ...prev,
-                                  interviewLocation: e.target.value,
-                                }))
-                              }
-                              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
-                              placeholder="e.g., HR Office, Room 201, Administration Building"
-                              required
-                            />
-                          </div>
-
-                          <div className="mb-4">
-                            <Label
-                              htmlFor="interviewNotes"
-                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                            >
-                              Additional Interview Instructions
-                            </Label>
-                            <textarea
-                              id="interviewNotes"
-                              rows={3}
-                              value={statusUpdateData.interviewNotes}
-                              onChange={(e) =>
-                                setStatusUpdateData((prev) => ({
-                                  ...prev,
-                                  interviewNotes: e.target.value,
-                                }))
-                              }
-                              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
-                              placeholder="e.g., Please bring a valid ID, Come 15 minutes early, Prepare for technical questions..."
-                            />
-                          </div>
-
-                          {/* Interview Email Preview */}
-                          <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                            <h6 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                            ) : selectedApplication.status === "rejected" ? (
                               <svg
-                                className="w-4 h-4 text-purple-600"
+                                className="w-8 h-8 text-red-500"
                                 fill="currentColor"
                                 viewBox="0 0 20 20"
                               >
-                                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                  clipRule="evenodd"
+                                />
                               </svg>
-                              Email Preview - Interview Notification
-                            </h6>
-                            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-                              <div className="text-sm">
-                                <p className="font-semibold text-gray-800 dark:text-gray-200">
-                                  Subject: Interview Scheduled -{" "}
-                                  {selectedApplication?.position ===
-                                  "student_assistant"
-                                    ? "Student Assistant"
-                                    : "Student Marshal"}{" "}
-                                  Scholarship
-                                </p>
-                                <div className="mt-3 text-gray-700 dark:text-gray-300 leading-relaxed">
-                                  <p>
-                                    Dear {selectedApplication?.firstName}{" "}
-                                    {selectedApplication?.lastName},
-                                  </p>
-                                  <p className="mt-2">
-                                    Congratulations! Your application for the{" "}
-                                    {selectedApplication?.position ===
-                                    "student_assistant"
-                                      ? "Student Assistant"
-                                      : "Student Marshal"}{" "}
-                                    scholarship has been reviewed and we would
-                                    like to invite you for an interview.
-                                  </p>
+                            ) : (
+                              <svg
+                                className="w-8 h-8 text-gray-500"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            )}
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                              {selectedApplication.status === "failed_interview"
+                                ? "Interview Failed"
+                                : selectedApplication.status === "rejected"
+                                ? "Application Rejected"
+                                : "Application Withdrawn"}
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                              This application has reached a final decision and
+                              cannot be modified further. All information is
+                              displayed in read-only mode for record-keeping
+                              purposes.
+                            </p>
+                          </div>
+                          {statusUpdateData.hrComments && (
+                            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                HR Comments:
+                              </div>
+                              <div className="text-sm text-gray-600 dark:text-gray-400">
+                                {statusUpdateData.hrComments}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* Status Update Section for active applications */
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 mb-6 border border-gray-200 dark:border-gray-600">
+                    <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                      <svg
+                        className="w-5 h-5 text-gray-600 dark:text-gray-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      Application Status Management
+                    </h4>
+                    <div className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                      <div className="space-y-6">
+                        <div>
+                          <Label
+                            htmlFor="newStatus"
+                            className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                          >
+                            Update Status
+                          </Label>
+                          <select
+                            id="newStatus"
+                            value={statusUpdateData.status}
+                            onChange={(e) => {
+                              const newStatus = e.target.value;
+                              setStatusUpdateData((prev) => ({
+                                ...prev,
+                                status: newStatus,
+                                // Clear interview fields if status is not interview_scheduled
+                                ...(newStatus !== "interview_scheduled" && {
+                                  interviewDate: "",
+                                  interviewTime: "",
+                                  interviewLocation: "",
+                                  interviewNotes: "",
+                                }),
+                              }));
+                            }}
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-800 dark:text-gray-100"
+                          >
+                            {/* Status workflow based on current status */}
+                            {selectedApplication.status === "pending" && (
+                              <>
+                                <option value="pending">
+                                  Keep as New Application
+                                </option>
+                                <option value="under_review">
+                                  Continue Review
+                                </option>
+                                <option value="on_hold">Put on Hold</option>
+                                <option value="rejected">
+                                  Reject Application
+                                </option>
+                              </>
+                            )}
 
-                                  <div className="mt-4 bg-blue-50 dark:bg-blue-900/30 p-4 rounded border-l-4 border-blue-400">
-                                    <p className="font-semibold text-blue-800 dark:text-blue-200 text-lg mb-3">
-                                      📅 Interview Details:
-                                    </p>
-                                    <div className="space-y-2">
-                                      <p>
-                                        <strong>📆 Date:</strong>{" "}
-                                        {statusUpdateData.interviewDate
-                                          ? new Date(
-                                              statusUpdateData.interviewDate
-                                            ).toLocaleDateString("en-US", {
-                                              weekday: "long",
-                                              year: "numeric",
-                                              month: "long",
-                                              day: "numeric",
-                                            })
-                                          : "[Date not set]"}
-                                      </p>
-                                      <p>
-                                        <strong>🕐 Time:</strong>{" "}
-                                        {statusUpdateData.interviewTime
-                                          ? new Date(
-                                              `2000-01-01T${statusUpdateData.interviewTime}`
-                                            ).toLocaleTimeString("en-US", {
-                                              hour: "numeric",
-                                              minute: "2-digit",
-                                              hour12: true,
-                                            })
-                                          : "[Time not set]"}
-                                      </p>
-                                      <p>
-                                        <strong>📍 Location:</strong>{" "}
-                                        {statusUpdateData.interviewLocation ||
-                                          "[Location not set]"}
-                                      </p>
-                                      <p>
-                                        <strong>👤 Scholarship:</strong>{" "}
-                                        {selectedApplication?.position ===
-                                        "student_assistant"
-                                          ? "Student Assistant"
-                                          : "Student Marshal"}
-                                      </p>
-                                    </div>
-                                  </div>
+                            {selectedApplication.status === "under_review" && (
+                              <>
+                                <option value="under_review">
+                                  Continue Review
+                                </option>
+                                <option value="psychometric_scheduled">
+                                  Schedule Psychometric Test
+                                </option>
+                                <option value="on_hold">Put on Hold</option>
+                                <option value="rejected">
+                                  Reject Application
+                                </option>
+                              </>
+                            )}
 
-                                  {statusUpdateData.interviewNotes && (
-                                    <div className="mt-4 bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded border-l-4 border-yellow-400">
-                                      <p className="font-semibold text-yellow-800 dark:text-yellow-200">
-                                        📝 Important Instructions:
-                                      </p>
-                                      <p className="mt-1">
-                                        {statusUpdateData.interviewNotes}
-                                      </p>
-                                    </div>
-                                  )}
+                            {selectedApplication.status ===
+                              "psychometric_scheduled" && (
+                              <>
+                                <option value="psychometric_scheduled">
+                                  Keep Test Scheduled
+                                </option>
+                                <option value="psychometric_completed">
+                                  Mark Test as Completed
+                                </option>
+                                <option value="on_hold">Put on Hold</option>
+                                <option value="rejected">
+                                  Reject Application
+                                </option>
+                              </>
+                            )}
 
-                                  <div className="mt-4 bg-green-50 dark:bg-green-900/30 p-3 rounded border-l-4 border-green-400">
-                                    <p className="font-semibold text-green-800 dark:text-green-200">
-                                      💼 What to Bring:
-                                    </p>
-                                    <ul className="mt-1 space-y-1 text-sm">
-                                      <li>• Valid government-issued ID</li>
-                                      <li>
-                                        • Original documents and certificates
-                                        (if not previously submitted)
-                                      </li>
-                                      <li>• Pen and notepad</li>
-                                      <li>
-                                        • This email confirmation (printed or on
-                                        your phone)
-                                      </li>
-                                    </ul>
-                                  </div>
+                            {selectedApplication.status ===
+                              "psychometric_completed" && (
+                              <>
+                                <option value="psychometric_completed">
+                                  Keep as Test Completed
+                                </option>
+                                <option value="psychometric_passed">
+                                  Mark Test as Passed
+                                </option>
+                                <option value="psychometric_failed">
+                                  Mark Test as Failed
+                                </option>
+                                <option value="on_hold">Put on Hold</option>
+                                <option value="rejected">
+                                  Reject Application
+                                </option>
+                              </>
+                            )}
 
-                                  <div className="mt-4 bg-purple-50 dark:bg-purple-900/30 p-3 rounded border-l-4 border-purple-400">
-                                    <p className="font-semibold text-purple-800 dark:text-purple-200">
-                                      ℹ️ Interview Information:
-                                    </p>
-                                    <ul className="mt-1 space-y-1 text-sm">
-                                      <li>• Please arrive 15 minutes early</li>
-                                      <li>
-                                        • The interview will last approximately
-                                        30-45 minutes
-                                      </li>
-                                      <li>
-                                        • Dress code: Business casual or formal
-                                        attire
-                                      </li>
-                                      <li>
-                                        • Be prepared to discuss your
-                                        qualifications and motivation for the
-                                        position
-                                      </li>
-                                    </ul>
-                                  </div>
+                            {selectedApplication.status ===
+                              "psychometric_passed" && (
+                              <>
+                                <option value="psychometric_passed">
+                                  Keep as Test Passed
+                                </option>
+                                <option value="interview_scheduled">
+                                  Schedule Interview
+                                </option>
+                                <option value="on_hold">Put on Hold</option>
+                                <option value="rejected">
+                                  Reject Application
+                                </option>
+                              </>
+                            )}
 
-                                  <p className="mt-3">
-                                    We look forward to meeting with you at the
-                                    scheduled time. If you have any questions or
-                                    need to reschedule, please contact our HR
-                                    Department immediately at hr@ub.edu.ph or
-                                    call us during business hours.
-                                  </p>
+                            {selectedApplication.status ===
+                              "psychometric_failed" && (
+                              <>
+                                <option value="psychometric_failed">
+                                  Keep as Test Failed
+                                </option>
+                                <option value="psychometric_scheduled">
+                                  Reschedule Test
+                                </option>
+                                <option value="rejected">
+                                  Reject Application
+                                </option>
+                              </>
+                            )}
 
-                                  <p className="mt-4">
-                                    Best regards,
-                                    <br />
-                                    <strong>HR Department</strong>
-                                    <br />
-                                    University of Baguio
-                                    <br />
-                                    📞 Phone: [Contact Number]
-                                    <br />
-                                    📧 Email: hr@ub.edu.ph
+                            {selectedApplication.status ===
+                              "interview_scheduled" && (
+                              <>
+                                <option value="interview_scheduled">
+                                  Keep Interview Scheduled
+                                </option>
+                                <option value="interview_completed">
+                                  Mark Interview as Completed
+                                </option>
+                                <option value="on_hold">Put on Hold</option>
+                                <option value="rejected">
+                                  Reject Application
+                                </option>
+                              </>
+                            )}
+
+                            {selectedApplication.status ===
+                              "interview_completed" && (
+                              <>
+                                <option value="interview_completed">
+                                  Keep as Interview Completed
+                                </option>
+                                <option value="interview_passed">
+                                  Mark Interview as Passed
+                                </option>
+                                <option value="interview_failed">
+                                  Mark Interview as Failed
+                                </option>
+                                <option value="on_hold">Put on Hold</option>
+                                <option value="rejected">
+                                  Reject Application
+                                </option>
+                              </>
+                            )}
+
+                            {selectedApplication.status ===
+                              "interview_passed" && (
+                              <>
+                                <option value="interview_passed">
+                                  Keep as Interview Passed
+                                </option>
+                                <option value="trainee">Set as Trainee</option>
+                                <option value="on_hold">Put on Hold</option>
+                                <option value="rejected">
+                                  Reject Application
+                                </option>
+                              </>
+                            )}
+
+                            {selectedApplication.status ===
+                              "interview_failed" && (
+                              <>
+                                <option value="interview_failed">
+                                  Keep as Interview Failed
+                                </option>
+                                <option value="interview_scheduled">
+                                  Reschedule Interview
+                                </option>
+                                <option value="rejected">
+                                  Reject Application
+                                </option>
+                              </>
+                            )}
+
+                            {selectedApplication.status === "trainee" && (
+                              <>
+                                <option value="trainee">Keep as Trainee</option>
+                                <option value="training_completed">
+                                  Mark Training as Completed
+                                </option>
+                                <option value="on_hold">Put on Hold</option>
+                                <option value="rejected">
+                                  Reject Application
+                                </option>
+                              </>
+                            )}
+
+                            {selectedApplication.status ===
+                              "training_completed" && (
+                              <>
+                                <option value="training_completed">
+                                  Keep as Training Completed
+                                </option>
+                                <option value="accepted">
+                                  Accept Applicant
+                                </option>
+                                <option value="on_hold">Put on Hold</option>
+                                <option value="rejected">
+                                  Reject Application
+                                </option>
+                              </>
+                            )}
+
+                            {selectedApplication.status === "accepted" && (
+                              <option value="accepted">Already Accepted</option>
+                            )}
+
+                            {selectedApplication.status === "on_hold" && (
+                              <>
+                                <option value="on_hold">Keep on Hold</option>
+                                <option value="under_review">
+                                  Resume Review
+                                </option>
+                                <option value="interview_scheduled">
+                                  Schedule Interview
+                                </option>
+                                <option value="rejected">
+                                  Reject Application
+                                </option>
+                              </>
+                            )}
+
+                            {(selectedApplication.status === "rejected" ||
+                              selectedApplication.status === "withdrawn") && (
+                              <option value={selectedApplication.status}>
+                                {selectedApplication.status === "rejected"
+                                  ? "Already Rejected"
+                                  : "Withdrawn by Applicant"}
+                              </option>
+                            )}
+                          </select>
+
+                          {/* Show specific guidance messages based on current status */}
+                          {selectedApplication.status === "pending" && (
+                            <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                <div className="text-sm text-gray-700 dark:text-gray-300">
+                                  <p className="font-medium">New Application</p>
+                                  <p className="mt-1">
+                                    Review the application details and move to
+                                    "Continue Review" when ready to proceed.
                                   </p>
                                 </div>
                               </div>
                             </div>
-                          </div>
+                          )}
+
+                          {selectedApplication.status === "under_review" && (
+                            <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                <div className="text-sm text-gray-700 dark:text-gray-300">
+                                  <p className="font-medium">Under Review</p>
+                                  <p className="mt-1">
+                                    If the application meets requirements,
+                                    schedule a psychometric test. Otherwise, put
+                                    on hold or reject.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedApplication.status ===
+                            "psychometric_scheduled" && (
+                            <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                <div className="text-sm text-gray-700 dark:text-gray-300">
+                                  <p className="font-medium">
+                                    Psychometric Test Scheduled
+                                  </p>
+                                  <p className="mt-1">
+                                    After the test is completed, mark as
+                                    completed to evaluate results.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedApplication.status ===
+                            "psychometric_completed" && (
+                            <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                <div className="text-sm text-gray-700 dark:text-gray-300">
+                                  <p className="font-medium">Test Completed</p>
+                                  <p className="mt-1">
+                                    Review the test results and mark as passed
+                                    or failed.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedApplication.status ===
+                            "psychometric_passed" && (
+                            <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                <div className="text-sm text-gray-700 dark:text-gray-300">
+                                  <p className="font-medium">Test Passed</p>
+                                  <p className="mt-1">
+                                    Applicant passed the psychometric test.
+                                    Schedule an interview to proceed.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedApplication.status ===
+                            "interview_scheduled" && (
+                            <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                <div className="text-sm text-gray-700 dark:text-gray-300">
+                                  <p className="font-medium">
+                                    Interview Scheduled
+                                  </p>
+                                  <p className="mt-1">
+                                    After conducting the interview, mark as
+                                    passed or failed based on performance.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedApplication.status ===
+                            "interview_passed" && (
+                            <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                <div className="text-sm text-gray-700 dark:text-gray-300">
+                                  <p className="font-medium">
+                                    Interview Passed
+                                  </p>
+                                  <p className="mt-1">
+                                    Applicant passed the interview. Set as
+                                    trainee to begin their training period.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedApplication.status === "trainee" && (
+                            <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                <div className="text-sm text-gray-700 dark:text-gray-300">
+                                  <p className="font-medium">Trainee</p>
+                                  <p className="mt-1">
+                                    Trainee is completing their required hours.
+                                    Mark as completed when they finish training.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedApplication.status ===
+                            "training_completed" && (
+                            <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                <div className="text-sm text-gray-700 dark:text-gray-300">
+                                  <p className="font-medium">Hours Completed</p>
+                                  <p className="mt-1">
+                                    Student has completed their required hours
+                                    and is ready to be accepted.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedApplication.status ===
+                            "failed_interview" && (
+                            <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                <div className="text-sm text-gray-700 dark:text-gray-300">
+                                  <p className="font-medium">
+                                    Interview Failed
+                                  </p>
+                                  <p className="mt-1">
+                                    You can give the applicant another chance by
+                                    rescheduling or reject the application.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedApplication.status === "on_hold" && (
+                            <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                <div className="text-sm text-yellow-700 dark:text-yellow-300">
+                                  <p className="font-medium">
+                                    Application On Hold
+                                  </p>
+                                  <p className="mt-1">
+                                    Resume review when ready or proceed to
+                                    schedule interview if already reviewed.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {(selectedApplication.status === "accepted" ||
+                            selectedApplication.status === "rejected" ||
+                            selectedApplication.status === "withdrawn") && (
+                            <div className="mt-2 p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
+                              <div className="flex items-start gap-2">
+                                <svg
+                                  className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                <div className="text-sm text-gray-700 dark:text-gray-300">
+                                  <p className="font-medium">Final Status</p>
+                                  <p className="mt-1">
+                                    This application has reached its final
+                                    status and cannot be modified further.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
+
+                        <div>
+                          <Label
+                            htmlFor="hrComments"
+                            className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                          >
+                            HR Comments (Optional)
+                          </Label>
+                          <textarea
+                            id="hrComments"
+                            rows={4}
+                            value={statusUpdateData.hrComments}
+                            onChange={(e) =>
+                              setStatusUpdateData((prev) => ({
+                                ...prev,
+                                hrComments: e.target.value,
+                              }))
+                            }
+                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-800 dark:text-gray-100"
+                            placeholder="Add any comments or notes about this application..."
+                          />
+                        </div>
+
+                        {/* Show message when psychometric test is scheduled (but not completed yet) */}
+                        {(selectedApplication.psychometricTestDate ||
+                          selectedApplication.psychometricTestTime ||
+                          selectedApplication.psychometricTestLocation) &&
+                          selectedApplication.status ===
+                            "psychometric_scheduled" && (
+                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20 rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+                              <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                                <svg
+                                  className="w-5 h-5 text-gray-600 dark:text-gray-400"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                Psychometric Test Already Scheduled
+                              </h5>
+                              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                                <div className="space-y-3">
+                                  {selectedApplication.psychometricTestDate && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                                        📅 Date:
+                                      </span>
+                                      <span className="text-gray-900 dark:text-gray-100">
+                                        {new Date(
+                                          selectedApplication.psychometricTestDate
+                                        ).toLocaleDateString("en-US", {
+                                          weekday: "long",
+                                          year: "numeric",
+                                          month: "long",
+                                          day: "numeric",
+                                        })}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {selectedApplication.psychometricTestTime && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                                        🕐 Time:
+                                      </span>
+                                      <span className="text-gray-900 dark:text-gray-100">
+                                        {new Date(
+                                          `2000-01-01T${selectedApplication.psychometricTestTime}`
+                                        ).toLocaleTimeString("en-US", {
+                                          hour: "numeric",
+                                          minute: "2-digit",
+                                          hour12: true,
+                                        })}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {selectedApplication.psychometricTestLocation && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                                        📍 Location:
+                                      </span>
+                                      <span className="text-gray-900 dark:text-gray-100">
+                                        {
+                                          selectedApplication.psychometricTestLocation
+                                        }
+                                      </span>
+                                    </div>
+                                  )}
+                                  {selectedApplication.psychometricTestWhatToBring && (
+                                    <div className="flex items-start gap-2">
+                                      <span className="font-medium text-gray-700 dark:text-gray-300">
+                                        🎒 What to Bring:
+                                      </span>
+                                      <span className="text-gray-900 dark:text-gray-100">
+                                        {
+                                          selectedApplication.psychometricTestWhatToBring
+                                        }
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="mt-4 p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <div className="flex items-start gap-2">
+                                  <svg
+                                    className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                                    <p className="font-medium">
+                                      Psychometric Test Information
+                                    </p>
+                                    <p className="mt-1">
+                                      A psychometric test has already been
+                                      scheduled for this application. The test
+                                      notification email has been sent to the
+                                      applicant.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                        {/* Psychometric Test Scheduling Section - Only show when psychometric_scheduled is selected AND no test is already scheduled */}
+                        {statusUpdateData.status === "psychometric_scheduled" &&
+                          !selectedApplication.psychometricTestDate &&
+                          !selectedApplication.psychometricTestTime &&
+                          !selectedApplication.psychometricTestLocation && (
+                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/20 dark:to-gray-800/20 rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+                              <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                                <svg
+                                  className="w-5 h-5 text-gray-600 dark:text-gray-400"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                Psychometric Test Scheduling Details
+                              </h5>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                  <Label
+                                    htmlFor="psychometricTestDate"
+                                    className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                                  >
+                                    Test Date *
+                                  </Label>
+                                  <input
+                                    type="date"
+                                    id="psychometricTestDate"
+                                    value={
+                                      statusUpdateData.psychometricTestDate
+                                    }
+                                    min={new Date().toISOString().split("T")[0]}
+                                    onChange={(e) =>
+                                      setStatusUpdateData((prev) => ({
+                                        ...prev,
+                                        psychometricTestDate: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 dark:bg-gray-800 dark:text-gray-100"
+                                    required
+                                  />
+                                </div>
+
+                                <div>
+                                  <Label
+                                    htmlFor="psychometricTestTime"
+                                    className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                                  >
+                                    Test Time *
+                                  </Label>
+                                  <input
+                                    type="time"
+                                    id="psychometricTestTime"
+                                    value={
+                                      statusUpdateData.psychometricTestTime
+                                    }
+                                    onChange={(e) =>
+                                      setStatusUpdateData((prev) => ({
+                                        ...prev,
+                                        psychometricTestTime: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 dark:bg-gray-800 dark:text-gray-100"
+                                    min="08:00"
+                                    max="17:00"
+                                    title="Select a time between 08:00 and 17:00"
+                                    required
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="mb-4">
+                                <Label
+                                  htmlFor="psychometricTestLocation"
+                                  className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                                >
+                                  Test Location *
+                                </Label>
+                                <input
+                                  type="text"
+                                  id="psychometricTestLocation"
+                                  value={
+                                    statusUpdateData.psychometricTestLocation
+                                  }
+                                  onChange={(e) =>
+                                    setStatusUpdateData((prev) => ({
+                                      ...prev,
+                                      psychometricTestLocation: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 dark:bg-gray-800 dark:text-gray-100"
+                                  placeholder="e.g., Testing Center, Room 301, Main Building"
+                                  required
+                                />
+                              </div>
+
+                              <div className="mb-4">
+                                <Label
+                                  htmlFor="psychometricTestWhatToBring"
+                                  className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                                >
+                                  What to Bring *
+                                </Label>
+                                <textarea
+                                  id="psychometricTestWhatToBring"
+                                  rows={3}
+                                  value={
+                                    statusUpdateData.psychometricTestWhatToBring
+                                  }
+                                  onChange={(e) =>
+                                    setStatusUpdateData((prev) => ({
+                                      ...prev,
+                                      psychometricTestWhatToBring:
+                                        e.target.value,
+                                    }))
+                                  }
+                                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 dark:bg-gray-800 dark:text-gray-100"
+                                  placeholder="e.g., Valid ID, Pencil, Eraser, Calculator (if needed)..."
+                                  required
+                                />
+                              </div>
+
+                              {/* Test Email Preview */}
+                              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                                <h6 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                                  <svg
+                                    className="w-4 h-4 text-gray-600 dark:text-gray-400"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                  </svg>
+                                  Email Preview - Test Notification
+                                </h6>
+                                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                                  <div className="text-sm">
+                                    <p className="font-semibold text-gray-800 dark:text-gray-200">
+                                      Subject: Psychometric Test Scheduled -{" "}
+                                      {selectedApplication?.position ===
+                                      "student_assistant"
+                                        ? "Student Assistant"
+                                        : "Student Marshal"}{" "}
+                                      Position
+                                    </p>
+                                    <div className="mt-3 space-y-2 text-gray-700 dark:text-gray-300">
+                                      <p>Dear Applicant,</p>
+                                      <p>
+                                        Your psychometric test has been
+                                        scheduled. Please find the details
+                                        below:
+                                      </p>
+                                      <div className="space-y-2">
+                                        <p>
+                                          <strong>📆 Date:</strong>{" "}
+                                          {statusUpdateData.psychometricTestDate
+                                            ? new Date(
+                                                statusUpdateData.psychometricTestDate
+                                              ).toLocaleDateString("en-US", {
+                                                weekday: "long",
+                                                year: "numeric",
+                                                month: "long",
+                                                day: "numeric",
+                                              })
+                                            : "[Test date not set]"}
+                                        </p>
+                                        <p>
+                                          <strong>🕐 Time:</strong>{" "}
+                                          {statusUpdateData.psychometricTestTime
+                                            ? new Date(
+                                                `2000-01-01T${statusUpdateData.psychometricTestTime}`
+                                              ).toLocaleTimeString("en-US", {
+                                                hour: "numeric",
+                                                minute: "2-digit",
+                                                hour12: true,
+                                              })
+                                            : "[Test time not set]"}
+                                        </p>
+                                        <p>
+                                          <strong>📍 Location:</strong>{" "}
+                                          {statusUpdateData.psychometricTestLocation ||
+                                            "[Location not set]"}
+                                        </p>
+                                        <p>
+                                          <strong>🎒 What to Bring:</strong>{" "}
+                                          {statusUpdateData.psychometricTestWhatToBring ||
+                                            "[Requirements not specified]"}
+                                        </p>
+                                      </div>
+                                      <p className="mt-3">
+                                        Please arrive 15 minutes before the
+                                        scheduled time.
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                        {/* Show message when interview is already scheduled */}
+                        {(selectedApplication.interviewDate ||
+                          selectedApplication.interviewTime ||
+                          selectedApplication.interviewLocation) && (
+                          <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
+                            <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                              <svg
+                                className="w-5 h-5 text-gray-600 dark:text-gray-400"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              Interview Already Scheduled
+                            </h5>
+                            <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                              <div className="space-y-3">
+                                {selectedApplication.interviewDate && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                                      📅 Date:
+                                    </span>
+                                    <span className="text-gray-900 dark:text-gray-100">
+                                      {new Date(
+                                        selectedApplication.interviewDate
+                                      ).toLocaleDateString("en-US", {
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                      })}
+                                    </span>
+                                  </div>
+                                )}
+                                {selectedApplication.interviewTime && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                                      🕐 Time:
+                                    </span>
+                                    <span className="text-gray-900 dark:text-gray-100">
+                                      {new Date(
+                                        `2000-01-01T${selectedApplication.interviewTime}`
+                                      ).toLocaleTimeString("en-US", {
+                                        hour: "numeric",
+                                        minute: "2-digit",
+                                        hour12: true,
+                                      })}
+                                    </span>
+                                  </div>
+                                )}
+                                {selectedApplication.interviewLocation && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                                      📍 Location:
+                                    </span>
+                                    <span className="text-gray-900 dark:text-gray-100">
+                                      {selectedApplication.interviewLocation}
+                                    </span>
+                                  </div>
+                                )}
+                                {selectedApplication.interviewNotes && (
+                                  <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                                      📝 Instructions:
+                                    </span>
+                                    <p className="text-gray-900 dark:text-gray-100 mt-1">
+                                      {selectedApplication.interviewNotes}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                <div className="flex items-start gap-2">
+                                  <svg
+                                    className="w-4 h-4 text-gray-600 dark:text-gray-400 mt-0.5 flex-shrink-0"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                                    <p className="font-medium">
+                                      Interview Information
+                                    </p>
+                                    <p className="mt-1">
+                                      An interview has already been scheduled
+                                      for this application. The interview
+                                      notification email has been sent to the
+                                      applicant.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Interview Scheduling Section - Only show when interview_scheduled is selected AND no interview is already scheduled */}
+                        {statusUpdateData.status === "interview_scheduled" &&
+                          !selectedApplication.interviewDate &&
+                          !selectedApplication.interviewTime &&
+                          !selectedApplication.interviewLocation && (
+                            <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-600">
+                              <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                                <svg
+                                  className="w-5 h-5 text-gray-600 dark:text-gray-400"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                Interview Scheduling Details
+                              </h5>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                  <Label
+                                    htmlFor="interviewDate"
+                                    className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                                  >
+                                    Interview Date *
+                                  </Label>
+                                  <input
+                                    type="date"
+                                    id="interviewDate"
+                                    value={statusUpdateData.interviewDate}
+                                    min={new Date().toISOString().split("T")[0]}
+                                    onChange={(e) =>
+                                      setStatusUpdateData((prev) => ({
+                                        ...prev,
+                                        interviewDate: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
+                                    required
+                                  />
+                                </div>
+
+                                <div>
+                                  <Label
+                                    htmlFor="interviewTime"
+                                    className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                                  >
+                                    Interview Time *
+                                  </Label>
+                                  <input
+                                    type="time"
+                                    id="interviewTime"
+                                    value={statusUpdateData.interviewTime}
+                                    onChange={(e) =>
+                                      setStatusUpdateData((prev) => ({
+                                        ...prev,
+                                        interviewTime: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
+                                    min="08:00"
+                                    max="17:00"
+                                    title="Select a time between 08:00 and 17:00"
+                                    required
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="mb-4">
+                                <Label
+                                  htmlFor="interviewLocation"
+                                  className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                                >
+                                  Interview Location *
+                                </Label>
+                                <input
+                                  type="text"
+                                  id="interviewLocation"
+                                  value={statusUpdateData.interviewLocation}
+                                  onChange={(e) =>
+                                    setStatusUpdateData((prev) => ({
+                                      ...prev,
+                                      interviewLocation: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
+                                  placeholder="e.g., HR Office, Room 201, Administration Building"
+                                  required
+                                />
+                              </div>
+
+                              <div className="mb-4">
+                                <Label
+                                  htmlFor="interviewWhatToBring"
+                                  className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                                >
+                                  What to Bring *
+                                </Label>
+                                <textarea
+                                  id="interviewWhatToBring"
+                                  rows={3}
+                                  value={statusUpdateData.interviewWhatToBring}
+                                  onChange={(e) =>
+                                    setStatusUpdateData((prev) => ({
+                                      ...prev,
+                                      interviewWhatToBring: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
+                                  placeholder="e.g., Valid ID, Resume, Portfolio (if applicable)..."
+                                  required
+                                />
+                              </div>
+
+                              <div className="mb-4">
+                                <Label
+                                  htmlFor="interviewNotes"
+                                  className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                                >
+                                  Additional Interview Instructions (Optional)
+                                </Label>
+                                <textarea
+                                  id="interviewNotes"
+                                  rows={3}
+                                  value={statusUpdateData.interviewNotes}
+                                  onChange={(e) =>
+                                    setStatusUpdateData((prev) => ({
+                                      ...prev,
+                                      interviewNotes: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
+                                  placeholder="e.g., Come 15 minutes early, Prepare for technical questions..."
+                                />
+                              </div>
+
+                              {/* Interview Email Preview */}
+                              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                                <h6 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
+                                  <svg
+                                    className="w-4 h-4 text-gray-600 dark:text-gray-400"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                  </svg>
+                                  Email Preview - Interview Notification
+                                </h6>
+                                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                                  <div className="text-sm">
+                                    <p className="font-semibold text-gray-800 dark:text-gray-200">
+                                      Subject: Interview Scheduled -{" "}
+                                      {selectedApplication?.position ===
+                                      "student_assistant"
+                                        ? "Student Assistant"
+                                        : "Student Marshal"}{" "}
+                                      Scholarship
+                                    </p>
+                                    <div className="mt-3 text-gray-700 dark:text-gray-300 leading-relaxed">
+                                      <p>
+                                        Dear {selectedApplication?.firstName}{" "}
+                                        {selectedApplication?.lastName},
+                                      </p>
+                                      <p className="mt-2">
+                                        Congratulations! Your application for
+                                        the{" "}
+                                        {selectedApplication?.position ===
+                                        "student_assistant"
+                                          ? "Student Assistant"
+                                          : "Student Marshal"}{" "}
+                                        scholarship has been reviewed and we
+                                        would like to invite you for an
+                                        interview.
+                                      </p>
+
+                                      <div className="mt-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded border-l-4 border-gray-400 dark:border-gray-600">
+                                        <p className="font-semibold text-blue-800 dark:text-blue-200 text-lg mb-3">
+                                          📅 Interview Details:
+                                        </p>
+                                        <div className="space-y-2">
+                                          <p>
+                                            <strong>📆 Date:</strong>{" "}
+                                            {statusUpdateData.interviewDate
+                                              ? new Date(
+                                                  statusUpdateData.interviewDate
+                                                ).toLocaleDateString("en-US", {
+                                                  weekday: "long",
+                                                  year: "numeric",
+                                                  month: "long",
+                                                  day: "numeric",
+                                                })
+                                              : "[Date not set]"}
+                                          </p>
+                                          <p>
+                                            <strong>🕐 Time:</strong>{" "}
+                                            {statusUpdateData.interviewTime
+                                              ? new Date(
+                                                  `2000-01-01T${statusUpdateData.interviewTime}`
+                                                ).toLocaleTimeString("en-US", {
+                                                  hour: "numeric",
+                                                  minute: "2-digit",
+                                                  hour12: true,
+                                                })
+                                              : "[Time not set]"}
+                                          </p>
+                                          <p>
+                                            <strong>📍 Location:</strong>{" "}
+                                            {statusUpdateData.interviewLocation ||
+                                              "[Location not set]"}
+                                          </p>
+                                          <p>
+                                            <strong>👤 Scholarship:</strong>{" "}
+                                            {selectedApplication?.position ===
+                                            "student_assistant"
+                                              ? "Student Assistant"
+                                              : "Student Marshal"}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      {statusUpdateData.interviewNotes && (
+                                        <div className="mt-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded border-l-4 border-gray-400 dark:border-gray-600">
+                                          <p className="font-semibold text-yellow-800 dark:text-yellow-200">
+                                            📝 Important Instructions:
+                                          </p>
+                                          <p className="mt-1">
+                                            {statusUpdateData.interviewNotes}
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      <div className="mt-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded border-l-4 border-gray-400 dark:border-gray-600">
+                                        <p className="font-semibold text-gray-800 dark:text-gray-200">
+                                          💼 What to Bring:
+                                        </p>
+                                        <ul className="mt-1 space-y-1 text-sm">
+                                          <li>• Valid government-issued ID</li>
+                                          <li>
+                                            • Original documents and
+                                            certificates (if not previously
+                                            submitted)
+                                          </li>
+                                          <li>• Pen and notepad</li>
+                                          <li>
+                                            • This email confirmation (printed
+                                            or on your phone)
+                                          </li>
+                                        </ul>
+                                      </div>
+
+                                      <div className="mt-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded border-l-4 border-gray-400 dark:border-gray-600">
+                                        <p className="font-semibold text-gray-800 dark:text-gray-200">
+                                          ℹ️ Interview Information:
+                                        </p>
+                                        <ul className="mt-1 space-y-1 text-sm">
+                                          <li>
+                                            • Please arrive 15 minutes early
+                                          </li>
+                                          <li>
+                                            • The interview will last
+                                            approximately 30-45 minutes
+                                          </li>
+                                          <li>
+                                            • Dress code: Business casual or
+                                            formal attire
+                                          </li>
+                                          <li>
+                                            • Be prepared to discuss your
+                                            qualifications and motivation for
+                                            the position
+                                          </li>
+                                        </ul>
+                                      </div>
+
+                                      <p className="mt-3">
+                                        We look forward to meeting with you at
+                                        the scheduled time. If you have any
+                                        questions or need to reschedule, please
+                                        contact our HR Department immediately at
+                                        hr@ub.edu.ph or call us during business
+                                        hours.
+                                      </p>
+
+                                      <p className="mt-4">
+                                        Best regards,
+                                        <br />
+                                        <strong>HR Department</strong>
+                                        <br />
+                                        University of Baguio
+                                        <br />
+                                        📞 Phone: [Contact Number]
+                                        <br />
+                                        📧 Email: hr@ub.edu.ph
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
+              </>
+            )}
+
+            {/* History Tab Content */}
+            {activeTab === "history" && (
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <ApplicationTimeline timeline={selectedApplication.timeline} />
               </div>
             )}
 
@@ -2660,7 +3511,7 @@ const ApplicationManagement = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  className="text-sm text-blue-600 dark:text-blue-400 underline"
+                  className="text-sm text-gray-600 dark:text-gray-400 underline hover:text-gray-800 dark:hover:text-gray-200"
                   onClick={() => {
                     if (!previewBlobUrl) return;
                     // download current preview blob

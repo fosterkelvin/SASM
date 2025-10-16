@@ -83,7 +83,9 @@ const OfficeProfile = () => {
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   // Profile management state
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(
+    null
+  );
   const [pin, setPin] = useState("");
   const [profileName, setProfileName] = useState("");
   const [profilePIN, setProfilePIN] = useState("");
@@ -100,7 +102,9 @@ const OfficeProfile = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>(
+    {}
+  );
 
   // Session management state
   const [sessionMessage, setSessionMessage] = useState("");
@@ -149,7 +153,10 @@ const OfficeProfile = () => {
       addToast("Profile created successfully!", "success");
     },
     onError: (error: any) => {
-      addToast(error.response?.data?.message || "Failed to create profile", "error");
+      addToast(
+        error.response?.data?.message || "Failed to create profile",
+        "error"
+      );
     },
   });
 
@@ -166,7 +173,10 @@ const OfficeProfile = () => {
       addToast("Profile updated successfully!", "success");
     },
     onError: (error: any) => {
-      addToast(error.response?.data?.message || "Failed to update profile", "error");
+      addToast(
+        error.response?.data?.message || "Failed to update profile",
+        "error"
+      );
     },
   });
 
@@ -179,7 +189,10 @@ const OfficeProfile = () => {
       addToast("Profile deleted successfully!", "success");
     },
     onError: (error: any) => {
-      addToast(error.response?.data?.message || "Failed to delete profile", "error");
+      addToast(
+        error.response?.data?.message || "Failed to delete profile",
+        "error"
+      );
     },
   });
 
@@ -192,7 +205,10 @@ const OfficeProfile = () => {
       return response.data;
     },
     onSuccess: () => {
-      addToast("Password changed successfully! Signing you out for security...", "success");
+      addToast(
+        "Password changed successfully! Signing you out for security...",
+        "success"
+      );
       setPasswordData({
         currentPassword: "",
         newPassword: "",
@@ -208,7 +224,9 @@ const OfficeProfile = () => {
       if (error.response?.data?.message) {
         setPasswordErrors({ general: error.response.data.message });
       } else {
-        setPasswordErrors({ general: "Failed to change password. Please try again." });
+        setPasswordErrors({
+          general: "Failed to change password. Please try again.",
+        });
       }
     },
   });
@@ -222,7 +240,8 @@ const OfficeProfile = () => {
     },
     onError: (error: any) => {
       setSessionMessage(
-        error.response?.data?.message || "Failed to end session. Please try again."
+        error.response?.data?.message ||
+          "Failed to end session. Please try again."
       );
       setTimeout(() => setSessionMessage(""), 5000);
     },
@@ -333,7 +352,11 @@ const OfficeProfile = () => {
   const getDeviceIcon = (userAgent: string) => {
     if (!userAgent) return <Monitor size={16} />;
     const ua = userAgent.toLowerCase();
-    if (ua.includes("mobile") || ua.includes("android") || ua.includes("iphone")) {
+    if (
+      ua.includes("mobile") ||
+      ua.includes("android") ||
+      ua.includes("iphone")
+    ) {
       return <Smartphone size={16} />;
     }
     return <Monitor size={16} />;
@@ -386,7 +409,9 @@ const OfficeProfile = () => {
               : "md:w-[calc(100%-16rem)] md:ml-64"
           }`}
         >
-          <h1 className="text-2xl font-bold text-white">Office Profile Settings</h1>
+          <h1 className="text-2xl font-bold text-white">
+            Office Profile Settings
+          </h1>
         </div>
 
         {/* Main Content */}
@@ -403,17 +428,27 @@ const OfficeProfile = () => {
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm text-gray-600 dark:text-gray-400">Name</Label>
+                    <Label className="text-sm text-gray-600 dark:text-gray-400">
+                      {user.role === "office" ? "Office Name" : "Name"}
+                    </Label>
                     <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {user.firstname} {user.lastname}
+                      {user.role === "office" && user.officeName
+                        ? user.officeName
+                        : `${user.firstname} ${user.lastname}`}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-sm text-gray-600 dark:text-gray-400">Email</Label>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">{user.email}</p>
+                    <Label className="text-sm text-gray-600 dark:text-gray-400">
+                      Email
+                    </Label>
+                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {user.email}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-sm text-gray-600 dark:text-gray-400">Role</Label>
+                    <Label className="text-sm text-gray-600 dark:text-gray-400">
+                      Role
+                    </Label>
                     <p className="text-lg font-semibold text-red-600 dark:text-red-400 capitalize">
                       {user.role}
                     </p>
@@ -434,7 +469,8 @@ const OfficeProfile = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Create, edit, and manage your office profiles. You can have up to 5 profiles.
+                    Create, edit, and manage your office profiles. You can have
+                    up to 5 profiles.
                   </p>
                   <Button
                     onClick={() => setShowManageProfilesModal(true)}
@@ -456,7 +492,8 @@ const OfficeProfile = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Switch to a different profile to access the system with different permissions.
+                    Switch to a different profile to access the system with
+                    different permissions.
                   </p>
                   <Button
                     onClick={() => setShowSwitchProfileModal(true)}
@@ -506,12 +543,16 @@ const OfficeProfile = () => {
                 <CardContent className="p-6">
                   {sessionMessage && (
                     <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-                      <p className="text-sm text-green-700 dark:text-green-400">{sessionMessage}</p>
+                      <p className="text-sm text-green-700 dark:text-green-400">
+                        {sessionMessage}
+                      </p>
                     </div>
                   )}
                   <div className="space-y-3 max-h-64 overflow-y-auto">
                     {sessions.length === 0 ? (
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">No active sessions</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        No active sessions
+                      </p>
                     ) : (
                       sessions.map((session: any) => (
                         <div
@@ -527,7 +568,10 @@ const OfficeProfile = () => {
                                 {formatUserAgent(session.userAgent)}
                               </p>
                               <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Created: {new Date(session.createdAt).toLocaleDateString()}
+                                Created:{" "}
+                                {new Date(
+                                  session.createdAt
+                                ).toLocaleDateString()}
                               </p>
                             </div>
                           </div>
@@ -553,7 +597,10 @@ const OfficeProfile = () => {
       </div>
 
       {/* Manage Profiles Modal */}
-      <Dialog open={showManageProfilesModal} onOpenChange={setShowManageProfilesModal}>
+      <Dialog
+        open={showManageProfilesModal}
+        onOpenChange={setShowManageProfilesModal}
+      >
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -632,7 +679,10 @@ const OfficeProfile = () => {
       </Dialog>
 
       {/* Switch Profile Modal */}
-      <Dialog open={showSwitchProfileModal} onOpenChange={setShowSwitchProfileModal}>
+      <Dialog
+        open={showSwitchProfileModal}
+        onOpenChange={setShowSwitchProfileModal}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -679,7 +729,9 @@ const OfficeProfile = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Enter PIN</DialogTitle>
-            <DialogDescription>Enter your 4-digit PIN to switch profile</DialogDescription>
+            <DialogDescription>
+              Enter your 4-digit PIN to switch profile
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -712,7 +764,9 @@ const OfficeProfile = () => {
                 disabled={pin.length !== 4 || selectProfileMutation.isPending}
                 className="flex-1 bg-red-600 hover:bg-red-700"
               >
-                {selectProfileMutation.isPending ? "Switching..." : "Switch Profile"}
+                {selectProfileMutation.isPending
+                  ? "Switching..."
+                  : "Switch Profile"}
               </Button>
             </div>
           </div>
@@ -727,7 +781,9 @@ const OfficeProfile = () => {
               <Plus className="w-5 h-5 text-red-600" />
               Create New Profile
             </DialogTitle>
-            <DialogDescription>Create a new profile with a 4-digit PIN</DialogDescription>
+            <DialogDescription>
+              Create a new profile with a 4-digit PIN
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -747,7 +803,9 @@ const OfficeProfile = () => {
                 type="password"
                 maxLength={4}
                 value={profilePIN}
-                onChange={(e) => setProfilePIN(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) =>
+                  setProfilePIN(e.target.value.replace(/\D/g, ""))
+                }
                 placeholder="Enter 4-digit PIN"
               />
             </div>
@@ -758,7 +816,9 @@ const OfficeProfile = () => {
                 type="password"
                 maxLength={4}
                 value={confirmPIN}
-                onChange={(e) => setConfirmPIN(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) =>
+                  setConfirmPIN(e.target.value.replace(/\D/g, ""))
+                }
                 placeholder="Confirm 4-digit PIN"
               />
             </div>
@@ -780,7 +840,9 @@ const OfficeProfile = () => {
                 disabled={createProfileMutation.isPending}
                 className="flex-1 bg-red-600 hover:bg-red-700"
               >
-                {createProfileMutation.isPending ? "Creating..." : "Create Profile"}
+                {createProfileMutation.isPending
+                  ? "Creating..."
+                  : "Create Profile"}
               </Button>
             </div>
           </div>
@@ -795,7 +857,9 @@ const OfficeProfile = () => {
               <Edit className="w-5 h-5 text-blue-600" />
               Edit Profile
             </DialogTitle>
-            <DialogDescription>Update profile name or PIN (leave PIN blank to keep current)</DialogDescription>
+            <DialogDescription>
+              Update profile name or PIN (leave PIN blank to keep current)
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -815,7 +879,9 @@ const OfficeProfile = () => {
                 type="password"
                 maxLength={4}
                 value={profilePIN}
-                onChange={(e) => setProfilePIN(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) =>
+                  setProfilePIN(e.target.value.replace(/\D/g, ""))
+                }
                 placeholder="Leave blank to keep current PIN"
               />
             </div>
@@ -827,7 +893,9 @@ const OfficeProfile = () => {
                   type="password"
                   maxLength={4}
                   value={confirmPIN}
-                  onChange={(e) => setConfirmPIN(e.target.value.replace(/\D/g, ""))}
+                  onChange={(e) =>
+                    setConfirmPIN(e.target.value.replace(/\D/g, ""))
+                  }
                   placeholder="Confirm new PIN"
                 />
               </div>
@@ -851,7 +919,9 @@ const OfficeProfile = () => {
                 disabled={updateProfileMutation.isPending}
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
               >
-                {updateProfileMutation.isPending ? "Updating..." : "Update Profile"}
+                {updateProfileMutation.isPending
+                  ? "Updating..."
+                  : "Update Profile"}
               </Button>
             </div>
           </div>
@@ -867,7 +937,8 @@ const OfficeProfile = () => {
               Delete Profile
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete the profile "{deletingProfile?.profileName}"? This action cannot be undone.
+              Are you sure you want to delete the profile "
+              {deletingProfile?.profileName}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
 
@@ -887,14 +958,19 @@ const OfficeProfile = () => {
               disabled={deleteProfileMutation.isPending}
               className="flex-1 bg-red-600 hover:bg-red-700"
             >
-              {deleteProfileMutation.isPending ? "Deleting..." : "Delete Profile"}
+              {deleteProfileMutation.isPending
+                ? "Deleting..."
+                : "Delete Profile"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Change Password Modal */}
-      <Dialog open={showChangePasswordModal} onOpenChange={setShowChangePasswordModal}>
+      <Dialog
+        open={showChangePasswordModal}
+        onOpenChange={setShowChangePasswordModal}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -907,7 +983,9 @@ const OfficeProfile = () => {
           <form onSubmit={handlePasswordChange} className="space-y-4">
             {passwordErrors.general && (
               <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                <p className="text-sm text-red-700 dark:text-red-400">{passwordErrors.general}</p>
+                <p className="text-sm text-red-700 dark:text-red-400">
+                  {passwordErrors.general}
+                </p>
               </div>
             )}
 
@@ -919,21 +997,32 @@ const OfficeProfile = () => {
                   type={showCurrentPassword ? "text" : "password"}
                   value={passwordData.currentPassword}
                   onChange={(e) =>
-                    setPasswordData({ ...passwordData, currentPassword: e.target.value })
+                    setPasswordData({
+                      ...passwordData,
+                      currentPassword: e.target.value,
+                    })
                   }
                   placeholder="Enter current password"
-                  className={passwordErrors.currentPassword ? "border-red-500" : ""}
+                  className={
+                    passwordErrors.currentPassword ? "border-red-500" : ""
+                  }
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
                 >
-                  {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showCurrentPassword ? (
+                    <EyeOff size={16} />
+                  ) : (
+                    <Eye size={16} />
+                  )}
                 </button>
               </div>
               {passwordErrors.currentPassword && (
-                <p className="text-sm text-red-600 mt-1">{passwordErrors.currentPassword}</p>
+                <p className="text-sm text-red-600 mt-1">
+                  {passwordErrors.currentPassword}
+                </p>
               )}
             </div>
 
@@ -945,7 +1034,10 @@ const OfficeProfile = () => {
                   type={showNewPassword ? "text" : "password"}
                   value={passwordData.newPassword}
                   onChange={(e) =>
-                    setPasswordData({ ...passwordData, newPassword: e.target.value })
+                    setPasswordData({
+                      ...passwordData,
+                      newPassword: e.target.value,
+                    })
                   }
                   placeholder="Enter new password"
                   className={passwordErrors.newPassword ? "border-red-500" : ""}
@@ -959,7 +1051,9 @@ const OfficeProfile = () => {
                 </button>
               </div>
               {passwordErrors.newPassword && (
-                <p className="text-sm text-red-600 mt-1">{passwordErrors.newPassword}</p>
+                <p className="text-sm text-red-600 mt-1">
+                  {passwordErrors.newPassword}
+                </p>
               )}
             </div>
 
@@ -971,21 +1065,32 @@ const OfficeProfile = () => {
                   type={showConfirmPassword ? "text" : "password"}
                   value={passwordData.confirmPassword}
                   onChange={(e) =>
-                    setPasswordData({ ...passwordData, confirmPassword: e.target.value })
+                    setPasswordData({
+                      ...passwordData,
+                      confirmPassword: e.target.value,
+                    })
                   }
                   placeholder="Confirm new password"
-                  className={passwordErrors.confirmPassword ? "border-red-500" : ""}
+                  className={
+                    passwordErrors.confirmPassword ? "border-red-500" : ""
+                  }
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
                 >
-                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showConfirmPassword ? (
+                    <EyeOff size={16} />
+                  ) : (
+                    <Eye size={16} />
+                  )}
                 </button>
               </div>
               {passwordErrors.confirmPassword && (
-                <p className="text-sm text-red-600 mt-1">{passwordErrors.confirmPassword}</p>
+                <p className="text-sm text-red-600 mt-1">
+                  {passwordErrors.confirmPassword}
+                </p>
               )}
             </div>
 
@@ -1011,7 +1116,9 @@ const OfficeProfile = () => {
                 disabled={changePasswordMutation.isPending}
                 className="flex-1 bg-red-600 hover:bg-red-700"
               >
-                {changePasswordMutation.isPending ? "Changing..." : "Change Password"}
+                {changePasswordMutation.isPending
+                  ? "Changing..."
+                  : "Change Password"}
               </Button>
             </div>
           </form>

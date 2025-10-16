@@ -25,6 +25,8 @@ interface Props {
   onSignout: () => void;
   isVerified?: boolean;
   isApplicant?: boolean;
+  isAccepted?: boolean;
+  isEmailUpdateRequired?: boolean;
 }
 
 const CollapsedSidebar: React.FC<Props> = ({
@@ -36,6 +38,8 @@ const CollapsedSidebar: React.FC<Props> = ({
   onSignout,
   isVerified = false,
   isApplicant = false,
+  isAccepted = false,
+  isEmailUpdateRequired = false,
 }) => {
   return (
     <div
@@ -57,10 +61,17 @@ const CollapsedSidebar: React.FC<Props> = ({
         <div className="space-y-2">
           <div className="group relative">
             <button
-              onClick={handlers.dashboard}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+              onClick={isEmailUpdateRequired ? undefined : handlers.dashboard}
+              disabled={isEmailUpdateRequired}
+              className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
+                isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
+              }`}
               aria-label="Dashboard"
-              title="Dashboard"
+              title={
+                isEmailUpdateRequired
+                  ? "Dashboard (Blocked - Update email required)"
+                  : "Dashboard"
+              }
             >
               <Home size={16} />
             </button>
@@ -84,10 +95,17 @@ const CollapsedSidebar: React.FC<Props> = ({
             <>
               <div className="group relative">
                 <button
-                  onClick={handlers.grades}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  onClick={isEmailUpdateRequired ? undefined : handlers.grades}
+                  disabled={isEmailUpdateRequired}
+                  className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
+                    isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                   aria-label="Grades"
-                  title="Grades"
+                  title={
+                    isEmailUpdateRequired
+                      ? "Grades (Blocked - Update email required)"
+                      : "Grades"
+                  }
                 >
                   <BookOpen size={16} />
                 </button>
@@ -95,10 +113,19 @@ const CollapsedSidebar: React.FC<Props> = ({
               {!isApplicant && (
                 <div className="group relative">
                   <button
-                    onClick={handlers.dtr}
-                    className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                    onClick={isEmailUpdateRequired ? undefined : handlers.dtr}
+                    disabled={isEmailUpdateRequired}
+                    className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
+                      isEmailUpdateRequired
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
                     aria-label="DTR"
-                    title="DTR"
+                    title={
+                      isEmailUpdateRequired
+                        ? "DTR (Blocked - Update email required)"
+                        : "DTR"
+                    }
                   >
                     <CalendarClock size={16} />
                   </button>
@@ -106,46 +133,86 @@ const CollapsedSidebar: React.FC<Props> = ({
               )}
               <div className="group relative">
                 <button
-                  onClick={handlers.schedule}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                  onClick={
+                    isEmailUpdateRequired ? undefined : handlers.schedule
+                  }
+                  disabled={isEmailUpdateRequired}
+                  className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
+                    isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                   aria-label="Schedule"
-                  title="Schedule"
+                  title={
+                    isEmailUpdateRequired
+                      ? "Schedule (Blocked - Update email required)"
+                      : "Schedule"
+                  }
                 >
                   <Calendar size={16} />
                 </button>
               </div>
             </>
           )}
-          <div className="group relative">
-            <button
-              onClick={handlers.apply}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-              aria-label="Apply"
-              title="Apply"
-            >
-              <FileEdit size={16} />
-            </button>
-          </div>
+          {!isAccepted && (
+            <div className="group relative">
+              <button
+                onClick={isEmailUpdateRequired ? undefined : handlers.apply}
+                disabled={isEmailUpdateRequired}
+                className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
+                  isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                aria-label="Apply"
+                title={
+                  isEmailUpdateRequired
+                    ? "Apply (Blocked - Update email required)"
+                    : "Apply"
+                }
+              >
+                <FileEdit size={16} />
+              </button>
+            </div>
+          )}
           {isVerified && (
             <>
               {!isApplicant && (
                 <>
                   <div className="group relative">
                     <button
-                      onClick={handlers.reapply}
-                      className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+                      onClick={
+                        isEmailUpdateRequired ? undefined : handlers.reapply
+                      }
+                      disabled={isEmailUpdateRequired}
+                      className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
+                        isEmailUpdateRequired
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                      }`}
                       aria-label="Re-apply"
-                      title="Re-apply"
+                      title={
+                        isEmailUpdateRequired
+                          ? "Re-apply (Blocked - Update email required)"
+                          : "Re-apply"
+                      }
                     >
                       <RefreshCw size={16} />
                     </button>
                   </div>
                   <div className="group relative">
                     <button
-                      onClick={handlers.leave}
-                      className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-gray-400 transition-all duration-200"
+                      onClick={
+                        isEmailUpdateRequired ? undefined : handlers.leave
+                      }
+                      disabled={isEmailUpdateRequired}
+                      className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-gray-400 transition-all duration-200 ${
+                        isEmailUpdateRequired
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                      }`}
                       aria-label="Leave"
-                      title="Leave"
+                      title={
+                        isEmailUpdateRequired
+                          ? "Leave (Blocked - Update email required)"
+                          : "Leave"
+                      }
                     >
                       <CalendarMinus size={16} />
                     </button>
@@ -154,10 +221,19 @@ const CollapsedSidebar: React.FC<Props> = ({
               )}
               <div className="group relative">
                 <button
-                  onClick={handlers.requirements}
-                  className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-gray-400 transition-all duration-200"
+                  onClick={
+                    isEmailUpdateRequired ? undefined : handlers.requirements
+                  }
+                  disabled={isEmailUpdateRequired}
+                  className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-gray-400 transition-all duration-200 ${
+                    isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                   aria-label="Requirements"
-                  title="Requirements"
+                  title={
+                    isEmailUpdateRequired
+                      ? "Requirements (Blocked - Update email required)"
+                      : "Requirements"
+                  }
                 >
                   <ClipboardList size={16} />
                 </button>

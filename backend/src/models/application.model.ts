@@ -72,18 +72,26 @@ export interface ApplicationDocument extends mongoose.Document {
     place: string;
   }>;
 
-  // Application Status
+  // Application Status - New Workflow
   status:
-    | "pending"
-    | "under_review"
-    | "interview_scheduled"
-    | "passed_interview"
-    | "failed_interview"
-    | "hours_completed"
-    | "accepted"
-    | "rejected"
-    | "withdrawn"
-    | "on_hold";
+    | "pending" // Initial submission
+    | "under_review" // HR is reviewing
+    | "psychometric_scheduled" // Psychometric test scheduled
+    | "psychometric_completed" // Test taken, awaiting results
+    | "psychometric_passed" // Passed test, ready for interview
+    | "psychometric_failed" // Failed test, rejected
+    | "interview_scheduled" // Interview date set
+    | "interview_completed" // Interview done, awaiting decision
+    | "interview_passed" // Passed interview, ready for training
+    | "interview_failed" // Failed interview, rejected
+    | "pending_office_interview" // Deployed to office, awaiting interview scheduling
+    | "office_interview_scheduled" // Office interview scheduled
+    | "trainee" // Set as trainee, training in progress
+    | "training_completed" // Completed required hours
+    | "accepted" // Final acceptance
+    | "rejected" // Rejected at any stage
+    | "withdrawn" // Applicant withdrew
+    | "on_hold"; // Temporarily paused
 
   // Agreement
   agreedToTerms: boolean;
@@ -107,11 +115,75 @@ export interface ApplicationDocument extends mongoose.Document {
   // Comments/Notes from HR
   hrComments?: string;
 
+  // Psychometric Test Information
+  psychometricTestDate?: string;
+  psychometricTestTime?: string;
+  psychometricTestLocation?: string;
+  psychometricTestWhatToBring?: string; // What to bring to the test
+  psychometricTestLink?: string; // For online tests
+  psychometricTestScore?: number; // Score percentage
+  psychometricTestPassed?: boolean;
+  psychometricTestNotes?: string;
+  psychometricScheduledAt?: Date;
+  psychometricCompletedAt?: Date;
+
   // Interview Information
   interviewDate?: string;
   interviewTime?: string;
   interviewLocation?: string;
+  interviewWhatToBring?: string; // What to bring to the interview
+  interviewMode?: "in-person" | "virtual" | "phone";
+  interviewLink?: string; // For virtual interviews
   interviewNotes?: string;
+  interviewScore?: number; // Interview rating
+  interviewPassed?: boolean;
+  interviewScheduledAt?: Date;
+  interviewCompletedAt?: Date;
+
+  // Deployment Interview Information (Office acceptance interview)
+  deploymentInterviewDate?: string;
+  deploymentInterviewTime?: string;
+  deploymentInterviewLocation?: string;
+  deploymentInterviewMode?: "in-person" | "virtual" | "phone";
+  deploymentInterviewLink?: string;
+  deploymentInterviewNotes?: string;
+  deploymentInterviewWhatToBring?: string;
+  deploymentRejectionReason?: string; // If office rejects deployment
+
+  // Trainee Information
+  traineeStartDate?: Date;
+  traineeEndDate?: Date;
+  requiredHours?: number; // Total hours required
+  completedHours?: number; // Hours completed so far
+  traineeOffice?: string; // Office/department assigned to
+  traineeSupervisor?: mongoose.Types.ObjectId; // Supervisor assigned
+  traineeNotes?: string;
+  traineePerformanceRating?: number; // 1-5 rating during training
+
+  // Assignment and Tracking
+  assignedTo?: mongoose.Types.ObjectId; // HR staff assigned to this application
+  assignedAt?: Date;
+
+  // Rating/Scoring
+  rating?: number; // 1-5 scale
+  ratingNotes?: string;
+
+  // Timeline/Activity Log
+  timeline?: Array<{
+    action: string;
+    performedBy: mongoose.Types.ObjectId;
+    performedByName?: string;
+    timestamp: Date;
+    notes?: string;
+    previousStatus?: string;
+    newStatus?: string;
+  }>;
+
+  // Priority flag
+  priority?: "low" | "medium" | "high" | "urgent";
+
+  // Tags for better organization
+  tags?: string[];
 
   createdAt: Date;
   updatedAt: Date;
@@ -362,16 +434,24 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
       },
     ],
 
-    // Application Status
+    // Application Status - New Workflow
     status: {
       type: String,
       enum: [
         "pending",
         "under_review",
+        "psychometric_scheduled",
+        "psychometric_completed",
+        "psychometric_passed",
+        "psychometric_failed",
         "interview_scheduled",
-        "passed_interview",
-        "failed_interview",
-        "hours_completed",
+        "interview_completed",
+        "interview_passed",
+        "interview_failed",
+        "pending_office_interview",
+        "office_interview_scheduled",
+        "trainee",
+        "training_completed",
         "accepted",
         "rejected",
         "withdrawn",
@@ -448,6 +528,46 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
       trim: true,
     },
 
+    // Psychometric Test Information
+    psychometricTestDate: {
+      type: String,
+      trim: true,
+    },
+    psychometricTestTime: {
+      type: String,
+      trim: true,
+    },
+    psychometricTestLocation: {
+      type: String,
+      trim: true,
+    },
+    psychometricTestWhatToBring: {
+      type: String,
+      trim: true,
+    },
+    psychometricTestLink: {
+      type: String,
+      trim: true,
+    },
+    psychometricTestScore: {
+      type: Number,
+      min: 0,
+      max: 100,
+    },
+    psychometricTestPassed: {
+      type: Boolean,
+    },
+    psychometricTestNotes: {
+      type: String,
+      trim: true,
+    },
+    psychometricScheduledAt: {
+      type: Date,
+    },
+    psychometricCompletedAt: {
+      type: Date,
+    },
+
     // Interview Information
     interviewDate: {
       type: String,
@@ -461,10 +581,170 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
       type: String,
       trim: true,
     },
+    interviewWhatToBring: {
+      type: String,
+      trim: true,
+    },
+    interviewMode: {
+      type: String,
+      enum: ["in-person", "virtual", "phone"],
+    },
+    interviewLink: {
+      type: String,
+      trim: true,
+    },
     interviewNotes: {
       type: String,
       trim: true,
     },
+    interviewScore: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+    interviewPassed: {
+      type: Boolean,
+    },
+    interviewScheduledAt: {
+      type: Date,
+    },
+    interviewCompletedAt: {
+      type: Date,
+    },
+
+    // Deployment Interview Information (Office acceptance interview)
+    deploymentInterviewDate: {
+      type: String,
+      trim: true,
+    },
+    deploymentInterviewTime: {
+      type: String,
+      trim: true,
+    },
+    deploymentInterviewLocation: {
+      type: String,
+      trim: true,
+    },
+    deploymentInterviewMode: {
+      type: String,
+      enum: ["in-person", "virtual", "phone"],
+    },
+    deploymentInterviewLink: {
+      type: String,
+      trim: true,
+    },
+    deploymentInterviewNotes: {
+      type: String,
+      trim: true,
+    },
+    deploymentInterviewWhatToBring: {
+      type: String,
+      trim: true,
+    },
+    deploymentRejectionReason: {
+      type: String,
+      trim: true,
+    },
+
+    // Trainee Information
+    traineeStartDate: {
+      type: Date,
+    },
+    traineeEndDate: {
+      type: Date,
+    },
+    requiredHours: {
+      type: Number,
+      default: 0,
+    },
+    completedHours: {
+      type: Number,
+      default: 0,
+    },
+    traineeOffice: {
+      type: String,
+      trim: true,
+    },
+    traineeSupervisor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    traineeNotes: {
+      type: String,
+      trim: true,
+    },
+    traineePerformanceRating: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+
+    // Assignment and Tracking
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      index: true,
+    },
+    assignedAt: {
+      type: Date,
+    },
+
+    // Rating/Scoring
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+    ratingNotes: {
+      type: String,
+      trim: true,
+    },
+
+    // Timeline/Activity Log
+    timeline: [
+      {
+        action: {
+          type: String,
+          required: true,
+        },
+        performedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        performedByName: {
+          type: String,
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+        notes: {
+          type: String,
+        },
+        previousStatus: {
+          type: String,
+        },
+        newStatus: {
+          type: String,
+        },
+      },
+    ],
+
+    // Priority flag
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high", "urgent"],
+      default: "medium",
+    },
+
+    // Tags for better organization
+    tags: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
   },
   {
     timestamps: true,
@@ -475,6 +755,9 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
 applicationSchema.index({ userID: 1, createdAt: -1 });
 applicationSchema.index({ status: 1, createdAt: -1 });
 applicationSchema.index({ position: 1, status: 1 });
+applicationSchema.index({ assignedTo: 1, status: 1 });
+applicationSchema.index({ priority: 1, status: 1 });
+applicationSchema.index({ rating: -1 });
 
 const ApplicationModel = mongoose.model<ApplicationDocument>(
   "Application",

@@ -122,8 +122,8 @@ function Application() {
     if (!activeApplication) return;
     setIsWithdrawing(true);
     try {
-      const { deleteApplication } = await import("@/lib/api");
-      await deleteApplication(activeApplication._id);
+      const { withdrawApplication } = await import("@/lib/api");
+      await withdrawApplication(activeApplication._id);
       // Clear any uploaded client-side files/previews when withdrawing
       try {
         clearCertificates();
@@ -646,7 +646,9 @@ function Application() {
                   />
                 </div>
                 <div className="mt-4 px-8 pb-8">
-                  {activeApplication.status === "pending" && (
+                  {activeApplication.status !== "accepted" &&
+                   activeApplication.status !== "rejected" &&
+                   activeApplication.status !== "withdrawn" && (
                     <div className="flex justify-center mt-6">
                       <Button
                         variant="outline"
@@ -707,14 +709,13 @@ function Application() {
                                 <p className="font-medium mb-1">Warning:</p>
                                 <ul className="list-disc list-inside space-y-1">
                                   <li>
-                                    Your application will be permanently deleted
+                                    Your application status will be marked as withdrawn
                                   </li>
                                   <li>
-                                    All submitted documents will be removed
+                                    Your submitted documents will be kept on file
                                   </li>
                                   <li>
-                                    You'll need to start over if you want to
-                                    reapply
+                                    This action cannot be undone
                                   </li>
                                 </ul>
                               </div>

@@ -8,6 +8,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { getRoleBasedRedirect } from "@/lib/roleUtils";
 import { useUnreadNotificationCount } from "@/hooks/useUnreadNotificationCount";
+import { useQuery } from "@tanstack/react-query";
+import { getUserApplications } from "@/lib/api";
+import { checkEmailRequirement } from "@/lib/emailRequirement";
 
 interface StudentSidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
@@ -20,6 +23,24 @@ const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
   const navigate = useNavigate();
   const { data: unreadCountData } = useUnreadNotificationCount();
   const unreadCount = unreadCountData?.unreadCount || 0;
+
+  // Fetch user applications to check if any application is accepted
+  const { data: userApplicationsData } = useQuery({
+    queryKey: ["userApplications"],
+    queryFn: getUserApplications,
+    enabled: !!user,
+  });
+
+  // Check if user has an accepted application
+  const hasAcceptedApplication =
+    userApplicationsData?.applications?.some(
+      (app: any) => app.status === "accepted"
+    ) || false;
+
+  // Check if email update is required (blocks all features except profile/notifications)
+  const applications = userApplicationsData?.applications || [];
+  const { isEmailUpdateRequired } = checkEmailRequirement(user, applications);
+
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
@@ -188,7 +209,10 @@ const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
       : []),
     { label: "Profile", handler: handleProfileClick },
     { label: "Notifications", handler: handleNotificationsClick },
-    { label: "Apply", handler: handleApplyClick },
+    // Hide Apply for accepted students
+    ...(hasAcceptedApplication
+      ? []
+      : [{ label: "Apply", handler: handleApplyClick }]),
     ...(user?.verified
       ? [
           // If the user is an applicant, don't include re-apply or leave
@@ -323,6 +347,8 @@ const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
             unreadCount={unreadCount}
             isVerified={!!user?.verified}
             isApplicant={user?.status === "applicant"}
+            isAccepted={hasAcceptedApplication}
+            isEmailUpdateRequired={isEmailUpdateRequired}
             handlers={{
               dashboard: handleDashboardClick,
               notifications: handleNotificationsClick,
@@ -355,6 +381,8 @@ const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
             }}
             isVerified={!!user?.verified}
             isApplicant={user?.status === "applicant"}
+            isAccepted={hasAcceptedApplication}
+            isEmailUpdateRequired={isEmailUpdateRequired}
             darkMode={darkMode}
             onToggleTheme={() => setDarkMode(!darkMode)}
             onSignout={handleCollapsedSignout}

@@ -5,25 +5,52 @@ import OfficeProfileModel from "../models/officeProfile.model";
 import appAssert from "../utils/appAssert";
 import catchErrors from "../utils/catchErrors";
 
-export const getUserHandler = catchErrors(async (req: Request, res: Response) => {
-  const user = await UserModel.findById(req.userID);
-  appAssert(user, NOT_FOUND, "User not found");
+// User controller handlers
 
-  const userData = user.omitPassword();
+export const getUserHandler = catchErrors(
+  async (req: Request, res: Response) => {
+    const user = await UserModel.findById(req.userID);
+    appAssert(user, NOT_FOUND, "User not found");
 
-  // If user is OFFICE and has a profileID in the token, include profile info
-  if (user.role === "office" && req.profileID) {
-    const profile = await OfficeProfileModel.findById(req.profileID).select("-profilePIN");
-    if (profile) {
-      return res.status(OK).json({
-        ...userData,
-        profileName: profile.profileName,
-        profileAvatar: profile.avatar,
-        profilePermissions: profile.permissions,
-        profileID: profile._id,
-      });
+    const userData = user.omitPassword();
+
+    // If user is OFFICE and has a profileID in the token, include profile info
+    if (user.role === "office" && req.profileID) {
+      const profile = await OfficeProfileModel.findById(req.profileID).select(
+        "-profilePIN"
+      );
+      if (profile) {
+        return res.status(OK).json({
+          ...userData,
+          profileName: profile.profileName,
+          profileAvatar: profile.avatar,
+          profilePermissions: profile.permissions,
+          profileID: profile._id,
+        });
+      }
     }
-  }
 
-  return res.status(OK).json(userData);
-});
+    return res.status(OK).json(userData);
+  }
+);
+
+export const getUsersHandler = catchErrors(
+  async (req: Request, res: Response) => {
+    const { role } = req.query;
+
+    let query = {};
+    if (role) {
+      const roles = (role as string).split(",");
+      query = { role: { $in: roles } };
+    }
+
+    const users = await UserModel.find(query).select(
+      "-password -verificationCode"
+    );
+
+    return res.status(OK).json({
+      users,
+      count: users.length,
+    });
+  }
+);
