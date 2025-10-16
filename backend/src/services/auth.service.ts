@@ -199,10 +199,17 @@ export const refreshUserAccessToken = async (refreshToken: string) => {
       )
     : undefined;
 
-  const accessToken = signToken({
+  // Include profileID in the new access token if it exists in the session
+  const accessTokenPayload: any = {
     userID: session.userID,
     sessionID: session._id,
-  });
+  };
+
+  if (session.profileID) {
+    accessTokenPayload.profileID = session.profileID.toString();
+  }
+
+  const accessToken = signToken(accessTokenPayload);
 
   return {
     accessToken,

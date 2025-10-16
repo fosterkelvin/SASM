@@ -141,6 +141,7 @@ export const selectProfile = async (params: {
   // Create session for this profile
   const session = await SessionModel.create({
     userID: account._id,
+    profileID: profile._id,
     userAgent: params.userAgent,
   });
 

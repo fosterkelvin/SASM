@@ -3,6 +3,7 @@ import { oneWeekFromNow } from "../utils/date";
 
 export interface SessionDocument extends mongoose.Document {
   userID: mongoose.Types.ObjectId;
+  profileID?: mongoose.Types.ObjectId;
   userAgent?: string;
   createdAt: Date;
   expiresAt: Date;
@@ -13,6 +14,11 @@ const sessionSchema = new mongoose.Schema<SessionDocument>({
     ref: "User",
     type: mongoose.Schema.Types.ObjectId,
     index: true,
+  },
+  profileID: {
+    ref: "OfficeProfile",
+    type: mongoose.Schema.Types.ObjectId,
+    required: false,
   },
   userAgent: { type: String },
   createdAt: { type: Date, required: true, default: Date.now },
