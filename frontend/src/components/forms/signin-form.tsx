@@ -394,7 +394,7 @@ export function SigninForm({
             <img
               src="/HR_LOGO.png"
               alt="Image"
-              className="absolute inset-0 h-full w-full object-cover"
+              className="absolute inset-0 h-full w-full object-contain p-4"
             />
           </div>
         </CardContent>
