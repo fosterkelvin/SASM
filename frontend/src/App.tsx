@@ -8,7 +8,7 @@ import OfficeEvaluationPage from "./pages/Roles/Office/Evaluation/Evaluation";
 import OfficeLeaveRequests from "./pages/Roles/Office/Leave Requests";
 import OfficeRequests from "./pages/Roles/Office/Requests/Requests";
 import Home from "./pages/Auth/home";
-import Profile from "./pages/Auth/Profile/Profile";
+import Profile from "./pages/Auth/Profile";
 import Application from "./pages/Roles/Student/Apply/Application";
 import HRApplicationManagement from "./pages/Roles/HR/Application Management/ApplicationManagement";
 import LeaveManagement from "./pages/Roles/HR/Leave Management/LeaveManagement";

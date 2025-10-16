@@ -61,7 +61,4 @@ export const uploadApplicationFiles = upload.fields([
   { name: "signature", maxCount: 1 },
 ]);
 
-// Generic any-files middleware for endpoints that accept dynamic file fields
-export const uploadRequirementsFiles = upload.any();
-
 export default upload;
