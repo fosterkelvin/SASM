@@ -48,16 +48,21 @@ Replace `your-backend-name` with your actual Render backend URL.
 
 ### ✅ Step 3: Deploy Code Changes (1 minute)
 
+**IMPORTANT:** TypeScript build errors have been fixed! The following files were updated:
+
+- `backend/package.json` - Moved TypeScript types to dependencies
+- `backend/src/index.ts` - Added proper type annotations
+
 ```bash
 cd d:\CODE\SASM-1
 
-# Commit the cookie fix
+# Commit all fixes (cookie config + TypeScript build fix)
 git add .
-git commit -m "Fix: Cross-origin cookies for Render+Vercel"
+git commit -m "Fix: Cross-origin cookies and TypeScript build for Render+Vercel"
 git push
 ```
 
-Both Render and Vercel will auto-deploy.
+Both Render and Vercel will auto-deploy. **Wait 3-5 minutes for build to complete.**
 
 ### ✅ Step 4: Clear Database Sessions (30 seconds)
 
