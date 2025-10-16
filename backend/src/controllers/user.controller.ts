@@ -14,22 +14,44 @@ export const getUserHandler = catchErrors(
 
     const userData = user.omitPassword();
 
+    // DEBUG: Log profile info
+    console.log("=== GET USER DEBUG ===");
+    console.log("User ID:", req.userID);
+    console.log("User role:", user.role);
+    console.log("Profile ID from token:", req.profileID);
+    console.log("Session ID:", req.sessionID);
+
     // If user is OFFICE and has a profileID in the token, include profile info
     if (user.role === "office" && req.profileID) {
+      console.log("Fetching profile with ID:", req.profileID);
       const profile = await OfficeProfileModel.findById(req.profileID).select(
         "-profilePIN"
       );
+      console.log(
+        "Profile found:",
+        profile ? profile.profileName : "NOT FOUND"
+      );
+
       if (profile) {
-        return res.status(OK).json({
+        const responseData = {
           ...userData,
           profileName: profile.profileName,
           profileAvatar: profile.avatar,
           profilePermissions: profile.permissions,
           profileID: profile._id,
+        };
+        console.log("Returning user data WITH profile:", {
+          profileName: responseData.profileName,
         });
+        return res.status(OK).json(responseData);
       }
     }
 
+    console.log(
+      "Returning user data WITHOUT profile (profileID:",
+      req.profileID,
+      ")"
+    );
     return res.status(OK).json(userData);
   }
 );

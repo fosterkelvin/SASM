@@ -33,10 +33,23 @@ const authenticate: RequestHandler = catchErrors(async (req, res, next) => {
     AppErrorCode.InvalidAccessToken
   );
 
+  // DEBUG: Log token payload
+  console.log("=== AUTHENTICATE DEBUG ===");
+  console.log("Token payload:", JSON.stringify(payload, null, 2));
+
   // Verify that the session still exists and is valid
   if (payload.sessionID) {
     const session = await SessionModel.findById(payload.sessionID);
     const now = Date.now();
+
+    // DEBUG: Log session info
+    console.log("Session found:", !!session);
+    if (session) {
+      console.log("Session userID:", session.userID);
+      console.log("Session profileID:", session.profileID);
+      console.log("Session expires:", session.expiresAt);
+    }
+
     appAssert(
       session && session.expiresAt.getTime() > now,
       UNAUTHORIZED,
@@ -48,6 +61,10 @@ const authenticate: RequestHandler = catchErrors(async (req, res, next) => {
   req.userID = payload.userID as string;
   req.sessionID = payload.sessionID as string | undefined;
   req.profileID = payload.profileID as string | undefined;
+
+  console.log("Request profileID set to:", req.profileID);
+  console.log("======================");
+
   next();
 });
 
