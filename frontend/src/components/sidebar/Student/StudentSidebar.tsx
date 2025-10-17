@@ -14,9 +14,12 @@ import { checkEmailRequirement } from "@/lib/emailRequirement";
 
 interface StudentSidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
+  currentPage?: string;
+  isCollapsed?: boolean;
+  setIsCollapsed?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const StudentSidebar = ({ onCollapseChange }: StudentSidebarProps) => {
+const StudentSidebar = ({ onCollapseChange, currentPage, isCollapsed: initialCollapsed, setIsCollapsed: externalSetIsCollapsed }: StudentSidebarProps) => {
   // Ref for keyboard navigation
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { logout, user } = useAuth();

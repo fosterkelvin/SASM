@@ -41,7 +41,7 @@ export default function useSignaturePad() {
     reader.onload = (e) => {
       const base64 = e.target?.result as string;
       setSignatureData(base64);
-      handleInputChange("signature", base64);
+      handleInputChange("signature" as any, base64);
     };
     reader.readAsDataURL(file);
     if (errors.signature) {
@@ -55,7 +55,7 @@ export default function useSignaturePad() {
     setUploadedSignature(null);
     setSignaturePreviewUrl("");
     setSignatureData("");
-    handleInputChange("signature", "");
+    handleInputChange("signature" as any, "");
   };
 
   const handleSignatureMethodChange = (
@@ -71,7 +71,7 @@ export default function useSignaturePad() {
       clearSignatureFn();
     }
     setSignatureData("");
-    handleInputChange("signature", "");
+    handleInputChange("signature" as any, "");
   };
 
   return {
