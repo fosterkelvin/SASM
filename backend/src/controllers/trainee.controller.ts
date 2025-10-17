@@ -44,12 +44,9 @@ export const getAllTraineesHandler = catchErrors(
         // Check if userID exists (populate might fail if user was deleted)
         if (!trainee.userID || !trainee.userID._id) {
           console.warn(
-            `Trainee application ${trainee._id} has no valid userID`
+            `⚠️  [HR] Trainee application ${trainee._id} has no valid userID - User may have been deleted. Filtering out from results.`
           );
-          return {
-            ...trainee.toObject(),
-            dtrCompletedHours: 0,
-          };
+          return null; // Return null to filter out
         }
 
         // Get all DTRs for this trainee
@@ -73,8 +70,11 @@ export const getAllTraineesHandler = catchErrors(
       })
     );
 
+    // Filter out null entries (trainees without valid users)
+    const validTrainees = traineesWithDTRHours.filter((t) => t !== null);
+
     return res.status(OK).json({
-      trainees: traineesWithDTRHours,
+      trainees: validTrainees,
     });
   }
 );
@@ -143,12 +143,9 @@ export const getOfficeTraineesHandler = catchErrors(
         // Check if userID exists (populate might fail if user was deleted)
         if (!trainee.userID || !trainee.userID._id) {
           console.warn(
-            `Trainee application ${trainee._id} has no valid userID`
+            `⚠️  [Office] Trainee application ${trainee._id} has no valid userID - User may have been deleted. Filtering out from results.`
           );
-          return {
-            ...trainee.toObject(),
-            dtrCompletedHours: 0,
-          };
+          return null; // Return null to filter out
         }
 
         // Get all DTRs for this trainee
@@ -172,8 +169,11 @@ export const getOfficeTraineesHandler = catchErrors(
       })
     );
 
+    // Filter out null entries (trainees without valid users)
+    const validTrainees = traineesWithDTRHours.filter((t) => t !== null);
+
     return res.status(OK).json({
-      trainees: traineesWithDTRHours,
+      trainees: validTrainees,
     });
   }
 );
