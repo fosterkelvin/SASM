@@ -19,7 +19,12 @@ interface StudentSidebarProps {
   setIsCollapsed?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const StudentSidebar = ({ onCollapseChange, currentPage, isCollapsed: initialCollapsed, setIsCollapsed: externalSetIsCollapsed }: StudentSidebarProps) => {
+const StudentSidebar = ({
+  onCollapseChange,
+  currentPage,
+  isCollapsed: initialCollapsed,
+  setIsCollapsed: externalSetIsCollapsed,
+}: StudentSidebarProps) => {
   // Ref for keyboard navigation
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { logout, user } = useAuth();

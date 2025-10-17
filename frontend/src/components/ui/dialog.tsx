@@ -101,17 +101,9 @@ interface DialogDescriptionProps {
   children: React.ReactNode;
 }
 
-const DialogDescription = ({
-  className,
-  children,
-}: DialogDescriptionProps) => {
+const DialogDescription = ({ className, children }: DialogDescriptionProps) => {
   return (
-    <p
-      className={cn(
-        "text-sm text-gray-600 dark:text-gray-400",
-        className
-      )}
-    >
+    <p className={cn("text-sm text-gray-600 dark:text-gray-400", className)}>
       {children}
     </p>
   );
@@ -135,4 +127,11 @@ const DialogFooter = ({ className, children }: DialogFooterProps) => {
   );
 };
 
-export { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter };
+export {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+};
