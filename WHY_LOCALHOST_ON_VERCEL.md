@@ -36,6 +36,7 @@ You didn't set localhost in Vercel, but it's still using `localhost:4004` becaus
 ### The Problem
 
 Your `frontend/.env` file in GitHub has:
+
 ```
 VITE_API=http://localhost:4004
 ```
@@ -49,6 +50,7 @@ VITE_API=http://localhost:4004
 **Vercel environment variables OVERRIDE .env files during build!**
 
 **Steps:**
+
 1. Go to https://vercel.com/dashboard
 2. Click your SASM project
 3. Settings → Environment Variables
@@ -68,16 +70,19 @@ VITE_API=http://localhost:4004
 **Update this file:** `frontend/.env.production`
 
 **Change from:**
+
 ```env
 VITE_API=https://your-backend-domain.com
 ```
 
 **Change to:**
+
 ```env
 VITE_API=https://your-actual-backend-url.com
 ```
 
 **Then:**
+
 ```bash
 git add frontend/.env.production
 git commit -m "fix: Set production backend URL"
@@ -91,27 +96,30 @@ Vercel will automatically rebuild with the new URL!
 ## 🔍 How to Find Your Backend URL
 
 ### If deployed on Render:
+
 1. Go to https://dashboard.render.com
 2. Find your backend service
 3. URL is shown at the top (e.g., `https://sasm-backend-abc.onrender.com`)
 
 ### If deployed on Railway:
+
 1. Go to https://railway.app
 2. Click your project
 3. Click backend service
 4. Copy the deployment URL
 
 ### If NOT deployed yet:
+
 **You need to deploy your backend first!** See the deployment guide in `URGENT_FIX_DTR_ERROR.md`
 
 ---
 
 ## 📋 Quick Comparison
 
-| Method | Pros | Cons |
-|--------|------|------|
-| **Option 1: Vercel Env Vars** | ✅ Can change without git commit<br>✅ Different URLs per environment<br>✅ More secure (not in GitHub) | ⚠️ Requires Vercel dashboard access |
-| **Option 2: .env.production** | ✅ Simple to update<br>✅ Versioned in git<br>✅ Works automatically | ⚠️ URL visible in GitHub<br>⚠️ Requires commit to change |
+| Method                        | Pros                                                                                                    | Cons                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| **Option 1: Vercel Env Vars** | ✅ Can change without git commit<br>✅ Different URLs per environment<br>✅ More secure (not in GitHub) | ⚠️ Requires Vercel dashboard access                      |
+| **Option 2: .env.production** | ✅ Simple to update<br>✅ Versioned in git<br>✅ Works automatically                                    | ⚠️ URL visible in GitHub<br>⚠️ Requires commit to change |
 
 ---
 
@@ -120,19 +128,22 @@ Vercel will automatically rebuild with the new URL!
 After deploying, open your Vercel site and check browser console:
 
 **Before Fix:**
+
 ```javascript
 // In browser console on your Vercel site
-import.meta.env.VITE_API
+import.meta.env.VITE_API;
 // Output: "http://localhost:4004" ❌
 ```
 
 **After Fix:**
+
 ```javascript
-import.meta.env.VITE_API
+import.meta.env.VITE_API;
 // Output: "https://your-backend.onrender.com" ✅
 ```
 
 Or check Network tab:
+
 - ❌ Before: Requests to `localhost:4004` → ERR_BLOCKED_BY_CLIENT
 - ✅ After: Requests to `https://your-backend.com` → 200 OK
 
@@ -143,13 +154,16 @@ Or check Network tab:
 **Right Now:**
 
 1. **Do you have a backend deployed?**
+
    - ✅ YES → Skip to step 2
    - ❌ NO → Deploy backend first (see URGENT_FIX_DTR_ERROR.md)
 
 2. **What's your backend URL?**
+
    - Copy it (e.g., `https://sasm-backend-xyz.onrender.com`)
 
 3. **Choose your option:**
+
    - **Option 1**: Add to Vercel env vars (recommended)
    - **Option 2**: Update .env.production and commit
 
@@ -178,6 +192,7 @@ A: No! Your local `.env` file will still use `localhost:4004` for development.
 ## 🆘 Still Stuck?
 
 Provide:
+
 1. Is your backend deployed? Where?
 2. What's your backend URL?
 3. Which option did you choose (1 or 2)?
