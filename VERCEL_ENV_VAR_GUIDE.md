@@ -3,37 +3,44 @@
 ## Why You're Still Seeing localhost:4004
 
 The `.env.production` file is correctly set in GitHub with `https://sasm.onrender.com`, BUT:
+
 - Vercel is using **build cache** from before the change
 - OR Vercel needs the environment variable set in **Vercel Dashboard** (not just in the file)
 
 ## 🚨 DO THIS NOW (Takes 2 minutes)
 
 ### Step 1: Go to Vercel Dashboard
+
 1. Open: https://vercel.com/dashboard
 2. Click on your **SASM project**
 
 ### Step 2: Add Environment Variable
+
 1. Click **Settings** tab (top menu)
 2. Click **Environment Variables** (left sidebar)
 3. Click **Add New** button
 
 ### Step 3: Enter the Variable
+
 ```
 Name:  VITE_API
 Value: https://sasm.onrender.com
 ```
 
-**Important:** 
+**Important:**
+
 - ✅ Check ALL three environment boxes:
   - ☑️ Production
-  - ☑️ Preview  
+  - ☑️ Preview
   - ☑️ Development
 - ❌ NO trailing slash in the URL!
 
 ### Step 4: Save
+
 Click **Save** button
 
 ### Step 5: Force Redeploy WITHOUT Cache
+
 1. Click **Deployments** tab (top menu)
 2. Find the LATEST deployment (top of the list)
 3. Click the **⋮** (three dots) on the right
@@ -42,6 +49,7 @@ Click **Save** button
 6. Click **Redeploy** button
 
 ### Step 6: Wait (2-3 minutes)
+
 Watch the deployment progress in Vercel dashboard
 
 ---
@@ -49,6 +57,7 @@ Watch the deployment progress in Vercel dashboard
 ## ✅ After Deployment Completes
 
 ### Test 1: Check the Bundle
+
 1. Go to your Vercel site
 2. Press **Ctrl + Shift + R** (hard refresh to clear browser cache)
 3. Open **Developer Tools** (F12)
@@ -57,27 +66,32 @@ Watch the deployment progress in Vercel dashboard
 6. Press Enter
 
 **Expected Result:**
+
 ```
 "https://sasm.onrender.com"  ✅
 ```
 
 **NOT:**
+
 ```
 "http://localhost:4004"  ❌
 ```
 
 ### Test 2: Check Network Requests
+
 1. Go to **Network** tab in DevTools
 2. Clear the network log (🚫 icon)
 3. Try to load DTR
 4. Look at the requests
 
 **Expected Result:**
+
 ```
 ✅ https://sasm.onrender.com/dtr/get-or-create → 200 OK
 ```
 
 **NOT:**
+
 ```
 ❌ localhost:4004/dtr/get-or-create → ERR_BLOCKED_BY_CLIENT
 ```
@@ -121,10 +135,12 @@ Vercel Dashboard
 **Vite bakes environment variables into the JavaScript at BUILD time.**
 
 Even though `.env.production` is updated in GitHub, Vercel might:
+
 1. Use cached build artifacts (= old localhost value)
 2. Not pick up .env files correctly without explicit env vars
 
 **Setting it in Vercel Dashboard:**
+
 - ✅ Overrides ALL .env files
 - ✅ Forces Vercel to use the correct value
 - ✅ Works even with caching
@@ -136,15 +152,18 @@ Even though `.env.production` is updated in GitHub, Vercel might:
 ### If still showing localhost after redeploy:
 
 **Did you uncheck "Use existing Build Cache"?**
+
 - This is CRITICAL - the cache has the old localhost value
 - You MUST rebuild from scratch
 
 **Hard refresh your browser:**
+
 - Windows: Ctrl + Shift + R
 - Mac: Cmd + Shift + R
 - Or use Incognito/Private window
 
 **Check Vercel build logs:**
+
 1. Deployments → Click on the deployment
 2. Click **Building** section
 3. Look for: `VITE_API=https://sasm.onrender.com`
@@ -180,6 +199,7 @@ When you check `import.meta.env.VITE_API` in console after the fix:
 ```
 
 Network tab should show:
+
 ```
 GET https://sasm.onrender.com/dtr/get-or-create
 Status: 200 OK  ✅
