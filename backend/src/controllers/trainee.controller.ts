@@ -43,7 +43,9 @@ export const getAllTraineesHandler = catchErrors(
       trainees.map(async (trainee) => {
         // Check if userID exists (populate might fail if user was deleted)
         if (!trainee.userID || !trainee.userID._id) {
-          console.warn(`Trainee application ${trainee._id} has no valid userID`);
+          console.warn(
+            `Trainee application ${trainee._id} has no valid userID`
+          );
           return {
             ...trainee.toObject(),
             dtrCompletedHours: 0,
@@ -140,7 +142,9 @@ export const getOfficeTraineesHandler = catchErrors(
       trainees.map(async (trainee) => {
         // Check if userID exists (populate might fail if user was deleted)
         if (!trainee.userID || !trainee.userID._id) {
-          console.warn(`Trainee application ${trainee._id} has no valid userID`);
+          console.warn(
+            `Trainee application ${trainee._id} has no valid userID`
+          );
           return {
             ...trainee.toObject(),
             dtrCompletedHours: 0,
