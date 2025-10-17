@@ -34,6 +34,7 @@ interface DTR {
   updatedAt: string;
 }
 
+// Use production backend URL from environment variable
 const API_URL = import.meta.env.VITE_API || "http://localhost:4004";
 
 const Dtr: React.FC = () => {
