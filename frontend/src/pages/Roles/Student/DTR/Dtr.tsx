@@ -34,7 +34,7 @@ interface DTR {
   updatedAt: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4004";
+const API_URL = import.meta.env.VITE_API || "http://localhost:4004";
 
 const Dtr: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
