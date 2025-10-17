@@ -41,6 +41,15 @@ export const getAllTraineesHandler = catchErrors(
     // For each trainee, calculate their DTR hours
     const traineesWithDTRHours = await Promise.all(
       trainees.map(async (trainee) => {
+        // Check if userID exists (populate might fail if user was deleted)
+        if (!trainee.userID || !trainee.userID._id) {
+          console.warn(`Trainee application ${trainee._id} has no valid userID`);
+          return {
+            ...trainee.toObject(),
+            dtrCompletedHours: 0,
+          };
+        }
+
         // Get all DTRs for this trainee
         const dtrs = await DTRModel.find({
           userId: trainee.userID._id,
@@ -129,6 +138,15 @@ export const getOfficeTraineesHandler = catchErrors(
     // For each trainee, calculate their DTR hours
     const traineesWithDTRHours = await Promise.all(
       trainees.map(async (trainee) => {
+        // Check if userID exists (populate might fail if user was deleted)
+        if (!trainee.userID || !trainee.userID._id) {
+          console.warn(`Trainee application ${trainee._id} has no valid userID`);
+          return {
+            ...trainee.toObject(),
+            dtrCompletedHours: 0,
+          };
+        }
+
         // Get all DTRs for this trainee
         const dtrs = await DTRModel.find({
           userId: trainee.userID._id,
