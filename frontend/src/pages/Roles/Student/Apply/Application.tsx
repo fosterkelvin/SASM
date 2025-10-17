@@ -1257,7 +1257,7 @@ function Application() {
                     <Button
                       onClick={handleWithdrawConfirm}
                       disabled={isWithdrawing}
-                      className="order-1 sm:order-2 bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-red-200"
+                      className="order-1 sm:order-2 bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-red-200"
                     >
                       {isWithdrawing ? (
                         <div className="flex items-center gap-2">
