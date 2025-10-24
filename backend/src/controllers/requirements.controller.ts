@@ -153,6 +153,8 @@ export const createRequirementsSubmission = catchErrors(
       // Resubmit - delete old files that are being replaced
       console.log("[requirements] Resubmit - checking for old files to delete");
 
+      const resubmittedRejectedDocuments: string[] = [];
+
       for (let idx = 0; idx < processedItems.length; idx++) {
         const newItem = processedItems[idx];
         const oldItem = existingSubmission.items[idx];
@@ -176,13 +178,66 @@ export const createRequirementsSubmission = catchErrors(
               err
             );
           }
+
+          // Check if this was a rejected document being replaced
+          if (oldItem.documentStatus === "rejected") {
+            resubmittedRejectedDocuments.push(newItem.label);
+            // Reset document status to pending for review
+            (newItem as any).documentStatus = "pending";
+            (newItem as any).rejectionReason = undefined;
+            (newItem as any).reviewedByHR = undefined;
+            (newItem as any).reviewedAt = undefined;
+          }
         }
       }
 
       // Update existing submission
       existingSubmission.items = processedItems as any;
       existingSubmission.submittedAt = new Date();
+
+      // If submission was approved but rejected documents were resubmitted, set back to pending
+      if (
+        resubmittedRejectedDocuments.length > 0 &&
+        existingSubmission.reviewStatus === "approved"
+      ) {
+        existingSubmission.reviewStatus = "pending";
+      }
+
       await existingSubmission.save();
+
+      // Notify HR about resubmitted rejected documents
+      if (resubmittedRejectedDocuments.length > 0) {
+        try {
+          // Get user info for the notification
+          const user = await UserModel.findById(userID);
+          const userName = user
+            ? `${user.firstname} ${user.lastname}`
+            : "A student";
+
+          // Get all HR users
+          const hrUsers = await UserModel.find({ role: "hr" });
+
+          // Create notification for each HR user
+          for (const hrUser of hrUsers) {
+            await createNotification({
+              userID: (hrUser as any)._id.toString(),
+              title: "📄 Rejected Document Resubmitted",
+              message: `${userName} has resubmitted the following rejected document(s): ${resubmittedRejectedDocuments.join(", ")}. Please review the updated submission.`,
+              type: "info",
+            });
+          }
+
+          console.log(
+            `[requirements] Notified HR about ${resubmittedRejectedDocuments.length} resubmitted document(s)`
+          );
+        } catch (error) {
+          console.error(
+            "[requirements] Failed to notify HR about resubmission:",
+            error
+          );
+          // Don't fail the resubmission if notification fails
+        }
+      }
 
       console.log("[requirements] Resubmit successful");
 
@@ -391,6 +446,18 @@ export const reviewRequirementsSubmission = catchErrors(
     submission.reviewedAt = new Date();
     if (reviewNotes) {
       submission.reviewNotes = reviewNotes;
+    }
+
+    // If approving the entire submission, also approve all individual documents
+    if (reviewStatus === "approved") {
+      submission.items = submission.items.map((item: any) => ({
+        ...item,
+        documentStatus: "approved",
+        reviewedByHR: new mongoose.Types.ObjectId(userID),
+        reviewedAt: new Date(),
+        // Clear rejection reason if any
+        rejectionReason: undefined,
+      }));
     }
 
     await submission.save();

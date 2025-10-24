@@ -42,6 +42,22 @@ const RequirementItem: React.FC<Props> = ({
               Unsaved
             </div>
           )}
+          {/* Document Status Badge */}
+          {item.file?.documentStatus === "approved" && (
+            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+              ✓ Approved
+            </span>
+          )}
+          {item.file?.documentStatus === "rejected" && (
+            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+              ✗ Rejected
+            </span>
+          )}
+          {item.file?.documentStatus === "pending" && (
+            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+              ⏱ Pending Review
+            </span>
+          )}
         </div>
         <div className="text-sm text-gray-500">
           <span className="text-red-600 font-semibold">Required</span>
@@ -53,6 +69,39 @@ const RequirementItem: React.FC<Props> = ({
           {item.note}
         </div>
       )}
+
+      {/* Rejection Reason Alert */}
+      {item.file?.documentStatus === "rejected" &&
+        item.file?.rejectionReason && (
+          <div className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="flex gap-2">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-5 h-5 text-red-600 dark:text-red-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-red-800 dark:text-red-300 mb-1">
+                  Document Rejected by HR
+                </h4>
+                <p className="text-sm text-red-700 dark:text-red-400">
+                  {item.file.rejectionReason}
+                </p>
+                <p className="text-xs text-red-600 dark:text-red-500 mt-2">
+                  Please upload a corrected version of this document.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
       <div
         className={`relative bg-white dark:bg-gray-800 border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center ${boxBorderClass}`}
@@ -189,23 +238,25 @@ const RequirementItem: React.FC<Props> = ({
                 Download
               </a>
               {isSubmitted ? (
-                // Allow replacing submitted files
-                <>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,application/pdf"
-                    onChange={(e) => onSetFile(item.id, e.target.files)}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-1 bg-white border border-blue-200 text-blue-600 rounded shadow-sm"
-                  >
-                    Replace File
-                  </button>
-                </>
+                // Allow replacing submitted files only if not approved
+                item.file.documentStatus !== "approved" && (
+                  <>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={(e) => onSetFile(item.id, e.target.files)}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3 py-1 bg-white border border-blue-200 text-blue-600 rounded shadow-sm"
+                    >
+                      Replace File
+                    </button>
+                  </>
+                )
               ) : (
                 // Non-submitted: keep the Remove File button as before
                 <>

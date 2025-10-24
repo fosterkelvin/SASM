@@ -397,8 +397,9 @@ const ViewSubmissionModal: React.FC<Props> = ({
                             Download
                           </a>
 
-                          {/* Reject Button - Only show if not already rejected */}
-                          {item.documentStatus !== "rejected" && (
+                          {/* Reject Button - Only show for pending documents */}
+                          {(!item.documentStatus ||
+                            item.documentStatus === "pending") && (
                             <button
                               onClick={() =>
                                 handleRejectDocument(i, item.label)

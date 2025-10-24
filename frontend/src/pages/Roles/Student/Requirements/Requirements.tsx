@@ -19,6 +19,8 @@ export type Requirement = {
     size: number;
     type: string;
     url: string;
+    documentStatus?: "pending" | "approved" | "rejected";
+    rejectionReason?: string;
   } | null;
   note?: string;
 };
@@ -606,6 +608,8 @@ const Requirements: React.FC = () => {
                       size: matched.size || 0,
                       type: matched.mimetype || matched.mimeType || "",
                       url: matched.url,
+                      documentStatus: matched.documentStatus || "pending",
+                      rejectionReason: matched.rejectionReason || undefined,
                     },
                   } as Requirement;
                 }
