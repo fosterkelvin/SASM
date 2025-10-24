@@ -19,6 +19,7 @@ interface NavProps {
   isApplicant?: boolean;
   isAccepted?: boolean;
   isEmailUpdateRequired?: boolean;
+  isPersonalInfoIncomplete?: boolean;
 }
 
 const SidebarNav: React.FC<NavProps> = ({
@@ -28,6 +29,7 @@ const SidebarNav: React.FC<NavProps> = ({
   isApplicant = false,
   isAccepted = false,
   isEmailUpdateRequired = false,
+  isPersonalInfoIncomplete = false,
 }) => {
   return (
     <nav
@@ -89,7 +91,7 @@ const SidebarNav: React.FC<NavProps> = ({
               label="Apply"
               onClick={handlers.apply}
               IconComponent={FileEdit}
-              disabled={isEmailUpdateRequired}
+              disabled={isEmailUpdateRequired || isPersonalInfoIncomplete}
             />
           </li>
         )}
@@ -102,7 +104,7 @@ const SidebarNav: React.FC<NavProps> = ({
                     label="Re-apply"
                     onClick={handlers.reapply}
                     IconComponent={RefreshCw}
-                    disabled={isEmailUpdateRequired}
+                    disabled={isEmailUpdateRequired || isPersonalInfoIncomplete}
                   />
                 </li>
                 <li>

@@ -1,14 +1,49 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 import ReApplyForm from "./components/ReApplyForm";
 import { useAuth } from "@/context/AuthContext";
+import {
+  isPersonalInfoComplete,
+  getMissingPersonalInfoFields,
+} from "@/lib/personalInfoValidator";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/context/ToastContext";
+import { useQuery } from "@tanstack/react-query";
+import { getUserData } from "@/lib/api";
 
 const ReApply: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Fetch user data to check personal info completeness
+  const { data: userData, isLoading: isLoadingUserData } = useQuery({
+    queryKey: ["userData"],
+    queryFn: getUserData,
+    enabled: !!user,
+  });
+
+  // Check if personal info is complete, redirect if not
+  useEffect(() => {
+    if (!isLoadingUserData && userData !== undefined) {
+      const personalInfoComplete = isPersonalInfoComplete(userData);
+      if (!personalInfoComplete) {
+        const missingFields = getMissingPersonalInfoFields(userData);
+        addToast(
+          `Please complete your personal information in Profile Settings before re-applying. Missing: ${missingFields.join(
+            ", "
+          )}`,
+          "error",
+          6000
+        );
+        navigate("/profile");
+      }
+    }
+  }, [userData, isLoadingUserData, navigate, addToast]);
 
   if (user && !user.verified) {
     return (

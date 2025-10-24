@@ -1,10 +1,14 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { User } from "lucide-react";
+import { User, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { getUserData, upsertUserData } from "@/lib/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  isPersonalInfoComplete,
+  getMissingPersonalInfoFields,
+} from "@/lib/personalInfoValidator";
 
 type Props = {
   user: any;
@@ -29,6 +33,24 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
     address: undefined,
   });
   const [age, setAge] = useState<number | null>(null);
+  const [ageError, setAgeError] = useState<string>("");
+
+  // Function to calculate age from birthdate
+  const calculateAge = (birthdate: string): number => {
+    const today = new Date();
+    const birthDate = new Date(birthdate);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+
+    return age;
+  };
 
   // Fetch user data from backend
   const { data: userData, refetch } = useQuery({
@@ -42,6 +64,7 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
     mutationFn: upsertUserData,
     onSuccess: (data) => {
       setAge(data.data.age);
+      setAgeError("");
       refetch();
       setEditing(false);
     },
@@ -55,16 +78,50 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
     if (userData) {
       setLocal({
         gender: userData.gender || undefined,
-        birthdate: userData.birthdate ? userData.birthdate.split('T')[0] : undefined,
+        birthdate: userData.birthdate
+          ? userData.birthdate.split("T")[0]
+          : undefined,
         civilStatus: userData.civilStatus || undefined,
         phoneNumber: userData.phoneNumber || undefined,
         address: userData.address || undefined,
       });
       setAge(userData.age);
+      setAgeError("");
     }
   }, [userData]);
 
+  const handleBirthdateChange = (newBirthdate: string) => {
+    if (!newBirthdate) {
+      setLocal((s) => ({ ...s, birthdate: undefined }));
+      setAgeError("");
+      return;
+    }
+
+    const calculatedAge = calculateAge(newBirthdate);
+
+    // Check age restrictions for students only
+    if (user?.role === "student") {
+      if (calculatedAge < 16) {
+        setAgeError(
+          "You must be at least 16 years old to apply for this program."
+        );
+      } else if (calculatedAge > 24) {
+        setAgeError(
+          "You must be 24 years old or younger to apply for this program."
+        );
+      } else {
+        setAgeError("");
+      }
+    }
+
+    setLocal((s) => ({ ...s, birthdate: newBirthdate }));
+  };
+
   const handleSave = () => {
+    // Prevent saving if there's an age error
+    if (ageError) {
+      return;
+    }
     saveUserDataMutation.mutate(local);
   };
 
@@ -73,20 +130,46 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
     if (userData) {
       setLocal({
         gender: userData.gender || undefined,
-        birthdate: userData.birthdate ? userData.birthdate.split('T')[0] : undefined,
+        birthdate: userData.birthdate
+          ? userData.birthdate.split("T")[0]
+          : undefined,
         civilStatus: userData.civilStatus || undefined,
         phoneNumber: userData.phoneNumber || undefined,
         address: userData.address || undefined,
       });
     }
+    setAgeError("");
     setEditing(false);
   };
+
+  // Check if personal info is complete for students
+  const showIncompleteWarning =
+    user?.role === "student" && !isPersonalInfoComplete(userData);
+  const missingFields = showIncompleteWarning
+    ? getMissingPersonalInfoFields(userData)
+    : [];
 
   return (
     <Card
       className={`bg-gradient-to-br ${colorScheme.background} shadow-lg ${colorScheme.cardBorder}`}
     >
       <CardContent className="p-6">
+        {showIncompleteWarning && (
+          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
+                  Complete Your Personal Information
+                </p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                  You must fill all personal information fields before you can
+                  apply. Missing: {missingFields.join(", ")}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-gradient-to-r from-gray-500 to-gray-700 dark:from-gray-700 dark:to-gray-900 rounded-lg flex items-center justify-center">
             <User size={22} className="text-white" />
@@ -105,7 +188,12 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
                 <Button size="sm" variant="secondary" onClick={handleCancel}>
                   Cancel
                 </Button>
-                <Button size="sm" onClick={handleSave}>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={!!ageError}
+                  className={ageError ? "opacity-50 cursor-not-allowed" : ""}
+                >
                   Save
                 </Button>
               </div>
@@ -142,7 +230,10 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
                   className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-sm"
                   value={local.gender ?? ""}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                    setLocal((s) => ({ ...s, gender: e.target.value || undefined }))
+                    setLocal((s) => ({
+                      ...s,
+                      gender: e.target.value || undefined,
+                    }))
                   }
                 >
                   <option value="">Prefer not to say</option>
@@ -164,23 +255,27 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
                     : "Not specified"}
                 </p>
               ) : (
-                <Input
-                  type="date"
-                  value={local.birthdate ?? ""}
-                  onChange={(e) =>
-                    setLocal((s) => ({
-                      ...s,
-                      birthdate: e.target.value || undefined,
-                    }))
-                  }
-                />
+                <div>
+                  <Input
+                    type="date"
+                    value={local.birthdate ?? ""}
+                    onChange={(e) => handleBirthdateChange(e.target.value)}
+                    className={
+                      ageError ? "border-red-500 dark:border-red-500" : ""
+                    }
+                  />
+                  {ageError && (
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {ageError}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Age
-              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Age</p>
               <p className="font-medium text-gray-800 dark:text-gray-200">
                 {age !== null ? `${age} years old` : "Not available"}
               </p>
@@ -251,9 +346,7 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
                 ) {
                   label = "Trainee";
                   dotClass = "bg-blue-500";
-                } else if (
-                  statusRaw === "training_completed"
-                ) {
+                } else if (statusRaw === "training_completed") {
                   label = "Training Completed";
                   dotClass = "bg-purple-500";
                 } else if (

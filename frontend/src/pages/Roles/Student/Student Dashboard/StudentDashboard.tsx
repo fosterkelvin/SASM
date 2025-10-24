@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getUserApplications } from "@/lib/api";
+import { getUserApplications, getUserData } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import {
   WelcomeCard,
   VerificationAlert,
+  PersonalInfoAlert,
   StatsGrid,
-  QuickActions,
 } from "./components";
+import {
+  isPersonalInfoComplete,
+  getMissingPersonalInfoFields,
+} from "@/lib/personalInfoValidator";
 
 const StudentDashboard = () => {
   const { user } = useAuth();
@@ -21,11 +25,24 @@ const StudentDashboard = () => {
     enabled: !!user,
   });
 
+  // Fetch user data to check personal info completeness
+  const { data: userData } = useQuery({
+    queryKey: ["userData"],
+    queryFn: getUserData,
+    enabled: !!user,
+  });
+
   // Find the active application (trainee or training_completed status)
   const activeApplication = userApplicationsData?.applications?.find(
     (app: any) =>
       app.status === "trainee" || app.status === "training_completed"
   );
+
+  // Check if personal info is complete
+  const personalInfoComplete = isPersonalInfoComplete(userData);
+  const missingFields = !personalInfoComplete
+    ? getMissingPersonalInfoFields(userData)
+    : [];
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">
@@ -59,9 +76,12 @@ const StudentDashboard = () => {
           {/* Email Verification Alert - Show only if not verified */}
           {user && !user.verified && <VerificationAlert email={user.email} />}
 
-          <StatsGrid />
+          {/* Personal Info Completion Alert - Show only if verified but info incomplete */}
+          {user && user.verified && !personalInfoComplete && (
+            <PersonalInfoAlert missingFields={missingFields} />
+          )}
 
-          <QuickActions />
+          <StatsGrid />
         </div>
       </div>
     </div>

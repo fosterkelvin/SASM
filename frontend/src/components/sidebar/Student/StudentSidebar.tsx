@@ -9,8 +9,13 @@ import { useNavigate } from "react-router-dom";
 import { getRoleBasedRedirect } from "@/lib/roleUtils";
 import { useUnreadNotificationCount } from "@/hooks/useUnreadNotificationCount";
 import { useQuery } from "@tanstack/react-query";
-import { getUserApplications } from "@/lib/api";
+import { getUserApplications, getUserData } from "@/lib/api";
 import { checkEmailRequirement } from "@/lib/emailRequirement";
+import {
+  isPersonalInfoComplete,
+  getMissingPersonalInfoFields,
+} from "@/lib/personalInfoValidator";
+import { useToast } from "@/context/ToastContext";
 
 interface StudentSidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
@@ -29,6 +34,7 @@ const StudentSidebar = ({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const { data: unreadCountData } = useUnreadNotificationCount();
   const unreadCount = unreadCountData?.unreadCount || 0;
 
@@ -38,6 +44,16 @@ const StudentSidebar = ({
     queryFn: getUserApplications,
     enabled: !!user,
   });
+
+  // Fetch user data to check personal info completeness
+  const { data: userData } = useQuery({
+    queryKey: ["userData"],
+    queryFn: getUserData,
+    enabled: !!user,
+  });
+
+  // Check if personal info is complete
+  const personalInfoComplete = isPersonalInfoComplete(userData);
 
   // Check if user has an accepted application
   const hasAcceptedApplication =
@@ -81,11 +97,37 @@ const StudentSidebar = ({
   };
 
   const handleApplyClick = () => {
+    if (!personalInfoComplete) {
+      const missingFields = getMissingPersonalInfoFields(userData);
+      addToast(
+        `Please complete your personal information in Profile Settings before applying. Missing: ${missingFields.join(
+          ", "
+        )}`,
+        "error",
+        6000
+      );
+      navigate("/profile");
+      setIsOpen(false);
+      return;
+    }
     navigate("/application");
     setIsOpen(false);
   };
 
   const handleReapplyClick = () => {
+    if (!personalInfoComplete) {
+      const missingFields = getMissingPersonalInfoFields(userData);
+      addToast(
+        `Please complete your personal information in Profile Settings before re-applying. Missing: ${missingFields.join(
+          ", "
+        )}`,
+        "error",
+        6000
+      );
+      navigate("/profile");
+      setIsOpen(false);
+      return;
+    }
     navigate("/re-apply");
     setIsOpen(false);
   };
@@ -136,10 +178,34 @@ const StudentSidebar = ({
   };
 
   const handleCollapsedApplyClick = () => {
+    if (!personalInfoComplete) {
+      const missingFields = getMissingPersonalInfoFields(userData);
+      addToast(
+        `Please complete your personal information in Profile Settings before applying. Missing: ${missingFields.join(
+          ", "
+        )}`,
+        "error",
+        6000
+      );
+      navigate("/profile");
+      return;
+    }
     navigate("/application");
   };
 
   const handleCollapsedReapplyClick = () => {
+    if (!personalInfoComplete) {
+      const missingFields = getMissingPersonalInfoFields(userData);
+      addToast(
+        `Please complete your personal information in Profile Settings before re-applying. Missing: ${missingFields.join(
+          ", "
+        )}`,
+        "error",
+        6000
+      );
+      navigate("/profile");
+      return;
+    }
     navigate("/re-apply");
   };
 
@@ -354,6 +420,7 @@ const StudentSidebar = ({
             isApplicant={user?.status === "applicant"}
             isAccepted={hasAcceptedApplication}
             isEmailUpdateRequired={isEmailUpdateRequired}
+            isPersonalInfoIncomplete={!personalInfoComplete}
             handlers={{
               dashboard: handleDashboardClick,
               notifications: handleNotificationsClick,

@@ -30,9 +30,17 @@ import FileUploadSection from "./components/FileUploadSection";
 import { AlertTriangle } from "lucide-react";
 import CertificatesSection from "./components/CertificatesSection";
 import ApplicationStatusCard from "./components/ApplicationStatusCard";
+import {
+  isPersonalInfoComplete,
+  getMissingPersonalInfoFields,
+} from "@/lib/personalInfoValidator";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/context/ToastContext";
 
 function Application() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const { data: userApplicationsData, isLoading: isLoadingApplications } =
     useQuery({
       queryKey: ["userApplications"],
@@ -45,11 +53,29 @@ function Application() {
   );
 
   // Fetch user data for auto-population
-  const { data: userData } = useQuery({
+  const { data: userData, isLoading: isLoadingUserData } = useQuery({
     queryKey: ["userData"],
     queryFn: getUserData,
     enabled: !!user,
   });
+
+  // Check if personal info is complete, redirect if not
+  useEffect(() => {
+    if (!isLoadingUserData && userData !== undefined) {
+      const personalInfoComplete = isPersonalInfoComplete(userData);
+      if (!personalInfoComplete) {
+        const missingFields = getMissingPersonalInfoFields(userData);
+        addToast(
+          `Please complete your personal information in Profile Settings before applying. Missing: ${missingFields.join(
+            ", "
+          )}`,
+          "error",
+          6000
+        );
+        navigate("/profile");
+      }
+    }
+  }, [userData, isLoadingUserData, navigate, addToast]);
 
   const [hasRelativeWorking, setHasRelativeWorking] = useState(false);
   const [relatives, setRelatives] = useState([
@@ -74,8 +100,13 @@ function Application() {
         lastName: user?.lastname || "",
         email: user?.email || "",
         age: userData.age || prev.age,
-        gender: userData.gender ? userData.gender.charAt(0).toUpperCase() + userData.gender.slice(1) : prev.gender,
-        civilStatus: userData.civilStatus ? userData.civilStatus.charAt(0).toUpperCase() + userData.civilStatus.slice(1) : prev.civilStatus,
+        gender: userData.gender
+          ? userData.gender.charAt(0).toUpperCase() + userData.gender.slice(1)
+          : prev.gender,
+        civilStatus: userData.civilStatus
+          ? userData.civilStatus.charAt(0).toUpperCase() +
+            userData.civilStatus.slice(1)
+          : prev.civilStatus,
       }));
     }
   }, [userData, user]);
@@ -271,9 +302,11 @@ function Application() {
       setSubmitMessage(seminarErrors.join(" "));
       setIsSubmitting(false);
       // Scroll to seminars section
-      const seminarsSection = document.querySelector('[data-section="seminars"]');
+      const seminarsSection = document.querySelector(
+        '[data-section="seminars"]'
+      );
       if (seminarsSection) {
-        seminarsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        seminarsSection.scrollIntoView({ behavior: "smooth", block: "center" });
       }
       return;
     }
@@ -291,7 +324,7 @@ function Application() {
       // Scroll to file upload section
       const fileSection = document.querySelector('[data-section="fileUpload"]');
       if (fileSection) {
-        fileSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        fileSection.scrollIntoView({ behavior: "smooth", block: "center" });
       }
       return;
     }
@@ -314,9 +347,14 @@ function Application() {
         );
         setIsSubmitting(false);
         // Scroll to relatives section
-        const relativesSection = document.querySelector('[data-section="relatives"]');
+        const relativesSection = document.querySelector(
+          '[data-section="relatives"]'
+        );
         if (relativesSection) {
-          relativesSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          relativesSection.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
         }
         return;
       }
@@ -346,41 +384,41 @@ function Application() {
 
         // Map fields to their sections for better scrolling
         const fieldToSection: Record<string, string> = {
-          position: 'position',
-          firstName: 'personal',
-          lastName: 'personal',
-          age: 'personal',
-          gender: 'personal',
-          civilStatus: 'personal',
-          homeAddress: 'address',
-          homeBarangay: 'address',
-          homeCity: 'address',
-          homeProvince: 'address',
-          baguioAddress: 'address',
-          baguioBarangay: 'address',
-          baguioCity: 'address',
-          homeContact: 'contact',
-          baguioContact: 'contact',
-          email: 'contact',
-          citizenship: 'contact',
-          emergencyContact: 'contact',
-          emergencyContactNumber: 'contact',
-          fatherName: 'parents',
-          fatherOccupation: 'parents',
-          motherName: 'parents',
-          motherOccupation: 'parents',
-          elementary: 'education',
-          elementaryYears: 'education',
-          highSchool: 'education',
-          highSchoolYears: 'education',
-          college: 'education',
-          collegeYears: 'education',
-          profilePhoto: 'fileUpload',
-          parentGuardianName: 'parentConsent',
-          parentID: 'parentConsent',
-          parentConsent: 'parentConsent',
-          agreedToTerms: 'agreement',
-          conformity: 'agreement',
+          position: "position",
+          firstName: "personal",
+          lastName: "personal",
+          age: "personal",
+          gender: "personal",
+          civilStatus: "personal",
+          homeAddress: "address",
+          homeBarangay: "address",
+          homeCity: "address",
+          homeProvince: "address",
+          baguioAddress: "address",
+          baguioBarangay: "address",
+          baguioCity: "address",
+          homeContact: "contact",
+          baguioContact: "contact",
+          email: "contact",
+          citizenship: "contact",
+          emergencyContact: "contact",
+          emergencyContactNumber: "contact",
+          fatherName: "parents",
+          fatherOccupation: "parents",
+          motherName: "parents",
+          motherOccupation: "parents",
+          elementary: "education",
+          elementaryYears: "education",
+          highSchool: "education",
+          highSchoolYears: "education",
+          college: "education",
+          collegeYears: "education",
+          profilePhoto: "fileUpload",
+          parentGuardianName: "parentConsent",
+          parentID: "parentConsent",
+          parentConsent: "parentConsent",
+          agreedToTerms: "agreement",
+          conformity: "agreement",
         };
 
         // Get first error field and its section
@@ -389,20 +427,27 @@ function Application() {
 
         // Count total errors
         const errorCount = Object.keys(newErrors).length;
-        setSubmitMessage(`Please fix ${errorCount} required field${errorCount > 1 ? 's' : ''} before submitting.`);
+        setSubmitMessage(
+          `Please fix ${errorCount} required field${
+            errorCount > 1 ? "s" : ""
+          } before submitting.`
+        );
 
         // Scroll to the section containing the first error
-        const section = document.querySelector(`[data-section="${sectionName}"]`);
+        const section = document.querySelector(
+          `[data-section="${sectionName}"]`
+        );
         if (section) {
-          section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          section.scrollIntoView({ behavior: "smooth", block: "center" });
 
           // After scrolling, try to focus the specific field
           setTimeout(() => {
-            const element = document.getElementById(firstErrorField) ||
-                           document.querySelector(`[name="${firstErrorField}"]`) ||
-                           document.querySelector(`input[id*="${firstErrorField}"]`) ||
-                           document.querySelector(`select[id*="${firstErrorField}"]`) ||
-                           document.querySelector(`textarea[id*="${firstErrorField}"]`);
+            const element =
+              document.getElementById(firstErrorField) ||
+              document.querySelector(`[name="${firstErrorField}"]`) ||
+              document.querySelector(`input[id*="${firstErrorField}"]`) ||
+              document.querySelector(`select[id*="${firstErrorField}"]`) ||
+              document.querySelector(`textarea[id*="${firstErrorField}"]`);
 
             if (element) {
               (element as HTMLElement).focus();
@@ -647,18 +692,18 @@ function Application() {
                 </div>
                 <div className="mt-4 px-8 pb-8">
                   {activeApplication.status !== "accepted" &&
-                   activeApplication.status !== "rejected" &&
-                   activeApplication.status !== "withdrawn" && (
-                    <div className="flex justify-center mt-6">
-                      <Button
-                        variant="outline"
-                        className="border-red-600 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
-                        onClick={() => setShowWithdrawModal(true)}
-                      >
-                        Withdraw Application
-                      </Button>
-                    </div>
-                  )}
+                    activeApplication.status !== "rejected" &&
+                    activeApplication.status !== "withdrawn" && (
+                      <div className="flex justify-center mt-6">
+                        <Button
+                          variant="outline"
+                          className="border-red-600 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
+                          onClick={() => setShowWithdrawModal(true)}
+                        >
+                          Withdraw Application
+                        </Button>
+                      </div>
+                    )}
                 </div>
                 {/* Withdraw Application Confirmation Modal */}
                 {showWithdrawModal && (
@@ -709,14 +754,14 @@ function Application() {
                                 <p className="font-medium mb-1">Warning:</p>
                                 <ul className="list-disc list-inside space-y-1">
                                   <li>
-                                    Your application status will be marked as withdrawn
+                                    Your application status will be marked as
+                                    withdrawn
                                   </li>
                                   <li>
-                                    Your submitted documents will be kept on file
+                                    Your submitted documents will be kept on
+                                    file
                                   </li>
-                                  <li>
-                                    This action cannot be undone
-                                  </li>
+                                  <li>This action cannot be undone</li>
                                 </ul>
                               </div>
                             </div>
@@ -816,7 +861,7 @@ function Application() {
                     />
                   </div>
                   {/* Personal Info Section - Hidden but data still submitted */}
-                  <div style={{ display: 'none' }}>
+                  <div style={{ display: "none" }}>
                     <PersonalInfoSection
                       formData={formData}
                       errors={errors}
@@ -885,7 +930,10 @@ function Application() {
                       error={errors.profilePhoto}
                     />
                   </div>
-                  <div data-section="agreement" className="space-y-6 p-4 rounded-lg border">
+                  <div
+                    data-section="agreement"
+                    className="space-y-6 p-4 rounded-lg border"
+                  >
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
                       Agreement & Applicant's Conformity{" "}
                       <span className="text-red-600"> *</span>
@@ -972,7 +1020,10 @@ function Application() {
                     </div>
                   </div>
                   {/* Parent/Guardian Consent Section */}
-                  <div data-section="parentConsent" className="space-y-6 p-4 rounded-lg border">
+                  <div
+                    data-section="parentConsent"
+                    className="space-y-6 p-4 rounded-lg border"
+                  >
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
                       Parent/Guardian's Consent
                       <span className="text-red-600"> *</span>
