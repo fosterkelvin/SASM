@@ -21,6 +21,7 @@ import {
 import {
   createApplicationStatusNotification,
   createNotification,
+  notifyHRAboutNewApplication,
 } from "../services/notification.service";
 import { sendMail } from "../utils/sendMail";
 import { getApplicationStatusEmailTemplate } from "../utils/emailTemplate";
@@ -365,6 +366,20 @@ export const createApplicationHandler = catchErrors(
         error
       );
       // Don't fail the request if notification or email creation fails
+    }
+
+    // Notify all HR users about the new application
+    try {
+      const applicantName = `${user.firstname} ${user.lastname}`;
+      await notifyHRAboutNewApplication(
+        (application as any)._id.toString(),
+        applicantName,
+        application.position
+      );
+      console.log("HR users notified about new application");
+    } catch (error) {
+      console.error("Failed to notify HR about new application:", error);
+      // Don't fail the request if HR notification fails
     }
 
     return res.status(CREATED).json({

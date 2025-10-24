@@ -22,6 +22,7 @@ import {
   getInterviewScheduledEmailTemplate,
   getInterviewResultEmailTemplate,
   getPsychometricTestScheduledEmailTemplate,
+  getNewApplicationNotificationEmailTemplate,
 } from "../utils/emailTemplate";
 
 interface CreateNotificationParams {
@@ -389,4 +390,85 @@ export const createApplicationStatusNotification = async (
   }
 
   return notification;
+};
+
+// Notify all HR users about a new application
+export const notifyHRAboutNewApplication = async (
+  applicationID: string | Types.ObjectId,
+  applicantName: string,
+  position: string
+) => {
+  try {
+    // Find all HR users
+    const hrUsers = await UserModel.find({ role: "hr" });
+
+    if (hrUsers.length === 0) {
+      console.log("No HR users found to notify about new application");
+      return [];
+    }
+
+    const positionTitle =
+      position === "student_assistant"
+        ? "Student Assistant"
+        : "Student Marshal";
+
+    // Create notifications and send emails for all HR users
+    const notifications = await Promise.all(
+      hrUsers.map(async (hrUser) => {
+        try {
+          // Create in-app notification
+          const notification = await createNotification({
+            userID: (hrUser._id as Types.ObjectId).toString(),
+            title: "🆕 New Application Received",
+            message: `${applicantName} has submitted a new application for ${positionTitle} position. Review it in the Application Management section.`,
+            type: "info",
+            relatedApplicationID: applicationID,
+          });
+
+          // Send email notification to HR
+          try {
+            const emailTemplate = getNewApplicationNotificationEmailTemplate(
+              applicantName,
+              position,
+              applicationID.toString()
+            );
+
+            await sendMail({
+              to: hrUser.email,
+              subject: emailTemplate.subject,
+              text: emailTemplate.text,
+              html: emailTemplate.html,
+            });
+
+            console.log(
+              `New application notification email sent to HR user: ${hrUser.email}`
+            );
+          } catch (emailError) {
+            console.error(
+              `Failed to send email to HR user ${hrUser.email}:`,
+              emailError
+            );
+            // Don't fail if email sending fails
+          }
+
+          return notification;
+        } catch (error) {
+          console.error(
+            `Failed to create notification for HR user ${hrUser.email}:`,
+            error
+          );
+          return null;
+        }
+      })
+    );
+
+    console.log(
+      `Created ${notifications.filter((n) => n !== null).length} notifications for HR users about new application`
+    );
+    return notifications.filter((n) => n !== null);
+  } catch (error) {
+    console.error("Error notifying HR about new application:", error);
+    // Don't throw error - this is a non-critical operation
+    return [];
+  }
 };

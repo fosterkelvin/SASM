@@ -1052,3 +1052,22 @@ ${officeName}`,
 </body>
 </html>`,
 });
+
+
+export const getNewApplicationNotificationEmailTemplate = (applicantName: string, position: string, applicationId: string) => { const positionTitle = position === 'student_assistant' ? 'Student Assistant' : 'Student Marshal'; return { subject: ` New Application Received - ${applicantName}`, text: `New Application Notification
+
+Hello,
+
+A new application has been submitted.
+
+Applicant: ${applicantName}
+Position: ${positionTitle}
+Application ID: ${applicationId}
+
+Please review this application in the Application Management section.`, html: `<!doctype html><html><body><h1>New Application Received</h1><p>Applicant: ${applicantName}</p><p>Position: ${positionTitle}</p><p>Application ID: ${applicationId}</p><p>Please review this application.</p></body></html>` }; };
+
+
+export const getNewApplicationNotificationEmailTemplate = (applicantName: string, position: string, applicationId: string) => { const positionTitle = position === 'student_assistant' ? 'Student Assistant' : 'Student Marshal'; return { subject: \ New Application Received - \\, text: \New Application from \ for \. ID: \. Please review in Application Management.\, html: \<h1>New Application Received</h1><p>Applicant: \</p><p>Position: \</p><p>ID: \</p>\ }; };
+
+
+export const getNewApplicationNotificationEmailTemplate = (applicantName: string, position: string, applicationId: string) => { const positionTitle = position === 'student_assistant' ? 'Student Assistant' : 'Student Marshal'; return { subject: \ New Application Received - \\, text: \New Application from \ for \. ID: \. Please review in Application Management.\, html: \<h1>New Application Received</h1><p>Applicant: \</p><p>Position: \</p><p>ID: \</p>\ }; };
