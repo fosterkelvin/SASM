@@ -221,20 +221,6 @@ const UploadSchedule: React.FC = () => {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <a
-                  href={`${API_BASE_URL}/trainees/schedule/download`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
-                >
-                  View Full Schedule
-                </a>
-                <button
-                  onClick={downloadScheduleFile}
-                  className="px-4 py-2 bg-gray-700 text-white rounded text-sm hover:bg-gray-800 transition-colors"
-                >
-                  Download PDF
-                </button>
                 <button
                   onClick={() => setShowDataForm(!showDataForm)}
                   className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
@@ -478,87 +464,12 @@ const UploadSchedule: React.FC = () => {
                   <span className="text-3xl">📅</span>
                   Weekly Schedule Overview
                 </h2>
-                <div className="flex gap-2">
-                  <a
-                    href={`${API_BASE_URL}/trainees/schedule/download`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    View PDF
-                  </a>
-                  <button
-                    onClick={downloadScheduleFile}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                      />
-                    </svg>
-                    Download
-                  </button>
-                </div>
+
               </div>
               <ScheduleVisualization scheduleClasses={scheduleData} />
             </div>
 
-            {/* Collapsible PDF Preview - Only if user wants to see it */}
-            <details className="group">
-              <summary className="cursor-pointer list-none">
-                <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                      <span className="text-xl">📄</span>
-                      View Original Schedule PDF
-                    </h3>
-                    <svg
-                      className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </summary>
-              <div className="mt-4 p-6 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div className="w-full h-[600px] border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden">
-                  <iframe
-                    src={`${API_BASE_URL}/trainees/schedule/download`}
-                    className="w-full h-full"
-                    title="Schedule PDF"
-                  />
-                </div>
-              </div>
-            </details>
+
           </div>
         )}
     </div>
