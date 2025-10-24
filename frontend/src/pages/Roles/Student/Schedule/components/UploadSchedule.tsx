@@ -464,12 +464,9 @@ const UploadSchedule: React.FC = () => {
                   <span className="text-3xl">📅</span>
                   Weekly Schedule Overview
                 </h2>
-
               </div>
               <ScheduleVisualization scheduleClasses={scheduleData} />
             </div>
-
-
           </div>
         )}
     </div>
