@@ -1054,20 +1054,106 @@ ${officeName}`,
 });
 
 
-export const getNewApplicationNotificationEmailTemplate = (applicantName: string, position: string, applicationId: string) => { const positionTitle = position === 'student_assistant' ? 'Student Assistant' : 'Student Marshal'; return { subject: ` New Application Received - ${applicantName}`, text: `New Application Notification
+export const getNewApplicationNotificationEmailTemplate = (
+  applicantName: string,
+  position: string,
+  applicationId: string
+) => {
+  const positionTitle =
+    position === "student_assistant" ? "Student Assistant" : "Student Marshal";
+
+  return {
+    subject: `🆕 New Application Received - ${applicantName}`,
+    text: `New Application Notification
 
 Hello,
 
-A new application has been submitted.
+A new application has been submitted to the Student Application Management System.
 
 Applicant: ${applicantName}
 Position: ${positionTitle}
 Application ID: ${applicationId}
 
-Please review this application in the Application Management section.`, html: `<!doctype html><html><body><h1>New Application Received</h1><p>Applicant: ${applicantName}</p><p>Position: ${positionTitle}</p><p>Application ID: ${applicationId}</p><p>Please review this application.</p></body></html>` }; };
+Please review this application in the Application Management section of the system.
 
+Action Required:
+• Review the application details
+• Check the submitted documents and requirements
+• Schedule psychometric test or interview as needed
+• Update the application status accordingly
 
-export const getNewApplicationNotificationEmailTemplate = (applicantName: string, position: string, applicationId: string) => { const positionTitle = position === 'student_assistant' ? 'Student Assistant' : 'Student Marshal'; return { subject: \ New Application Received - \\, text: \New Application from \ for \. ID: \. Please review in Application Management.\, html: \<h1>New Application Received</h1><p>Applicant: \</p><p>Position: \</p><p>ID: \</p>\ }; };
+Log in to the system to review and process this application.
 
+Best regards,
+Student Application Management System
+University of Baguio`,
+    html: `<!doctype html>
+<html lang="en-US">
+<head>
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Application Received</title>
+  <style type="text/css">
+    body { margin: 0; padding: 0; }
+    a:hover{text-decoration:underline!important}
+  </style>
+</head>
+<body marginheight="0" topmargin="0" marginwidth="0" style="margin: 0px; background-color: #f2f3f8;" leftmargin="0">
+  <table cellspacing="0" border="0" cellpadding="0" width="100%" bgcolor="#f2f3f8" style="font-family: 'Open Sans', sans-serif;">
+    <tr>
+      <td>
+        <table style="background-color: #f2f3f8; max-width:670px; margin:0 auto;" width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+          <tr><td style="height:80px;">&nbsp;</td></tr>
+          <tr>
+            <td>
+              <table width="95%" border="0" align="center" cellpadding="0" cellspacing="0" style="max-width:670px;background:#fff; border-radius:3px; text-align:center;box-shadow:0 6px 18px 0 rgba(0,0,0,.06);">
+                <tr><td style="height:40px;">&nbsp;</td></tr>
+                <tr>
+                  <td style="padding:0 35px;">
+                    <h1 style="color:#1e1e2d; font-weight:500; margin:0;font-size:28px;font-family:'Rubik',sans-serif;">🆕 New Application Received</h1>
+                    <span style="display:inline-block; vertical-align:middle; margin:29px 0 26px; border-bottom:1px solid #cecece; width:100px;"></span>
+                    
+                    <div style="background-color: #e3f2fd; border-left: 4px solid #2196f3; padding: 20px; margin: 20px 0; border-radius: 5px; text-align: left;">
+                      <p style="margin: 10px 0;"><strong style="color:#333;">Applicant:</strong> <span style="color:#666;">${applicantName}</span></p>
+                      <p style="margin: 10px 0;"><strong style="color:#333;">Position:</strong> <span style="color:#666;">${positionTitle}</span></p>
+                      <p style="margin: 10px 0;"><strong style="color:#333;">Application ID:</strong> <span style="color:#666; font-family: monospace;">${applicationId}</span></p>
+                    </div>
 
-export const getNewApplicationNotificationEmailTemplate = (applicantName: string, position: string, applicationId: string) => { const positionTitle = position === 'student_assistant' ? 'Student Assistant' : 'Student Marshal'; return { subject: \ New Application Received - \\, text: \New Application from \ for \. ID: \. Please review in Application Management.\, html: \<h1>New Application Received</h1><p>Applicant: \</p><p>Position: \</p><p>ID: \</p>\ }; };
+                    <p style="color:#455056; font-size:15px;line-height:24px; margin:20px 0; text-align: left;">
+                      A new application has been submitted to the Student Application Management System. Please review and process this application promptly.
+                    </p>
+
+                    <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left;">
+                      <h3 style="color:#333; margin: 0 0 15px 0; font-size: 16px;">Action Required:</h3>
+                      <p style="margin: 8px 0; color:#666; font-size: 14px;">✓ Review the application details</p>
+                      <p style="margin: 8px 0; color:#666; font-size: 14px;">✓ Check submitted documents and requirements</p>
+                      <p style="margin: 8px 0; color:#666; font-size: 14px;">✓ Schedule psychometric test or interview</p>
+                      <p style="margin: 8px 0; color:#666; font-size: 14px;">✓ Update application status accordingly</p>
+                    </div>
+
+                    <p style="color:#455056; font-size:14px;line-height:22px; margin:20px 0; text-align: center;">
+                      Log in to the Application Management System to review and process this application.
+                    </p>
+                  </td>
+                </tr>
+                <tr><td style="height:40px;">&nbsp;</td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr><td style="height:20px;">&nbsp;</td></tr>
+          <tr>
+            <td style="text-align:center;">
+              <p style="font-size:14px; color:rgba(69, 80, 86, 0.74); line-height:18px; margin:0;">
+                &copy; Student Application Management System - University of Baguio
+              </p>
+            </td>
+          </tr>
+          <tr><td style="height:80px;">&nbsp;</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+  };
+};
