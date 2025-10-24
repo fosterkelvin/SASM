@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import catchErrors from "../utils/catchErrors";
 import RequirementsSubmissionModel from "../models/requirementsSubmission.model";
 import ApplicationModel from "../models/application.model";
+import UserModel from "../models/user.model";
 import { CREATED, OK } from "../constants/http";
 import cloudinary from "../config/cloudinary";
 import mongoose from "mongoose";
@@ -322,9 +323,115 @@ export const getCurrentRequirementsStatus = catchErrors(
   }
 );
 
+// Get all requirements submissions (HR only)
+export const getAllRequirementsSubmissions = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+
+    // Fetch user to check role
+    const user = await UserModel.findById(userID);
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    // Only allow HR to access this endpoint
+    if (user.role !== "hr") {
+      return res.status(403).json({ message: "Unauthorized access - HR only" });
+    }
+
+    // Get all submissions with user information
+    const submissions = await RequirementsSubmissionModel.find({
+      status: "submitted",
+    })
+      .populate("userID", "firstname lastname email")
+      .populate("reviewedByHR", "firstname lastname")
+      .sort({ submittedAt: -1 });
+
+    return res.status(OK).json({ submissions });
+  }
+);
+
+// Approve or reject requirements submission (HR only)
+export const reviewRequirementsSubmission = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+    const { submissionId, reviewStatus, reviewNotes } = req.body;
+
+    // Fetch user to check role
+    const user = await UserModel.findById(userID);
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    // Only allow HR to access this endpoint
+    if (user.role !== "hr") {
+      return res.status(403).json({ message: "Unauthorized access - HR only" });
+    }
+
+    // Validate reviewStatus
+    if (!["approved", "rejected", "pending"].includes(reviewStatus)) {
+      return res.status(400).json({
+        message:
+          "Invalid review status. Must be 'approved', 'rejected', or 'pending'",
+      });
+    }
+
+    // Find the submission
+    const submission = await RequirementsSubmissionModel.findById(submissionId);
+
+    if (!submission) {
+      return res.status(404).json({ message: "Submission not found" });
+    }
+
+    // Update review fields
+    submission.reviewStatus = reviewStatus;
+    submission.reviewedByHR = new mongoose.Types.ObjectId(userID);
+    submission.reviewedAt = new Date();
+    if (reviewNotes) {
+      submission.reviewNotes = reviewNotes;
+    }
+
+    await submission.save();
+
+    // Create notification for student
+    const statusText =
+      reviewStatus === "approved"
+        ? "approved"
+        : reviewStatus === "rejected"
+          ? "rejected"
+          : "pending review";
+
+    await createNotification({
+      userID: submission.userID.toString(),
+      title: `Requirements ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}`,
+      message:
+        reviewStatus === "approved"
+          ? "Congratulations! Your requirements have been approved by HR."
+          : reviewStatus === "rejected"
+            ? `Your requirements submission needs attention. ${reviewNotes || "Please review and resubmit."}`
+            : "Your requirements are being reviewed by HR.",
+      type:
+        reviewStatus === "approved"
+          ? "success"
+          : reviewStatus === "rejected"
+            ? "error"
+            : "info",
+    });
+
+    return res.status(OK).json({
+      message: `Submission ${statusText}`,
+      submission,
+    });
+  }
+);
+
 export default {
   createRequirementsSubmission,
   getUserRequirementsSubmissions,
   deleteRequirementFile,
   getCurrentRequirementsStatus,
+  getAllRequirementsSubmissions,
+  reviewRequirementsSubmission,
 };

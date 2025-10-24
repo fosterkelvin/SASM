@@ -7,6 +7,7 @@ import MobileHeader from "./components/MobileHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { getRoleBasedRedirect } from "@/lib/roleUtils";
+import { useUnreadNotificationCount } from "@/hooks/useUnreadNotificationCount";
 
 interface HRSidebarProps {
   currentPage?: string;
@@ -20,6 +21,8 @@ const HRSidebar = ({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const { data: unreadCountData } = useUnreadNotificationCount();
+  const unreadCount = unreadCountData?.unreadCount || 0;
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
@@ -255,6 +258,7 @@ const HRSidebar = ({
 
         <div className={isDesktopCollapsed ? "md:hidden" : ""}>
           <SidebarNav
+            unreadCount={unreadCount}
             handlers={{
               dashboard: handleDashboardClick,
               analytics: handleAnalyticsClick,
@@ -272,6 +276,7 @@ const HRSidebar = ({
 
         {isDesktopCollapsed && (
           <CollapsedSidebar
+            unreadCount={unreadCount}
             onExpand={() => setIsDesktopCollapsed(false)}
             handlers={{
               dashboard: handleCollapsedDashboardClick,

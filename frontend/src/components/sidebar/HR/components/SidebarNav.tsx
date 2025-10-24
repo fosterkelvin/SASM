@@ -13,9 +13,10 @@ import {
 
 interface NavProps {
   handlers: Record<string, () => void>;
+  unreadCount?: number;
 }
 
-const SidebarNav: React.FC<NavProps> = ({ handlers }) => {
+const SidebarNav: React.FC<NavProps> = ({ handlers, unreadCount = 0 }) => {
   return (
     <nav
       className={`transition-all duration-300 p-4 flex-1 overflow-y-auto mt-0`}
@@ -90,6 +91,7 @@ const SidebarNav: React.FC<NavProps> = ({ handlers }) => {
             label="Notifications"
             onClick={handlers.notifications}
             IconComponent={Bell}
+            badge={unreadCount > 0 ? unreadCount : undefined}
           />
         </li>
       </ul>

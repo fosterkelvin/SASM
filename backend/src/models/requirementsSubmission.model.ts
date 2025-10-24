@@ -16,6 +16,10 @@ export interface RequirementsSubmissionDocument extends mongoose.Document {
   items: RequirementsFile[];
   status: string; // draft | submitted
   submittedAt?: Date;
+  reviewedByHR?: mongoose.Types.ObjectId;
+  reviewedAt?: Date;
+  reviewStatus?: string; // pending | approved | rejected
+  reviewNotes?: string;
 }
 
 const RequirementsFileSchema = new mongoose.Schema<RequirementsFile>(
@@ -44,6 +48,17 @@ const requirementsSubmissionSchema =
       items: { type: [RequirementsFileSchema], default: [] },
       status: { type: String, enum: ["draft", "submitted"], default: "draft" },
       submittedAt: { type: Date },
+      reviewedByHR: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      reviewedAt: { type: Date },
+      reviewStatus: {
+        type: String,
+        enum: ["pending", "approved", "rejected"],
+        default: "pending",
+      },
+      reviewNotes: { type: String },
     },
     { timestamps: true }
   );
