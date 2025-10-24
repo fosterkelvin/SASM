@@ -4,7 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Building, Calendar, Clock, Search, X, Star } from "lucide-react";
+import {
+  Users,
+  Building,
+  Calendar,
+  Clock,
+  Search,
+  X,
+  Star,
+  FileText,
+  CalendarDays,
+  ClipboardList,
+} from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAllTrainees,
@@ -30,10 +41,11 @@ const TraineeManagement = () => {
   const [showOfficeDropdown, setShowOfficeDropdown] = useState(false);
   const [selectedTrainee, setSelectedTrainee] = useState<any>(null);
   const [showDeployModal, setShowDeployModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<"dtr" | "leave" | "schedule">("dtr");
   const [deploymentData, setDeploymentData] = useState({
     traineeOffice: "",
     traineeSupervisor: "",
-    traineeStartDate: "",
     requiredHours: "",
     completedHours: "",
     traineeNotes: "",
@@ -102,7 +114,6 @@ const TraineeManagement = () => {
     setDeploymentData({
       traineeOffice: "",
       traineeSupervisor: "",
-      traineeStartDate: "",
       requiredHours: "",
       completedHours: "",
       traineeNotes: "",
@@ -114,9 +125,6 @@ const TraineeManagement = () => {
     setDeploymentData({
       traineeOffice: trainee.traineeOffice || "",
       traineeSupervisor: trainee.traineeSupervisor?._id || "",
-      traineeStartDate: trainee.traineeStartDate
-        ? new Date(trainee.traineeStartDate).toISOString().split("T")[0]
-        : "",
       requiredHours: trainee.requiredHours?.toString() || "",
       completedHours: trainee.dtrCompletedHours?.toString() || "0",
       traineeNotes: trainee.traineeNotes || "",
@@ -124,12 +132,23 @@ const TraineeManagement = () => {
     setShowDeployModal(true);
   };
 
+  const handleViewDetails = (trainee: any) => {
+    setSelectedTrainee(trainee);
+    setActiveTab("dtr");
+    setShowDetailsModal(true);
+  };
+
+  const closeDetailsModal = () => {
+    setShowDetailsModal(false);
+    setSelectedTrainee(null);
+    setActiveTab("dtr");
+  };
+
   const handleSubmitDeployment = () => {
     if (!selectedTrainee) return;
 
     const data: any = {
       traineeOffice: deploymentData.traineeOffice,
-      traineeStartDate: deploymentData.traineeStartDate,
       requiredHours: parseInt(deploymentData.requiredHours),
     };
 
@@ -171,36 +190,6 @@ const TraineeManagement = () => {
       month: "short",
       day: "numeric",
     });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending_office_interview":
-        return "bg-yellow-100 text-yellow-900 border-yellow-400 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-500";
-      case "office_interview_scheduled":
-        return "bg-blue-100 text-blue-900 border-blue-400 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-500";
-      case "trainee":
-        return "bg-red-100 text-red-900 border-red-400 dark:bg-red-900/30 dark:text-red-300 dark:border-red-500";
-      case "training_completed":
-        return "bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-600";
-      default:
-        return "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-900 dark:text-gray-400 dark:border-gray-700";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "pending_office_interview":
-        return "Pending Interview";
-      case "office_interview_scheduled":
-        return "Interview Scheduled";
-      case "trainee":
-        return "Active";
-      case "training_completed":
-        return "Completed";
-      default:
-        return status;
-    }
   };
 
   if (!user) {
@@ -321,13 +310,6 @@ const TraineeManagement = () => {
                           {trainee.userID?.email}
                         </p>
                       </div>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                          trainee.status
-                        )}`}
-                      >
-                        {getStatusLabel(trainee.status)}
-                      </span>
                     </div>
 
                     <div className="space-y-3 mb-4">
@@ -355,7 +337,9 @@ const TraineeManagement = () => {
                           <span className="text-gray-700 dark:text-gray-300">
                             {trainee.dtrCompletedHours || 0} /{" "}
                             {trainee.requiredHours} hours
-                            <span className="text-xs text-gray-500 ml-1">(from DTR)</span>
+                            <span className="text-xs text-gray-500 ml-1">
+                              (from DTR)
+                            </span>
                           </span>
                         </div>
                       )}
@@ -420,6 +404,17 @@ const TraineeManagement = () => {
                         ? "Update Deployment"
                         : "Deploy to Office"}
                     </Button>
+
+                    {/* Show View Details button only if trainee is deployed */}
+                    {trainee.traineeOffice && (
+                      <Button
+                        onClick={() => handleViewDetails(trainee)}
+                        variant="outline"
+                        className="w-full mt-2 border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                      >
+                        View DTR, Leave & Schedule
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -594,24 +589,6 @@ const TraineeManagement = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="traineeStartDate">
-                    Start Date <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="traineeStartDate"
-                    type="date"
-                    min={new Date().toISOString().split("T")[0]}
-                    value={deploymentData.traineeStartDate}
-                    onChange={(e) =>
-                      setDeploymentData({
-                        ...deploymentData,
-                        traineeStartDate: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <div>
                   <Label htmlFor="requiredHours">
                     Required Hours <span className="text-red-500">*</span>
                   </Label>
@@ -690,6 +667,128 @@ const TraineeManagement = () => {
                   ? "Update Deployment"
                   : "Deploy Trainee"}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Trainee Details Modal with Tabs */}
+      {showDetailsModal && selectedTrainee && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden relative flex flex-col">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <button
+                onClick={closeDetailsModal}
+                className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              </button>
+              
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                {selectedTrainee.userID?.firstname} {selectedTrainee.userID?.lastname}
+              </h2>
+              <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                <span className="flex items-center gap-2">
+                  <Building className="w-4 h-4" />
+                  {selectedTrainee.traineeOffice}
+                </span>
+                <span className="flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  {selectedTrainee.dtrCompletedHours || 0} / {selectedTrainee.requiredHours} hours
+                </span>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+              <div className="flex">
+                <button
+                  onClick={() => setActiveTab("dtr")}
+                  className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
+                    activeTab === "dtr"
+                      ? "border-b-2 border-red-600 text-red-600 dark:text-red-400"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  Daily Time Record
+                </button>
+                <button
+                  onClick={() => setActiveTab("leave")}
+                  className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
+                    activeTab === "leave"
+                      ? "border-b-2 border-red-600 text-red-600 dark:text-red-400"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                  }`}
+                >
+                  <CalendarDays className="w-4 h-4" />
+                  Leave Requests
+                </button>
+                <button
+                  onClick={() => setActiveTab("schedule")}
+                  className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
+                    activeTab === "schedule"
+                      ? "border-b-2 border-red-600 text-red-600 dark:text-red-400"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                  }`}
+                >
+                  <ClipboardList className="w-4 h-4" />
+                  Schedule
+                </button>
+              </div>
+            </div>
+
+            {/* Tab Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {activeTab === "dtr" && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                    Daily Time Record
+                  </h3>
+                  <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6 text-center">
+                    <FileText className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                    <p className="text-gray-600 dark:text-gray-400 mb-2">
+                      DTR records will be displayed here
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-500">
+                      Total Hours: {selectedTrainee.dtrCompletedHours || 0} / {selectedTrainee.requiredHours}
+                    </p>
+                    {/* TODO: Add actual DTR table/records here */}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "leave" && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                    Leave Requests
+                  </h3>
+                  <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6 text-center">
+                    <CalendarDays className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Leave requests will be displayed here
+                    </p>
+                    {/* TODO: Add actual leave requests table here */}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "schedule" && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                    Schedule
+                  </h3>
+                  <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6 text-center">
+                    <ClipboardList className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Schedule will be displayed here
+                    </p>
+                    {/* TODO: Add actual schedule/calendar here */}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

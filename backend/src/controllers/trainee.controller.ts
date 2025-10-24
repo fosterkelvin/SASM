@@ -206,7 +206,6 @@ export const deployTraineeHandler = catchErrors(
 
     // Validate required fields
     appAssert(traineeOffice, BAD_REQUEST, "Office assignment is required");
-    appAssert(traineeStartDate, BAD_REQUEST, "Start date is required");
     appAssert(requiredHours, BAD_REQUEST, "Required hours is required");
 
     // Get HR user info for timeline
@@ -220,7 +219,9 @@ export const deployTraineeHandler = catchErrors(
     application.status = "pending_office_interview";
     application.traineeOffice = traineeOffice;
     application.traineeSupervisor = traineeSupervisor || undefined;
-    application.traineeStartDate = new Date(traineeStartDate);
+    application.traineeStartDate = traineeStartDate
+      ? new Date(traineeStartDate)
+      : undefined;
     application.traineeEndDate = traineeEndDate
       ? new Date(traineeEndDate)
       : undefined;
@@ -306,7 +307,9 @@ export const updateTraineeDeploymentHandler = catchErrors(
     if (traineeSupervisor !== undefined)
       application.traineeSupervisor = traineeSupervisor || undefined;
     if (traineeStartDate !== undefined)
-      application.traineeStartDate = new Date(traineeStartDate);
+      application.traineeStartDate = traineeStartDate
+        ? new Date(traineeStartDate)
+        : undefined;
     if (traineeEndDate !== undefined)
       application.traineeEndDate = traineeEndDate
         ? new Date(traineeEndDate)

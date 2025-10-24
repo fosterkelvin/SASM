@@ -20,6 +20,7 @@ interface NavProps {
   isAccepted?: boolean;
   isEmailUpdateRequired?: boolean;
   isPersonalInfoIncomplete?: boolean;
+  isTrainee?: boolean;
 }
 
 const SidebarNav: React.FC<NavProps> = ({
@@ -30,6 +31,7 @@ const SidebarNav: React.FC<NavProps> = ({
   isAccepted = false,
   isEmailUpdateRequired = false,
   isPersonalInfoIncomplete = false,
+  isTrainee = false,
 }) => {
   return (
     <nav
@@ -56,21 +58,22 @@ const SidebarNav: React.FC<NavProps> = ({
             disabled={false}
           />
         </li>
-        {isVerified && !isApplicant && (
+        {/* Show DTR, Schedule, and Leave for verified trainees */}
+        {isVerified && isTrainee && (
           <>
-            <li>
-              <SidebarItem
-                label="Grades"
-                onClick={handlers.grades}
-                IconComponent={BookOpen}
-                disabled={isEmailUpdateRequired}
-              />
-            </li>
             <li>
               <SidebarItem
                 label="DTR"
                 onClick={handlers.dtr}
                 IconComponent={CalendarClock}
+                disabled={isEmailUpdateRequired}
+              />
+            </li>
+            <li>
+              <SidebarItem
+                label="Leave"
+                onClick={handlers.leave}
+                IconComponent={CalendarMinus}
                 disabled={isEmailUpdateRequired}
               />
             </li>
@@ -105,14 +108,6 @@ const SidebarNav: React.FC<NavProps> = ({
                     onClick={handlers.reapply}
                     IconComponent={RefreshCw}
                     disabled={isEmailUpdateRequired || isPersonalInfoIncomplete}
-                  />
-                </li>
-                <li>
-                  <SidebarItem
-                    label="Leave"
-                    onClick={handlers.leave}
-                    IconComponent={CalendarMinus}
-                    disabled={isEmailUpdateRequired}
                   />
                 </li>
               </>

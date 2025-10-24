@@ -61,6 +61,12 @@ const StudentSidebar = ({
       (app: any) => app.status === "accepted"
     ) || false;
 
+  // Check if user is a trainee (accepted and deployed)
+  const isTrainee =
+    userApplicationsData?.applications?.some(
+      (app: any) => app.status === "trainee" || app.status === "training_completed"
+    ) || false;
+
   // Check if email update is required (blocks all features except profile/notifications)
   const applications = userApplicationsData?.applications || [];
   const { isEmailUpdateRequired } = checkEmailRequirement(user, applications);
@@ -270,11 +276,11 @@ const StudentSidebar = ({
   // Now define menuItems after handlers
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
-    // Only include these if the user's email is verified AND not an applicant
-    ...(user?.verified && user?.status !== "applicant"
+    // Show DTR, Leave, and Schedule if user is a trainee
+    ...(isTrainee
       ? [
-          { label: "Grades", handler: handleGradesClick },
           { label: "DTR", handler: handleDtrClick },
+          { label: "Leave", handler: handleLeaveClick },
           { label: "Schedule", handler: handleScheduleClick },
         ]
       : []),
@@ -291,7 +297,6 @@ const StudentSidebar = ({
             ? [{ label: "Requirements", handler: handleRequirementsClick }]
             : [
                 { label: "Re-apply", handler: handleReapplyClick },
-                { label: "Leave", handler: handleLeaveClick },
                 { label: "Requirements", handler: handleRequirementsClick },
               ]),
         ]
@@ -417,7 +422,10 @@ const StudentSidebar = ({
           <SidebarNav
             unreadCount={unreadCount}
             isVerified={!!user?.verified}
-            isApplicant={user?.status === "applicant"}
+            isApplicant={
+              user?.status === "applicant" || user?.status === "trainee"
+            }
+            isTrainee={isTrainee}
             isAccepted={hasAcceptedApplication}
             isEmailUpdateRequired={isEmailUpdateRequired}
             isPersonalInfoIncomplete={!personalInfoComplete}
@@ -452,7 +460,10 @@ const StudentSidebar = ({
               profile: handleCollapsedProfileClick,
             }}
             isVerified={!!user?.verified}
-            isApplicant={user?.status === "applicant"}
+            isApplicant={
+              user?.status === "applicant" || user?.status === "trainee"
+            }
+            isTrainee={isTrainee}
             isAccepted={hasAcceptedApplication}
             isEmailUpdateRequired={isEmailUpdateRequired}
             darkMode={darkMode}

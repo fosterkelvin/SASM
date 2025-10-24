@@ -27,6 +27,7 @@ interface Props {
   isApplicant?: boolean;
   isAccepted?: boolean;
   isEmailUpdateRequired?: boolean;
+  isTrainee?: boolean;
 }
 
 const CollapsedSidebar: React.FC<Props> = ({
@@ -40,6 +41,7 @@ const CollapsedSidebar: React.FC<Props> = ({
   isApplicant = false,
   isAccepted = false,
   isEmailUpdateRequired = false,
+  isTrainee = false,
 }) => {
   return (
     <div
@@ -91,25 +93,9 @@ const CollapsedSidebar: React.FC<Props> = ({
               )}
             </button>
           </div>
-          {isVerified && !isApplicant && (
+          {/* Show DTR, Leave, and Schedule for verified trainees */}
+          {isVerified && isTrainee && (
             <>
-              <div className="group relative">
-                <button
-                  onClick={isEmailUpdateRequired ? undefined : handlers.grades}
-                  disabled={isEmailUpdateRequired}
-                  className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
-                    isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  aria-label="Grades"
-                  title={
-                    isEmailUpdateRequired
-                      ? "Grades (Blocked - Update email required)"
-                      : "Grades"
-                  }
-                >
-                  <BookOpen size={16} />
-                </button>
-              </div>
               <div className="group relative">
                 <button
                   onClick={isEmailUpdateRequired ? undefined : handlers.dtr}
@@ -125,6 +111,23 @@ const CollapsedSidebar: React.FC<Props> = ({
                   }
                 >
                   <CalendarClock size={16} />
+                </button>
+              </div>
+              <div className="group relative">
+                <button
+                  onClick={isEmailUpdateRequired ? undefined : handlers.leave}
+                  disabled={isEmailUpdateRequired}
+                  className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
+                    isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  aria-label="Leave"
+                  title={
+                    isEmailUpdateRequired
+                      ? "Leave (Blocked - Update email required)"
+                      : "Leave"
+                  }
+                >
+                  <CalendarMinus size={16} />
                 </button>
               </div>
               <div className="group relative">
