@@ -5,7 +5,6 @@ import OfficeProfileModel from "../models/officeProfile.model";
 import catchErrors from "../utils/catchErrors";
 import { BAD_REQUEST, NOT_FOUND, OK, FORBIDDEN } from "../constants/http";
 import appAssert from "../utils/appAssert";
-import axios from "axios";
 
 // Get all trainees (for HR)
 export const getAllTraineesHandler = catchErrors(
@@ -1014,39 +1013,8 @@ export const downloadClassScheduleHandler = catchErrors(
     appAssert(application, NOT_FOUND, "Application not found");
     appAssert(application.classSchedule, NOT_FOUND, "No schedule file found");
 
-    // Fetch from Cloudinary and stream to client
-    try {
-      console.log("Fetching schedule from:", application.classSchedule);
-
-      const response = await axios.get(application.classSchedule, {
-        responseType: "arraybuffer",
-      });
-
-      console.log(
-        "Successfully fetched from Cloudinary, size:",
-        response.data.length
-      );
-
-      const buffer = Buffer.from(response.data);
-
-      // Set headers
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader(
-        "Content-Disposition",
-        'attachment; filename="class-schedule.pdf"'
-      );
-      res.setHeader("Content-Length", buffer.length);
-
-      // Send the buffer
-      res.send(buffer);
-    } catch (error: any) {
-      console.error("Error downloading from Cloudinary:", error.message);
-      console.error(
-        "Full error:",
-        error.response?.status,
-        error.response?.statusText
-      );
-      throw new Error("Failed to download schedule file");
-    }
+    // Redirect to the Cloudinary URL
+    // Since Cloudinary URLs are public, this should work
+    return res.redirect(application.classSchedule);
   }
 );
