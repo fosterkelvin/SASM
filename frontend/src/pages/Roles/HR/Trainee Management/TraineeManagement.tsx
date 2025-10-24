@@ -42,7 +42,9 @@ const TraineeManagement = () => {
   const [selectedTrainee, setSelectedTrainee] = useState<any>(null);
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<"dtr" | "leave" | "schedule">("dtr");
+  const [activeTab, setActiveTab] = useState<"dtr" | "leave" | "schedule">(
+    "dtr"
+  );
   const [deploymentData, setDeploymentData] = useState({
     traineeOffice: "",
     traineeSupervisor: "",
@@ -685,9 +687,10 @@ const TraineeManagement = () => {
               >
                 <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               </button>
-              
+
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                {selectedTrainee.userID?.firstname} {selectedTrainee.userID?.lastname}
+                {selectedTrainee.userID?.firstname}{" "}
+                {selectedTrainee.userID?.lastname}
               </h2>
               <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                 <span className="flex items-center gap-2">
@@ -696,7 +699,8 @@ const TraineeManagement = () => {
                 </span>
                 <span className="flex items-center gap-2">
                   <Clock className="w-4 h-4" />
-                  {selectedTrainee.dtrCompletedHours || 0} / {selectedTrainee.requiredHours} hours
+                  {selectedTrainee.dtrCompletedHours || 0} /{" "}
+                  {selectedTrainee.requiredHours} hours
                 </span>
               </div>
             </div>
@@ -753,7 +757,8 @@ const TraineeManagement = () => {
                       DTR records will be displayed here
                     </p>
                     <p className="text-sm text-gray-500 dark:text-gray-500">
-                      Total Hours: {selectedTrainee.dtrCompletedHours || 0} / {selectedTrainee.requiredHours}
+                      Total Hours: {selectedTrainee.dtrCompletedHours || 0} /{" "}
+                      {selectedTrainee.requiredHours}
                     </p>
                     {/* TODO: Add actual DTR table/records here */}
                   </div>

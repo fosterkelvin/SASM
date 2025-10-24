@@ -64,7 +64,8 @@ const StudentSidebar = ({
   // Check if user is a trainee (accepted and deployed)
   const isTrainee =
     userApplicationsData?.applications?.some(
-      (app: any) => app.status === "trainee" || app.status === "training_completed"
+      (app: any) =>
+        app.status === "trainee" || app.status === "training_completed"
     ) || false;
 
   // Check if email update is required (blocks all features except profile/notifications)
