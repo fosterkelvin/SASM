@@ -204,14 +204,11 @@ const StudentSidebar = ({
   // Now define menuItems after handlers
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
-    // Only include these if the user's email is verified
-    ...(user?.verified
+    // Only include these if the user's email is verified AND not an applicant
+    ...(user?.verified && user?.status !== "applicant"
       ? [
           { label: "Grades", handler: handleGradesClick },
-          // Hide DTR for applicants
-          ...(user?.status === "applicant"
-            ? []
-            : [{ label: "DTR", handler: handleDtrClick }]),
+          { label: "DTR", handler: handleDtrClick },
           { label: "Schedule", handler: handleScheduleClick },
         ]
       : []),

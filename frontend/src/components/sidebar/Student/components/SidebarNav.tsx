@@ -54,7 +54,7 @@ const SidebarNav: React.FC<NavProps> = ({
             disabled={false}
           />
         </li>
-        {isVerified && (
+        {isVerified && !isApplicant && (
           <>
             <li>
               <SidebarItem
@@ -64,16 +64,14 @@ const SidebarNav: React.FC<NavProps> = ({
                 disabled={isEmailUpdateRequired}
               />
             </li>
-            {!isApplicant && (
-              <li>
-                <SidebarItem
-                  label="DTR"
-                  onClick={handlers.dtr}
-                  IconComponent={CalendarClock}
-                  disabled={isEmailUpdateRequired}
-                />
-              </li>
-            )}
+            <li>
+              <SidebarItem
+                label="DTR"
+                onClick={handlers.dtr}
+                IconComponent={CalendarClock}
+                disabled={isEmailUpdateRequired}
+              />
+            </li>
             <li>
               <SidebarItem
                 label="Schedule"

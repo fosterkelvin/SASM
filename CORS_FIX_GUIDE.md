@@ -3,10 +3,13 @@
 ## ✅ What Was Fixed
 
 ### The Problem
+
 Your Vercel deployment URL (`https://sasm-7rcwq8yqo-fosterkelvins-projects.vercel.app`) was being blocked by CORS because it wasn't in the backend's allowed origins list.
 
 ### The Solution
+
 Updated `backend/src/index.ts` to automatically allow ALL Vercel deployment URLs:
+
 - ✅ Production URLs: `*.vercel.app`
 - ✅ Preview URLs: `fosterkelvins-projects.vercel.app`
 - ✅ Your custom domains: `sasm.site`, `www.sasm.site`
@@ -18,6 +21,7 @@ Updated `backend/src/index.ts` to automatically allow ALL Vercel deployment URLs
 Your backend code has been pushed to GitHub, but **Render won't automatically redeploy**. You need to manually trigger it:
 
 #### Option A: Render Dashboard (Recommended)
+
 1. Go to https://dashboard.render.com
 2. Click on your backend service (`sasm`)
 3. Click **"Manual Deploy"** → **"Deploy latest commit"**
@@ -25,18 +29,22 @@ Your backend code has been pushed to GitHub, but **Render won't automatically re
 5. Check logs for: `"CORS allowed Vercel origin: https://sasm-..."` messages
 
 #### Option B: Auto-Deploy (If enabled)
+
 If you have auto-deploy enabled on Render, it should deploy automatically within a few minutes.
 
 ### 2. Frontend (Vercel) - Already Deployed ✅
+
 Your frontend fix was already deployed in the previous step.
 
 ## 🧪 Testing After Deployment
 
 ### 1. Wait for Backend Deployment
+
 - Check Render dashboard shows "Live" status
 - Should take 2-3 minutes
 
 ### 2. Test the Application
+
 1. Go to your Vercel site: `https://sasm-7rcwq8yqo-fosterkelvins-projects.vercel.app`
 2. Open DevTools (F12) → Console tab
 3. Try to log in
@@ -47,7 +55,9 @@ Your frontend fix was already deployed in the previous step.
    - ✅ DTR page loads
 
 ### 3. Check Backend Logs
+
 In Render dashboard → Logs, you should see:
+
 ```
 CORS allowed Vercel origin: https://sasm-7rcwq8yqo-fosterkelvins-projects.vercel.app
 ```
@@ -55,6 +65,7 @@ CORS allowed Vercel origin: https://sasm-7rcwq8yqo-fosterkelvins-projects.vercel
 ## 🔍 What Changed in Code
 
 ### Before:
+
 ```typescript
 if (allowedOrigins.includes(origin)) {
   callback(null, true);
@@ -64,16 +75,19 @@ if (allowedOrigins.includes(origin)) {
 ```
 
 ### After:
+
 ```typescript
 if (allowedOrigins.includes(origin)) {
   callback(null, true);
-} 
+}
 // NEW: Allow all Vercel deployments
-else if (origin.includes('.vercel.app') || origin.includes('fosterkelvins-projects.vercel.app')) {
+else if (
+  origin.includes(".vercel.app") ||
+  origin.includes("fosterkelvins-projects.vercel.app")
+) {
   console.log("CORS allowed Vercel origin:", origin);
   callback(null, true);
-} 
-else {
+} else {
   callback(new Error("Not allowed by CORS"));
 }
 ```
@@ -81,12 +95,14 @@ else {
 ## 🎯 Expected Results
 
 ### Before (Error):
+
 ```
 ❌ Access to XMLHttpRequest at 'https://sasm.onrender.com/user' has been blocked by CORS policy
 ❌ No 'Access-Control-Allow-Origin' header is present
 ```
 
 ### After (Fixed):
+
 ```
 ✅ POST https://sasm.onrender.com/auth/signin 200 OK
 ✅ GET https://sasm.onrender.com/user 200 OK

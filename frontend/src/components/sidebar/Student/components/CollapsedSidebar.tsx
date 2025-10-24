@@ -91,7 +91,7 @@ const CollapsedSidebar: React.FC<Props> = ({
               )}
             </button>
           </div>
-          {isVerified && (
+          {isVerified && !isApplicant && (
             <>
               <div className="group relative">
                 <button
@@ -110,27 +110,23 @@ const CollapsedSidebar: React.FC<Props> = ({
                   <BookOpen size={16} />
                 </button>
               </div>
-              {!isApplicant && (
-                <div className="group relative">
-                  <button
-                    onClick={isEmailUpdateRequired ? undefined : handlers.dtr}
-                    disabled={isEmailUpdateRequired}
-                    className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
-                      isEmailUpdateRequired
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
-                    }`}
-                    aria-label="DTR"
-                    title={
-                      isEmailUpdateRequired
-                        ? "DTR (Blocked - Update email required)"
-                        : "DTR"
-                    }
-                  >
-                    <CalendarClock size={16} />
-                  </button>
-                </div>
-              )}
+              <div className="group relative">
+                <button
+                  onClick={isEmailUpdateRequired ? undefined : handlers.dtr}
+                  disabled={isEmailUpdateRequired}
+                  className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
+                    isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                  aria-label="DTR"
+                  title={
+                    isEmailUpdateRequired
+                      ? "DTR (Blocked - Update email required)"
+                      : "DTR"
+                  }
+                >
+                  <CalendarClock size={16} />
+                </button>
+              </div>
               <div className="group relative">
                 <button
                   onClick={
