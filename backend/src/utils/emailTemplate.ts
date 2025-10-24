@@ -1053,7 +1053,6 @@ ${officeName}`,
 </html>`,
 });
 
-
 export const getNewApplicationNotificationEmailTemplate = (
   applicantName: string,
   position: string,
