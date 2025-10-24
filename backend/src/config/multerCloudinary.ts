@@ -3,10 +3,15 @@ import cloudinary from "./cloudinary";
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: () => ({
-    folder: "uploads",
-    allowed_formats: ["jpg", "png", "jpeg", "pdf"],
-  }),
+  params: (req, file) => {
+    const isPdf = file.mimetype === "application/pdf";
+    return {
+      folder: "uploads",
+      allowed_formats: isPdf ? ["jpg"] : ["jpg", "png", "jpeg"],
+      resource_type: "image",
+      format: isPdf ? "jpg" : undefined,
+    };
+  },
 });
 
 export default storage;

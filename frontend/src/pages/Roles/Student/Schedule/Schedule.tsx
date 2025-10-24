@@ -107,6 +107,55 @@ const Schedule: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      {!!existingSchedule?.scheduleUrl && (
+                        <>
+                          <button
+                            onClick={() =>
+                              window.open(
+                                existingSchedule.scheduleUrl,
+                                "_blank"
+                              )
+                            }
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                          >
+                            View Schedule
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const url = existingSchedule.scheduleUrl;
+                                if (!url) return;
+                                const res = await fetch(url);
+                                if (!res.ok)
+                                  throw new Error("Failed to download");
+                                const blob = await res.blob();
+                                const blobUrl =
+                                  window.URL.createObjectURL(blob);
+                                const a = document.createElement("a");
+                                a.href = blobUrl;
+                                // Try to derive filename from url, fallback
+                                const parts = url.split("/");
+                                const name =
+                                  parts[parts.length - 1].split("?")[0] ||
+                                  "schedule.jpg";
+                                a.download = name;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                window.URL.revokeObjectURL(blobUrl);
+                              } catch (err) {
+                                console.error(err);
+                                alert(
+                                  "Failed to download schedule. Please try again."
+                                );
+                              }
+                            }}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm font-medium"
+                          >
+                            Download Schedule
+                          </button>
+                        </>
+                      )}
                       <button
                         onClick={() => setShowUploadForm(true)}
                         className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"

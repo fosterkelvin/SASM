@@ -19,13 +19,14 @@ interface ScheduleClass {
   units: number;
 }
 
-// Helper function to download schedule with authentication
-const downloadScheduleFile = async () => {
+// Helper function to download schedule
+const downloadScheduleFile = async (scheduleUrl: string) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/trainees/schedule/download`, {
-      method: "GET",
-      credentials: "include", // Include cookies for authentication
-    });
+    if (!scheduleUrl) {
+      throw new Error("No schedule URL available");
+    }
+
+    const response = await fetch(scheduleUrl);
 
     if (!response.ok) {
       throw new Error("Failed to download schedule");
@@ -38,7 +39,7 @@ const downloadScheduleFile = async () => {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "my-class-schedule.pdf";
+    link.download = "my-class-schedule.jpg"; // Since it's now JPG
     document.body.appendChild(link);
     link.click();
 
@@ -221,6 +222,22 @@ const UploadSchedule: React.FC = () => {
               </div>
 
               <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() =>
+                    window.open(existingSchedule.scheduleUrl, "_blank")
+                  }
+                  className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                >
+                  View Schedule
+                </button>
+                <button
+                  onClick={() =>
+                    downloadScheduleFile(existingSchedule?.scheduleUrl || "")
+                  }
+                  className="px-4 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
+                >
+                  Download Schedule
+                </button>
                 <button
                   onClick={() => setShowDataForm(!showDataForm)}
                   className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
