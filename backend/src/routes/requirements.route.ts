@@ -8,6 +8,7 @@ import {
   getCurrentRequirementsStatus,
   getAllRequirementsSubmissions,
   reviewRequirementsSubmission,
+  reviewDocument,
 } from "../controllers/requirements.controller";
 
 const router = express.Router();
@@ -23,6 +24,7 @@ router.delete("/file", authenticate, deleteRequirementFile);
 router.get("/", authenticate, getUserRequirementsSubmissions);
 router.get("/current", authenticate, getCurrentRequirementsStatus);
 router.get("/all", authenticate, getAllRequirementsSubmissions); // HR only
-router.patch("/review", authenticate, reviewRequirementsSubmission); // HR only - approve/reject
+router.patch("/review", authenticate, reviewRequirementsSubmission); // HR only - approve/reject submission
+router.patch("/review-document", authenticate, reviewDocument); // HR only - approve/reject specific document
 
 export default router;

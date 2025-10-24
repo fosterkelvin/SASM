@@ -9,6 +9,11 @@ export interface RequirementsFile {
   mimetype?: string;
   size?: number;
   clientId?: string; // stable client-side identifier for precise mapping
+  // Document-level review
+  documentStatus?: string; // "pending" | "approved" | "rejected"
+  rejectionReason?: string;
+  reviewedByHR?: mongoose.Types.ObjectId;
+  reviewedAt?: Date;
 }
 
 export interface RequirementsSubmissionDocument extends mongoose.Document {
@@ -32,6 +37,18 @@ const RequirementsFileSchema = new mongoose.Schema<RequirementsFile>(
     mimetype: { type: String },
     size: { type: Number },
     clientId: { type: String },
+    // Document-level review fields
+    documentStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    rejectionReason: { type: String },
+    reviewedByHR: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    reviewedAt: { type: Date },
   },
   { _id: false }
 );

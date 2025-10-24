@@ -427,6 +427,114 @@ export const reviewRequirementsSubmission = catchErrors(
   }
 );
 
+// Review individual document (HR only)
+export const reviewDocument = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+    const { submissionId, documentIndex, documentStatus, rejectionReason } =
+      req.body;
+
+    // Fetch user to check role
+    const user = await UserModel.findById(userID);
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    // Only allow HR to access this endpoint
+    if (user.role !== "hr") {
+      return res.status(403).json({ message: "Unauthorized access - HR only" });
+    }
+
+    // Validate documentStatus
+    if (!["approved", "rejected", "pending"].includes(documentStatus)) {
+      return res.status(400).json({
+        message:
+          "Invalid document status. Must be 'approved', 'rejected', or 'pending'",
+      });
+    }
+
+    // Find the submission
+    const submission = await RequirementsSubmissionModel.findById(submissionId);
+
+    if (!submission) {
+      return res.status(404).json({ message: "Submission not found" });
+    }
+
+    // Validate document index
+    if (documentIndex < 0 || documentIndex >= submission.items.length) {
+      return res.status(400).json({ message: "Invalid document index" });
+    }
+
+    // Update the specific document
+    const document = submission.items[documentIndex];
+    document.documentStatus = documentStatus as any;
+    document.reviewedByHR = new mongoose.Types.ObjectId(userID);
+    document.reviewedAt = new Date();
+
+    if (documentStatus === "rejected" && rejectionReason) {
+      document.rejectionReason = rejectionReason;
+    } else if (documentStatus === "approved") {
+      // Clear rejection reason if approving
+      document.rejectionReason = undefined;
+    }
+
+    await submission.save();
+
+    // Check if all documents are reviewed
+    const allApproved = submission.items.every(
+      (item) => item.documentStatus === "approved"
+    );
+    const anyRejected = submission.items.some(
+      (item) => item.documentStatus === "rejected"
+    );
+
+    // Update overall submission status if needed
+    if (allApproved && submission.reviewStatus !== "approved") {
+      submission.reviewStatus = "approved";
+      submission.reviewedByHR = new mongoose.Types.ObjectId(userID);
+      submission.reviewedAt = new Date();
+      await submission.save();
+    } else if (anyRejected && submission.reviewStatus === "approved") {
+      // If was approved but now has rejected documents, set back to pending
+      submission.reviewStatus = "pending";
+      await submission.save();
+    }
+
+    // Create notification for student
+    const statusText =
+      documentStatus === "approved"
+        ? "approved"
+        : documentStatus === "rejected"
+          ? "rejected"
+          : "under review";
+
+    const documentLabel = document.label || "Document";
+
+    await createNotification({
+      userID: submission.userID.toString(),
+      title: `Document ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}: ${documentLabel}`,
+      message:
+        documentStatus === "approved"
+          ? `Your document "${documentLabel}" has been approved by HR.`
+          : documentStatus === "rejected"
+            ? `Your document "${documentLabel}" needs attention. Reason: ${rejectionReason || "Please review and resubmit."}`
+            : `Your document "${documentLabel}" is being reviewed by HR.`,
+      type:
+        documentStatus === "approved"
+          ? "success"
+          : documentStatus === "rejected"
+            ? "error"
+            : "info",
+    });
+
+    return res.status(OK).json({
+      message: `Document ${statusText}`,
+      submission,
+    });
+  }
+);
+
 export default {
   createRequirementsSubmission,
   getUserRequirementsSubmissions,
@@ -434,4 +542,5 @@ export default {
   getCurrentRequirementsStatus,
   getAllRequirementsSubmissions,
   reviewRequirementsSubmission,
+  reviewDocument,
 };

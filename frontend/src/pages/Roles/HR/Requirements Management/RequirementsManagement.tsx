@@ -358,6 +358,7 @@ const RequirementsManagement: React.FC = () => {
             <ViewSubmissionModal
               submission={selected}
               onClose={() => setSelected(null)}
+              onUpdate={fetchRequirements}
             />
           </div>
         </div>
