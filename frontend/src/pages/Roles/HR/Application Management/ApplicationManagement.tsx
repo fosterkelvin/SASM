@@ -176,7 +176,10 @@ const ApplicationManagement = () => {
     onError: (error: any) => {
       console.error("Failed to update application status:", error);
       // Show error message to user
-      const errorMessage = error?.response?.data?.message || error?.message || "Failed to update application status";
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to update application status";
       alert(errorMessage);
     },
   });
@@ -432,11 +435,7 @@ const ApplicationManagement = () => {
           />
         );
       default:
-        return (
-          <StudentSidebar
-            onCollapseChange={setIsSidebarCollapsed}
-          />
-        );
+        return <StudentSidebar onCollapseChange={setIsSidebarCollapsed} />;
     }
   };
 
@@ -1265,7 +1264,7 @@ const ApplicationManagement = () => {
                 {/* Personal Information */}
                 <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-3 sm:p-6 mb-4 sm:mb-6 border border-gray-200 dark:border-gray-600">
                   <h4 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 sm:mb-4 flex items-center gap-2">
-                    <User className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
+                    <User className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
                     Personal Information
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -1348,7 +1347,7 @@ const ApplicationManagement = () => {
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
-                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                     </svg>
                     Parents Information
                   </h4>
@@ -3455,7 +3454,7 @@ const ApplicationManagement = () => {
                 <Button
                   onClick={submitStatusUpdate}
                   disabled={updateStatusMutation.isPending}
-                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   {updateStatusMutation.isPending ? (
                     <div className="flex items-center gap-2">

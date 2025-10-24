@@ -286,8 +286,8 @@ const StudentSidebar = ({
       : [{ label: "Apply", handler: handleApplyClick }]),
     ...(user?.verified
       ? [
-          // If the user is an applicant, don't include re-apply or leave
-          ...(user?.status === "applicant"
+          // If the user is an applicant or trainee, don't include re-apply or leave
+          ...(user?.status === "applicant" || user?.status === "trainee"
             ? [{ label: "Requirements", handler: handleRequirementsClick }]
             : [
                 { label: "Re-apply", handler: handleReapplyClick },
