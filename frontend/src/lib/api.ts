@@ -437,6 +437,51 @@ export const rejectDeployment = async (
   return response.data;
 };
 
+// Upload class schedule (Student only)
+export const uploadClassSchedule = async (
+  file: File,
+  scheduleData?: Array<{
+    section: string;
+    subjectCode: string;
+    subjectName: string;
+    instructor: string;
+    schedule: string;
+    units: number;
+  }>
+) => {
+  const formData = new FormData();
+  formData.append("schedule", file);
+
+  if (scheduleData) {
+    formData.append("scheduleData", JSON.stringify(scheduleData));
+  }
+
+  const response = await API.post("/trainees/schedule/upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
+
+// Get class schedule (Student, Office, HR)
+export const getClassSchedule = async (applicationId?: string) => {
+  const url = applicationId
+    ? `/trainees/${applicationId}/schedule`
+    : "/trainees/schedule";
+  const response = await API.get(url);
+  return response.data;
+};
+
+// Get class schedule file URL (Student, Office, HR)
+export const getClassScheduleFileUrl = (applicationId?: string) => {
+  const baseURL = API.defaults.baseURL || "";
+  const url = applicationId
+    ? `/trainees/${applicationId}/schedule/download`
+    : "/trainees/schedule/download";
+  return `${baseURL}${url}`;
+};
+
 // Final Actions
 export const acceptApplication = async (
   applicationId: string,

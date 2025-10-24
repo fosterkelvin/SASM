@@ -1,12 +1,22 @@
 import React, { useState } from "react";
 import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import UploadSchedule from "./components/UploadSchedule";
+import ScheduleVisualization from "./components/ScheduleVisualization";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { getClassSchedule } from "@/lib/api";
 
 const Schedule: React.FC = () => {
   const { user } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [showUploadForm, setShowUploadForm] = useState(false);
+
+  // Fetch existing schedule
+  const { data: existingSchedule, isLoading } = useQuery({
+    queryKey: ["classSchedule"],
+    queryFn: () => getClassSchedule(),
+  });
 
   if (user && !user.verified) {
     return (
@@ -59,34 +69,105 @@ const Schedule: React.FC = () => {
           }`}
         >
           <h1 className="text-2xl font-bold text-white ml-4">
-            Upload Schedule (PDF)
+            {existingSchedule?.scheduleData &&
+            existingSchedule.scheduleData.length > 0 &&
+            !showUploadForm
+              ? "My Class Schedule"
+              : "Upload Schedule (PDF)"}
           </h1>
         </div>
 
         <div className="p-4 md:p-10 mt-12">
-          <Card className="max-w-4xl mx-auto">
-            <CardContent className="p-6 md:p-8">
-              <div className="text-center mb-6 md:mb-8 border-b pb-4 md:pb-6">
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 mb-4">
-                  <img
-                    src="/UBLogo.svg"
-                    alt="University Logo"
-                    className="h-12 sm:h-14 md:h-16 w-auto"
-                  />
-                  <div className="text-center sm:text-left">
-                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200">
-                      Upload Class Schedule
-                    </h2>
-                    <p className="text-sm sm:text-base md:text-lg font-semibold text-red-600 dark:text-red-400">
-                      Please upload your schedule as a PDF document.
-                    </p>
-                  </div>
-                </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Loading schedule...
+                </p>
               </div>
+            </div>
+          ) : existingSchedule?.scheduleData &&
+            existingSchedule.scheduleData.length > 0 &&
+            !showUploadForm ? (
+            // Show Schedule Visualization
+            <div className="space-y-6">
+              <Card className="max-w-7xl mx-auto shadow-lg">
+                <CardContent className="p-6 md:p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">📅</span>
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                          Your Class Schedule
+                        </h2>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Weekly schedule overview
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowUploadForm(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                          />
+                        </svg>
+                        Upload New
+                      </button>
+                    </div>
+                  </div>
+                  <ScheduleVisualization
+                    scheduleClasses={existingSchedule.scheduleData}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            // Show Upload Form
+            <Card className="max-w-7xl mx-auto">
+              <CardContent className="p-6 md:p-8">
+                <div className="text-center mb-6 md:mb-8 border-b pb-4 md:pb-6">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 mb-4">
+                    <img
+                      src="/UBLogo.svg"
+                      alt="University Logo"
+                      className="h-12 sm:h-14 md:h-16 w-auto"
+                    />
+                    <div className="text-center sm:text-left">
+                      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200">
+                        Upload Class Schedule
+                      </h2>
+                      <p className="text-sm sm:text-base md:text-lg font-semibold text-red-600 dark:text-red-400">
+                        Please upload your schedule as a PDF document.
+                      </p>
+                    </div>
+                  </div>
+                  {showUploadForm && (
+                    <button
+                      onClick={() => setShowUploadForm(false)}
+                      className="mt-4 text-blue-600 dark:text-blue-400 hover:underline text-sm"
+                    >
+                      ← Back to Schedule View
+                    </button>
+                  )}
+                </div>
 
-              <UploadSchedule />
-            </CardContent>
-          </Card>
+                <UploadSchedule />
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

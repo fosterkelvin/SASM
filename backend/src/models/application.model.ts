@@ -106,6 +106,15 @@ export interface ApplicationDocument extends mongoose.Document {
   profilePhoto?: string;
   certificates?: string[];
   signature?: string;
+  classSchedule?: string; // PDF schedule for trainee
+  classScheduleData?: Array<{
+    section: string;
+    subjectCode: string;
+    subjectName: string;
+    instructor: string;
+    schedule: string;
+    units: number;
+  }>; // Parsed schedule data for visualization
 
   // Timestamps
   submittedAt: Date;
@@ -511,6 +520,20 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
       type: String,
       default: null,
     },
+    classSchedule: {
+      type: String,
+      default: null,
+    },
+    classScheduleData: [
+      {
+        section: String,
+        subjectCode: String,
+        subjectName: String,
+        instructor: String,
+        schedule: String,
+        units: Number,
+      },
+    ],
 
     // Timestamps
     submittedAt: {

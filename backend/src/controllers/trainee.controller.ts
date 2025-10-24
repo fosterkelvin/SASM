@@ -5,6 +5,7 @@ import OfficeProfileModel from "../models/officeProfile.model";
 import catchErrors from "../utils/catchErrors";
 import { BAD_REQUEST, NOT_FOUND, OK, FORBIDDEN } from "../constants/http";
 import appAssert from "../utils/appAssert";
+import axios from "axios";
 
 // Get all trainees (for HR)
 export const getAllTraineesHandler = catchErrors(
@@ -883,5 +884,169 @@ export const rejectDeploymentHandler = catchErrors(
       message: "Deployment rejected successfully",
       application,
     });
+  }
+);
+
+// Upload class schedule (Student only)
+export const uploadClassScheduleHandler = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+    const file = req.file;
+    const { scheduleData } = req.body;
+
+    appAssert(file, BAD_REQUEST, "Schedule file is required");
+    appAssert(
+      file.mimetype === "application/pdf",
+      BAD_REQUEST,
+      "Only PDF files are allowed"
+    );
+
+    // Find the user's application (trainee status)
+    const application = await ApplicationModel.findOne({
+      userID,
+      status: { $in: ["trainee", "training_completed"] },
+    });
+
+    appAssert(
+      application,
+      NOT_FOUND,
+      "No active trainee application found for this user"
+    );
+
+    // Store the file path/URL (Cloudinary URL)
+    application.classSchedule = file.path;
+
+    // Store parsed schedule data if provided
+    if (scheduleData) {
+      try {
+        const parsedData =
+          typeof scheduleData === "string"
+            ? JSON.parse(scheduleData)
+            : scheduleData;
+        application.classScheduleData = parsedData;
+      } catch (error) {
+        console.error("Error parsing schedule data:", error);
+      }
+    }
+
+    // Add timeline entry
+    const user = await UserModel.findById(userID);
+    const userName = user ? `${user.firstname} ${user.lastname}` : "Student";
+
+    const timelineEntry = {
+      action: "schedule_uploaded",
+      performedBy: userID,
+      performedByName: userName,
+      timestamp: new Date(),
+      notes: "Class schedule uploaded",
+    };
+
+    application.timeline = application.timeline || [];
+    application.timeline.push(timelineEntry as any);
+
+    await application.save();
+
+    return res.status(OK).json({
+      message: "Schedule uploaded successfully",
+      scheduleUrl: file.path,
+      scheduleData: application.classScheduleData,
+    });
+  }
+);
+
+// Get class schedule (Student and Office/HR)
+export const getClassScheduleHandler = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+    const user = await UserModel.findById(userID);
+
+    appAssert(user, NOT_FOUND, "User not found");
+
+    let application;
+
+    if (user.role === "student") {
+      // Students can only view their own schedule
+      application = await ApplicationModel.findOne({
+        userID,
+        status: { $in: ["trainee", "training_completed"] },
+      });
+    } else if (user.role === "office" || user.role === "hr") {
+      // Office/HR can view any trainee's schedule
+      const { applicationId } = req.params;
+      application = await ApplicationModel.findById(applicationId);
+    } else {
+      throw new Error("Unauthorized");
+    }
+
+    appAssert(application, NOT_FOUND, "Application not found");
+
+    return res.status(OK).json({
+      scheduleUrl: application.classSchedule || null,
+      scheduleData: application.classScheduleData || [],
+    });
+  }
+);
+
+// Download/View class schedule PDF (Student and Office/HR)
+export const downloadClassScheduleHandler = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+    const user = await UserModel.findById(userID);
+
+    appAssert(user, NOT_FOUND, "User not found");
+
+    let application;
+
+    if (user.role === "student") {
+      // Students can only view their own schedule
+      application = await ApplicationModel.findOne({
+        userID,
+        status: { $in: ["trainee", "training_completed"] },
+      });
+    } else if (user.role === "office" || user.role === "hr") {
+      // Office/HR can view any trainee's schedule
+      const { applicationId } = req.params;
+      application = await ApplicationModel.findById(applicationId);
+    } else {
+      throw new Error("Unauthorized");
+    }
+
+    appAssert(application, NOT_FOUND, "Application not found");
+    appAssert(application.classSchedule, NOT_FOUND, "No schedule file found");
+
+    // Fetch from Cloudinary and stream to client
+    try {
+      console.log("Fetching schedule from:", application.classSchedule);
+
+      const response = await axios.get(application.classSchedule, {
+        responseType: "arraybuffer",
+      });
+
+      console.log(
+        "Successfully fetched from Cloudinary, size:",
+        response.data.length
+      );
+
+      const buffer = Buffer.from(response.data);
+
+      // Set headers
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="class-schedule.pdf"'
+      );
+      res.setHeader("Content-Length", buffer.length);
+
+      // Send the buffer
+      res.send(buffer);
+    } catch (error: any) {
+      console.error("Error downloading from Cloudinary:", error.message);
+      console.error(
+        "Full error:",
+        error.response?.status,
+        error.response?.statusText
+      );
+      throw new Error("Failed to download schedule file");
+    }
   }
 );
