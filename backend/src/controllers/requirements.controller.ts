@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import catchErrors from "../utils/catchErrors";
 import RequirementsSubmissionModel from "../models/requirementsSubmission.model";
+import ApplicationModel from "../models/application.model";
 import { CREATED, OK } from "../constants/http";
 import cloudinary from "../config/cloudinary";
 import mongoose from "mongoose";
+import { createNotification } from "../services/notification.service";
 
 // Helper to extract URL from uploaded file
 const getFileUrl = (file: any): string | null => {
@@ -39,9 +41,10 @@ export const createRequirementsSubmission = catchErrors(
     let itemsJson: any[] = [];
     if (req.body.itemsJson) {
       try {
-        itemsJson = typeof req.body.itemsJson === "string"
-          ? JSON.parse(req.body.itemsJson)
-          : req.body.itemsJson;
+        itemsJson =
+          typeof req.body.itemsJson === "string"
+            ? JSON.parse(req.body.itemsJson)
+            : req.body.itemsJson;
       } catch (err) {
         console.error("[requirements] Failed to parse itemsJson", err);
       }
@@ -52,7 +55,7 @@ export const createRequirementsSubmission = catchErrors(
       isResubmit,
       filesCount: files.length,
       itemsCount: itemsJson.length,
-      fileFieldnames: files.map(f => f.fieldname),
+      fileFieldnames: files.map((f) => f.fieldname),
     });
 
     // Build the complete items array
@@ -63,7 +66,7 @@ export const createRequirementsSubmission = catchErrors(
       const expectedFieldname = `file_item_${idx}`;
 
       // Check if there's a new file upload for this item
-      const uploadedFile = files.find(f => f.fieldname === expectedFieldname);
+      const uploadedFile = files.find((f) => f.fieldname === expectedFieldname);
 
       if (uploadedFile) {
         // New file uploaded - use it
@@ -71,7 +74,9 @@ export const createRequirementsSubmission = catchErrors(
         const publicId = getFilePublicId(uploadedFile);
 
         if (!url) {
-          console.error(`[requirements] No URL for uploaded file at index ${idx}`);
+          console.error(
+            `[requirements] No URL for uploaded file at index ${idx}`
+          );
           continue;
         }
 
@@ -91,12 +96,19 @@ export const createRequirementsSubmission = catchErrors(
           size: uploadedFile.size,
           clientId: jsonItem.id,
         });
-      } else if (jsonItem.file && jsonItem.file.url && !jsonItem.file.url.startsWith("data:")) {
+      } else if (
+        jsonItem.file &&
+        jsonItem.file.url &&
+        !jsonItem.file.url.startsWith("data:")
+      ) {
         // No new upload - preserve existing file
-        console.log(`[requirements] Preserving existing file at index ${idx}:`, {
-          label: jsonItem.text || jsonItem.label,
-          url: jsonItem.file.url,
-        });
+        console.log(
+          `[requirements] Preserving existing file at index ${idx}:`,
+          {
+            label: jsonItem.text || jsonItem.label,
+            url: jsonItem.file.url,
+          }
+        );
 
         processedItems.push({
           label: jsonItem.text || jsonItem.label || `Item ${idx + 1}`,
@@ -120,7 +132,7 @@ export const createRequirementsSubmission = catchErrors(
 
     if (processedItems.length === 0) {
       return res.status(400).json({
-        message: "No valid items to submit"
+        message: "No valid items to submit",
       });
     }
 
@@ -144,7 +156,12 @@ export const createRequirementsSubmission = catchErrors(
         const newItem = processedItems[idx];
         const oldItem = existingSubmission.items[idx];
 
-        if (oldItem && oldItem.publicId && newItem.publicId && oldItem.publicId !== newItem.publicId) {
+        if (
+          oldItem &&
+          oldItem.publicId &&
+          newItem.publicId &&
+          oldItem.publicId !== newItem.publicId
+        ) {
           // Different file - delete the old one
           try {
             const isPdf = (oldItem.mimetype || "").includes("pdf");
@@ -153,7 +170,10 @@ export const createRequirementsSubmission = catchErrors(
             });
             console.log(`[requirements] Deleted old file: ${oldItem.publicId}`);
           } catch (err) {
-            console.error(`[requirements] Failed to delete old file: ${oldItem.publicId}`, err);
+            console.error(
+              `[requirements] Failed to delete old file: ${oldItem.publicId}`,
+              err
+            );
           }
         }
       }
@@ -178,6 +198,39 @@ export const createRequirementsSubmission = catchErrors(
       status: "submitted",
       submittedAt: new Date(),
     });
+
+    // Update the most recent application to mark requirements as completed
+    try {
+      const recentApplication = await ApplicationModel.findOne({ userID })
+        .sort({ createdAt: -1 })
+        .limit(1);
+
+      if (recentApplication && !recentApplication.requirementsCompleted) {
+        recentApplication.requirementsCompleted = true;
+        recentApplication.requirementsCompletedAt = new Date();
+        await recentApplication.save();
+
+        // Create notification for successful requirements submission
+        await createNotification({
+          userID: userID,
+          title: "✅ Requirements Submitted Successfully",
+          message:
+            "Your required documents have been submitted successfully. Your application is now complete and will be reviewed by HR.",
+          type: "success",
+          relatedApplicationID: (recentApplication as any)._id.toString(),
+        });
+
+        console.log(
+          `[requirements] Marked application ${(recentApplication as any)._id} requirements as completed`
+        );
+      }
+    } catch (error) {
+      console.error(
+        "[requirements] Failed to update application requirements status:",
+        error
+      );
+      // Don't fail the requirements submission if application update fails
+    }
 
     console.log("[requirements] Initial submission successful");
 
@@ -247,7 +300,7 @@ export const deleteRequirementFile = catchErrors(
 
     return res.status(OK).json({
       message: "File removed successfully",
-      submission
+      submission,
     });
   }
 );
@@ -259,12 +312,12 @@ export const getCurrentRequirementsStatus = catchErrors(
 
     const submission = await RequirementsSubmissionModel.findOne({
       userID,
-      status: "submitted"
+      status: "submitted",
     });
 
     return res.status(OK).json({
       submitted: submission,
-      draft: null
+      draft: null,
     });
   }
 );

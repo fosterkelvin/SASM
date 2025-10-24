@@ -325,9 +325,18 @@ export const createApplicationHandler = catchErrors(
 
       await createNotification({
         userID: userID,
-        title: "Application Submitted Successfully! \u2705",
+        title: "Application Submitted Successfully! ✅",
         message: `Your application for ${positionTitle} position has been submitted successfully. You will be notified of any updates via this system and email.`,
         type: "success",
+        relatedApplicationID: (application as any)._id.toString(),
+      });
+
+      // Create notification to complete requirements
+      await createNotification({
+        userID: userID,
+        title: "📋 Complete Your Requirements",
+        message: `Please submit all required documents to complete your application. Go to the Requirements page to upload your documents.`,
+        type: "info",
         relatedApplicationID: (application as any)._id.toString(),
       });
 
@@ -361,6 +370,7 @@ export const createApplicationHandler = catchErrors(
     return res.status(CREATED).json({
       message: "Application submitted successfully",
       application,
+      requirementsNeeded: true, // Flag to indicate requirements need to be completed
     });
   }
 );
@@ -577,23 +587,40 @@ export const updateApplicationStatusHandler = catchErrors(
 
         if (student) {
           // Determine status based on position
-          const newStatus = currentApplication.position === "student_assistant" ? "SA" : "SM";
-          console.log(`✅ Updating student status from '${student.status}' to '${newStatus}' (position: ${currentApplication.position})`);
-          
+          const newStatus =
+            currentApplication.position === "student_assistant" ? "SA" : "SM";
+          console.log(
+            `✅ Updating student status from '${student.status}' to '${newStatus}' (position: ${currentApplication.position})`
+          );
+
           student.status = newStatus;
           await student.save();
-          console.log("✅ Student status successfully updated to:", student.status);
-          
+          console.log(
+            "✅ Student status successfully updated to:",
+            student.status
+          );
+
           // Update timeline entry to include the new status
-          if (currentApplication.timeline && currentApplication.timeline.length > 0) {
-            const lastEntry = currentApplication.timeline[currentApplication.timeline.length - 1] as any;
+          if (
+            currentApplication.timeline &&
+            currentApplication.timeline.length > 0
+          ) {
+            const lastEntry = currentApplication.timeline[
+              currentApplication.timeline.length - 1
+            ] as any;
             lastEntry.notes = `${lastEntry.notes} - User status updated from trainee to ${newStatus}`;
           }
         } else {
-          console.error("❌ Student not found for ID:", currentApplication.userID);
+          console.error(
+            "❌ Student not found for ID:",
+            currentApplication.userID
+          );
         }
       } catch (error) {
-        console.error("❌ Error updating student status during acceptance:", error);
+        console.error(
+          "❌ Error updating student status during acceptance:",
+          error
+        );
       }
     }
 

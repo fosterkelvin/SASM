@@ -185,6 +185,10 @@ export interface ApplicationDocument extends mongoose.Document {
   // Tags for better organization
   tags?: string[];
 
+  // Requirements completion tracking
+  requirementsCompleted?: boolean;
+  requirementsCompletedAt?: Date;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -745,6 +749,15 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
         trim: true,
       },
     ],
+
+    // Requirements completion tracking
+    requirementsCompleted: {
+      type: Boolean,
+      default: false,
+    },
+    requirementsCompletedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,

@@ -241,6 +241,15 @@ function Application() {
       }
       clearCertificates();
       setIsSubmitting(false);
+
+      // Show success toast about requirements
+      if (data.requirementsNeeded) {
+        addToast(
+          "📋 Next Step: Please submit your required documents to complete your application.",
+          "info",
+          8000
+        );
+      }
     },
     onError: (error) => {
       let errorMessage =

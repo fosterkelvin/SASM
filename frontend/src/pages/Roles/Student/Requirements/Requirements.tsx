@@ -5,6 +5,9 @@ import RequirementsList from "./components/RequirementsList";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import API from "@/config/apiClient";
+import { AlertCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getUserApplications } from "@/lib/api";
 
 export type Requirement = {
   id: string;
@@ -30,6 +33,21 @@ const Requirements: React.FC = () => {
   // the UI no longer renders a Save button (we still use setShowSave elsewhere)
   void showSave;
   const [resubmitMode, setResubmitMode] = useState(false);
+
+  // Fetch user applications to check if requirements are needed
+  const { data: userApplicationsData } = useQuery({
+    queryKey: ["userApplications"],
+    queryFn: getUserApplications,
+    enabled: !!user,
+  });
+
+  // Check if user has a recent application without requirements completed
+  const hasApplicationNeedingRequirements =
+    userApplicationsData?.applications?.some(
+      (app: any) =>
+        !app.requirementsCompleted &&
+        !["rejected", "withdrawn"].includes(app.status)
+    );
 
   // per-user storage key (falls back to generic STORAGE_KEY when user not available)
   const userKeySuffix = user?.id || user?.email || "guest";
@@ -652,12 +670,18 @@ const Requirements: React.FC = () => {
         return;
       }
       // Build FormData to send only files that are new (data URLs are previews and not remote)
-      console.debug('[requirements] filesRef.current:', Object.keys(filesRef.current).map(k => ({
-        itemId: k,
-        hasFile: !!filesRef.current[k],
-        fileName: filesRef.current[k]?.name
-      })));
-      console.debug('[requirements] items order:', items.map((it, idx) => ({ idx, id: it.id, text: it.text })));
+      console.debug(
+        "[requirements] filesRef.current:",
+        Object.keys(filesRef.current).map((k) => ({
+          itemId: k,
+          hasFile: !!filesRef.current[k],
+          fileName: filesRef.current[k]?.name,
+        }))
+      );
+      console.debug(
+        "[requirements] items order:",
+        items.map((it, idx) => ({ idx, id: it.id, text: it.text }))
+      );
       const form = new FormData();
       items.forEach((it, idx) => {
         form.append(`items[${idx}][label]`, it.text);
@@ -674,7 +698,9 @@ const Requirements: React.FC = () => {
           const fileForAppend = new File([f], safeName, { type: f.type });
           // Use item-specific field name to properly map files to their requirements
           form.append(`file_item_${idx}`, fileForAppend, safeName);
-          console.debug(`[requirements] appending file for item ${idx} (${it.text}): fieldname=file_item_${idx}, filename=${safeName}, itemId=${it.id}`);
+          console.debug(
+            `[requirements] appending file for item ${idx} (${it.text}): fieldname=file_item_${idx}, filename=${safeName}, itemId=${it.id}`
+          );
         }
       });
       // Include the current items state as JSON so server can use any existing preview URLs
@@ -878,6 +904,33 @@ const Requirements: React.FC = () => {
         </div>
 
         <div className="p-4 md:p-10 mt-12">
+          {/* Banner for pending requirements */}
+          {hasApplicationNeedingRequirements && !isSubmitted && (
+            <div className="max-w-4xl mx-auto mb-6 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-600 rounded-lg p-4 shadow-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-200 mb-2">
+                    ⚠️ Action Required: Complete Your Requirements
+                  </h3>
+                  <p className="text-sm text-amber-800 dark:text-amber-300 mb-2">
+                    Your application has been submitted, but you still need to
+                    upload all required documents.
+                    <strong>
+                      {" "}
+                      Your application will not be processed until all
+                      requirements are submitted.
+                    </strong>
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    Please upload all documents listed below and click "Submit
+                    Requirements" to complete your application.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Card className="max-w-4xl mx-auto">
             <CardContent className="p-6 md:p-8">
               <div className="text-center mb-6 md:mb-8 border-b pb-4 md:pb-6">
