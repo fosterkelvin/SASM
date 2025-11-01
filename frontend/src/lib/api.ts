@@ -482,6 +482,23 @@ export const getClassScheduleFileUrl = (applicationId?: string) => {
   return `${baseURL}${url}`;
 };
 
+// Add duty hours to schedule (Office only)
+export const addDutyHoursToSchedule = async (
+  applicationId: string,
+  data: {
+    day: string;
+    startTime: string;
+    endTime: string;
+    location: string;
+  }
+) => {
+  const response = await API.post(
+    `/trainees/${applicationId}/schedule/duty-hours`,
+    data
+  );
+  return response.data;
+};
+
 // Final Actions
 export const acceptApplication = async (
   applicationId: string,

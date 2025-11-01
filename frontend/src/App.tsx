@@ -18,6 +18,7 @@ import EvaluationManagement from "./pages/Roles/HR/Evaluation Management/Evaluat
 import TraineeManagement from "./pages/Roles/HR/Trainee Management/TraineeManagement";
 import Scholars from "./pages/Roles/Office/Scholars/Scholars";
 import MyTrainees from "./pages/Roles/Office/MyTrainees";
+import TraineeSchedule from "./pages/Roles/Office/TraineeSchedule";
 import OfficeDTRCheck from "./pages/Roles/Office/OfficeDTRCheck";
 import HRDTRCheck from "./pages/Roles/HR/DTR Check/HRDTRCheck";
 import Notifications from "./pages/Utils/Notifications";
@@ -156,6 +157,10 @@ function App(): ReactElement {
         <Route path="/office/evaluation" element={<OfficeEvaluationPage />} />
         <Route path="/office/scholars" element={<Scholars />} />
         <Route path="/office/my-trainees" element={<MyTrainees />} />
+        <Route
+          path="/office/trainee/:applicationId/schedule"
+          element={<TraineeSchedule />}
+        />
         <Route
           path="/office/leave-requests"
           element={<OfficeLeaveRequests />}

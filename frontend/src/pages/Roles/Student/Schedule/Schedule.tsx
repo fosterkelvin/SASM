@@ -179,6 +179,7 @@ const Schedule: React.FC = () => {
                   </div>
                   <ScheduleVisualization
                     scheduleClasses={existingSchedule.scheduleData}
+                    dutyHours={existingSchedule.dutyHours || []}
                   />
                 </CardContent>
               </Card>

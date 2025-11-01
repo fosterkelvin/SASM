@@ -13,12 +13,21 @@ interface ScheduleClass {
   room?: string;
 }
 
+interface DutyHour {
+  day: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+}
+
 interface ScheduleVisualizationProps {
   scheduleClasses: ScheduleClass[];
+  dutyHours?: DutyHour[];
 }
 
 const ScheduleVisualization: React.FC<ScheduleVisualizationProps> = ({
   scheduleClasses,
+  dutyHours = [],
 }) => {
   const days = [
     "MONDAY",
@@ -103,14 +112,45 @@ const ScheduleVisualization: React.FC<ScheduleVisualizationProps> = ({
     return classes;
   };
 
+  // Convert 24-hour time to 12-hour format with AM/PM
+  const formatTime = (time: string): string => {
+    // If already in 12-hour format, return as is
+    if (
+      time.includes("AM") ||
+      time.includes("PM") ||
+      time.includes("am") ||
+      time.includes("pm")
+    ) {
+      return time;
+    }
+
+    // Convert 24-hour to 12-hour format
+    const [hours, minutes] = time.split(":").map(Number);
+    const period = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+    return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+  };
+
   // Convert time string to minutes since midnight
   const timeToMinutes = (time: string): number => {
+    // Handle 24-hour format (HH:MM) from time input
+    if (
+      !time.includes("AM") &&
+      !time.includes("PM") &&
+      !time.includes("am") &&
+      !time.includes("pm")
+    ) {
+      const [hours, minutes] = time.split(":").map(Number);
+      return hours * 60 + minutes;
+    }
+
+    // Handle 12-hour format (HH:MM AM/PM)
     const [timePart, meridiem] = time.split(/\s+/);
     let [hours, minutes] = timePart.split(":").map(Number);
 
-    if (meridiem.toUpperCase() === "PM" && hours !== 12) {
+    if (meridiem && meridiem.toUpperCase() === "PM" && hours !== 12) {
       hours += 12;
-    } else if (meridiem.toUpperCase() === "AM" && hours === 12) {
+    } else if (meridiem && meridiem.toUpperCase() === "AM" && hours === 12) {
       hours = 0;
     }
 
@@ -135,7 +175,11 @@ const ScheduleVisualization: React.FC<ScheduleVisualizationProps> = ({
   // Build schedule grid with proper positioning
   type ScheduleGridType = {
     [key: string]: {
-      [key: number]: { class: ScheduleClass; rowSpan: number }[];
+      [key: number]: {
+        class: ScheduleClass;
+        rowSpan: number;
+        isDuty?: boolean;
+      }[];
     };
   };
   const scheduleGrid: ScheduleGridType = {};
@@ -155,11 +199,49 @@ const ScheduleVisualization: React.FC<ScheduleVisualizationProps> = ({
       scheduleGrid[parsed.day][rowIndex].push({
         class: { ...cls, ...parsed },
         rowSpan,
+        isDuty: false,
       });
     });
   });
 
-  const getColorForSubject = (subjectCode: string) => {
+  // Add duty hours to the grid
+  dutyHours.forEach((duty) => {
+    const dayUpper = duty.day.toUpperCase();
+    if (!scheduleGrid[dayUpper]) {
+      scheduleGrid[dayUpper] = {};
+    }
+    const rowIndex = getRowIndex(duty.startTime);
+    const rowSpan = calculateRowSpan(duty.startTime, duty.endTime);
+
+    // Format times for display
+    const formattedStartTime = formatTime(duty.startTime);
+    const formattedEndTime = formatTime(duty.endTime);
+
+    if (!scheduleGrid[dayUpper][rowIndex]) {
+      scheduleGrid[dayUpper][rowIndex] = [];
+    }
+    scheduleGrid[dayUpper][rowIndex].push({
+      class: {
+        section: "",
+        subjectCode: "DUTY",
+        subjectName: `Duty Hours - ${duty.location}`,
+        instructor: "",
+        schedule: `${duty.day} ${formattedStartTime}-${formattedEndTime} / ${duty.location}`,
+        units: 0,
+        day: dayUpper,
+        startTime: formattedStartTime,
+        endTime: formattedEndTime,
+        room: duty.location,
+      },
+      rowSpan,
+      isDuty: true,
+    });
+  });
+
+  const getColorForSubject = (subjectCode: string, isDuty?: boolean) => {
+    if (isDuty) {
+      return "bg-red-600 text-white border-2 border-red-800";
+    }
     // Use consistent colors based on subject code
     const hash = subjectCode
       .split("")
@@ -265,31 +347,46 @@ const ScheduleVisualization: React.FC<ScheduleVisualizationProps> = ({
                             <div
                               key={idx}
                               className={`p-2 w-full h-full ${getColorForSubject(
-                                item.class.subjectCode
+                                item.class.subjectCode,
+                                item.isDuty
                               )} font-medium text-xs flex flex-col overflow-auto`}
                             >
                               <div className="flex items-start gap-1 mb-1 flex-shrink-0">
-                                <svg
-                                  className="w-3 h-3 mt-0.5 flex-shrink-0"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fillRule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
-                                    clipRule="evenodd"
-                                  />
-                                </svg>
+                                {item.isDuty ? (
+                                  <svg
+                                    className="w-3 h-3 mt-0.5 flex-shrink-0"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                                  </svg>
+                                ) : (
+                                  <svg
+                                    className="w-3 h-3 mt-0.5 flex-shrink-0"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                )}
                                 <span className="font-bold text-xs leading-tight">
                                   {item.class.startTime} - {item.class.endTime}
                                 </span>
                               </div>
                               <div className="ml-4 space-y-0.5 overflow-hidden">
                                 <div className="font-bold text-sm leading-tight">
-                                  [{item.class.subjectCode}]
+                                  {item.isDuty
+                                    ? "🏢 DUTY"
+                                    : `[${item.class.subjectCode}]`}
                                 </div>
                                 <div className="font-semibold text-xs leading-tight break-words">
-                                  {item.class.subjectName}
+                                  {item.isDuty
+                                    ? item.class.room
+                                    : item.class.subjectName}
                                 </div>
                               </div>
                             </div>

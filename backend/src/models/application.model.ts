@@ -115,6 +115,14 @@ export interface ApplicationDocument extends mongoose.Document {
     schedule: string;
     units: number;
   }>; // Parsed schedule data for visualization
+  dutyHours?: Array<{
+    day: string;
+    startTime: string;
+    endTime: string;
+    location: string;
+    addedBy: mongoose.Types.ObjectId;
+    addedAt: Date;
+  }>; // Duty hours assigned by office
 
   // Timestamps
   submittedAt: Date;
@@ -532,6 +540,35 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
         instructor: String,
         schedule: String,
         units: Number,
+      },
+    ],
+    dutyHours: [
+      {
+        day: {
+          type: String,
+          required: true,
+        },
+        startTime: {
+          type: String,
+          required: true,
+        },
+        endTime: {
+          type: String,
+          required: true,
+        },
+        location: {
+          type: String,
+          required: true,
+        },
+        addedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        addedAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
 

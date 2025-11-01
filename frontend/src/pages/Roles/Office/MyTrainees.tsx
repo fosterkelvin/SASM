@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 const MyTrainees = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -506,27 +508,38 @@ const MyTrainees = () => {
                     )}
 
                     {/* Active Trainee - Rating */}
-                    {trainee.status === "trainee" &&
-                      trainee.dtrCompletedHours >= trainee.requiredHours && (
+                    {trainee.status === "trainee" && (
+                      <div className="space-y-2">
                         <Button
-                          onClick={() => handleRateClick(trainee)}
-                          className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white flex items-center justify-center gap-2"
+                          onClick={() =>
+                            navigate(`/office/trainee/${trainee._id}/schedule`)
+                          }
+                          variant="outline"
+                          className="w-full border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20 flex items-center justify-center gap-2"
                         >
-                          <Star className="w-4 h-4" />
-                          {trainee.traineePerformanceRating
-                            ? "Update Rating"
-                            : "Rate Trainee"}
+                          <Calendar className="w-4 h-4" />
+                          View Schedule & Add Duty Hours
                         </Button>
-                      )}
-
-                    {trainee.status === "trainee" &&
-                      trainee.dtrCompletedHours < trainee.requiredHours && (
-                        <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Rating available after completing required hours
-                          </p>
-                        </div>
-                      )}
+                        {trainee.dtrCompletedHours >= trainee.requiredHours && (
+                          <Button
+                            onClick={() => handleRateClick(trainee)}
+                            className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white flex items-center justify-center gap-2"
+                          >
+                            <Star className="w-4 h-4" />
+                            {trainee.traineePerformanceRating
+                              ? "Update Rating"
+                              : "Rate Trainee"}
+                          </Button>
+                        )}
+                        {trainee.dtrCompletedHours < trainee.requiredHours && (
+                          <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Rating available after completing required hours
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}

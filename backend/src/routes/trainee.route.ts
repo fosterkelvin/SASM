@@ -14,6 +14,7 @@ import {
   uploadClassScheduleHandler,
   getClassScheduleHandler,
   downloadClassScheduleHandler,
+  addDutyHoursHandler,
 } from "../controllers/trainee.controller";
 
 const upload = multer({ storage });
@@ -64,5 +65,8 @@ traineeRoutes.get(
   "/:applicationId/schedule/download",
   downloadClassScheduleHandler
 );
+
+// Add duty hours to schedule (Office only)
+traineeRoutes.post("/:applicationId/schedule/duty-hours", addDutyHoursHandler);
 
 export default traineeRoutes;

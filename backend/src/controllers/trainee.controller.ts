@@ -982,6 +982,83 @@ export const getClassScheduleHandler = catchErrors(
     return res.status(OK).json({
       scheduleUrl: application.classSchedule || null,
       scheduleData: application.classScheduleData || [],
+      dutyHours: application.dutyHours || [],
+    });
+  }
+);
+
+// Add duty hours to schedule (Office only)
+export const addDutyHoursHandler = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+    const { applicationId } = req.params;
+    const { day, startTime, endTime, location } = req.body;
+
+    const user = await UserModel.findById(userID);
+    appAssert(user, NOT_FOUND, "User not found");
+    appAssert(
+      user.role === "office" || user.role === "hr",
+      FORBIDDEN,
+      "Only office staff and HR can add duty hours"
+    );
+
+    // Validate required fields
+    appAssert(day, BAD_REQUEST, "Day is required");
+    appAssert(startTime, BAD_REQUEST, "Start time is required");
+    appAssert(endTime, BAD_REQUEST, "End time is required");
+    appAssert(location, BAD_REQUEST, "Location is required");
+
+    const application = await ApplicationModel.findById(applicationId);
+    appAssert(application, NOT_FOUND, "Application not found");
+
+    appAssert(
+      application.status === "trainee" ||
+        application.status === "training_completed",
+      BAD_REQUEST,
+      "Application must be in trainee or training_completed status"
+    );
+
+    // Validate that the office user matches the trainee's office
+    if (user.role === "office") {
+      const userOffice = user.officeName || user.office;
+      appAssert(
+        application.traineeOffice === userOffice,
+        FORBIDDEN,
+        "You can only add duty hours for trainees assigned to your office"
+      );
+    }
+
+    // Add duty hour entry
+    const dutyHourEntry = {
+      day,
+      startTime,
+      endTime,
+      location,
+      addedBy: userID,
+      addedAt: new Date(),
+    };
+
+    application.dutyHours = application.dutyHours || [];
+    application.dutyHours.push(dutyHourEntry as any);
+
+    // Add timeline entry
+    const userName = user.officeName || `${user.firstname} ${user.lastname}`;
+    const timelineEntry = {
+      action: "duty_hours_added",
+      performedBy: userID,
+      performedByName: userName,
+      timestamp: new Date(),
+      notes: `Added duty hours: ${day} ${startTime}-${endTime} at ${location}`,
+    };
+
+    application.timeline = application.timeline || [];
+    application.timeline.push(timelineEntry as any);
+
+    await application.save();
+
+    return res.status(OK).json({
+      message: "Duty hours added successfully",
+      dutyHours: application.dutyHours,
     });
   }
 );
