@@ -24,13 +24,25 @@ interface EditHistoryEntry {
   changes: { field: string; oldValue: string; newValue: string }[];
 }
 
+interface Shift {
+  in?: string;
+  out?: string;
+}
+
 interface Entry {
   id: number;
   day: number;
+  // Legacy fields (kept for backward compatibility)
   in1?: string;
   out1?: string;
   in2?: string;
   out2?: string;
+  in3?: string;
+  out3?: string;
+  in4?: string;
+  out4?: string;
+  // NEW: Dynamic shifts array
+  shifts?: Shift[];
   late?: number;
   undertime?: number;
   totalHours?: number;
@@ -130,22 +142,55 @@ const OfficeDTRCheck: React.FC = () => {
 
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
-  // Fetch trainees
+  // Helper function to get shifts (use legacy fields if shifts array doesn't exist)
+  const getShifts = (entry: Entry): Shift[] => {
+    if (entry.shifts && entry.shifts.length > 0) {
+      return entry.shifts;
+    }
+    // Migrate legacy fields
+    const legacyShifts: Shift[] = [];
+    if (entry.in1 || entry.out1)
+      legacyShifts.push({ in: entry.in1, out: entry.out1 });
+    if (entry.in2 || entry.out2)
+      legacyShifts.push({ in: entry.in2, out: entry.out2 });
+    if (entry.in3 || entry.out3)
+      legacyShifts.push({ in: entry.in3, out: entry.out3 });
+    if (entry.in4 || entry.out4)
+      legacyShifts.push({ in: entry.in4, out: entry.out4 });
+    return legacyShifts;
+  };
+
+  // Fetch trainees AND scholars
   useEffect(() => {
-    const fetchTrainees = async () => {
+    const fetchTraineesAndScholars = async () => {
       try {
-        const response = await API.get("/trainees/office");
-        setTrainees(response.data.trainees);
-        setFilteredTrainees(response.data.trainees);
+        // Fetch both trainees and scholars
+        const [traineesResponse, scholarsResponse] = await Promise.all([
+          API.get("/trainees/office"),
+          API.get("/trainees/office/scholars"),
+        ]);
+
+        const traineesData = traineesResponse.data.trainees || [];
+        const scholarsData = scholarsResponse.data.trainees || []; // API returns as "trainees" key
+
+        // Combine trainees and scholars
+        const combined = [...traineesData, ...scholarsData];
+
+        console.log("📊 Fetched trainees:", traineesData.length);
+        console.log("📊 Fetched scholars:", scholarsData.length);
+        console.log("📊 Total combined:", combined.length);
+
+        setTrainees(combined);
+        setFilteredTrainees(combined);
       } catch (error) {
-        console.error("Error fetching trainees:", error);
-        addToast("Failed to load trainees", "error");
+        console.error("Error fetching trainees/scholars:", error);
+        addToast("Failed to load trainees and scholars", "error");
       } finally {
         setLoadingTrainees(false);
       }
     };
 
-    fetchTrainees();
+    fetchTraineesAndScholars();
   }, [addToast]);
 
   // Filter trainees based on search query
@@ -275,7 +320,39 @@ const OfficeDTRCheck: React.FC = () => {
       return;
     }
     setEditingEntry(entry.day);
-    setEditValues({ ...entry });
+    // Ensure shifts array exists in edit values
+    const editEntry = { ...entry };
+    if (!editEntry.shifts || editEntry.shifts.length === 0) {
+      // Initialize with one empty shift if no shifts exist
+      editEntry.shifts = [{ in: "", out: "" }];
+    }
+    setEditValues(editEntry);
+  };
+
+  // Add a new shift to editing entry
+  const handleAddShift = () => {
+    if (!editValues) return;
+    const updatedShifts = [...(editValues.shifts || []), { in: "", out: "" }];
+    setEditValues({ ...editValues, shifts: updatedShifts });
+  };
+
+  // Remove a shift from editing entry
+  const handleRemoveShift = (index: number) => {
+    if (!editValues || !editValues.shifts) return;
+    const updatedShifts = editValues.shifts.filter((_, i) => i !== index);
+    setEditValues({ ...editValues, shifts: updatedShifts });
+  };
+
+  // Update shift time
+  const handleShiftTimeChange = (
+    index: number,
+    field: "in" | "out",
+    value: string
+  ) => {
+    if (!editValues || !editValues.shifts) return;
+    const updatedShifts = [...editValues.shifts];
+    updatedShifts[index] = { ...updatedShifts[index], [field]: value };
+    setEditValues({ ...editValues, shifts: updatedShifts });
   };
 
   // Cancel editing
@@ -289,31 +366,41 @@ const OfficeDTRCheck: React.FC = () => {
     if (!dtr || !editValues) return;
 
     try {
-      // Calculate total hours
+      // Calculate total hours from shifts
       const toMinutes = (time?: string) => {
         if (!time) return 0;
         const [h, m] = time.split(":").map(Number);
         return (h || 0) * 60 + (m || 0);
       };
 
-      const in1 = toMinutes(editValues.in1);
-      const out1 = toMinutes(editValues.out1);
-      const in2 = toMinutes(editValues.in2);
-      const out2 = toMinutes(editValues.out2);
-
       let totalMinutes = 0;
-      if (out1 > in1) totalMinutes += out1 - in1;
-      if (out2 > in2) totalMinutes += out2 - in2;
+
+      // Calculate from shifts array if it exists
+      if (editValues.shifts && editValues.shifts.length > 0) {
+        editValues.shifts.forEach((shift) => {
+          const inTime = toMinutes(shift.in);
+          const outTime = toMinutes(shift.out);
+          if (outTime > inTime) {
+            totalMinutes += outTime - inTime;
+          }
+        });
+      }
 
       const response = await API.put("/dtr/office/update-user-entry", {
         userId: selectedTrainee,
         dtrId: dtr._id,
         day: editValues.day,
         entryData: {
+          shifts: editValues.shifts || [],
+          // Keep legacy fields for backward compatibility
           in1: editValues.in1 || "",
           out1: editValues.out1 || "",
           in2: editValues.in2 || "",
           out2: editValues.out2 || "",
+          in3: editValues.in3 || "",
+          out3: editValues.out3 || "",
+          in4: editValues.in4 || "",
+          out4: editValues.out4 || "",
           totalHours: totalMinutes,
         },
       });
@@ -372,6 +459,7 @@ const OfficeDTRCheck: React.FC = () => {
         day,
         excusedStatus: "none",
         excusedReason: "",
+        confirmationStatus: "unconfirmed", // Reset to unconfirmed when removing excused
       });
 
       setDtr(response.data.dtr);
@@ -899,19 +987,21 @@ const OfficeDTRCheck: React.FC = () => {
                           Date
                         </th>
                         <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
-                          In (AM)
-                        </th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
-                          Out (AM)
-                        </th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
-                          In (PM)
-                        </th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
-                          Out (PM)
+                          <div className="flex flex-col items-center">
+                            <span>Duty Shifts</span>
+                            <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
+                              IN → OUT times (multiple shifts)
+                            </span>
+                          </div>
                         </th>
                         <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
                           Hours
+                        </th>
+                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          Late
+                        </th>
+                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          Undertime
                         </th>
                         <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
                           Status
@@ -932,109 +1022,157 @@ const OfficeDTRCheck: React.FC = () => {
                         const hasTimeData =
                           entry.in1 || entry.out1 || entry.in2 || entry.out2;
 
-                        const isSundayEntry = isSunday(entry.day);
                         return (
                           <tr
                             key={entry.day}
                             className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
                               entry.confirmationStatus === "confirmed"
                                 ? "bg-green-50 dark:bg-green-900/10"
-                                : isSundayEntry
-                                ? "bg-red-50 dark:bg-red-900/10"
                                 : ""
                             }`}
                           >
                             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                               {getDayName(entry.day)}
-                              {isSundayEntry && (
-                                <span className="ml-1 text-xs text-red-600 dark:text-red-400 font-medium">
-                                  (Locked)
-                                </span>
-                              )}
                             </td>
                             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                               {entry.day}
                             </td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
-                              {isEditing ? (
-                                <input
-                                  type="time"
-                                  min="07:00"
-                                  max="11:59"
-                                  value={editValues?.in1 || ""}
-                                  onChange={(e) =>
-                                    handleTimeInputChange("in1", e.target.value)
-                                  }
-                                  className="w-full px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 text-center"
-                                />
-                              ) : (
-                                <span className="text-sm text-gray-700 dark:text-gray-300">
-                                  {entry.in1 || "-"}
-                                </span>
-                              )}
-                            </td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
-                              {isEditing ? (
-                                <input
-                                  type="time"
-                                  min="07:00"
-                                  max="12:00"
-                                  value={editValues?.out1 || ""}
-                                  onChange={(e) =>
-                                    handleTimeInputChange(
-                                      "out1",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 text-center"
-                                />
-                              ) : (
-                                <span className="text-sm text-gray-700 dark:text-gray-300">
-                                  {entry.out1 || "-"}
-                                </span>
-                              )}
-                            </td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
-                              {isEditing ? (
-                                <input
-                                  type="time"
-                                  min="13:00"
-                                  max="20:00"
-                                  value={editValues?.in2 || ""}
-                                  onChange={(e) =>
-                                    handleTimeInputChange("in2", e.target.value)
-                                  }
-                                  className="w-full px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 text-center"
-                                />
-                              ) : (
-                                <span className="text-sm text-gray-700 dark:text-gray-300">
-                                  {entry.in2 || "-"}
-                                </span>
-                              )}
-                            </td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
-                              {isEditing ? (
-                                <input
-                                  type="time"
-                                  min="13:00"
-                                  max="20:00"
-                                  value={editValues?.out2 || ""}
-                                  onChange={(e) =>
-                                    handleTimeInputChange(
-                                      "out2",
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full px-2 py-1 text-sm border rounded dark:bg-gray-700 dark:border-gray-600 text-center"
-                                />
-                              ) : (
-                                <span className="text-sm text-gray-700 dark:text-gray-300">
-                                  {entry.out2 || "-"}
-                                </span>
-                              )}
+                            {/* Duty Shifts Column */}
+                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                              {(() => {
+                                // Edit mode
+                                if (isEditing) {
+                                  const editShifts = editValues?.shifts || [];
+                                  const isConfirmed =
+                                    entry.confirmationStatus === "confirmed";
+                                  return (
+                                    <div className="space-y-2">
+                                      {editShifts.map((shift, index) => (
+                                        <div
+                                          key={index}
+                                          className="flex items-center gap-2 text-xs"
+                                        >
+                                          <span className="font-semibold text-gray-600 dark:text-gray-400 w-14">
+                                            Shift {index + 1}:
+                                          </span>
+                                          <input
+                                            type="time"
+                                            value={shift.in || ""}
+                                            onChange={(e) =>
+                                              handleShiftTimeChange(
+                                                index,
+                                                "in",
+                                                e.target.value
+                                              )
+                                            }
+                                            className="px-2 py-1 text-xs border rounded dark:bg-gray-700 dark:border-gray-600"
+                                            placeholder="IN"
+                                          />
+                                          <span className="text-gray-400">
+                                            →
+                                          </span>
+                                          <input
+                                            type="time"
+                                            value={shift.out || ""}
+                                            onChange={(e) =>
+                                              handleShiftTimeChange(
+                                                index,
+                                                "out",
+                                                e.target.value
+                                              )
+                                            }
+                                            className="px-2 py-1 text-xs border rounded dark:bg-gray-700 dark:border-gray-600"
+                                            placeholder="OUT"
+                                          />
+                                          {!isConfirmed && (
+                                            <button
+                                              onClick={() =>
+                                                handleRemoveShift(index)
+                                              }
+                                              className="p-1 text-red-600 hover:text-red-700 dark:text-red-400"
+                                              title="Remove shift"
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      ))}
+                                      {!isConfirmed && (
+                                        <button
+                                          onClick={handleAddShift}
+                                          className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
+                                        >
+                                          <span>+ Add Shift</span>
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                }
+
+                                // View mode
+                                const shifts = getShifts(entry);
+                                const hasData = shifts.some(
+                                  (s) => s.in || s.out
+                                );
+
+                                if (!hasData) {
+                                  return (
+                                    <div className="text-center text-gray-400 text-xs">
+                                      -
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <div className="space-y-1">
+                                    {shifts.map((shift, index) => {
+                                      if (!shift.in && !shift.out) return null;
+                                      return (
+                                        <div
+                                          key={index}
+                                          className="flex items-center gap-2 text-xs justify-center"
+                                        >
+                                          <span className="font-semibold text-gray-600 dark:text-gray-400">
+                                            Shift {index + 1}:
+                                          </span>
+                                          <span className="font-mono text-gray-700 dark:text-gray-300">
+                                            {shift.in || "--:--"}
+                                          </span>
+                                          <span className="text-gray-400">
+                                            →
+                                          </span>
+                                          <span className="font-mono text-gray-700 dark:text-gray-300">
+                                            {shift.out || "--:--"}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })()}
                             </td>
                             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm text-gray-700 dark:text-gray-300">
                               {hours}h {minutes.toString().padStart(2, "0")}m
+                            </td>
+                            {/* Late Column */}
+                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs">
+                              {entry.late && entry.late > 0 ? (
+                                <span className="text-orange-600 dark:text-orange-400 font-semibold">
+                                  {entry.late}m
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                            {/* Undertime Column */}
+                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs">
+                              {entry.undertime && entry.undertime > 0 ? (
+                                <span className="text-red-600 dark:text-red-400 font-semibold">
+                                  {entry.undertime}m
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
                             </td>
                             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
                               <div className="flex items-center justify-center gap-2">
@@ -1197,7 +1335,7 @@ const OfficeDTRCheck: React.FC = () => {
                                       Remove Excused
                                     </button>
                                   ) : entry.confirmationStatus !==
-                                      "confirmed" && !isSundayEntry ? (
+                                    "confirmed" ? (
                                     <button
                                       onClick={() =>
                                         handleMarkAsExcused(entry.day)
@@ -1211,8 +1349,8 @@ const OfficeDTRCheck: React.FC = () => {
 
                                   {/* Regular Edit/Confirm Buttons */}
                                   {entry.excusedStatus !== "excused" &&
-                                    entry.confirmationStatus !== "confirmed" &&
-                                    !isSundayEntry && (
+                                    entry.confirmationStatus !==
+                                      "confirmed" && (
                                       <button
                                         onClick={() => handleStartEdit(entry)}
                                         className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium"
@@ -1223,8 +1361,8 @@ const OfficeDTRCheck: React.FC = () => {
                                     )}
                                   {hasTimeData &&
                                     entry.excusedStatus !== "excused" &&
-                                    entry.confirmationStatus !== "confirmed" &&
-                                    !isSundayEntry && (
+                                    entry.confirmationStatus !==
+                                      "confirmed" && (
                                       <button
                                         onClick={() =>
                                           handleConfirmEntry(entry.day)
@@ -1240,13 +1378,6 @@ const OfficeDTRCheck: React.FC = () => {
                                       Locked
                                     </span>
                                   )}
-                                  {isSundayEntry &&
-                                    entry.confirmationStatus !==
-                                      "confirmed" && (
-                                      <span className="text-xs text-red-500 dark:text-red-400 italic">
-                                        Sunday
-                                      </span>
-                                    )}
                                 </div>
                               )}
                             </td>

@@ -7,6 +7,7 @@ interface DayRowProps {
   month: number;
   year: number;
   isEditable?: boolean;
+  showAllShifts?: boolean;
 }
 
 const DayRow: React.FC<DayRowProps> = ({
@@ -15,6 +16,7 @@ const DayRow: React.FC<DayRowProps> = ({
   month,
   year,
   isEditable = true,
+  showAllShifts = false,
 }) => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
@@ -204,10 +206,16 @@ const DayRow: React.FC<DayRowProps> = ({
     const out1 = toMinutes(entry.out1);
     const in2 = toMinutes(entry.in2);
     const out2 = toMinutes(entry.out2);
+    const in3 = toMinutes(entry.in3);
+    const out3 = toMinutes(entry.out3);
+    const in4 = toMinutes(entry.in4);
+    const out4 = toMinutes(entry.out4);
 
     let total = 0;
     if (out1 > in1) total += out1 - in1;
     if (out2 > in2) total += out2 - in2;
+    if (out3 > in3) total += out3 - in3;
+    if (out4 > in4) total += out4 - in4;
     const hours = Math.floor(total / 60);
     const minutes = total % 60;
     return `${hours}:${minutes.toString().padStart(2, "0")}`;
@@ -356,6 +364,94 @@ const DayRow: React.FC<DayRowProps> = ({
         />
       </td>
 
+      {showAllShifts && (
+        <>
+          {/* IN 3 */}
+          <td className="border border-gray-200 dark:border-gray-700 px-2 py-2">
+            <input
+              type="time"
+              value={entry.in3 || ""}
+              onChange={(e) => handleInput("in3", e.target.value)}
+              onBlur={() => handleBlur("in3")}
+              onFocus={() => handleFocus("in3")}
+              disabled={isSunday || !isEditable || isDateRestricted}
+              className={getInputClassName("in3", !!entry.in3)}
+              title={
+                isSunday
+                  ? "No duty hours on Sundays"
+                  : isConfirmed
+                  ? "Entry is confirmed and locked by office"
+                  : "Time In (Shift 3)"
+              }
+              placeholder="--:--"
+            />
+          </td>
+
+          {/* OUT 3 */}
+          <td className="border border-gray-200 dark:border-gray-700 px-2 py-2">
+            <input
+              type="time"
+              value={entry.out3 || ""}
+              onChange={(e) => handleInput("out3", e.target.value)}
+              onBlur={() => handleBlur("out3")}
+              onFocus={() => handleFocus("out3")}
+              disabled={isSunday || !isEditable || isDateRestricted}
+              className={getInputClassName("out3", !!entry.out3)}
+              title={
+                isSunday
+                  ? "No duty hours on Sundays"
+                  : isConfirmed
+                  ? "Entry is confirmed and locked by office"
+                  : "Time Out (Shift 3) - Must be after Time In"
+              }
+              placeholder="--:--"
+            />
+          </td>
+
+          {/* IN 4 */}
+          <td className="border border-gray-200 dark:border-gray-700 px-2 py-2">
+            <input
+              type="time"
+              value={entry.in4 || ""}
+              onChange={(e) => handleInput("in4", e.target.value)}
+              onBlur={() => handleBlur("in4")}
+              onFocus={() => handleFocus("in4")}
+              disabled={isSunday || !isEditable || isDateRestricted}
+              className={getInputClassName("in4", !!entry.in4)}
+              title={
+                isSunday
+                  ? "No duty hours on Sundays"
+                  : isConfirmed
+                  ? "Entry is confirmed and locked by office"
+                  : "Time In (Shift 4)"
+              }
+              placeholder="--:--"
+            />
+          </td>
+
+          {/* OUT 4 */}
+          <td className="border border-gray-200 dark:border-gray-700 px-2 py-2">
+            <input
+              type="time"
+              value={entry.out4 || ""}
+              onChange={(e) => handleInput("out4", e.target.value)}
+              onBlur={() => handleBlur("out4")}
+              onFocus={() => handleFocus("out4")}
+              disabled={isSunday || !isEditable || isDateRestricted}
+              className={getInputClassName("out4", !!entry.out4)}
+              title={
+                isSunday
+                  ? "No duty hours on Sundays"
+                  : isConfirmed
+                  ? "Entry is confirmed and locked by office"
+                  : "Time Out (Shift 4) - Must be after Time In"
+              }
+              placeholder="--:--"
+            />
+          </td>
+        </>
+      )}
+
       {/* Late */}
       <td className="border border-gray-200 dark:border-gray-700 px-2 py-2 text-sm text-center text-gray-500 dark:text-gray-400">
         {isSunday ? (
@@ -425,7 +521,14 @@ const DayRow: React.FC<DayRowProps> = ({
           <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
             Confirmed
           </span>
-        ) : entry.in1 || entry.out1 || entry.in2 || entry.out2 ? (
+        ) : entry.in1 ||
+          entry.out1 ||
+          entry.in2 ||
+          entry.out2 ||
+          entry.in3 ||
+          entry.out3 ||
+          entry.in4 ||
+          entry.out4 ? (
           <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">
             Unconfirmed
           </span>

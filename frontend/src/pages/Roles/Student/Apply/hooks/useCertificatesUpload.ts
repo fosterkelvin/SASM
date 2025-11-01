@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 // No PDF library: we'll use object URLs for PDF preview which lets the browser embed a PDF preview where supported.
 
 export interface UploadedCertificates {
@@ -15,11 +15,16 @@ export interface CertificatePreviewUrls {
 }
 
 export default function useCertificatesUpload() {
-  // Clear all certificates
-  const clearCertificates = () => {
+  const [uploadedCertificates, setUploadedCertificates] =
+    useState<UploadedCertificates>({ certificates: [] });
+  const [certificatePreviewUrls, setCertificatePreviewUrls] =
+    useState<CertificatePreviewUrls>({ certificates: [] });
+
+  // Clear all certificates - wrapped in useCallback to prevent infinite loops
+  const clearCertificates = useCallback(() => {
     // Revoke any object URLs created for previews to free memory
-    try {
-      certificatePreviewUrls.certificates.forEach((item) => {
+    setCertificatePreviewUrls((prev) => {
+      prev.certificates.forEach((item) => {
         if (item && item.url) {
           try {
             URL.revokeObjectURL(item.url);
@@ -28,19 +33,13 @@ export default function useCertificatesUpload() {
           }
         }
       });
-    } catch (e) {
-      // ignore if preview list is not available
-    }
+      return { certificates: [] };
+    });
     setUploadedCertificates({ certificates: [] });
-    setCertificatePreviewUrls({ certificates: [] });
-  };
-  const [uploadedCertificates, setUploadedCertificates] =
-    useState<UploadedCertificates>({ certificates: [] });
-  const [certificatePreviewUrls, setCertificatePreviewUrls] =
-    useState<CertificatePreviewUrls>({ certificates: [] });
+  }, []);
 
   const MAX_CERTIFICATE_SIZE_MB = 5; // 5MB limit
-  const handleCertificatesUpload = (files: FileList) => {
+  const handleCertificatesUpload = useCallback((files: FileList) => {
     const newFiles = Array.from(files);
     const validFiles: File[] = [];
     const validPreviewItems: CertificatePreviewItem[] = [];
@@ -71,9 +70,9 @@ export default function useCertificatesUpload() {
         certificates: [...prev.certificates, ...validPreviewItems],
       }));
     }
-  };
+  }, []);
 
-  const removeCertificate = (index: number) => {
+  const removeCertificate = useCallback((index: number) => {
     // Revoke object URL for the removed preview if present
     setCertificatePreviewUrls((prev) => {
       const toRevoke = prev.certificates[index];
@@ -91,7 +90,7 @@ export default function useCertificatesUpload() {
     setUploadedCertificates((prev) => ({
       certificates: prev.certificates.filter((_, i) => i !== index),
     }));
-  };
+  }, []);
 
   return {
     uploadedCertificates,

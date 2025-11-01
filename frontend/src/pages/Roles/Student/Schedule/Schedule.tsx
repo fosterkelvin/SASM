@@ -99,7 +99,7 @@ const Schedule: React.FC = () => {
                       <span className="text-3xl">📅</span>
                       <div>
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                          Your Class Schedule
+                          Your Schedule
                         </h2>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
                           Weekly schedule overview

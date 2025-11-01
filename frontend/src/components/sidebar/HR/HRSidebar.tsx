@@ -130,6 +130,11 @@ const HRSidebar = ({
     setIsOpen(false);
   };
 
+  const handleScholarsClick = () => {
+    navigate("/hr/scholars");
+    setIsOpen(false);
+  };
+
   const handleLeavesClick = () => {
     navigate("/leave-management");
     setIsOpen(false);
@@ -157,6 +162,7 @@ const HRSidebar = ({
   const handleCollapsedEvaluationsClick = () => navigate("/hr/evaluations");
   const handleCollapsedUsersClick = () => navigate("/hr/users");
   const handleCollapsedTraineesClick = () => navigate("/hr/trainees");
+  const handleCollapsedScholarsClick = () => navigate("/hr/scholars");
   const handleCollapsedLeavesClick = () => navigate("/leave-management");
   const handleCollapsedDTRCheckClick = () => navigate("/hr/dtr-check");
   const handleCollapsedNotificationsClick = () => navigate("/notifications");
@@ -168,6 +174,7 @@ const HRSidebar = ({
     { label: "Applications", handler: handleApplicationsClick },
     { label: "Reapplications", handler: handleReapplicationsClick },
     { label: "Trainees", handler: handleTraineesClick },
+    { label: "Scholars", handler: handleScholarsClick },
     { label: "Leave Management", handler: handleLeavesClick },
     { label: "DTR Check", handler: handleDTRCheckClick },
     { label: "Notifications", handler: handleNotificationsClick },
@@ -267,6 +274,7 @@ const HRSidebar = ({
               requirements: handleRequirementsClick,
               users: handleUsersClick,
               trainees: handleTraineesClick,
+              scholars: handleScholarsClick,
               leaves: handleLeavesClick,
               dtrCheck: handleDTRCheckClick,
               notifications: handleNotificationsClick,
@@ -287,6 +295,7 @@ const HRSidebar = ({
               evaluations: handleCollapsedEvaluationsClick,
               users: handleCollapsedUsersClick,
               trainees: handleCollapsedTraineesClick,
+              scholars: handleCollapsedScholarsClick,
               leaves: handleCollapsedLeavesClick,
               dtrCheck: handleCollapsedDTRCheckClick,
               notifications: handleCollapsedNotificationsClick,

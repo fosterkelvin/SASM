@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 export default function useFileUpload() {
   const [uploadedFiles, setUploadedFiles] = useState<{
@@ -8,7 +8,7 @@ export default function useFileUpload() {
     profilePhoto: string;
   }>({ profilePhoto: "" });
 
-  const handleFileUpload = (files: FileList | null) => {
+  const handleFileUpload = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return;
     const file = files[0];
     if (file) {
@@ -16,24 +16,22 @@ export default function useFileUpload() {
       const url = URL.createObjectURL(file);
       setFilePreviewUrls((prev) => ({ ...prev, profilePhoto: url }));
     }
-  };
+  }, []);
 
-  const removeFile = () => {
+  const removeFile = useCallback(() => {
     // revoke object URL if exists
-    try {
-      if (filePreviewUrls.profilePhoto) {
+    setFilePreviewUrls((prev) => {
+      if (prev.profilePhoto) {
         try {
-          URL.revokeObjectURL(filePreviewUrls.profilePhoto);
+          URL.revokeObjectURL(prev.profilePhoto);
         } catch (e) {
           // ignore
         }
       }
-    } catch (e) {
-      // ignore
-    }
+      return { ...prev, profilePhoto: "" };
+    });
     setUploadedFiles((prev) => ({ ...prev, profilePhoto: null }));
-    setFilePreviewUrls((prev) => ({ ...prev, profilePhoto: "" }));
-  };
+  }, []);
 
   return {
     uploadedFiles,

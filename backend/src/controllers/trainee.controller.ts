@@ -1,39 +1,61 @@
 import { Request, Response } from "express";
+import { Types } from "mongoose";
 import ApplicationModel from "../models/application.model";
 import UserModel from "../models/user.model";
 import OfficeProfileModel from "../models/officeProfile.model";
+import ScholarModel from "../models/scholar.model";
+import ScheduleModel from "../models/schedule.model";
 import catchErrors from "../utils/catchErrors";
 import { BAD_REQUEST, NOT_FOUND, OK, FORBIDDEN } from "../constants/http";
 import appAssert from "../utils/appAssert";
+import { createNotification } from "../services/notification.service";
 
 // Get all trainees (for HR)
 export const getAllTraineesHandler = catchErrors(
   async (req: Request, res: Response) => {
-    const { office, status } = req.query;
+    const { office, status, position, scholarStatus } = req.query;
 
-    const filter: any = {
-      status: {
+    // If scholarStatus is provided, fetch only accepted scholars
+    // Otherwise, fetch trainees in training statuses
+    const filter: any = {};
+
+    if (scholarStatus) {
+      // For Scholar Management page - only accepted scholars
+      filter.status = scholarStatus;
+    } else if (status) {
+      // Specific status requested
+      filter.status = status;
+    } else {
+      // For Trainee Management page - only trainees in training
+      filter.status = {
         $in: [
           "pending_office_interview",
           "office_interview_scheduled",
           "trainee",
           "training_completed",
         ],
-      },
-    };
+      };
+    }
 
     if (office) {
       filter.traineeOffice = office;
     }
 
-    if (status) {
-      filter.status = status;
+    if (position) {
+      filter.position = position;
     }
+
+    console.log(
+      "🔍 [HR] Fetching scholars/trainees with filter:",
+      JSON.stringify(filter, null, 2)
+    );
 
     const trainees = await ApplicationModel.find(filter)
       .populate("userID", "firstname lastname email")
       .populate("traineeSupervisor", "firstname lastname email")
       .sort({ traineeStartDate: -1 });
+
+    console.log(`📊 [HR] Found ${trainees.length} scholars/trainees`);
 
     // Import DTR model
     const DTRModel = require("../models/dtr.model").default;
@@ -134,6 +156,8 @@ export const getOfficeTraineesHandler = catchErrors(
       .populate("traineeSupervisor", "firstname lastname email")
       .sort({ traineeStartDate: -1 });
 
+    console.log(`📊 Found ${trainees.length} applications matching filter`);
+
     // Import DTR model
     const DTRModel = require("../models/dtr.model").default;
 
@@ -178,6 +202,111 @@ export const getOfficeTraineesHandler = catchErrors(
   }
 );
 
+// Get scholars for a specific office (for Office users) - SEPARATE from trainees
+export const getOfficeScholarsHandler = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+    const user = await UserModel.findById(userID);
+
+    appAssert(user, NOT_FOUND, "User not found");
+    appAssert(
+      user.role === "office" || user.role === "hr",
+      FORBIDDEN,
+      "Only office staff and HR can access this endpoint"
+    );
+
+    // Import Scholar model
+    const ScholarModel = require("../models/scholar.model").default;
+
+    // Build filter for scholars
+    let filter: any = {
+      status: "active", // Only active scholars
+    };
+
+    if (user.role === "office") {
+      console.log("Office user attempting to fetch scholars:");
+      console.log("- User ID:", userID);
+      console.log("- User officeName field:", user.officeName);
+      console.log("- User office field (fallback):", user.office);
+
+      // Use officeName first (new field), then office (old field)
+      filter.scholarOffice = user.officeName || user.office;
+
+      // If neither officeName nor office is set, try query parameter
+      if (!filter.scholarOffice && req.query.office) {
+        filter.scholarOffice = req.query.office;
+      }
+
+      console.log("- Filter scholarOffice:", filter.scholarOffice);
+    } else if (req.query.office) {
+      filter.scholarOffice = req.query.office;
+    }
+
+    console.log("📋 Scholar filter:", JSON.stringify(filter, null, 2));
+
+    // Fetch from Scholar collection
+    const scholars = await ScholarModel.find(filter)
+      .populate("userId", "firstname lastname email")
+      .populate("applicationId", "position")
+      .sort({ deployedAt: -1 });
+
+    console.log(`📊 Found ${scholars.length} scholars matching filter`);
+
+    // Import DTR model
+    const DTRModel = require("../models/dtr.model").default;
+
+    // For each scholar, calculate their DTR hours
+    const scholarsWithDTRHours = await Promise.all(
+      scholars.map(async (scholar: any) => {
+        // Check if userId exists (populate might fail if user was deleted)
+        if (!scholar.userId || !scholar.userId._id) {
+          console.warn(
+            `⚠️  [Office] Scholar ${scholar._id} has no valid userId - User may have been deleted. Filtering out from results.`
+          );
+          return null;
+        }
+
+        // Get all DTRs for this scholar
+        const dtrs = await DTRModel.find({
+          userId: scholar.userId._id,
+        });
+
+        // Sum up all totalMonthlyHours from all DTRs
+        const dtrHours = dtrs.reduce((sum: number, dtr: any) => {
+          return sum + (dtr.totalMonthlyHours || 0);
+        }, 0);
+
+        // Convert minutes to hours
+        const dtrHoursInHours = Math.floor(dtrHours / 60);
+
+        // Return scholar data in format expected by frontend
+        return {
+          _id: scholar._id,
+          userID: scholar.userId, // Map userId to userID
+          position: scholar.scholarType,
+          scholarOffice: scholar.scholarOffice,
+          scholarNotes: scholar.scholarNotes,
+          status: "accepted", // Map active to accepted for frontend
+          createdAt: scholar.createdAt,
+          dtrCompletedHours: dtrHoursInHours,
+          // Normalize for consistency
+          traineeOffice: scholar.scholarOffice,
+          traineeNotes: scholar.scholarNotes,
+        };
+      })
+    );
+
+    // Filter out null entries (scholars without valid users)
+    const validScholars = scholarsWithDTRHours.filter((s) => s !== null);
+
+    console.log(`✅ Returning ${validScholars.length} scholars`);
+
+    return res.status(OK).json({
+      trainees: validScholars, // Keep "trainees" key for API consistency
+    });
+  }
+);
+
 // Deploy trainee to office (for HR)
 export const deployTraineeHandler = catchErrors(
   async (req: Request, res: Response) => {
@@ -199,14 +328,15 @@ export const deployTraineeHandler = catchErrors(
       application.status === "interview_passed" ||
         application.status === "trainee" ||
         application.status === "pending_office_interview" ||
-        application.status === "office_interview_scheduled",
+        application.status === "office_interview_scheduled" ||
+        application.status === "accepted",
       BAD_REQUEST,
-      "Application must be in interview_passed, pending_office_interview, office_interview_scheduled, or trainee status"
+      "Application must be in interview_passed, pending_office_interview, office_interview_scheduled, trainee, or accepted status"
     );
 
     // Validate required fields
     appAssert(traineeOffice, BAD_REQUEST, "Office assignment is required");
-    appAssert(requiredHours, BAD_REQUEST, "Required hours is required");
+    // requiredHours is optional for scholar deployments
 
     // Get HR user info for timeline
     const hrUser = await UserModel.findById(userID);
@@ -214,29 +344,76 @@ export const deployTraineeHandler = catchErrors(
       ? `${hrUser.firstname} ${hrUser.lastname}`
       : "HR Staff";
 
-    // Update application - set to pending_office_interview
+    // Update application - scholars keep "accepted" status, trainees go to "pending_office_interview"
     const previousStatus = application.status;
-    application.status = "pending_office_interview";
-    application.traineeOffice = traineeOffice;
-    application.traineeSupervisor = traineeSupervisor || undefined;
-    application.traineeStartDate = traineeStartDate
-      ? new Date(traineeStartDate)
-      : undefined;
-    application.traineeEndDate = traineeEndDate
-      ? new Date(traineeEndDate)
-      : undefined;
-    application.requiredHours = requiredHours;
-    application.completedHours = 0;
-    application.traineeNotes = traineeNotes || "";
+    const isScholar = application.status === "accepted";
 
-    // Update student's user status to "pending_office_interview"
+    // Only change status if not already a scholar
+    if (!isScholar) {
+      application.status = "pending_office_interview";
+    }
+
+    // Use different fields for scholars vs trainees
+    if (isScholar) {
+      console.log("🎓 Deploying SCHOLAR:");
+      console.log("- Application ID:", application._id);
+      console.log("- Student ID:", application.userID);
+      console.log("- Office:", traineeOffice);
+      console.log("- Position:", application.position);
+
+      application.scholarOffice = traineeOffice;
+      application.scholarNotes = traineeNotes || "";
+      // Scholars don't have supervisors, required hours, or date ranges during deployment
+
+      try {
+        // Create a Scholar record in the new Scholar collection
+        const ScholarModel = require("../models/scholar.model").default;
+        console.log("📋 Creating Scholar record in database...");
+
+        const newScholar = new ScholarModel({
+          userId: application.userID,
+          applicationId: application._id,
+          scholarOffice: traineeOffice,
+          scholarType: application.position, // student_assistant or student_marshal
+          deployedBy: userID,
+          scholarNotes: traineeNotes || "",
+          status: "active",
+        });
+
+        await newScholar.save();
+        console.log("✅ Scholar record created successfully!");
+        console.log("- Scholar ID:", newScholar._id);
+        console.log("- Office:", newScholar.scholarOffice);
+        console.log("- Type:", newScholar.scholarType);
+      } catch (error) {
+        console.error("❌ Failed to create Scholar record:", error);
+        throw error;
+      }
+    } else {
+      application.traineeOffice = traineeOffice;
+      application.traineeSupervisor = traineeSupervisor || undefined;
+      application.traineeStartDate = traineeStartDate
+        ? new Date(traineeStartDate)
+        : undefined;
+      application.traineeEndDate = traineeEndDate
+        ? new Date(traineeEndDate)
+        : undefined;
+      application.requiredHours = requiredHours;
+      application.completedHours = 0;
+      application.traineeNotes = traineeNotes || "";
+    }
+
+    // Update student's user status
     const student = await UserModel.findById(application.userID);
-    console.log("🔍 Updating student status to pending_office_interview:");
+    const targetUserStatus = isScholar ? "active" : "pending_office_interview";
+    console.log(`🔍 Updating student status to ${targetUserStatus}:`, {
+      isScholar,
+    });
     console.log("- Student found:", !!student);
     console.log("- Student ID:", application.userID);
     if (student) {
       console.log("- Previous student status:", student.status);
-      student.status = "pending_office_interview";
+      student.status = targetUserStatus;
       await student.save();
       console.log("✅ Student status updated to:", student.status);
     } else {
@@ -244,14 +421,19 @@ export const deployTraineeHandler = catchErrors(
     }
 
     // Add timeline entry
+    const newStatus = isScholar ? "accepted" : "pending_office_interview";
+    const actionNotes = isScholar
+      ? `Scholar deployed to ${traineeOffice}${traineeNotes ? `. Notes: ${traineeNotes}` : ""}`
+      : `Deployed to ${traineeOffice}. Pending office interview. Required hours: ${requiredHours}`;
+
     const timelineEntry = {
-      action: "deployed_to_office",
+      action: isScholar ? "scholar_deployed" : "deployed_to_office",
       performedBy: userID,
       performedByName: hrName,
       timestamp: new Date(),
       previousStatus,
-      newStatus: "pending_office_interview",
-      notes: `Deployed to ${traineeOffice}. Pending office interview. Required hours: ${requiredHours}`,
+      newStatus,
+      notes: actionNotes,
     };
 
     application.timeline = application.timeline || [];
@@ -264,7 +446,9 @@ export const deployTraineeHandler = catchErrors(
     await application.populate("traineeSupervisor", "firstname lastname email");
 
     return res.status(OK).json({
-      message: "Trainee deployed successfully",
+      message: isScholar
+        ? "Scholar deployed successfully"
+        : "Trainee deployed successfully",
       application,
     });
   }
@@ -291,9 +475,10 @@ export const updateTraineeDeploymentHandler = catchErrors(
 
     appAssert(
       application.status === "trainee" ||
-        application.status === "training_completed",
+        application.status === "training_completed" ||
+        application.status === "accepted",
       BAD_REQUEST,
-      "Application must be in trainee or training_completed status"
+      "Application must be in trainee, training_completed, or accepted status"
     );
 
     // Get HR user info for timeline
@@ -302,24 +487,80 @@ export const updateTraineeDeploymentHandler = catchErrors(
       ? `${hrUser.firstname} ${hrUser.lastname}`
       : "HR Staff";
 
-    // Update fields if provided
-    if (traineeOffice !== undefined) application.traineeOffice = traineeOffice;
-    if (traineeSupervisor !== undefined)
-      application.traineeSupervisor = traineeSupervisor || undefined;
-    if (traineeStartDate !== undefined)
-      application.traineeStartDate = traineeStartDate
-        ? new Date(traineeStartDate)
-        : undefined;
-    if (traineeEndDate !== undefined)
-      application.traineeEndDate = traineeEndDate
-        ? new Date(traineeEndDate)
-        : undefined;
-    if (requiredHours !== undefined) application.requiredHours = requiredHours;
-    if (completedHours !== undefined)
-      application.completedHours = completedHours;
-    if (traineeNotes !== undefined) application.traineeNotes = traineeNotes;
-    if (traineePerformanceRating !== undefined)
-      application.traineePerformanceRating = traineePerformanceRating;
+    const isScholar = application.status === "accepted";
+
+    // Update fields if provided - use different fields for scholars vs trainees
+    if (isScholar) {
+      console.log("🎓 Updating SCHOLAR deployment:");
+      console.log("- Application ID:", application._id);
+      console.log("- Student ID:", application.userID);
+      console.log("- New Office:", traineeOffice);
+
+      // Scholar updates
+      if (traineeOffice !== undefined)
+        application.scholarOffice = traineeOffice;
+      if (traineeNotes !== undefined) application.scholarNotes = traineeNotes;
+      // Scholars don't track supervisor, hours, dates, or performance rating
+
+      // Check if Scholar record exists, create if not
+      try {
+        const ScholarModel = require("../models/scholar.model").default;
+        let scholar = await ScholarModel.findOne({
+          userId: application.userID,
+          applicationId: application._id,
+        });
+
+        if (scholar) {
+          console.log("📝 Updating existing Scholar record:", scholar._id);
+          // Update existing scholar
+          if (traineeOffice !== undefined)
+            scholar.scholarOffice = traineeOffice;
+          if (traineeNotes !== undefined) scholar.scholarNotes = traineeNotes;
+          await scholar.save();
+          console.log("✅ Scholar record updated successfully!");
+        } else {
+          console.log("📋 No Scholar record found, creating new one...");
+          // Create new Scholar record if it doesn't exist
+          scholar = new ScholarModel({
+            userId: application.userID,
+            applicationId: application._id,
+            scholarOffice: traineeOffice || application.scholarOffice,
+            scholarType: application.position,
+            deployedBy: userID,
+            scholarNotes: traineeNotes || application.scholarNotes || "",
+            status: "active",
+          });
+          await scholar.save();
+          console.log("✅ Scholar record created successfully!");
+          console.log("- Scholar ID:", scholar._id);
+          console.log("- Office:", scholar.scholarOffice);
+        }
+      } catch (error) {
+        console.error("❌ Failed to update/create Scholar record:", error);
+        throw error;
+      }
+    } else {
+      // Trainee updates
+      if (traineeOffice !== undefined)
+        application.traineeOffice = traineeOffice;
+      if (traineeSupervisor !== undefined)
+        application.traineeSupervisor = traineeSupervisor || undefined;
+      if (traineeStartDate !== undefined)
+        application.traineeStartDate = traineeStartDate
+          ? new Date(traineeStartDate)
+          : undefined;
+      if (traineeEndDate !== undefined)
+        application.traineeEndDate = traineeEndDate
+          ? new Date(traineeEndDate)
+          : undefined;
+      if (requiredHours !== undefined)
+        application.requiredHours = requiredHours;
+      if (completedHours !== undefined)
+        application.completedHours = completedHours;
+      if (traineeNotes !== undefined) application.traineeNotes = traineeNotes;
+      if (traineePerformanceRating !== undefined)
+        application.traineePerformanceRating = traineePerformanceRating;
+    }
 
     // Check if training is completed
     if (
@@ -458,6 +699,41 @@ export const updateTraineeHoursHandler = catchErrors(
 
     await application.save();
 
+    // Notify HR when office rates a trainee
+    if (traineePerformanceRating !== undefined) {
+      try {
+        // Get student info for the notification
+        const student = await UserModel.findById(application.userID);
+        const studentName = student
+          ? `${student.firstname} ${student.lastname}`
+          : "A trainee";
+
+        // Get all HR users
+        const hrUsers = await UserModel.find({ role: "hr" });
+
+        // Create notification for each HR user
+        for (const hrUser of hrUsers) {
+          await createNotification({
+            userID: (hrUser as any)._id.toString(),
+            title: "⭐ Trainee Performance Rated",
+            message: `${userName} has rated ${studentName}'s performance: ${traineePerformanceRating}/5 stars${notes ? ` - ${notes}` : ""}.`,
+            type: "info",
+            relatedApplicationID: (application as any)._id.toString(),
+          });
+        }
+
+        console.log(
+          `[trainee] Notified HR about performance rating for ${studentName}`
+        );
+      } catch (error) {
+        console.error(
+          "[trainee] Failed to notify HR about performance rating:",
+          error
+        );
+        // Don't fail the rating submission if notification fails
+      }
+    }
+
     // Populate for response
     await application.populate("userID", "firstname lastname email");
     await application.populate("traineeSupervisor", "firstname lastname email");
@@ -512,6 +788,40 @@ export const getMyTraineeInfoHandler = catchErrors(
         deploymentInterviewMode: application.deploymentInterviewMode,
         deploymentInterviewLink: application.deploymentInterviewLink,
         deploymentInterviewNotes: application.deploymentInterviewNotes,
+      },
+    });
+  }
+);
+
+// Get scholar deployment info for student (student checks if they're a scholar)
+export const getMyScholarInfoHandler = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+
+    const ScholarModel = require("../models/scholar.model").default;
+
+    // Check if student is deployed as a scholar
+    const scholar = await ScholarModel.findOne({
+      userId: userID,
+      status: "active",
+    }).sort({ deployedAt: -1 });
+
+    if (!scholar) {
+      return res.status(OK).json({
+        scholar: null,
+        message: "No active scholar deployment found",
+      });
+    }
+
+    return res.status(OK).json({
+      scholar: {
+        _id: scholar._id,
+        office: scholar.scholarOffice,
+        scholarType: scholar.scholarType,
+        deployedAt: scholar.deployedAt,
+        status: scholar.status,
+        notes: scholar.scholarNotes,
+        performanceRating: scholar.performanceRating,
       },
     });
   }
@@ -900,20 +1210,50 @@ export const uploadClassScheduleHandler = catchErrors(
       "Only PDF files are allowed"
     );
 
-    // Find the user's application (trainee status)
+    const ScheduleModel = require("../models/schedule.model").default;
+    const ScholarModel = require("../models/scholar.model").default;
+
+    // Check if user is a trainee or scholar
     const application = await ApplicationModel.findOne({
       userID,
       status: { $in: ["trainee", "training_completed"] },
     });
 
+    const scholar = await ScholarModel.findOne({
+      userId: userID,
+      status: "active",
+    });
+
     appAssert(
-      application,
+      application || scholar,
       NOT_FOUND,
-      "No active trainee application found for this user"
+      "No active trainee or scholar deployment found for this user"
     );
 
+    const isScholar = !!scholar;
+    const userType = isScholar ? "scholar" : "trainee";
+
+    // Find or create schedule
+    let schedule = await ScheduleModel.findOne({
+      userId: userID,
+      ...(isScholar
+        ? { scholarId: scholar._id }
+        : { applicationId: application!._id }),
+    });
+
+    if (!schedule) {
+      schedule = new ScheduleModel({
+        userId: userID,
+        userType,
+        ...(isScholar
+          ? { scholarId: scholar._id }
+          : { applicationId: application!._id }),
+      });
+    }
+
     // Store the file path/URL (Cloudinary URL)
-    application.classSchedule = file.path;
+    schedule.classSchedule = file.path;
+    schedule.uploadedAt = new Date();
 
     // Store parsed schedule data if provided
     if (scheduleData) {
@@ -922,33 +1262,21 @@ export const uploadClassScheduleHandler = catchErrors(
           typeof scheduleData === "string"
             ? JSON.parse(scheduleData)
             : scheduleData;
-        application.classScheduleData = parsedData;
+        schedule.classScheduleData = parsedData;
       } catch (error) {
         console.error("Error parsing schedule data:", error);
       }
     }
 
-    // Add timeline entry
-    const user = await UserModel.findById(userID);
-    const userName = user ? `${user.firstname} ${user.lastname}` : "Student";
+    await schedule.save();
 
-    const timelineEntry = {
-      action: "schedule_uploaded",
-      performedBy: userID,
-      performedByName: userName,
-      timestamp: new Date(),
-      notes: "Class schedule uploaded",
-    };
-
-    application.timeline = application.timeline || [];
-    application.timeline.push(timelineEntry as any);
-
-    await application.save();
+    console.log(`✅ Schedule uploaded for ${userType}:`, schedule._id);
 
     return res.status(OK).json({
       message: "Schedule uploaded successfully",
       scheduleUrl: file.path,
-      scheduleData: application.classScheduleData,
+      scheduleData: schedule.classScheduleData,
+      userType,
     });
   }
 );
@@ -961,28 +1289,50 @@ export const getClassScheduleHandler = catchErrors(
 
     appAssert(user, NOT_FOUND, "User not found");
 
-    let application;
+    const ScheduleModel = require("../models/schedule.model").default;
+    const ScholarModel = require("../models/scholar.model").default;
+
+    let schedule;
 
     if (user.role === "student") {
       // Students can only view their own schedule
-      application = await ApplicationModel.findOne({
-        userID,
-        status: { $in: ["trainee", "training_completed"] },
+      schedule = await ScheduleModel.findOne({
+        userId: userID,
       });
     } else if (user.role === "office" || user.role === "hr") {
-      // Office/HR can view any trainee's schedule
+      // Office/HR can view any trainee/scholar's schedule
       const { applicationId } = req.params;
-      application = await ApplicationModel.findById(applicationId);
+
+      // Check if it's a trainee or scholar
+      const application = await ApplicationModel.findById(applicationId);
+      if (application) {
+        schedule = await ScheduleModel.findOne({
+          applicationId: applicationId,
+        });
+      } else {
+        // Try to find by scholarId
+        schedule = await ScheduleModel.findOne({
+          scholarId: applicationId,
+        });
+      }
     } else {
       throw new Error("Unauthorized");
     }
 
-    appAssert(application, NOT_FOUND, "Application not found");
+    if (!schedule) {
+      return res.status(OK).json({
+        scheduleUrl: null,
+        scheduleData: [],
+        dutyHours: [],
+        message: "No schedule uploaded yet",
+      });
+    }
 
     return res.status(OK).json({
-      scheduleUrl: application.classSchedule || null,
-      scheduleData: application.classScheduleData || [],
-      dutyHours: application.dutyHours || [],
+      scheduleUrl: schedule.classSchedule || null,
+      scheduleData: schedule.classScheduleData || [],
+      dutyHours: schedule.dutyHours || [],
+      userType: schedule.userType,
     });
   }
 );
@@ -992,7 +1342,7 @@ export const addDutyHoursHandler = catchErrors(
   async (req: Request, res: Response) => {
     const userID = req.userID!;
     const { applicationId } = req.params;
-    const { day, startTime, endTime, location } = req.body;
+    const { day, startTime, endTime, location, notes } = req.body;
 
     const user = await UserModel.findById(userID);
     appAssert(user, NOT_FOUND, "User not found");
@@ -1008,57 +1358,90 @@ export const addDutyHoursHandler = catchErrors(
     appAssert(endTime, BAD_REQUEST, "End time is required");
     appAssert(location, BAD_REQUEST, "Location is required");
 
-    const application = await ApplicationModel.findById(applicationId);
-    appAssert(application, NOT_FOUND, "Application not found");
-
+    // Find schedule for this trainee/scholar
+    const schedule = await ScheduleModel.findOne({ applicationId });
     appAssert(
-      application.status === "trainee" ||
-        application.status === "training_completed",
-      BAD_REQUEST,
-      "Application must be in trainee or training_completed status"
+      schedule,
+      NOT_FOUND,
+      "Schedule not found. Please upload a schedule first."
     );
 
-    // Validate that the office user matches the trainee's office
-    if (user.role === "office") {
-      const userOffice = user.officeName || user.office;
+    // Get the application or scholar to verify permissions
+    const application = await ApplicationModel.findById(applicationId);
+    const scholar = !application
+      ? await ScholarModel.findOne({ applicationId })
+      : null;
+
+    appAssert(
+      application || scholar,
+      NOT_FOUND,
+      "Trainee or Scholar not found"
+    );
+
+    // Validate status
+    if (application) {
       appAssert(
-        application.traineeOffice === userOffice,
-        FORBIDDEN,
-        "You can only add duty hours for trainees assigned to your office"
+        application.status === "trainee" ||
+          application.status === "training_completed",
+        BAD_REQUEST,
+        "Application must be in trainee or training_completed status"
+      );
+    } else if (scholar) {
+      appAssert(
+        scholar.status === "active",
+        BAD_REQUEST,
+        "Scholar must be in active status"
       );
     }
 
-    // Add duty hour entry
+    // Validate that the office user matches the trainee's/scholar's office
+    if (user.role === "office") {
+      const userOffice = user.officeName || user.office;
+      const assignedOffice = application
+        ? application.traineeOffice
+        : scholar!.scholarOffice;
+      appAssert(
+        assignedOffice === userOffice,
+        FORBIDDEN,
+        "You can only add duty hours for trainees/scholars assigned to your office"
+      );
+    }
+
+    // Add duty hour entry to schedule
     const dutyHourEntry = {
       day,
       startTime,
       endTime,
       location,
-      addedBy: userID,
-      addedAt: new Date(),
+      notes: notes || "",
     };
 
-    application.dutyHours = application.dutyHours || [];
-    application.dutyHours.push(dutyHourEntry as any);
+    schedule.dutyHours = schedule.dutyHours || [];
+    schedule.dutyHours.push(dutyHourEntry);
+    schedule.lastModifiedBy = new Types.ObjectId(userID);
+    schedule.lastModifiedAt = new Date();
 
-    // Add timeline entry
-    const userName = user.officeName || `${user.firstname} ${user.lastname}`;
-    const timelineEntry = {
-      action: "duty_hours_added",
-      performedBy: userID,
-      performedByName: userName,
-      timestamp: new Date(),
-      notes: `Added duty hours: ${day} ${startTime}-${endTime} at ${location}`,
-    };
+    await schedule.save();
 
-    application.timeline = application.timeline || [];
-    application.timeline.push(timelineEntry as any);
+    // Add timeline entry to application if trainee
+    if (application) {
+      const userName = user.officeName || `${user.firstname} ${user.lastname}`;
+      const timelineEntry = {
+        action: "duty_hours_added",
+        performedBy: userID,
+        performedByName: userName,
+        timestamp: new Date(),
+        notes: `Added duty hours: ${day} ${startTime}-${endTime} at ${location}`,
+      };
 
-    await application.save();
+      application.timeline = application.timeline || [];
+      application.timeline.push(timelineEntry as any);
+      await application.save();
+    }
 
     return res.status(OK).json({
       message: "Duty hours added successfully",
-      dutyHours: application.dutyHours,
+      dutyHours: schedule.dutyHours,
     });
   }
 );
@@ -1071,27 +1454,35 @@ export const downloadClassScheduleHandler = catchErrors(
 
     appAssert(user, NOT_FOUND, "User not found");
 
-    let application;
+    let schedule;
 
     if (user.role === "student") {
       // Students can only view their own schedule
-      application = await ApplicationModel.findOne({
-        userID,
-        status: { $in: ["trainee", "training_completed"] },
+      schedule = await ScheduleModel.findOne({
+        userId: userID,
+        userType: { $in: ["trainee", "scholar"] },
       });
     } else if (user.role === "office" || user.role === "hr") {
-      // Office/HR can view any trainee's schedule
+      // Office/HR can view any trainee's/scholar's schedule
       const { applicationId } = req.params;
-      application = await ApplicationModel.findById(applicationId);
+      schedule = await ScheduleModel.findOne({ applicationId });
+
+      // If not found by applicationId, try scholarId
+      if (!schedule) {
+        const scholar = await ScholarModel.findOne({ applicationId });
+        if (scholar) {
+          schedule = await ScheduleModel.findOne({ scholarId: scholar._id });
+        }
+      }
     } else {
       throw new Error("Unauthorized");
     }
 
-    appAssert(application, NOT_FOUND, "Application not found");
-    appAssert(application.classSchedule, NOT_FOUND, "No schedule file found");
+    appAssert(schedule, NOT_FOUND, "Schedule not found");
+    appAssert(schedule.classSchedule, NOT_FOUND, "No schedule file found");
 
     // Redirect to the Cloudinary URL
     // Since Cloudinary URLs are public, this should work
-    return res.redirect(application.classSchedule);
+    return res.redirect(schedule.classSchedule);
   }
 );

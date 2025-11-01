@@ -499,6 +499,84 @@ export const addDutyHoursToSchedule = async (
   return response.data;
 };
 
+// ===== SCHOLAR MANAGEMENT APIs (separate from trainees) =====
+
+// Get all scholars (HR only) - fetches only accepted scholars
+export const getAllScholars = async (params?: {
+  office?: string;
+  status?: string;
+  scholarType?: string;
+}) => {
+  const searchParams = new URLSearchParams();
+
+  // Always filter for accepted status for scholars (unless specific status is requested)
+  if (params?.status) {
+    searchParams.append("status", params.status);
+  } else {
+    // Default to "accepted" for scholars page
+    searchParams.append("scholarStatus", "accepted");
+  }
+
+  if (params?.office) searchParams.append("office", params.office);
+
+  // Map SA/SM to full position names for backend
+  if (params?.scholarType) {
+    let mappedType = params.scholarType;
+    if (params.scholarType === "SA") mappedType = "student_assistant";
+    if (params.scholarType === "SM") mappedType = "student_marshal";
+    searchParams.append("position", mappedType);
+  }
+
+  const response = await API.get(`/trainees/all?${searchParams.toString()}`);
+  return response.data;
+};
+
+// Get scholars for specific office (Office staff only) - fetches deployed scholars ONLY
+export const getOfficeScholars = async () => {
+  const response = await API.get("/trainees/office/scholars");
+  return response.data;
+};
+
+// Get student's own scholar deployment info
+export const getMyScholarInfo = async () => {
+  const response = await API.get("/trainees/my-scholar");
+  return response.data;
+};
+
+// Deploy scholar to office (HR only) - reuses trainee endpoint
+export const deployScholar = async (
+  applicationId: string,
+  data: {
+    traineeOffice: string;
+    traineeSupervisor?: string;
+    traineeStartDate?: string;
+    traineeEndDate?: string;
+    requiredHours: number;
+    traineeNotes?: string;
+  }
+) => {
+  const response = await API.post(`/trainees/${applicationId}/deploy`, data);
+  return response.data;
+};
+
+// Update scholar deployment (HR only) - reuses trainee endpoint
+export const updateScholarDeployment = async (
+  applicationId: string,
+  data: {
+    traineeOffice?: string;
+    traineeSupervisor?: string;
+    traineeStartDate?: string;
+    traineeEndDate?: string;
+    requiredHours?: number;
+    completedHours?: number;
+    traineeNotes?: string;
+    traineePerformanceRating?: number;
+  }
+) => {
+  const response = await API.put(`/trainees/${applicationId}/deployment`, data);
+  return response.data;
+};
+
 // Final Actions
 export const acceptApplication = async (
   applicationId: string,
@@ -667,5 +745,29 @@ export const getAuditLogs = async (params?: {
   const response = await API.get(
     `/office/audit-logs?${searchParams.toString()}`
   );
+  return response.data;
+};
+
+// DTR Schedule Sync API
+export const getScheduleForDate = async (
+  year: number,
+  month: number,
+  day: number
+) => {
+  const response = await API.get(`/dtr/schedule/${year}/${month}/${day}`);
+  return response.data;
+};
+
+// Get DTR for a specific user (HR/Office only)
+export const getUserDTRForOffice = async (
+  userId: string,
+  month: number,
+  year: number
+) => {
+  const response = await API.post("/dtr/office/get-user-dtr", {
+    userId,
+    month,
+    year,
+  });
   return response.data;
 };

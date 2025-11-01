@@ -177,6 +177,12 @@ export interface ApplicationDocument extends mongoose.Document {
   traineeNotes?: string;
   traineePerformanceRating?: number; // 1-5 rating during training
 
+  // Scholar Information (for accepted student assistants/marshals)
+  scholarOffice?: string; // Office/department assigned as scholar
+  scholarStartDate?: Date;
+  scholarEndDate?: Date;
+  scholarNotes?: string;
+
   // Assignment and Tracking
   assignedTo?: mongoose.Types.ObjectId; // HR staff assigned to this application
   assignedAt?: Date;
@@ -741,6 +747,22 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
       type: Number,
       min: 1,
       max: 5,
+    },
+
+    // Scholar Information (for accepted student assistants/marshals)
+    scholarOffice: {
+      type: String,
+      trim: true,
+    },
+    scholarStartDate: {
+      type: Date,
+    },
+    scholarEndDate: {
+      type: Date,
+    },
+    scholarNotes: {
+      type: String,
+      trim: true,
     },
 
     // Assignment and Tracking

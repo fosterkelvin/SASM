@@ -6,12 +6,22 @@ import OfficeProfileModel from "../models/officeProfile.model";
 import catchErrors from "../utils/catchErrors";
 
 // Validation schemas
+const DTRShiftSchema = z.object({
+  in: z.string().optional(),
+  out: z.string().optional(),
+});
+
 const DTREntrySchema = z.object({
   day: z.number().min(1).max(31),
   in1: z.string().optional(),
   out1: z.string().optional(),
   in2: z.string().optional(),
   out2: z.string().optional(),
+  in3: z.string().optional(),
+  out3: z.string().optional(),
+  in4: z.string().optional(),
+  out4: z.string().optional(),
+  shifts: z.array(DTRShiftSchema).optional(),
   late: z.number().optional(),
   undertime: z.number().optional(),
   totalHours: z.number().optional(),
@@ -75,6 +85,7 @@ const MarkDayExcusedSchema = z.object({
   day: z.number().min(1).max(31),
   excusedStatus: z.enum(["none", "excused"]),
   excusedReason: z.string().optional(),
+  confirmationStatus: z.enum(["unconfirmed", "confirmed"]).optional(),
 });
 
 /**
@@ -722,6 +733,16 @@ export const markDayAsExcused = catchErrors(
     } else {
       dtr.entries[entryIndex].excusedStatus = "none";
       dtr.entries[entryIndex].excusedReason = "";
+      // Reset confirmation status if provided
+      if (validatedData.confirmationStatus) {
+        dtr.entries[entryIndex].confirmationStatus =
+          validatedData.confirmationStatus;
+        if (validatedData.confirmationStatus === "unconfirmed") {
+          dtr.entries[entryIndex].confirmedBy = undefined;
+          dtr.entries[entryIndex].confirmedByProfile = undefined;
+          dtr.entries[entryIndex].confirmedAt = undefined;
+        }
+      }
       // Recalculate total hours from time entries
       const entry = dtr.entries[entryIndex];
       const toMinutes = (time?: string) => {
@@ -865,5 +886,71 @@ export const sendDTRInquiry = catchErrors(
       console.error("Error sending DTR inquiry email:", error);
       res.status(500).json({ message: "Failed to send email" });
     }
+  }
+);
+
+/**
+ * Get schedule for a specific date (to help students see their schedule)
+ * GET /api/dtr/schedule/:year/:month/:day
+ */
+export const getScheduleForDate = catchErrors(
+  async (req: Request, res: Response) => {
+    const userId = req.userID;
+    const { year, month, day } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const yearNum = parseInt(year);
+    const monthNum = parseInt(month);
+    const dayNum = parseInt(day);
+
+    // Import required modules
+    const ApplicationModel = require("../models/application.model").default;
+    const { buildScheduleMap } = require("../utils/scheduleSync");
+
+    // Find the user's trainee application
+    const application = await ApplicationModel.findOne({
+      userID: userId,
+      status: { $in: ["trainee", "training_completed"] },
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        message: "No active trainee application found",
+        schedule: [],
+      });
+    }
+
+    // Get class schedule and duty hours
+    const classScheduleData = application.classScheduleData || [];
+    const dutyHours = application.dutyHours || [];
+
+    // Build schedule map
+    const scheduleMap = buildScheduleMap(classScheduleData, dutyHours);
+
+    // Get the day name
+    const date = new Date(yearNum, monthNum - 1, dayNum);
+    const dayNames = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const dayName = dayNames[date.getDay()];
+
+    // Get schedule for this specific day
+    const daySchedule = scheduleMap[dayName] || [];
+
+    res.status(200).json({
+      message: "Schedule retrieved successfully",
+      date: date.toISOString(),
+      dayName,
+      schedule: daySchedule,
+    });
   }
 );

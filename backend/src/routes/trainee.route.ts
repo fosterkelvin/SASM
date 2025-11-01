@@ -4,10 +4,12 @@ import storage from "../config/multerCloudinary";
 import {
   getAllTraineesHandler,
   getOfficeTraineesHandler,
+  getOfficeScholarsHandler,
   deployTraineeHandler,
   updateTraineeDeploymentHandler,
   updateTraineeHoursHandler,
   getMyTraineeInfoHandler,
+  getMyScholarInfoHandler,
   scheduleDeploymentInterviewHandler,
   acceptDeploymentHandler,
   rejectDeploymentHandler,
@@ -26,6 +28,9 @@ traineeRoutes.get("/all", getAllTraineesHandler);
 // Get trainees for specific office (Office staff and HR)
 traineeRoutes.get("/office", getOfficeTraineesHandler);
 
+// Get scholars for specific office (Office staff and HR) - SEPARATE from trainees
+traineeRoutes.get("/office/scholars", getOfficeScholarsHandler);
+
 // Deploy trainee to office (HR only)
 traineeRoutes.post("/:applicationId/deploy", deployTraineeHandler);
 
@@ -37,6 +42,9 @@ traineeRoutes.put("/:applicationId/hours", updateTraineeHoursHandler);
 
 // Get student's own trainee deployment info
 traineeRoutes.get("/my-deployment", getMyTraineeInfoHandler);
+
+// Get student's own scholar deployment info
+traineeRoutes.get("/my-scholar", getMyScholarInfoHandler);
 
 // Deployment interview workflow (Office staff)
 traineeRoutes.post(

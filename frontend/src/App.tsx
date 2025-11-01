@@ -16,6 +16,7 @@ import ReApplicationManagement from "./pages/Roles/HR/ReApplication Management/R
 import Users from "./pages/Roles/HR/Users/Users";
 import EvaluationManagement from "./pages/Roles/HR/Evaluation Management/EvaluationManagement";
 import TraineeManagement from "./pages/Roles/HR/Trainee Management/TraineeManagement";
+import ScholarManagement from "./pages/Roles/HR/Scholar Management/ScholarManagement";
 import Scholars from "./pages/Roles/Office/Scholars/Scholars";
 import MyTrainees from "./pages/Roles/Office/MyTrainees";
 import TraineeSchedule from "./pages/Roles/Office/TraineeSchedule";
@@ -175,6 +176,7 @@ function App(): ReactElement {
         <Route path="/hr/users" element={<Users />} />
         <Route path="/hr/evaluations" element={<EvaluationManagement />} />
         <Route path="/hr/trainees" element={<TraineeManagement />} />
+        <Route path="/hr/scholars" element={<ScholarManagement />} />
         <Route path="/hr/dtr-check" element={<HRDTRCheck />} />
 
         {/* Netflix-style Profile Selector - Must be outside AppContainer for full-screen effect */}

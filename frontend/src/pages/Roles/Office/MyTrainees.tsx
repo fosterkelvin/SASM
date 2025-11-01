@@ -57,10 +57,21 @@ const MyTrainees = () => {
   const [acceptNotes, setAcceptNotes] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
 
-  // Fetch trainees for this office
+  // Fetch trainees AND scholars for this office
   const { data: traineesData, isLoading } = useQuery({
-    queryKey: ["office-trainees"],
-    queryFn: () => getOfficeTrainees(),
+    queryKey: ["office-trainees-and-scholars"],
+    queryFn: async () => {
+      const [traineesRes, scholarsRes] = await Promise.all([
+        getOfficeTrainees(),
+        (await import("@/lib/api")).getOfficeScholars(),
+      ]);
+      return {
+        trainees: [
+          ...(traineesRes.trainees || []),
+          ...(scholarsRes.trainees || []),
+        ],
+      };
+    },
   });
 
   // Rate trainee mutation

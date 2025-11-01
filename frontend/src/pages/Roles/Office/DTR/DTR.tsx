@@ -4,9 +4,31 @@ import { Card, CardContent } from "@/components/ui/card";
 import OfficeDTRTable from "./components/OfficeDTRTable";
 import { Entry } from "@/pages/Roles/Student/DTR/components/types";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+
+// Use production backend URL from environment variable
+const API_URL = import.meta.env.VITE_API || "http://localhost:4004";
 
 const OfficeDTRPage: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Current date for defaults
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+
+  // Selected month/year
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  // Loading state
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Generate entries based on selected month/year
+  const getDaysInMonth = (month: number, year: number) => {
+    return new Date(year, month, 0).getDate();
+  };
 
   const [entries, setEntries] = useState<Entry[]>(() => {
     try {
@@ -15,120 +37,160 @@ const OfficeDTRPage: React.FC = () => {
     } catch (e) {
       // ignore
     }
-    return Array.from({ length: 31 }, (_, i) => ({ id: i + 1, status: "" }));
+    const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+    return Array.from({ length: daysInMonth }, (_, i) => ({
+      id: i + 1,
+      status: "",
+    }));
   });
 
-  const [scholars] = useState(() => {
-    // Mock scholars list - in a real app this would come from API
-    try {
-      const raw = localStorage.getItem("office_scholars");
-      if (raw) return JSON.parse(raw) as { id: string; name: string }[];
-    } catch (e) {
-      // ignore
-    }
-    const list = [
-      { id: "s1", name: "Juan Dela Cruz" },
-      { id: "s2", name: "Maria Santos" },
-      { id: "s3", name: "Pedro Reyes" },
-    ];
-    try {
-      localStorage.setItem("office_scholars", JSON.stringify(list));
-    } catch (e) {
-      // ignore
-    }
-    return list;
-  });
+  const [scholars, setScholars] = useState<
+    { id: string; name: string; role?: string }[]
+  >([]);
+  const [loadingScholars, setLoadingScholars] = useState(true);
 
-  // Seed dummy IN/OUT entries for mock scholars if not present
+  // Fetch list of students/trainees from backend
   useEffect(() => {
-    try {
-      const seedIfMissing = (scholarId: string) => {
-        const key = `office_dtr_entries_${scholarId}`;
-        let current: Entry[] | null = null;
-        try {
-          const raw = localStorage.getItem(key);
-          if (raw) current = JSON.parse(raw) as Entry[];
-        } catch (e) {
-          current = null;
+    const fetchScholars = async () => {
+      setLoadingScholars(true);
+      try {
+        // Query for both students and trainees
+        const response = await fetch(`${API_URL}/users?role=student,trainee`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch scholars: ${response.statusText}`);
         }
 
-        // Ensure we have 31 entries (preserve existing if present)
-        const entries: Entry[] =
-          current && current.length === 31
-            ? current
-            : Array.from({ length: 31 }, (_, i) => ({ id: i + 1, status: "" }));
+        const data = await response.json();
+        console.log("Fetched scholars:", data);
 
-        // Upsert sample IN/OUT times for days 1 and 2 if they're empty
-        if (
-          !entries[0].in1 &&
-          !entries[0].out1 &&
-          !entries[0].in2 &&
-          !entries[0].out2
-        ) {
-          entries[0].in1 = "08:00";
-          entries[0].out1 = "12:00";
-          entries[0].in2 = "13:00";
-          entries[0].out2 = "17:00";
-        }
-        if (
-          !entries[1].in1 &&
-          !entries[1].out1 &&
-          !entries[1].in2 &&
-          !entries[1].out2
-        ) {
-          entries[1].in1 = "08:15";
-          entries[1].out1 = "12:00";
-          entries[1].in2 = "13:05";
-          entries[1].out2 = "16:50";
-        }
+        // Map to the format we need
+        const mappedScholars = data.users.map((user: any) => ({
+          id: user._id,
+          name: `${user.firstName} ${user.lastName}`,
+          role: user.role,
+        }));
 
-        localStorage.setItem(key, JSON.stringify(entries));
-      };
-      // only seed for our mock list
-      scholars.forEach((s) => seedIfMissing(s.id));
-    } catch (e) {
-      // ignore
-    }
-  }, [scholars]);
+        setScholars(mappedScholars);
+      } catch (err) {
+        console.error("Error fetching scholars:", err);
+        // Fallback to mock data if API fails
+        setScholars([
+          { id: "mock1", name: "Sample Student 1", role: "Student" },
+          { id: "mock2", name: "Sample Student 2", role: "Trainee" },
+        ]);
+      } finally {
+        setLoadingScholars(false);
+      }
+    };
+
+    fetchScholars();
+  }, []);
 
   const [selectedScholar, setSelectedScholar] = useState<null | {
     id: string;
     name: string;
   }>(null);
 
-  // When a scholar is selected, load their entries from localStorage (namespaced)
+  // Fetch actual DTR data from backend when a scholar is selected
+  const fetchStudentDTR = async (
+    userId: string,
+    month: number,
+    year: number
+  ) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_URL}/dtr/office/get-user-dtr`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ userId, month, year }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // No DTR found for this month - create empty entries
+          const daysInMonth = getDaysInMonth(month, year);
+          setEntries(
+            Array.from({ length: daysInMonth }, (_, i) => ({
+              id: i + 1,
+              status: "",
+            }))
+          );
+          return;
+        }
+        throw new Error(`Failed to fetch DTR: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("Fetched DTR data:", data);
+
+      const dtr = data.dtr;
+      if (dtr && dtr.entries && dtr.entries.length > 0) {
+        // Map backend entries to frontend format
+        const mappedEntries = dtr.entries.map((entry: any) => {
+          console.log(
+            `Day ${entry.day} - shifts:`,
+            entry.shifts,
+            `in1: ${entry.in1}, out1: ${entry.out1}`
+          );
+          return {
+            id: entry.day || entry.id,
+            day: entry.day,
+            shifts: entry.shifts || [],
+            // Keep legacy fields for backward compatibility
+            in1: entry.in1,
+            out1: entry.out1,
+            in2: entry.in2,
+            out2: entry.out2,
+            in3: entry.in3,
+            out3: entry.out3,
+            in4: entry.in4,
+            out4: entry.out4,
+            status: entry.status || "",
+            totalHours: entry.totalHours,
+            late: entry.late,
+            undertime: entry.undertime,
+          };
+        });
+        console.log("Mapped entries:", mappedEntries);
+        setEntries(mappedEntries);
+      } else {
+        // No entries - create empty ones
+        const daysInMonth = getDaysInMonth(month, year);
+        setEntries(
+          Array.from({ length: daysInMonth }, (_, i) => ({
+            id: i + 1,
+            status: "",
+          }))
+        );
+      }
+    } catch (err) {
+      console.error("Error fetching DTR:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch DTR");
+      // Fallback to empty entries
+      const daysInMonth = getDaysInMonth(month, year);
+      setEntries(
+        Array.from({ length: daysInMonth }, (_, i) => ({
+          id: i + 1,
+          status: "",
+        }))
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // When a scholar is selected or month/year changes, fetch their DTR from backend
   useEffect(() => {
     if (!selectedScholar) return;
-    try {
-      const raw = localStorage.getItem(
-        `office_dtr_entries_${selectedScholar.id}`
-      );
-      if (raw) {
-        setEntries(JSON.parse(raw) as Entry[]);
-        return;
-      }
-    } catch (e) {
-      // ignore
-    }
-    setEntries(
-      Array.from({ length: 31 }, (_, i) => ({ id: i + 1, status: "" }))
-    );
-  }, [selectedScholar]);
-
-  useEffect(() => {
-    try {
-      if (selectedScholar) {
-        localStorage.setItem(
-          `office_dtr_entries_${selectedScholar.id}`,
-          JSON.stringify(entries)
-        );
-      } else {
-        localStorage.setItem("office_dtr_entries", JSON.stringify(entries));
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, [entries]);
+    fetchStudentDTR(selectedScholar.id, selectedMonth, selectedYear);
+  }, [selectedScholar, selectedMonth, selectedYear]);
 
   const handleEntryChange = (id: number, changes: Partial<Entry>) => {
     setEntries((prev) =>
@@ -180,6 +242,57 @@ const OfficeDTRPage: React.FC = () => {
                     </p>
                   </div>
                 </div>
+
+                {/* Month/Year Selector */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-4">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Month:
+                    </label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+                    >
+                      {[
+                        "January",
+                        "February",
+                        "March",
+                        "April",
+                        "May",
+                        "June",
+                        "July",
+                        "August",
+                        "September",
+                        "October",
+                        "November",
+                        "December",
+                      ].map((month, idx) => (
+                        <option key={idx + 1} value={idx + 1}>
+                          {month}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Year:
+                    </label>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(Number(e.target.value))}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+                    >
+                      {Array.from({ length: 5 }, (_, i) => currentYear - i).map(
+                        (year) => (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-4">
@@ -188,20 +301,37 @@ const OfficeDTRPage: React.FC = () => {
                     <h3 className="text-md font-semibold mb-3">
                       Select Scholar
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                      {scholars.map((s) => (
-                        <button
-                          key={s.id}
-                          onClick={() => setSelectedScholar(s)}
-                          className="text-left p-3 border rounded hover:shadow-sm bg-white"
-                        >
-                          <div className="font-medium">{s.name}</div>
-                          <div className="text-xs text-gray-500">
-                            ID: {s.id}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+                    {loadingScholars ? (
+                      <div className="flex flex-col items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-red-600 dark:text-red-400 mb-2" />
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Loading students and trainees...
+                        </p>
+                      </div>
+                    ) : scholars.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          No students or trainees found.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {scholars.map((s) => (
+                          <button
+                            key={s.id}
+                            onClick={() => setSelectedScholar(s)}
+                            className="text-left p-3 border rounded hover:shadow-sm bg-white dark:bg-gray-800 hover:border-red-300 dark:hover:border-red-600 transition-colors"
+                          >
+                            <div className="font-medium text-gray-800 dark:text-gray-200">
+                              {s.name}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {s.role || "Student"}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div>
@@ -215,6 +345,28 @@ const OfficeDTRPage: React.FC = () => {
                           Back
                         </Button>
                       </div>
+                      <div className="text-center flex-1">
+                        <div className="text-lg font-bold text-gray-800 dark:text-gray-200">
+                          DTR for{" "}
+                          {
+                            [
+                              "January",
+                              "February",
+                              "March",
+                              "April",
+                              "May",
+                              "June",
+                              "July",
+                              "August",
+                              "September",
+                              "October",
+                              "November",
+                              "December",
+                            ][selectedMonth - 1]
+                          }{" "}
+                          {selectedYear}
+                        </div>
+                      </div>
                       <div className="text-right">
                         <div className="font-semibold">
                           {selectedScholar.name}
@@ -225,10 +377,31 @@ const OfficeDTRPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <OfficeDTRTable
-                      entries={entries}
-                      onChange={handleEntryChange}
-                    />
+                    {/* Error message */}
+                    {error && (
+                      <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                        <p className="text-sm text-red-800 dark:text-red-200">
+                          {error}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Loading state */}
+                    {loading ? (
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 animate-spin text-red-600 dark:text-red-400 mb-2" />
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Loading DTR data...
+                        </p>
+                      </div>
+                    ) : (
+                      <OfficeDTRTable
+                        entries={entries}
+                        onChange={handleEntryChange}
+                        month={selectedMonth}
+                        year={selectedYear}
+                      />
+                    )}
                   </div>
                 )}
               </div>

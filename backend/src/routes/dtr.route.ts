@@ -17,6 +17,7 @@ import {
   updateUserEntryForOffice,
   markDayAsExcused,
   sendDTRInquiry,
+  getScheduleForDate,
 } from "../controllers/dtr.controller";
 import authenticate from "../middleware/authenticate";
 
@@ -29,6 +30,7 @@ dtrRoutes.use(authenticate);
 dtrRoutes.post("/get-or-create", getOrCreateDTR);
 dtrRoutes.get("/my-dtrs", getMyDTRs);
 dtrRoutes.get("/stats", getDTRStats);
+dtrRoutes.get("/schedule/:year/:month/:day", getScheduleForDate);
 dtrRoutes.get("/:id", getDTRById);
 dtrRoutes.put("/update", updateDTR);
 dtrRoutes.put("/update-entry", updateEntry);

@@ -41,12 +41,6 @@ const ScholarsList: React.FC<Props> = ({ data, onOpen }) => {
                     Scholar Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -76,32 +70,15 @@ const ScholarsList: React.FC<Props> = ({ data, onOpen }) => {
                       {u.program || "-"}
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-                          u.status
-                        )}`}
-                      >
-                        {(u.status || "").toUpperCase()}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {formatDate(u.createdAt)}
-                      </div>
-                    </td>
-
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => onOpen(u)}
-                          className="text-red-600 border-red-300"
+                          className="text-red-600 border-red-300 hover:bg-red-50"
                         >
-                          <Eye className="h-4 w-4 mr-1" /> View
+                          <Eye className="h-4 w-4 mr-1" /> Manage Schedule
                         </Button>
                       </div>
                     </td>

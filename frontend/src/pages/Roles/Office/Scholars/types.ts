@@ -6,4 +6,11 @@ export type ScholarRow = {
   program?: string;
   status?: string;
   createdAt?: string;
+  requiredHours?: number;
+  completedHours?: number;
+  traineeOffice?: string;
+  traineeSupervisor?: any;
+  traineeStartDate?: string;
+  traineeEndDate?: string;
+  traineeNotes?: string;
 };

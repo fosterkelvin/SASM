@@ -11,12 +11,24 @@ export interface IDTREntryEdit {
   }[];
 }
 
+export interface IDTRShift {
+  in?: string; // HH:MM format
+  out?: string; // HH:MM format
+}
+
 export interface IDTREntry {
   day: number; // 1-31
-  in1?: string; // HH:MM format
+  // Legacy fields (kept for backward compatibility)
+  in1?: string; // HH:MM format - First shift
   out1?: string;
-  in2?: string;
+  in2?: string; // Second shift
   out2?: string;
+  in3?: string; // Third shift (optional)
+  out3?: string;
+  in4?: string; // Fourth shift (optional)
+  out4?: string;
+  // NEW: Dynamic shifts array (unlimited shifts)
+  shifts?: IDTRShift[]; // Array of shift time pairs
   late?: number; // minutes
   undertime?: number; // minutes
   totalHours?: number; // in minutes
@@ -63,13 +75,28 @@ const DTREntryEditSchema = new Schema<IDTREntryEdit>(
   { _id: false }
 );
 
+const DTRShiftSchema = new Schema<IDTRShift>(
+  {
+    in: { type: String },
+    out: { type: String },
+  },
+  { _id: false }
+);
+
 const DTREntrySchema = new Schema<IDTREntry>(
   {
     day: { type: Number, required: true, min: 1, max: 31 },
+    // Legacy fields (kept for backward compatibility)
     in1: { type: String },
     out1: { type: String },
     in2: { type: String },
     out2: { type: String },
+    in3: { type: String },
+    out3: { type: String },
+    in4: { type: String },
+    out4: { type: String },
+    // NEW: Dynamic shifts array
+    shifts: { type: [DTRShiftSchema], default: [] },
     late: { type: Number, default: 0 },
     undertime: { type: Number, default: 0 },
     totalHours: { type: Number, default: 0 },

@@ -68,6 +68,17 @@ const StudentSidebar = ({
         app.status === "trainee" || app.status === "training_completed"
     ) || false;
 
+  // Check if user is deployed as a scholar (NEW)
+  const { data: scholarData } = useQuery({
+    queryKey: ["myScholarInfo"],
+    queryFn: async () => {
+      const { getMyScholarInfo } = await import("@/lib/api");
+      return getMyScholarInfo();
+    },
+    enabled: !!user,
+  });
+  const isScholar = !!scholarData?.scholar;
+
   // Check if email update is required (blocks all features except profile/notifications)
   const applications = userApplicationsData?.applications || [];
   const { isEmailUpdateRequired } = checkEmailRequirement(user, applications);
@@ -427,6 +438,7 @@ const StudentSidebar = ({
               user?.status === "applicant" || user?.status === "trainee"
             }
             isTrainee={isTrainee}
+            isScholar={isScholar}
             isAccepted={hasAcceptedApplication}
             isEmailUpdateRequired={isEmailUpdateRequired}
             isPersonalInfoIncomplete={!personalInfoComplete}

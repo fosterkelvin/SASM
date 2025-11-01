@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/context/ToastContext";
-import DTRTable from "./components/DTRTable";
+import DynamicDTRTable from "./components/DynamicDTRTable";
 import { Entry } from "./components/types";
 import {
   Calendar,
@@ -184,17 +184,27 @@ const Dtr: React.FC = () => {
         const out1 = toMinutes(updatedEntry.out1);
         const in2 = toMinutes(updatedEntry.in2);
         const out2 = toMinutes(updatedEntry.out2);
+        const in3 = toMinutes(updatedEntry.in3);
+        const out3 = toMinutes(updatedEntry.out3);
+        const in4 = toMinutes(updatedEntry.in4);
+        const out4 = toMinutes(updatedEntry.out4);
 
         let totalMinutes = 0;
         if (out1 > in1) totalMinutes += out1 - in1;
         if (out2 > in2) totalMinutes += out2 - in2;
+        if (out3 > in3) totalMinutes += out3 - in3;
+        if (out4 > in4) totalMinutes += out4 - in4;
 
         // Auto-set status to "Unconfirmed" if any time is entered
         const hasTimeEntry =
           updatedEntry.in1 ||
           updatedEntry.out1 ||
           updatedEntry.in2 ||
-          updatedEntry.out2;
+          updatedEntry.out2 ||
+          updatedEntry.in3 ||
+          updatedEntry.out3 ||
+          updatedEntry.in4 ||
+          updatedEntry.out4;
         const autoStatus = hasTimeEntry
           ? "Unconfirmed"
           : updatedEntry.status || "";
@@ -205,6 +215,11 @@ const Dtr: React.FC = () => {
           out1: updatedEntry.out1 || "",
           in2: updatedEntry.in2 || "",
           out2: updatedEntry.out2 || "",
+          in3: updatedEntry.in3 || "",
+          out3: updatedEntry.out3 || "",
+          in4: updatedEntry.in4 || "",
+          out4: updatedEntry.out4 || "",
+          shifts: updatedEntry.shifts || [], // Include shifts array
           status: autoStatus,
           totalHours: totalMinutes,
         };
@@ -677,7 +692,7 @@ const Dtr: React.FC = () => {
               {!loading && dtr && (
                 <>
                   <div className="mt-6">
-                    <DTRTable
+                    <DynamicDTRTable
                       entries={entries}
                       onChange={isEditable ? handleEntryChange : () => {}}
                       month={selectedMonth}

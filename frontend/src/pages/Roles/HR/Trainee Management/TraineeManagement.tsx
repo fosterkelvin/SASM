@@ -22,8 +22,11 @@ import {
   deployTrainee,
   updateTraineeDeployment,
   getOfficeUsers,
+  getUserDTRForOffice,
+  getClassSchedule,
 } from "@/lib/api";
 import HRSidebar from "@/components/sidebar/HR/HRSidebar";
+import ScheduleVisualization from "@/pages/Roles/Student/Schedule/components/ScheduleVisualization";
 
 const TraineeManagement = () => {
   const { user } = useAuth();
@@ -52,6 +55,14 @@ const TraineeManagement = () => {
     completedHours: "",
     traineeNotes: "",
   });
+
+  // DTR and Schedule data
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [dtrData, setDtrData] = useState<any>(null);
+  const [scheduleData, setScheduleData] = useState<any>(null);
+  const [loadingDTR, setLoadingDTR] = useState(false);
+  const [loadingSchedule, setLoadingSchedule] = useState(false);
 
   // Fetch trainees
   const { data: traineesData, isLoading } = useQuery({
@@ -134,16 +145,82 @@ const TraineeManagement = () => {
     setShowDeployModal(true);
   };
 
-  const handleViewDetails = (trainee: any) => {
+  const handleViewDetails = async (trainee: any) => {
     setSelectedTrainee(trainee);
     setActiveTab("dtr");
     setShowDetailsModal(true);
+
+    // Fetch DTR data when modal opens
+    if (trainee.userID?._id) {
+      await fetchDTRData(trainee.userID._id);
+    }
+
+    // Fetch schedule data
+    if (trainee._id) {
+      await fetchScheduleData(trainee._id);
+    }
   };
 
   const closeDetailsModal = () => {
     setShowDetailsModal(false);
     setSelectedTrainee(null);
     setActiveTab("dtr");
+    setDtrData(null);
+    setScheduleData(null);
+  };
+
+  const fetchDTRData = async (userId: string) => {
+    setLoadingDTR(true);
+    try {
+      const response = await getUserDTRForOffice(
+        userId,
+        selectedMonth,
+        selectedYear
+      );
+      setDtrData(response.dtr);
+    } catch (error) {
+      console.error("Error fetching DTR:", error);
+      alert("Failed to load DTR data");
+    } finally {
+      setLoadingDTR(false);
+    }
+  };
+
+  const fetchScheduleData = async (applicationId: string) => {
+    setLoadingSchedule(true);
+    try {
+      const response = await getClassSchedule(applicationId);
+      console.log("Schedule API response:", response);
+      // The response already contains scheduleUrl, scheduleData, and dutyHours
+      setScheduleData(response);
+    } catch (error) {
+      console.error("Error fetching schedule:", error);
+      // Don't show error if no schedule exists yet
+    } finally {
+      setLoadingSchedule(false);
+    }
+  };
+
+  const handleMonthYearChange = async (month: number, year: number) => {
+    setSelectedMonth(month);
+    setSelectedYear(year);
+    if (selectedTrainee?.userID?._id) {
+      // Fetch DTR with the new month/year values directly
+      setLoadingDTR(true);
+      try {
+        const response = await getUserDTRForOffice(
+          selectedTrainee.userID._id,
+          month,
+          year
+        );
+        setDtrData(response.dtr);
+      } catch (error) {
+        console.error("Error fetching DTR:", error);
+        alert("Failed to load DTR data");
+      } finally {
+        setLoadingDTR(false);
+      }
+    }
   };
 
   const handleSubmitDeployment = () => {
@@ -748,20 +825,238 @@ const TraineeManagement = () => {
             <div className="flex-1 overflow-y-auto p-6">
               {activeTab === "dtr" && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                    Daily Time Record
-                  </h3>
-                  <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6 text-center">
-                    <FileText className="w-12 h-12 mx-auto text-gray-400 mb-3" />
-                    <p className="text-gray-600 dark:text-gray-400 mb-2">
-                      DTR records will be displayed here
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-500">
-                      Total Hours: {selectedTrainee.dtrCompletedHours || 0} /{" "}
-                      {selectedTrainee.requiredHours}
-                    </p>
-                    {/* TODO: Add actual DTR table/records here */}
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Daily Time Record
+                    </h3>
+                    <div className="flex gap-2">
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) =>
+                          handleMonthYearChange(
+                            parseInt(e.target.value),
+                            selectedYear
+                          )
+                        }
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
+                      >
+                        {[
+                          "January",
+                          "February",
+                          "March",
+                          "April",
+                          "May",
+                          "June",
+                          "July",
+                          "August",
+                          "September",
+                          "October",
+                          "November",
+                          "December",
+                        ].map((month, idx) => (
+                          <option key={idx} value={idx + 1}>
+                            {month}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={selectedYear}
+                        onChange={(e) =>
+                          handleMonthYearChange(
+                            selectedMonth,
+                            parseInt(e.target.value)
+                          )
+                        }
+                        className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700"
+                      >
+                        {Array.from({ length: 5 }, (_, i) => {
+                          const year = new Date().getFullYear() - i;
+                          return (
+                            <option key={year} value={year}>
+                              {year}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
                   </div>
+
+                  {loadingDTR ? (
+                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6 text-center">
+                      <FileText className="w-12 h-12 mx-auto text-gray-400 mb-3 animate-pulse" />
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Loading DTR data...
+                      </p>
+                    </div>
+                  ) : dtrData ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Total Hours
+                          </p>
+                          <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {((dtrData.totalMonthlyHours || 0) / 60).toFixed(2)}{" "}
+                            hrs
+                          </p>
+                        </div>
+                        <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Office
+                          </p>
+                          <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {selectedTrainee.traineeOffice || "N/A"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50 dark:bg-gray-900/50">
+                            <tr>
+                              <th className="px-4 py-3 text-left">Day</th>
+                              <th className="px-4 py-3 text-left">Time In</th>
+                              <th className="px-4 py-3 text-left">Time Out</th>
+                              <th className="px-4 py-3 text-left">Hours</th>
+                              <th className="px-4 py-3 text-left">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dtrData.entries?.map((entry: any) => {
+                              // Collect all shifts - prioritize new format over legacy
+                              let shifts = [];
+
+                              // Check if new format (shifts array) exists and has data
+                              if (entry.shifts && entry.shifts.length > 0) {
+                                shifts = entry.shifts.filter(
+                                  (shift: any) => shift.in || shift.out
+                                );
+                              } else {
+                                // Fallback to legacy format (in1/out1, in2/out2, etc.)
+                                if (entry.in1 || entry.out1)
+                                  shifts.push({
+                                    in: entry.in1,
+                                    out: entry.out1,
+                                  });
+                                if (entry.in2 || entry.out2)
+                                  shifts.push({
+                                    in: entry.in2,
+                                    out: entry.out2,
+                                  });
+                                if (entry.in3 || entry.out3)
+                                  shifts.push({
+                                    in: entry.in3,
+                                    out: entry.out3,
+                                  });
+                                if (entry.in4 || entry.out4)
+                                  shifts.push({
+                                    in: entry.in4,
+                                    out: entry.out4,
+                                  });
+                              }
+
+                              const hasShifts = shifts.length > 0;
+
+                              return (
+                                <tr
+                                  key={entry.day}
+                                  className="border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/30"
+                                >
+                                  <td className="px-4 py-3 font-medium">
+                                    {entry.day}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {hasShifts ? (
+                                      <div className="space-y-1">
+                                        {shifts.map(
+                                          (shift: any, idx: number) => (
+                                            <div key={idx} className="text-sm">
+                                              {shifts.length > 1 && (
+                                                <span className="font-semibold text-gray-600 dark:text-gray-400">
+                                                  Shift {idx + 1}:{" "}
+                                                </span>
+                                              )}
+                                              {shift.in || "-"}
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    ) : (
+                                      "-"
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {hasShifts ? (
+                                      <div className="space-y-1">
+                                        {shifts.map(
+                                          (shift: any, idx: number) => (
+                                            <div key={idx} className="text-sm">
+                                              {shifts.length > 1 && (
+                                                <span className="font-semibold text-gray-600 dark:text-gray-400">
+                                                  Shift {idx + 1}:{" "}
+                                                </span>
+                                              )}
+                                              {shift.out || "-"}
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    ) : (
+                                      "-"
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    {((entry.totalHours || 0) / 60).toFixed(2)}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span
+                                      className={`px-2 py-1 rounded text-xs ${
+                                        entry.excusedStatus === "excused"
+                                          ? "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
+                                          : entry.confirmationStatus ===
+                                            "confirmed"
+                                          ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                                          : "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
+                                      }`}
+                                    >
+                                      {entry.excusedStatus === "excused"
+                                        ? "Excused"
+                                        : entry.confirmationStatus ===
+                                          "confirmed"
+                                        ? "Confirmed"
+                                        : "Pending"}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {dtrData.remarks && (
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                            Remarks:
+                          </p>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">
+                            {dtrData.remarks}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6 text-center">
+                      <FileText className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                      <p className="text-gray-600 dark:text-gray-400 mb-2">
+                        No DTR records found for this period
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-500">
+                        The trainee hasn't submitted a DTR for {selectedMonth}/
+                        {selectedYear} yet
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -782,16 +1077,34 @@ const TraineeManagement = () => {
 
               {activeTab === "schedule" && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                    Schedule
-                  </h3>
-                  <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6 text-center">
-                    <ClipboardList className="w-12 h-12 mx-auto text-gray-400 mb-3" />
-                    <p className="text-gray-600 dark:text-gray-400">
-                      Schedule will be displayed here
-                    </p>
-                    {/* TODO: Add actual schedule/calendar here */}
-                  </div>
+                  {loadingSchedule ? (
+                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6 text-center">
+                      <ClipboardList className="w-12 h-12 mx-auto text-gray-400 mb-3 animate-pulse" />
+                      <p className="text-gray-600 dark:text-gray-400">
+                        Loading schedule...
+                      </p>
+                    </div>
+                  ) : scheduleData?.scheduleData &&
+                    Array.isArray(scheduleData.scheduleData) &&
+                    scheduleData.scheduleData.length > 0 ? (
+                    <div className="space-y-4">
+                      {/* Schedule Visualization Component */}
+                      <ScheduleVisualization
+                        scheduleClasses={scheduleData.scheduleData}
+                        dutyHours={scheduleData.dutyHours || []}
+                      />
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6 text-center">
+                      <ClipboardList className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                      <p className="text-gray-600 dark:text-gray-400 mb-2">
+                        No schedule found for this trainee
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-500">
+                        The trainee hasn't uploaded their class schedule yet
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

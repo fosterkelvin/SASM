@@ -1,5 +1,6 @@
 import DTRModel, { IDTR, IDTREntry } from "../models/dtr.model";
 import mongoose from "mongoose";
+import { syncDTRWithSchedule } from "../utils/scheduleSync";
 
 export class DTRService {
   /**
@@ -108,9 +109,39 @@ export class DTRService {
       entryIndex !== -1 ? dtr.entries[entryIndex] : "NEW"
     );
 
+    // Sync with schedule to calculate late and undertime
+    let scheduleSync;
+    try {
+      scheduleSync = await syncDTRWithSchedule(
+        dtr.userId.toString(),
+        day,
+        dtr.month,
+        dtr.year,
+        entryData.in1,
+        entryData.out1,
+        entryData.in2,
+        entryData.out2,
+        entryData.in3,
+        entryData.out3,
+        entryData.in4,
+        entryData.out4
+      );
+      console.log("Schedule sync result:", scheduleSync);
+    } catch (error) {
+      console.error("Error syncing with schedule:", error);
+      scheduleSync = {
+        late: 0,
+        undertime: 0,
+        scheduledStartTime: null,
+        scheduledEndTime: null,
+      };
+    }
+
     // Always set entry as "unconfirmed" when student saves
     const dataWithConfirmation: any = {
       ...entryData,
+      late: scheduleSync.late, // Override with calculated value
+      undertime: scheduleSync.undertime, // Override with calculated value
       confirmationStatus: "unconfirmed",
     };
 
@@ -156,21 +187,58 @@ export class DTRService {
     const entryIndex = dtr.entries.findIndex((e) => e.day === day);
     const now = new Date();
 
+    // Sync with schedule to calculate late and undertime
+    let scheduleSync;
+    try {
+      scheduleSync = await syncDTRWithSchedule(
+        dtr.userId.toString(),
+        day,
+        dtr.month,
+        dtr.year,
+        entryData.in1,
+        entryData.out1,
+        entryData.in2,
+        entryData.out2,
+        entryData.in3,
+        entryData.out3,
+        entryData.in4,
+        entryData.out4
+      );
+      console.log("Office edit - Schedule sync result:", scheduleSync);
+    } catch (error) {
+      console.error("Error syncing with schedule:", error);
+      scheduleSync = {
+        late: 0,
+        undertime: 0,
+        scheduledStartTime: null,
+        scheduledEndTime: null,
+      };
+    }
+
+    // Merge schedule sync data into entry data
+    const entryDataWithSchedule = {
+      ...entryData,
+      late: scheduleSync.late,
+      undertime: scheduleSync.undertime,
+    };
+
     if (entryIndex === -1) {
       // Create new entry with edit history
       const newEntry = {
         day,
-        ...entryData,
+        ...entryDataWithSchedule,
         editHistory: [
           {
             editedBy: officeUserId,
             editedByName: profileName || "Office Staff",
             editedAt: now,
-            changes: Object.entries(entryData).map(([field, value]) => ({
-              field,
-              oldValue: "-", // Use "-" for new entries where there's no previous value
-              newValue: String(value || "-"),
-            })),
+            changes: Object.entries(entryDataWithSchedule).map(
+              ([field, value]) => ({
+                field,
+                oldValue: "-", // Use "-" for new entries where there's no previous value
+                newValue: String(value || "-"),
+              })
+            ),
           },
         ],
       } as IDTREntry;
@@ -182,10 +250,20 @@ export class DTRService {
         [];
 
       // Compare each field
-      const fieldsToTrack = ["in1", "out1", "in2", "out2", "status"];
+      const fieldsToTrack = [
+        "in1",
+        "out1",
+        "in2",
+        "out2",
+        "in3",
+        "out3",
+        "in4",
+        "out4",
+        "status",
+      ];
       fieldsToTrack.forEach((field) => {
         const oldValue = (oldEntry as any)[field] || "";
-        const newValue = (entryData as any)[field];
+        const newValue = (entryDataWithSchedule as any)[field];
         if (newValue !== undefined && oldValue !== newValue) {
           changes.push({
             field,
@@ -208,7 +286,7 @@ export class DTRService {
         // Update entry with edit history
         const updatedEntry = {
           ...oldEntry,
-          ...entryData,
+          ...entryDataWithSchedule,
           day: oldEntry.day,
           editHistory,
         } as IDTREntry;
@@ -217,7 +295,7 @@ export class DTRService {
         // No changes, just merge data
         const updatedEntry = {
           ...oldEntry,
-          ...entryData,
+          ...entryDataWithSchedule,
           day: oldEntry.day,
         } as IDTREntry;
         dtr.entries[entryIndex] = updatedEntry;

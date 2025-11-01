@@ -74,6 +74,13 @@ const SidebarNav: React.FC<NavProps> = ({ handlers, unreadCount = 0 }) => {
         </li>
         <li>
           <SidebarItem
+            label="Scholars"
+            onClick={handlers.scholars}
+            IconComponent={GraduationCap}
+          />
+        </li>
+        <li>
+          <SidebarItem
             label="Leave Management"
             onClick={handlers.leaves}
             IconComponent={Calendar}

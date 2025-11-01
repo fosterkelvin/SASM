@@ -21,13 +21,23 @@ interface EditHistoryEntry {
   changes: { field: string; oldValue: string; newValue: string }[];
 }
 
+interface Shift {
+  in?: string;
+  out?: string;
+}
+
 interface Entry {
   id: number;
   day: number;
+  shifts?: Shift[];
   in1?: string;
   out1?: string;
   in2?: string;
   out2?: string;
+  in3?: string;
+  out3?: string;
+  in4?: string;
+  out4?: string;
   late?: number;
   undertime?: number;
   totalHours?: number;
@@ -225,6 +235,24 @@ const HRDTRCheck: React.FC = () => {
   const isSunday = (day: number) => {
     const date = new Date(selectedYear, selectedMonth - 1, day);
     return date.getDay() === 0;
+  };
+
+  // Get shifts for an entry (use legacy fields if shifts array doesn't exist)
+  const getShifts = (entry: Entry): Shift[] => {
+    if (entry.shifts && entry.shifts.length > 0) {
+      return entry.shifts;
+    }
+    // Migrate legacy fields
+    const legacyShifts: Shift[] = [];
+    if (entry.in1 || entry.out1)
+      legacyShifts.push({ in: entry.in1, out: entry.out1 });
+    if (entry.in2 || entry.out2)
+      legacyShifts.push({ in: entry.in2, out: entry.out2 });
+    if (entry.in3 || entry.out3)
+      legacyShifts.push({ in: entry.in3, out: entry.out3 });
+    if (entry.in4 || entry.out4)
+      legacyShifts.push({ in: entry.in4, out: entry.out4 });
+    return legacyShifts;
   };
 
   // Handle trainee selection
@@ -534,19 +562,21 @@ const HRDTRCheck: React.FC = () => {
                           Date
                         </th>
                         <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
-                          In (AM)
-                        </th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
-                          Out (AM)
-                        </th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
-                          In (PM)
-                        </th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
-                          Out (PM)
+                          <div className="flex flex-col items-center">
+                            <span>Duty Shifts</span>
+                            <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
+                              IN → OUT times (multiple shifts)
+                            </span>
+                          </div>
                         </th>
                         <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
                           Hours
+                        </th>
+                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          Late
+                        </th>
+                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          Undertime
                         </th>
                         <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
                           Status
@@ -555,56 +585,79 @@ const HRDTRCheck: React.FC = () => {
                     </thead>
                     <tbody>
                       {entries.map((entry) => {
-                        const hours = Math.floor(
-                          (entry?.totalHours || 0) / 60
-                        );
+                        const hours = Math.floor((entry?.totalHours || 0) / 60);
                         const minutes = (entry?.totalHours || 0) % 60;
+                        const shifts = getShifts(entry);
+                        const hasData = shifts.some((s) => s.in || s.out);
 
-                        const isSundayEntry = isSunday(entry.day);
                         return (
                           <tr
                             key={entry.day}
                             className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
                               entry.confirmationStatus === "confirmed"
                                 ? "bg-green-50 dark:bg-green-900/10"
-                                : isSundayEntry
-                                ? "bg-red-50 dark:bg-red-900/10"
                                 : ""
                             }`}
                           >
                             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
                               {getDayName(entry.day)}
-                              {isSundayEntry && (
-                                <span className="ml-1 text-xs text-red-600 dark:text-red-400 font-medium">
-                                  (Locked)
-                                </span>
-                              )}
                             </td>
                             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                               {entry.day}
                             </td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
-                              <span className="text-sm text-gray-700 dark:text-gray-300">
-                                {entry.in1 || "-"}
-                              </span>
-                            </td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
-                              <span className="text-sm text-gray-700 dark:text-gray-300">
-                                {entry.out1 || "-"}
-                              </span>
-                            </td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
-                              <span className="text-sm text-gray-700 dark:text-gray-300">
-                                {entry.in2 || "-"}
-                              </span>
-                            </td>
-                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
-                              <span className="text-sm text-gray-700 dark:text-gray-300">
-                                {entry.out2 || "-"}
-                              </span>
+                            {/* Duty Shifts Column */}
+                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                              {!hasData ? (
+                                <div className="text-center text-gray-400 text-xs">
+                                  -
+                                </div>
+                              ) : (
+                                <div className="space-y-1">
+                                  {shifts.map((shift, index) => {
+                                    if (!shift.in && !shift.out) return null;
+                                    return (
+                                      <div
+                                        key={index}
+                                        className="flex items-center gap-2 text-xs justify-center"
+                                      >
+                                        <span className="font-semibold text-gray-600 dark:text-gray-400">
+                                          Shift {index + 1}:
+                                        </span>
+                                        <span className="font-mono text-gray-700 dark:text-gray-300">
+                                          {shift.in || "--:--"}
+                                        </span>
+                                        <span className="text-gray-400">→</span>
+                                        <span className="font-mono text-gray-700 dark:text-gray-300">
+                                          {shift.out || "--:--"}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </td>
                             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm text-gray-700 dark:text-gray-300">
                               {hours}h {minutes.toString().padStart(2, "0")}m
+                            </td>
+                            {/* Late Column */}
+                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
+                              {entry.late && entry.late > 0 ? (
+                                <span className="text-orange-600 font-semibold">
+                                  {entry.late}m
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                            {/* Undertime Column */}
+                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
+                              {entry.undertime && entry.undertime > 0 ? (
+                                <span className="text-red-600 font-semibold">
+                                  {entry.undertime}m
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
                             </td>
                             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
                               <div className="flex items-center justify-center gap-2">

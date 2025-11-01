@@ -4,36 +4,54 @@ import ScholarsList from "./components/ScholarsList";
 import ScholarFilters from "./components/ScholarFilters";
 import ScholarModal from "./components/ScholarModal";
 import type { ScholarRow } from "./types";
-
-// Frontend-only mock scholars
-const mockScholars: ScholarRow[] = [
-  {
-    _id: "s1",
-    firstName: "Grace",
-    lastName: "Adams",
-    email: "grace.adams@example.com",
-    program: "student assistant",
-    status: "active",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    _id: "s2",
-    firstName: "Henry",
-    lastName: "Baker",
-    email: "henry.baker@example.com",
-    program: "student marshal",
-    status: "inactive",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import { getOfficeScholars } from "@/lib/api";
 
 const Scholars: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [data, setData] = useState<ScholarRow[]>(mockScholars);
+  const [data, setData] = useState<ScholarRow[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [programFilter, setProgramFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [selected, setSelected] = useState<ScholarRow | null>(null);
+
+  // Fetch scholars deployed to this office
+  const { data: scholarsData, isLoading } = useQuery({
+    queryKey: ["office-scholars"],
+    queryFn: getOfficeScholars,
+  });
+
+  // Update data when scholars are loaded
+  useEffect(() => {
+    if (scholarsData?.trainees) {
+      const mappedScholars: ScholarRow[] = scholarsData.trainees.map(
+        (trainee: any) => ({
+          _id: trainee._id,
+          firstName: trainee.userID?.firstname || "N/A",
+          lastName: trainee.userID?.lastname || "N/A",
+          email: trainee.userID?.email || "N/A",
+          program:
+            trainee.position === "student_assistant"
+              ? "student assistant"
+              : "student marshal",
+          status:
+            trainee.status === "trainee" ||
+            trainee.status === "training_completed"
+              ? "active"
+              : "inactive",
+          createdAt: trainee.createdAt || new Date().toISOString(),
+          requiredHours: trainee.requiredHours || 0,
+          completedHours: trainee.dtrCompletedHours || 0,
+          traineeOffice: trainee.traineeOffice,
+          traineeSupervisor: trainee.traineeSupervisor,
+          traineeStartDate: trainee.traineeStartDate,
+          traineeEndDate: trainee.traineeEndDate,
+          traineeNotes: trainee.traineeNotes,
+        })
+      );
+      setData(mappedScholars);
+    }
+  }, [scholarsData]);
 
   useEffect(() => {
     document.title = "Scholars | SASM-IMS";
@@ -97,7 +115,26 @@ const Scholars: React.FC = () => {
             onStatusChange={setStatusFilter}
           />
 
-          <ScholarsList data={filtered} onOpen={openScholar} />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Loading scholars...
+                </p>
+              </div>
+            </div>
+          ) : data.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <p className="text-gray-600 dark:text-gray-400 text-lg">
+                  No scholars deployed to your office yet.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <ScholarsList data={filtered} onOpen={openScholar} />
+          )}
         </div>
       </div>
 
