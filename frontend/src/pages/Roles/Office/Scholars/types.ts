@@ -1,5 +1,7 @@
 export type ScholarRow = {
   _id: string;
+  applicationId?: string;
+  userId?: string;
   firstName: string;
   lastName: string;
   email: string;

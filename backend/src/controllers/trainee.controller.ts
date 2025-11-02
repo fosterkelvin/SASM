@@ -283,6 +283,7 @@ export const getOfficeScholarsHandler = catchErrors(
         return {
           _id: scholar._id,
           userID: scholar.userId, // Map userId to userID
+          applicationId: scholar.applicationId, // For schedule navigation
           position: scholar.scholarType,
           scholarOffice: scholar.scholarOffice,
           scholarNotes: scholar.scholarNotes,
@@ -385,6 +386,13 @@ export const deployTraineeHandler = catchErrors(
         console.log("- Scholar ID:", newScholar._id);
         console.log("- Office:", newScholar.scholarOffice);
         console.log("- Type:", newScholar.scholarType);
+
+        // Note: Scholars need to upload their own work schedule
+        // Old trainee class schedules are kept as historical data
+        console.log(
+          "ℹ️  Scholar will need to upload their work schedule separately"
+        );
+        console.log("   (Trainee class schedule remains as historical data)");
       } catch (error) {
         console.error("❌ Failed to create Scholar record:", error);
         throw error;
@@ -512,12 +520,20 @@ export const updateTraineeDeploymentHandler = catchErrors(
 
         if (scholar) {
           console.log("📝 Updating existing Scholar record:", scholar._id);
+          console.log("- Current status:", scholar.status);
           // Update existing scholar
           if (traineeOffice !== undefined)
             scholar.scholarOffice = traineeOffice;
           if (traineeNotes !== undefined) scholar.scholarNotes = traineeNotes;
+          // Reactivate scholar if it was inactive
+          if (scholar.status === "inactive") {
+            console.log("🔄 Reactivating inactive scholar...");
+            scholar.status = "active";
+          }
           await scholar.save();
           console.log("✅ Scholar record updated successfully!");
+          console.log("- New status:", scholar.status);
+          console.log("- New office:", scholar.scholarOffice);
         } else {
           console.log("📋 No Scholar record found, creating new one...");
           // Create new Scholar record if it doesn't exist
@@ -534,6 +550,13 @@ export const updateTraineeDeploymentHandler = catchErrors(
           console.log("✅ Scholar record created successfully!");
           console.log("- Scholar ID:", scholar._id);
           console.log("- Office:", scholar.scholarOffice);
+
+          // Note: Scholars need to upload their own work schedule
+          // Old trainee class schedules are kept as historical data
+          console.log(
+            "ℹ️  Scholar will need to upload their work schedule separately"
+          );
+          console.log("   (Trainee class schedule remains as historical data)");
         }
       } catch (error) {
         console.error("❌ Failed to update/create Scholar record:", error);
@@ -602,6 +625,99 @@ export const updateTraineeDeploymentHandler = catchErrors(
 
     return res.status(OK).json({
       message: "Trainee deployment updated successfully",
+      application,
+    });
+  }
+);
+
+// Undeploy scholar (HR only)
+export const undeployScholarHandler = catchErrors(
+  async (req: Request, res: Response) => {
+    const userID = req.userID!;
+    const { applicationId } = req.params;
+
+    const application = await ApplicationModel.findById(applicationId);
+    appAssert(application, NOT_FOUND, "Application not found");
+
+    appAssert(
+      application.status === "accepted",
+      BAD_REQUEST,
+      "Only deployed scholars can be undeployed"
+    );
+
+    // Get HR user info for timeline
+    const hrUser = await UserModel.findById(userID);
+    const hrName = hrUser
+      ? `${hrUser.firstname} ${hrUser.lastname}`
+      : "HR Staff";
+
+    console.log("🔄 Undeploying SCHOLAR:");
+    console.log("- Application ID:", application._id);
+    console.log("- Student ID:", application.userID);
+    console.log("- Current Office:", application.scholarOffice);
+
+    // Clear scholar deployment info
+    const previousOffice = application.scholarOffice;
+    application.scholarOffice = "";
+    application.scholarNotes = "";
+
+    try {
+      // Delete or deactivate Scholar record
+      const ScholarModel = require("../models/scholar.model").default;
+      const scholar = await ScholarModel.findOne({
+        userId: application.userID,
+        applicationId: application._id,
+        status: "active",
+      });
+
+      if (scholar) {
+        console.log("📋 Deactivating Scholar record:", scholar._id);
+        scholar.status = "inactive";
+        await scholar.save();
+        console.log("✅ Scholar record deactivated successfully!");
+
+        // Convert scholar schedule back to trainee schedule (optional - keep as scholar)
+        const scholarSchedule = await ScheduleModel.findOne({
+          userId: application.userID,
+          scholarId: scholar._id,
+          userType: "scholar",
+        });
+
+        if (scholarSchedule) {
+          console.log(
+            "📋 Found scholar schedule, keeping as scholar type with inactive status"
+          );
+          // Keep the schedule as is, just the scholar status is now inactive
+        }
+      } else {
+        console.log("⚠️  No active Scholar record found");
+      }
+    } catch (error) {
+      console.error("❌ Failed to deactivate Scholar record:", error);
+      throw error;
+    }
+
+    // Add timeline entry
+    const timelineEntry = {
+      action: "scholar_undeployed",
+      performedBy: userID,
+      performedByName: hrName,
+      timestamp: new Date(),
+      previousStatus: "accepted",
+      newStatus: "accepted",
+      notes: `Scholar undeployed from ${previousOffice}`,
+    };
+
+    application.timeline = application.timeline || [];
+    application.timeline.push(timelineEntry as any);
+
+    await application.save();
+
+    // Populate for response
+    await application.populate("userID", "firstname lastname email");
+
+    return res.status(OK).json({
+      message: "Scholar undeployed successfully",
       application,
     });
   }
@@ -1268,6 +1384,15 @@ export const uploadClassScheduleHandler = catchErrors(
       }
     }
 
+    // Clear temporary duty hours when scholar uploads their actual schedule
+    // The uploaded schedule is the official work schedule, replacing temporary duty hours
+    if (isScholar && schedule.dutyHours && schedule.dutyHours.length > 0) {
+      console.log(
+        `🗑️ Clearing ${schedule.dutyHours.length} temporary duty hours for scholar (replaced by uploaded schedule)`
+      );
+      schedule.dutyHours = [];
+    }
+
     await schedule.save();
 
     console.log(`✅ Schedule uploaded for ${userType}:`, schedule._id);
@@ -1303,16 +1428,28 @@ export const getClassScheduleHandler = catchErrors(
       // Office/HR can view any trainee/scholar's schedule
       const { applicationId } = req.params;
 
-      // Check if it's a trainee or scholar
-      const application = await ApplicationModel.findById(applicationId);
-      if (application) {
+      // Check if it's a scholar FIRST (scholars have their own schedule with scholarId)
+      const scholar = await ScholarModel.findOne({
+        applicationId: applicationId,
+      });
+
+      if (scholar) {
+        // This is a scholar - find schedule by scholarId
+        console.log(
+          "🎓 Found scholar, fetching schedule by scholarId:",
+          scholar._id
+        );
         schedule = await ScheduleModel.findOne({
-          applicationId: applicationId,
+          scholarId: scholar._id,
         });
       } else {
-        // Try to find by scholarId
+        // Not a scholar, must be a trainee - find schedule by applicationId
+        console.log(
+          "📚 Not a scholar, fetching schedule by applicationId:",
+          applicationId
+        );
         schedule = await ScheduleModel.findOne({
-          scholarId: applicationId,
+          applicationId: applicationId,
         });
       }
     } else {
@@ -1358,73 +1495,139 @@ export const addDutyHoursHandler = catchErrors(
     appAssert(endTime, BAD_REQUEST, "End time is required");
     appAssert(location, BAD_REQUEST, "Location is required");
 
-    // Find schedule for this trainee/scholar
-    const schedule = await ScheduleModel.findOne({ applicationId });
-    appAssert(
-      schedule,
-      NOT_FOUND,
-      "Schedule not found. Please upload a schedule first."
-    );
+    // Import Scholar model
+    const ScholarModel = require("../models/scholar.model").default;
 
-    // Get the application or scholar to verify permissions
-    const application = await ApplicationModel.findById(applicationId);
-    const scholar = !application
-      ? await ScholarModel.findOne({ applicationId })
-      : null;
+    // Check if this is a scholar first
+    const scholar = await ScholarModel.findOne({ applicationId });
 
-    appAssert(
-      application || scholar,
-      NOT_FOUND,
-      "Trainee or Scholar not found"
-    );
+    if (scholar) {
+      // ===== SCHOLAR FLOW =====
+      console.log("🎓 Adding duty hours for SCHOLAR");
 
-    // Validate status
-    if (application) {
+      // Validate scholar status
+      appAssert(
+        scholar.status === "active",
+        BAD_REQUEST,
+        "Scholar must be in active status"
+      );
+
+      // Find or create schedule for scholar
+      let schedule = await ScheduleModel.findOne({
+        scholarId: scholar._id,
+      });
+
+      if (!schedule) {
+        console.log(
+          "📋 No schedule found, creating new schedule for scholar..."
+        );
+
+        // Create a new schedule for scholar
+        // NOTE: Scholar schedules use scholarId ONLY (not applicationId)
+        schedule = new ScheduleModel({
+          userId: scholar.userId,
+          scholarId: scholar._id,
+          userType: "scholar",
+          scheduleData: [], // Empty schedule data
+          dutyHours: [], // Will add duty hours below
+        });
+
+        console.log("✅ Created new scholar schedule structure");
+      }
+
+      // Validate office permissions for scholar
+      if (user.role === "office") {
+        const userOffice = user.officeName || user.office;
+        appAssert(
+          scholar.scholarOffice === userOffice,
+          FORBIDDEN,
+          "You can only add duty hours for scholars assigned to your office"
+        );
+      }
+
+      // Add duty hour entry to schedule
+      const dutyHourEntry = {
+        day,
+        startTime,
+        endTime,
+        location,
+        notes: notes || "",
+      };
+
+      schedule.dutyHours = schedule.dutyHours || [];
+      schedule.dutyHours.push(dutyHourEntry);
+      schedule.lastModifiedBy = new Types.ObjectId(userID);
+      schedule.lastModifiedAt = new Date();
+
+      await schedule.save();
+
+      console.log("✅ Duty hours added to scholar schedule");
+
+      return res.status(OK).json({
+        message: "Duty hours added successfully",
+        dutyHours: schedule.dutyHours,
+      });
+    } else {
+      // ===== TRAINEE FLOW =====
+      console.log("📚 Adding duty hours for TRAINEE");
+
+      const application = await ApplicationModel.findById(applicationId);
+      appAssert(application, NOT_FOUND, "Trainee not found");
+
+      // Validate trainee status
       appAssert(
         application.status === "trainee" ||
           application.status === "training_completed",
         BAD_REQUEST,
         "Application must be in trainee or training_completed status"
       );
-    } else if (scholar) {
-      appAssert(
-        scholar.status === "active",
-        BAD_REQUEST,
-        "Scholar must be in active status"
-      );
-    }
 
-    // Validate that the office user matches the trainee's/scholar's office
-    if (user.role === "office") {
-      const userOffice = user.officeName || user.office;
-      const assignedOffice = application
-        ? application.traineeOffice
-        : scholar!.scholarOffice;
-      appAssert(
-        assignedOffice === userOffice,
-        FORBIDDEN,
-        "You can only add duty hours for trainees/scholars assigned to your office"
-      );
-    }
+      // Validate office permissions for trainee
+      if (user.role === "office") {
+        const userOffice = user.officeName || user.office;
+        appAssert(
+          application.traineeOffice === userOffice,
+          FORBIDDEN,
+          "You can only add duty hours for trainees assigned to your office"
+        );
+      }
 
-    // Add duty hour entry to schedule
-    const dutyHourEntry = {
-      day,
-      startTime,
-      endTime,
-      location,
-      notes: notes || "",
-    };
+      // Find or create schedule for trainee
+      let schedule = await ScheduleModel.findOne({ applicationId });
 
-    schedule.dutyHours = schedule.dutyHours || [];
-    schedule.dutyHours.push(dutyHourEntry);
-    schedule.lastModifiedBy = new Types.ObjectId(userID);
-    schedule.lastModifiedAt = new Date();
+      if (!schedule) {
+        console.log(
+          "📋 No schedule found, creating new schedule for trainee..."
+        );
 
-    await schedule.save();
+        schedule = new ScheduleModel({
+          userId: application.userID,
+          applicationId: applicationId,
+          userType: "trainee",
+          scheduleData: [],
+          dutyHours: [],
+        });
 
-    // Add timeline entry to application if trainee
-    if (application) {
+        console.log("✅ Created new trainee schedule structure");
+      }
+
+      // Add duty hour entry to schedule
+      const dutyHourEntry = {
+        day,
+        startTime,
+        endTime,
+        location,
+        notes: notes || "",
+      };
+
+      schedule.dutyHours = schedule.dutyHours || [];
+      schedule.dutyHours.push(dutyHourEntry);
+      schedule.lastModifiedBy = new Types.ObjectId(userID);
+      schedule.lastModifiedAt = new Date();
+
+      await schedule.save();
+
+      // Add timeline entry to application
       const userName = user.officeName || `${user.firstname} ${user.lastname}`;
       const timelineEntry = {
         action: "duty_hours_added",
@@ -1437,10 +1640,104 @@ export const addDutyHoursHandler = catchErrors(
       application.timeline = application.timeline || [];
       application.timeline.push(timelineEntry as any);
       await application.save();
+
+      console.log("✅ Duty hours added to trainee schedule");
+
+      return res.status(OK).json({
+        message: "Duty hours added successfully",
+        dutyHours: schedule.dutyHours,
+      });
+    }
+  }
+);
+
+// Remove duty hours (Office only)
+export const removeDutyHoursHandler = catchErrors(
+  async (req: Request, res: Response) => {
+    const { applicationId } = req.params;
+    const { day, startTime, endTime } = req.body;
+
+    appAssert(
+      day && startTime && endTime,
+      BAD_REQUEST,
+      "Day, startTime, and endTime are required"
+    );
+
+    const userID = req.userID!;
+    const user = await UserModel.findById(userID);
+    appAssert(user, NOT_FOUND, "User not found");
+
+    console.log(
+      `🔍 Remove duty hours called with applicationId: ${applicationId}`
+    );
+
+    // Check if it's a scholar first
+    const scholar = await ScholarModel.findById(applicationId);
+    console.log(
+      `🔍 Scholar lookup result:`,
+      scholar ? `Found: ${scholar._id}` : "Not found"
+    );
+
+    let schedule;
+    if (scholar) {
+      // Find schedule by scholarId for scholars
+      console.log("✅ Removing duty hours from scholar schedule");
+      schedule = await ScheduleModel.findOne({
+        scholarId: scholar._id,
+        userType: "scholar",
+      });
+      console.log(
+        `🔍 Schedule lookup by scholarId:`,
+        schedule
+          ? `Found with ${schedule.dutyHours?.length || 0} duty hours`
+          : "Not found"
+      );
+    } else {
+      // It's a trainee - find by applicationId
+      console.log(
+        "🔍 Not a scholar, checking if it's a trainee application..."
+      );
+      const application = await ApplicationModel.findById(applicationId);
+      appAssert(application, NOT_FOUND, "Trainee or Scholar not found");
+
+      schedule = await ScheduleModel.findOne({
+        applicationId: application._id,
+        userType: "trainee",
+      });
     }
 
+    appAssert(schedule, NOT_FOUND, "Schedule not found");
+    appAssert(
+      schedule.dutyHours && schedule.dutyHours.length > 0,
+      BAD_REQUEST,
+      "No duty hours to remove"
+    );
+
+    // Find and remove the matching duty hour
+    const initialLength = schedule.dutyHours.length;
+    schedule.dutyHours = schedule.dutyHours.filter(
+      (dh) =>
+        !(
+          dh.day === day &&
+          dh.startTime === startTime &&
+          dh.endTime === endTime
+        )
+    );
+
+    appAssert(
+      schedule.dutyHours.length < initialLength,
+      NOT_FOUND,
+      "Duty hour not found"
+    );
+
+    schedule.lastModifiedBy = new Types.ObjectId(userID);
+    schedule.lastModifiedAt = new Date();
+    await schedule.save();
+
+    console.log(`🗑️ Removed duty hour: ${day} ${startTime}-${endTime}`);
+
     return res.status(OK).json({
-      message: "Duty hours added successfully",
+      message: "Duty hour removed successfully",
       dutyHours: schedule.dutyHours,
     });
   }

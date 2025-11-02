@@ -467,8 +467,8 @@ export const uploadClassSchedule = async (
 // Get class schedule (Student, Office, HR)
 export const getClassSchedule = async (applicationId?: string) => {
   const url = applicationId
-    ? `/trainees/${applicationId}/schedule`
-    : "/trainees/schedule";
+    ? `/scholars/${applicationId}/schedule`
+    : "/scholars/schedule";
   const response = await API.get(url);
   return response.data;
 };
@@ -477,8 +477,8 @@ export const getClassSchedule = async (applicationId?: string) => {
 export const getClassScheduleFileUrl = (applicationId?: string) => {
   const baseURL = API.defaults.baseURL || "";
   const url = applicationId
-    ? `/trainees/${applicationId}/schedule/download`
-    : "/trainees/schedule/download";
+    ? `/scholars/${applicationId}/schedule/download`
+    : "/scholars/schedule/download";
   return `${baseURL}${url}`;
 };
 
@@ -493,8 +493,23 @@ export const addDutyHoursToSchedule = async (
   }
 ) => {
   const response = await API.post(
-    `/trainees/${applicationId}/schedule/duty-hours`,
+    `/scholars/${applicationId}/schedule/duty-hours`,
     data
+  );
+  return response.data;
+};
+
+export const removeDutyHoursFromSchedule = async (
+  applicationId: string,
+  data: {
+    day: string;
+    startTime: string;
+    endTime: string;
+  }
+) => {
+  const response = await API.delete(
+    `/scholars/${applicationId}/schedule/duty-hours`,
+    { data }
   );
   return response.data;
 };
@@ -533,7 +548,7 @@ export const getAllScholars = async (params?: {
 
 // Get scholars for specific office (Office staff only) - fetches deployed scholars ONLY
 export const getOfficeScholars = async () => {
-  const response = await API.get("/trainees/office/scholars");
+  const response = await API.get("/scholars/office/scholars");
   return response.data;
 };
 
@@ -574,6 +589,12 @@ export const updateScholarDeployment = async (
   }
 ) => {
   const response = await API.put(`/trainees/${applicationId}/deployment`, data);
+  return response.data;
+};
+
+// Undeploy scholar (HR only)
+export const undeployScholar = async (applicationId: string) => {
+  const response = await API.post(`/trainees/${applicationId}/undeploy`);
   return response.data;
 };
 

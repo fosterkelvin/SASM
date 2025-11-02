@@ -1,7 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Eye, Calendar, FileText } from "lucide-react";
+import { User, Calendar, FileText } from "lucide-react";
 import type { ScholarRow } from "../types";
 
 type Props = {
@@ -26,6 +27,8 @@ const formatDate = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString() : "-";
 
 const ScholarsList: React.FC<Props> = ({ data, onOpen }) => {
+  const navigate = useNavigate();
+
   return (
     <Card>
       <CardContent className="p-0">
@@ -75,10 +78,37 @@ const ScholarsList: React.FC<Props> = ({ data, onOpen }) => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => onOpen(u)}
+                          onClick={() => {
+                            // Extract the ID string (handle both populated and unpopulated)
+                            const applicationId =
+                              typeof u.applicationId === "object"
+                                ? (u.applicationId as any)?._id
+                                : u.applicationId;
+                            const userId =
+                              typeof u.userId === "object"
+                                ? (u.userId as any)?._id
+                                : u.userId;
+
+                            const scheduleId = applicationId || userId;
+
+                            console.log("📋 Navigate to schedule:");
+                            console.log("- applicationId:", applicationId);
+                            console.log("- userId:", userId);
+                            console.log("- scheduleId:", scheduleId);
+
+                            if (scheduleId) {
+                              navigate(
+                                `/office/scholar/${scheduleId}/schedule`
+                              );
+                            } else {
+                              alert(
+                                "Cannot open schedule: Missing scholar information"
+                              );
+                            }
+                          }}
                           className="text-red-600 border-red-300 hover:bg-red-50"
                         >
-                          <Eye className="h-4 w-4 mr-1" /> Manage Schedule
+                          <Calendar className="h-4 w-4 mr-1" /> Manage Schedule
                         </Button>
                       </div>
                     </td>

@@ -7,6 +7,7 @@ import {
   getOfficeScholarsHandler,
   deployTraineeHandler,
   updateTraineeDeploymentHandler,
+  undeployScholarHandler,
   updateTraineeHoursHandler,
   getMyTraineeInfoHandler,
   getMyScholarInfoHandler,
@@ -17,6 +18,7 @@ import {
   getClassScheduleHandler,
   downloadClassScheduleHandler,
   addDutyHoursHandler,
+  removeDutyHoursHandler,
 } from "../controllers/trainee.controller";
 
 const upload = multer({ storage });
@@ -36,6 +38,9 @@ traineeRoutes.post("/:applicationId/deploy", deployTraineeHandler);
 
 // Update trainee deployment (HR only)
 traineeRoutes.put("/:applicationId/deployment", updateTraineeDeploymentHandler);
+
+// Undeploy scholar (HR only)
+traineeRoutes.post("/:applicationId/undeploy", undeployScholarHandler);
 
 // Update trainee hours (Office staff)
 traineeRoutes.put("/:applicationId/hours", updateTraineeHoursHandler);
@@ -76,5 +81,11 @@ traineeRoutes.get(
 
 // Add duty hours to schedule (Office only)
 traineeRoutes.post("/:applicationId/schedule/duty-hours", addDutyHoursHandler);
+
+// Remove duty hours from schedule (Office only)
+traineeRoutes.delete(
+  "/:applicationId/schedule/duty-hours",
+  removeDutyHoursHandler
+);
 
 export default traineeRoutes;

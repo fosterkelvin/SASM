@@ -1,7 +1,8 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { User } from "lucide-react";
+import { User, Calendar } from "lucide-react";
 import type { ScholarRow } from "../types";
 
 type Props = {
@@ -17,6 +18,7 @@ const ScholarModal: React.FC<Props> = ({
   onSave,
   onChange,
 }) => {
+  const navigate = useNavigate();
   if (!scholar) return null;
 
   return (
@@ -157,36 +159,22 @@ const ScholarModal: React.FC<Props> = ({
             </div>
           )}
 
-          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
-              📅 How to Manage Scholar Schedule
-            </h4>
-            <div className="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-              <p>
-                <strong>Step 1:</strong> The scholar uploads their class
-                schedule from their student portal
-              </p>
-              <p>
-                <strong>Step 2:</strong> Go to{" "}
-                <span className="font-semibold">My Trainees</span> page (in
-                sidebar)
-              </p>
-              <p>
-                <strong>Step 3:</strong> Find this scholar in the list and click{" "}
-                <span className="font-semibold">"View Schedule"</span>
-              </p>
-              <p>
-                <strong>Step 4:</strong> Add duty hours directly on their
-                schedule
-              </p>
-              <p className="text-xs mt-2 text-blue-700 dark:text-blue-300">
-                💡 Tip: Scholars appear alongside trainees in the "My Trainees"
-                page
-              </p>
-            </div>
-          </div>
-
           <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button
+              onClick={() => {
+                // Use applicationId if available, otherwise use userId
+                const scheduleId = scholar.applicationId || scholar.userId;
+                if (scheduleId) {
+                  navigate(`/office/trainee/${scheduleId}/schedule`);
+                } else {
+                  alert("Cannot open schedule: Missing scholar information");
+                }
+              }}
+              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              View Schedule & Add Duty Hours
+            </Button>
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>

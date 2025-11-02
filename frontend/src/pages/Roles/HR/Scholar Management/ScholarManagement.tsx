@@ -22,6 +22,7 @@ import {
   getAllScholars,
   deployScholar,
   updateScholarDeployment,
+  undeployScholar,
   getOfficeUsers,
   getUserDTRForOffice,
   getClassSchedule,
@@ -116,6 +117,18 @@ const ScholarManagement = () => {
       queryClient.invalidateQueries({ queryKey: ["scholars"] });
       closeDeployModal();
       alert("Deployment updated successfully!");
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.message || "Failed to update deployment");
+    },
+  });
+
+  // Undeploy scholar mutation
+  const undeployMutation = useMutation({
+    mutationFn: (applicationId: string) => undeployScholar(applicationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["scholars"] });
+      alert("Scholar undeployed successfully!");
     },
     onError: (error: any) => {
       alert(error.response?.data?.message || "Failed to update deployment");
@@ -470,38 +483,65 @@ const ScholarManagement = () => {
                         )}
                     </div>
 
-                    {/* Office Rating */}
-                    {scholar.traineePerformanceRating && (
-                      <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800/30">
-                        <p className="text-xs font-medium text-yellow-700 dark:text-yellow-400 mb-2">
-                          Office Performance Rating:
-                        </p>
-                        <div className="flex items-center gap-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <Star
-                              key={star}
-                              className={`w-5 h-5 ${
-                                star <= scholar.traineePerformanceRating
-                                  ? "fill-yellow-400 text-yellow-400"
-                                  : "text-gray-300 dark:text-gray-600"
-                              }`}
-                            />
-                          ))}
-                          <span className="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            {scholar.traineePerformanceRating}/5
-                          </span>
+                    {/* Office Rating - Only show if NOT deployed */}
+                    {scholar.traineePerformanceRating &&
+                      !scholar.scholarOffice && (
+                        <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800/30">
+                          <p className="text-xs font-medium text-yellow-700 dark:text-yellow-400 mb-2">
+                            Office Performance Rating:
+                          </p>
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`w-5 h-5 ${
+                                  star <= scholar.traineePerformanceRating
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-gray-300 dark:text-gray-600"
+                                }`}
+                              />
+                            ))}
+                            <span className="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                              {scholar.traineePerformanceRating}/5
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    <Button
-                      onClick={() => handleDeployClick(scholar)}
-                      className="w-full bg-red-600 hover:bg-red-700"
-                    >
-                      {scholar.status === "accepted"
-                        ? "Deploy Scholar"
-                        : "Deploy to Office"}
-                    </Button>
+                    {/* Deploy/Redeploy/Undeploy Buttons */}
+                    {scholar.scholarOffice ? (
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleDeployClick(scholar)}
+                          variant="outline"
+                          className="flex-1 border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                        >
+                          Redeploy Scholar
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            if (
+                              confirm(
+                                `Are you sure you want to undeploy ${scholar.userID?.firstname} ${scholar.userID?.lastname}?`
+                              )
+                            ) {
+                              undeployMutation.mutate(scholar._id);
+                            }
+                          }}
+                          variant="outline"
+                          className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-900/20"
+                        >
+                          Undeploy
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => handleDeployClick(scholar)}
+                        className="w-full bg-red-600 hover:bg-red-700"
+                      >
+                        Deploy Scholar
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))}

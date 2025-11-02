@@ -339,26 +339,61 @@ export async function syncDTRWithSchedule(
   try {
     // Import models dynamically to avoid circular dependencies
     const ApplicationModel = require("../models/application.model").default;
+    const ScholarModel = require("../models/scholar.model").default;
+    const ScheduleModel = require("../models/schedule.model").default;
 
-    // Find the user's trainee application
-    const application = await ApplicationModel.findOne({
-      userID: userId,
-      status: { $in: ["trainee", "training_completed"] },
+    let classScheduleData: ScheduleClass[] = [];
+    let dutyHours: DutyHour[] = [];
+
+    // Check if user is a scholar first
+    console.log(`🔍 Schedule sync called for userId: ${userId}`);
+    const scholar = await ScholarModel.findOne({
+      userId: userId,
+      status: "active",
     });
 
-    if (!application) {
-      // No active trainee application - return zeros
-      return {
-        late: 0,
-        undertime: 0,
-        scheduledStartTime: null,
-        scheduledEndTime: null,
-      };
-    }
+    if (scholar) {
+      console.log(`✅ Found scholar: ${scholar._id}`);
+      // User is an active scholar - get schedule from Schedule model
+      const schedule = await ScheduleModel.findOne({
+        scholarId: scholar._id,
+        userType: "scholar",
+      });
 
-    // Get class schedule and duty hours
-    const classScheduleData = application.classScheduleData || [];
-    const dutyHours = application.dutyHours || [];
+      if (schedule) {
+        // For scholars, use their work schedule (duty hours)
+        dutyHours = schedule.dutyHours || [];
+        classScheduleData = []; // Scholars don't have class schedules
+        console.log(
+          `📋 Scholar DTR sync - Found ${dutyHours.length} duty hours:`,
+          JSON.stringify(dutyHours)
+        );
+      } else {
+        console.log(`❌ No schedule found for scholar ${scholar._id}`);
+      }
+    } else {
+      console.log(`❌ No scholar found for userId: ${userId}`);
+
+      // Not a scholar - check for trainee application
+      const application = await ApplicationModel.findOne({
+        userID: userId,
+        status: { $in: ["trainee", "training_completed"] },
+      });
+
+      if (!application) {
+        // No active trainee application - return zeros
+        return {
+          late: 0,
+          undertime: 0,
+          scheduledStartTime: null,
+          scheduledEndTime: null,
+        };
+      }
+
+      // Get class schedule and duty hours from application (trainees)
+      classScheduleData = application.classScheduleData || [];
+      dutyHours = application.dutyHours || [];
+    }
 
     // Build schedule map
     const scheduleMap = buildScheduleMap(classScheduleData, dutyHours);

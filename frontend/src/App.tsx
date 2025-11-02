@@ -20,6 +20,7 @@ import ScholarManagement from "./pages/Roles/HR/Scholar Management/ScholarManage
 import Scholars from "./pages/Roles/Office/Scholars/Scholars";
 import MyTrainees from "./pages/Roles/Office/MyTrainees";
 import TraineeSchedule from "./pages/Roles/Office/TraineeSchedule";
+import ScholarSchedule from "./pages/Roles/Office/ScholarSchedule";
 import OfficeDTRCheck from "./pages/Roles/Office/OfficeDTRCheck";
 import HRDTRCheck from "./pages/Roles/HR/DTR Check/HRDTRCheck";
 import Notifications from "./pages/Utils/Notifications";
@@ -161,6 +162,10 @@ function App(): ReactElement {
         <Route
           path="/office/trainee/:applicationId/schedule"
           element={<TraineeSchedule />}
+        />
+        <Route
+          path="/office/scholar/:scholarId/schedule"
+          element={<ScholarSchedule />}
         />
         <Route
           path="/office/leave-requests"

@@ -11,6 +11,7 @@ import {
   getClassSchedule,
   addDutyHoursToSchedule,
   getOfficeTrainees,
+  getOfficeScholars,
 } from "@/lib/api";
 import { ArrowLeft, Clock, Plus, Save } from "lucide-react";
 
@@ -35,18 +36,57 @@ const TraineeSchedule: React.FC = () => {
   });
 
   useEffect(() => {
-    document.title = "Trainee Schedule | SASM-IMS";
+    document.title = "Schedule Management | SASM-IMS";
   }, []);
 
-  // Fetch trainee info
+  // Fetch trainees
   const { data: traineesData } = useQuery({
     queryKey: ["office-trainees"],
     queryFn: () => getOfficeTrainees(),
   });
 
+  // Fetch scholars
+  const { data: scholarsData } = useQuery({
+    queryKey: ["office-scholars"],
+    queryFn: () => getOfficeScholars(),
+  });
+
+  // Find the person - could be a trainee or scholar
   const trainee = traineesData?.trainees?.find(
     (t: any) => t._id === applicationId
   );
+
+  // Check multiple ways to find scholar:
+  // 1. applicationId matches (when coming from ScholarsList using u.applicationId)
+  // 2. userId matches (when coming from ScholarsList using u.userId as fallback)
+  // 3. _id matches (direct scholar ID)
+  const scholar = scholarsData?.trainees?.find((s: any) => {
+    const scholarApplicationId = s.applicationId?._id || s.applicationId;
+    const scholarUserId = s.userID?._id || s.userID;
+
+    return (
+      s._id === applicationId ||
+      scholarApplicationId === applicationId ||
+      scholarUserId === applicationId
+    );
+  });
+
+  // Use scholar if found, otherwise use trainee
+  const person = scholar || trainee;
+  const isScholar = !!scholar;
+
+  console.log("🔍 TraineeSchedule Debug:");
+  console.log("- applicationId from URL:", applicationId);
+  console.log("- Found trainee:", !!trainee);
+  console.log("- Found scholar:", !!scholar);
+  console.log("- isScholar:", isScholar);
+  if (scholar) {
+    console.log("- Scholar data:", {
+      _id: scholar._id,
+      applicationId: scholar.applicationId,
+      userID: scholar.userID,
+    });
+  }
 
   // Fetch schedule
   const {
@@ -110,7 +150,7 @@ const TraineeSchedule: React.FC = () => {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900">
       <OfficeSidebar
-        currentPage="MyTrainees"
+        currentPage={isScholar ? "Scholars" : "MyTrainees"}
         onCollapseChange={setIsSidebarCollapsed}
       />
       <div
@@ -127,18 +167,20 @@ const TraineeSchedule: React.FC = () => {
         >
           <Button
             variant="ghost"
-            onClick={() => navigate("/office/my-trainees")}
+            onClick={() =>
+              navigate(isScholar ? "/office/scholars" : "/office/my-trainees")
+            }
             className="ml-4 text-white hover:bg-red-800"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
-            Back to Trainees
+            {isScholar ? "Back to Scholars" : "Back to Trainees"}
           </Button>
           <h1 className="text-2xl font-bold text-white">
-            {trainee
-              ? `${trainee.userID?.firstname || ""} ${
-                  trainee.userID?.lastname || ""
+            {person
+              ? `${person.userID?.firstname || ""} ${
+                  person.userID?.lastname || ""
                 }'s Schedule`
-              : "Trainee Schedule"}
+              : "Schedule Management"}
           </h1>
         </div>
 
@@ -155,13 +197,17 @@ const TraineeSchedule: React.FC = () => {
           ) : error ? (
             <Card className="max-w-7xl mx-auto">
               <CardContent className="p-6 md:p-8 text-center">
-                <div className="text-red-600 dark:text-red-400 mb-4">
+                <div className="text-amber-600 dark:text-amber-400 mb-4">
                   <Clock className="w-16 h-16 mx-auto mb-4" />
                   <p className="text-lg font-semibold">
-                    Unable to load schedule
+                    {isScholar
+                      ? "Work Schedule Not Available"
+                      : "Schedule Not Available"}
                   </p>
                   <p className="text-sm mt-2">
-                    The trainee may not have uploaded their schedule yet.
+                    {isScholar
+                      ? "This scholar needs to upload their work schedule (duty hours and shifts). The old trainee class schedule is no longer applicable now that they are a scholar."
+                      : "The trainee has not uploaded their class schedule yet."}
                   </p>
                 </div>
               </CardContent>
@@ -176,10 +222,14 @@ const TraineeSchedule: React.FC = () => {
                       <span className="text-3xl">📅</span>
                       <div>
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                          Trainee Class Schedule
+                          {isScholar
+                            ? "Scholar Work Schedule"
+                            : "Trainee Class Schedule"}
                         </h2>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                          View and manage duty hours
+                          {isScholar
+                            ? "Duty hours and work shifts"
+                            : "View and manage duty hours"}
                         </p>
                       </div>
                     </div>

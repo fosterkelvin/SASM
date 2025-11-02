@@ -103,6 +103,8 @@ app.use("/office/audit-logs", authenticate, auditLogRoutes);
 app.use("/workflow", workflowRoutes);
 // Trainee deployment and management
 app.use("/trainees", authenticate, traineeRoutes);
+// Scholar management (accepted students) - separate from trainees
+app.use("/scholars", authenticate, traineeRoutes);
 // DTR (Daily Time Record) management
 app.use("/dtr", dtrRoutes);
 

@@ -27,6 +27,8 @@ const Scholars: React.FC = () => {
       const mappedScholars: ScholarRow[] = scholarsData.trainees.map(
         (trainee: any) => ({
           _id: trainee._id,
+          applicationId: trainee.applicationId, // For schedule navigation
+          userId: trainee.userID?._id, // User ID for direct navigation
           firstName: trainee.userID?.firstname || "N/A",
           lastName: trainee.userID?.lastname || "N/A",
           email: trainee.userID?.email || "N/A",

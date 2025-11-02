@@ -69,10 +69,14 @@ const Schedule: React.FC = () => {
           }`}
         >
           <h1 className="text-2xl font-bold text-white ml-4">
-            {existingSchedule?.scheduleData &&
-            existingSchedule.scheduleData.length > 0 &&
+            {((existingSchedule?.scheduleData &&
+              existingSchedule.scheduleData.length > 0) ||
+              (existingSchedule?.dutyHours &&
+                existingSchedule.dutyHours.length > 0)) &&
             !showUploadForm
-              ? "My Class Schedule"
+              ? existingSchedule?.userType === "scholar"
+                ? "My Work Schedule"
+                : "My Class Schedule"
               : "Upload Schedule (PDF)"}
           </h1>
         </div>
@@ -87,8 +91,10 @@ const Schedule: React.FC = () => {
                 </p>
               </div>
             </div>
-          ) : existingSchedule?.scheduleData &&
-            existingSchedule.scheduleData.length > 0 &&
+          ) : ((existingSchedule?.scheduleData &&
+              existingSchedule.scheduleData.length > 0) ||
+              (existingSchedule?.dutyHours &&
+                existingSchedule.dutyHours.length > 0)) &&
             !showUploadForm ? (
             // Show Schedule Visualization
             <div className="space-y-6">
