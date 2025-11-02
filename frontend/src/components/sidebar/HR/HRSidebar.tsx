@@ -228,13 +228,11 @@ const HRSidebar = ({
         ref={sidebarRef}
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out z-50 border-r border-gray-200 dark:border-gray-700 focus:outline-none ${
+        className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out z-50 border-r border-gray-200 dark:border-gray-700 focus:outline-none flex flex-col overflow-hidden ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 ${
-          isDesktopCollapsed
-            ? "md:w-20 w-full md:overflow-visible"
-            : "md:w-64 w-full"
-        } overflow-y-auto md:overflow-visible md:overflow-y-visible pb-32`}
+          isDesktopCollapsed ? "md:w-20 w-full" : "md:w-64 w-full"
+        }`}
         aria-label="HR Sidebar"
       >
         {/* Mobile close inside sidebar */}
@@ -263,49 +261,54 @@ const HRSidebar = ({
           onToggleCollapse={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
         />
 
-        <div className={isDesktopCollapsed ? "md:hidden" : ""}>
-          <SidebarNav
-            unreadCount={unreadCount}
-            handlers={{
-              dashboard: handleDashboardClick,
-              analytics: handleAnalyticsClick,
-              applications: handleApplicationsClick,
-              reapplications: handleReapplicationsClick,
-              requirements: handleRequirementsClick,
-              users: handleUsersClick,
-              trainees: handleTraineesClick,
-              scholars: handleScholarsClick,
-              leaves: handleLeavesClick,
-              dtrCheck: handleDTRCheckClick,
-              notifications: handleNotificationsClick,
-            }}
-          />
+        {/* Scrollable middle area */}
+        <div className="flex-1 min-h-0">
+          {!isDesktopCollapsed ? (
+            <div className="h-full overflow-y-auto">
+              <div className={isDesktopCollapsed ? "md:hidden" : ""}>
+                <SidebarNav
+                  unreadCount={unreadCount}
+                  handlers={{
+                    dashboard: handleDashboardClick,
+                    analytics: handleAnalyticsClick,
+                    applications: handleApplicationsClick,
+                    reapplications: handleReapplicationsClick,
+                    requirements: handleRequirementsClick,
+                    users: handleUsersClick,
+                    trainees: handleTraineesClick,
+                    scholars: handleScholarsClick,
+                    leaves: handleLeavesClick,
+                    dtrCheck: handleDTRCheckClick,
+                    notifications: handleNotificationsClick,
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
+            <CollapsedSidebar
+              unreadCount={unreadCount}
+              onExpand={() => setIsDesktopCollapsed(false)}
+              handlers={{
+                dashboard: handleCollapsedDashboardClick,
+                analytics: handleCollapsedAnalyticsClick,
+                applications: handleCollapsedApplicationsClick,
+                reapplications: handleCollapsedReapplicationsClick,
+                requirements: handleCollapsedRequirementsClick,
+                evaluations: handleCollapsedEvaluationsClick,
+                users: handleCollapsedUsersClick,
+                trainees: handleCollapsedTraineesClick,
+                scholars: handleCollapsedScholarsClick,
+                leaves: handleCollapsedLeavesClick,
+                dtrCheck: handleCollapsedDTRCheckClick,
+                notifications: handleCollapsedNotificationsClick,
+                profile: handleCollapsedProfileClick,
+              }}
+              darkMode={darkMode}
+              onToggleTheme={() => setDarkMode(!darkMode)}
+              onSignout={handleCollapsedSignout}
+            />
+          )}
         </div>
-
-        {isDesktopCollapsed && (
-          <CollapsedSidebar
-            unreadCount={unreadCount}
-            onExpand={() => setIsDesktopCollapsed(false)}
-            handlers={{
-              dashboard: handleCollapsedDashboardClick,
-              analytics: handleCollapsedAnalyticsClick,
-              applications: handleCollapsedApplicationsClick,
-              reapplications: handleCollapsedReapplicationsClick,
-              requirements: handleCollapsedRequirementsClick,
-              evaluations: handleCollapsedEvaluationsClick,
-              users: handleCollapsedUsersClick,
-              trainees: handleCollapsedTraineesClick,
-              scholars: handleCollapsedScholarsClick,
-              leaves: handleCollapsedLeavesClick,
-              dtrCheck: handleCollapsedDTRCheckClick,
-              notifications: handleCollapsedNotificationsClick,
-              profile: handleCollapsedProfileClick,
-            }}
-            darkMode={darkMode}
-            onToggleTheme={() => setDarkMode(!darkMode)}
-            onSignout={handleCollapsedSignout}
-          />
-        )}
 
         {/* Bottom controls when not collapsed */}
         {!isDesktopCollapsed ? (

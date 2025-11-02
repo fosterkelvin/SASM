@@ -401,7 +401,19 @@ const DynamicDayRow: React.FC<DynamicDayRowProps> = ({
 
       {/* Status */}
       <td className="border border-gray-200 dark:border-gray-700 px-2 py-2 text-sm text-center">
-        {entry.confirmationStatus === "confirmed" ? (
+        {entry.status === "Absent" ? (
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
+              Absent
+            </span>
+          </div>
+        ) : entry.status === "Excused" || entry.excusedStatus === "excused" ? (
+          <div className="flex flex-col items-center gap-0.5">
+            <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+              Excused
+            </span>
+          </div>
+        ) : entry.confirmationStatus === "confirmed" ? (
           <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
             Confirmed
           </span>

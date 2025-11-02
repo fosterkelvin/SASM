@@ -385,6 +385,7 @@ const StudentSidebar = ({
         isOpen={isOpen}
         onToggle={() => setIsOpen(!isOpen)}
         title="SASM-IMS"
+        subtitle={currentPage || "Dashboard"}
       />
 
       {/* Overlay for mobile and desktop */}
@@ -403,15 +404,13 @@ const StudentSidebar = ({
         ref={sidebarRef}
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out z-50 border-r border-gray-200 dark:border-gray-700 focus:outline-none ${
+        className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out z-50 border-r border-gray-200 dark:border-gray-700 focus:outline-none flex flex-col overflow-hidden ${
           // Mobile: slide in/out full width. Desktop: present and optionally collapsed.
           isOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 ${
           // On desktop apply width based on collapse state; on mobile use full width when open
-          isDesktopCollapsed
-            ? "md:w-20 w-full md:overflow-visible"
-            : "md:w-64 w-full"
-        } overflow-y-auto md:overflow-visible md:overflow-y-visible pb-32`}
+          isDesktopCollapsed ? "md:w-20 w-full" : "md:w-64 w-full"
+        }`}
         aria-label="Student Sidebar"
       >
         {/* Mobile close button inside the sidebar for easier access */}
@@ -429,61 +428,65 @@ const StudentSidebar = ({
           onToggleCollapse={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
         />
 
-        {/* full nav: hide on md+ when the desktop sidebar is collapsed (keep visible on mobile when sidebar is open) */}
-        <div className={isDesktopCollapsed ? "md:hidden" : ""}>
-          <SidebarNav
-            unreadCount={unreadCount}
-            isVerified={!!user?.verified}
-            isApplicant={
-              user?.status === "applicant" || user?.status === "trainee"
-            }
-            isTrainee={isTrainee}
-            isScholar={isScholar}
-            isAccepted={hasAcceptedApplication}
-            isEmailUpdateRequired={isEmailUpdateRequired}
-            isPersonalInfoIncomplete={!personalInfoComplete}
-            handlers={{
-              dashboard: handleDashboardClick,
-              notifications: handleNotificationsClick,
-              grades: handleGradesClick,
-              dtr: handleDtrClick,
-              schedule: handleScheduleClick,
-              apply: handleApplyClick,
-              reapply: handleReapplyClick,
-              leave: handleLeaveClick,
-              requirements: handleRequirementsClick,
-            }}
-          />
+        {/* Scrollable middle area */}
+        <div className="flex-1 min-h-0">
+          {!isDesktopCollapsed ? (
+            <div className="h-full overflow-y-auto">
+              <div className={isDesktopCollapsed ? "md:hidden" : ""}>
+                <SidebarNav
+                  unreadCount={unreadCount}
+                  isVerified={!!user?.verified}
+                  isApplicant={
+                    user?.status === "applicant" || user?.status === "trainee"
+                  }
+                  isTrainee={isTrainee}
+                  isScholar={isScholar}
+                  isAccepted={hasAcceptedApplication}
+                  isEmailUpdateRequired={isEmailUpdateRequired}
+                  isPersonalInfoIncomplete={!personalInfoComplete}
+                  handlers={{
+                    dashboard: handleDashboardClick,
+                    notifications: handleNotificationsClick,
+                    grades: handleGradesClick,
+                    dtr: handleDtrClick,
+                    schedule: handleScheduleClick,
+                    apply: handleApplyClick,
+                    reapply: handleReapplyClick,
+                    leave: handleLeaveClick,
+                    requirements: handleRequirementsClick,
+                  }}
+                />
+              </div>
+            </div>
+          ) : (
+            <CollapsedSidebar
+              unreadCount={unreadCount}
+              onExpand={() => setIsDesktopCollapsed(false)}
+              handlers={{
+                dashboard: handleCollapsedDashboardClick,
+                notifications: handleCollapsedNotificationsClick,
+                grades: handleCollapsedGradesClick,
+                dtr: handleCollapsedDtrClick,
+                schedule: handleCollapsedScheduleClick,
+                apply: handleCollapsedApplyClick,
+                reapply: handleCollapsedReapplyClick,
+                leave: handleCollapsedLeaveClick,
+                requirements: handleCollapsedRequirementsClick,
+                profile: handleCollapsedProfileClick,
+              }}
+              isVerified={!!user?.verified}
+              isApplicant={
+                user?.status === "applicant" || user?.status === "trainee"
+              }
+              isTrainee={isTrainee}
+              isAccepted={hasAcceptedApplication}
+              isEmailUpdateRequired={isEmailUpdateRequired}
+              darkMode={darkMode}
+              onToggleTheme={() => setDarkMode(!darkMode)}
+              onSignout={handleCollapsedSignout}
+            />
+          )}
         </div>
-
-        {isDesktopCollapsed && (
-          <CollapsedSidebar
-            unreadCount={unreadCount}
-            onExpand={() => setIsDesktopCollapsed(false)}
-            handlers={{
-              dashboard: handleCollapsedDashboardClick,
-              notifications: handleCollapsedNotificationsClick,
-              grades: handleCollapsedGradesClick,
-              dtr: handleCollapsedDtrClick,
-              schedule: handleCollapsedScheduleClick,
-              apply: handleCollapsedApplyClick,
-              reapply: handleCollapsedReapplyClick,
-              leave: handleCollapsedLeaveClick,
-              requirements: handleCollapsedRequirementsClick,
-              profile: handleCollapsedProfileClick,
-            }}
-            isVerified={!!user?.verified}
-            isApplicant={
-              user?.status === "applicant" || user?.status === "trainee"
-            }
-            isTrainee={isTrainee}
-            isAccepted={hasAcceptedApplication}
-            isEmailUpdateRequired={isEmailUpdateRequired}
-            darkMode={darkMode}
-            onToggleTheme={() => setDarkMode(!darkMode)}
-            onSignout={handleCollapsedSignout}
-          />
-        )}
 
         {/* Theme Switcher and Sign out at Bottom - Enhanced */}
         {/* Theme Switcher and Sign out at Bottom - Always visible for both desktop and mobile */}

@@ -69,6 +69,11 @@ const ConfirmEntrySchema = z.object({
   day: z.number().min(1).max(31),
 });
 
+const UnconfirmEntrySchema = z.object({
+  dtrId: z.string(),
+  day: z.number().min(1).max(31),
+});
+
 const ConfirmAllEntriesSchema = z.object({
   dtrId: z.string(),
 });
@@ -85,6 +90,13 @@ const MarkDayExcusedSchema = z.object({
   day: z.number().min(1).max(31),
   excusedStatus: z.enum(["none", "excused"]),
   excusedReason: z.string().optional(),
+  confirmationStatus: z.enum(["unconfirmed", "confirmed"]).optional(),
+});
+
+const MarkDayAbsentSchema = z.object({
+  dtrId: z.string(),
+  day: z.number().min(1).max(31),
+  absentStatus: z.enum(["none", "absent"]),
   confirmationStatus: z.enum(["unconfirmed", "confirmed"]).optional(),
 });
 
@@ -510,6 +522,42 @@ export const confirmDTREntry = catchErrors(
 );
 
 /**
+ * Unconfirm a single DTR entry (Office use)
+ * POST /api/dtr/office/unconfirm-entry
+ */
+export const unconfirmDTREntry = catchErrors(
+  async (req: Request, res: Response) => {
+    const validatedData = UnconfirmEntrySchema.parse(req.body);
+    const userId = req.userID;
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const user = await UserModel.findById(userId);
+    if (!user || user.role !== "office") {
+      return res.status(403).json({ message: "Access denied - Office only" });
+    }
+
+    const dtr = await DTRService.getDTRById(validatedData.dtrId);
+
+    if (!dtr) {
+      return res.status(404).json({ message: "DTR not found" });
+    }
+
+    const updatedDTR = await DTRService.unconfirmDTREntry(
+      validatedData.dtrId,
+      validatedData.day
+    );
+
+    res.status(200).json({
+      message: "Entry unconfirmed successfully",
+      dtr: updatedDTR,
+    });
+  }
+);
+
+/**
  * Confirm all DTR entries for a month (Office use)
  * POST /api/dtr/confirm-all-entries
  */
@@ -743,22 +791,65 @@ export const markDayAsExcused = catchErrors(
           dtr.entries[entryIndex].confirmedAt = undefined;
         }
       }
-      // Recalculate total hours from time entries
+      // Recalculate total hours from time entries (support up to 4 pairs + shifts[])
       const entry = dtr.entries[entryIndex];
+      const toHHMM = (time?: string) => {
+        if (!time) return "00:00";
+        if (/^\d{1,2}:\d{2}$/.test(time)) return time;
+        const ampm = time.match(/(am|pm)/i);
+        if (ampm) {
+          const hasColon = time.match(/(\d{1,2})(?::(\d{2}))?/i);
+          if (hasColon) {
+            const h = parseInt(hasColon[1] || "0", 10);
+            const m = parseInt((hasColon[2] as any) || "0", 10);
+            const period = ampm[1].toUpperCase();
+            let hours = h;
+            if (period === "PM" && hours !== 12) hours += 12;
+            if (period === "AM" && hours === 12) hours = 0;
+            return `${hours.toString().padStart(2, "0")}:${m
+              .toString()
+              .padStart(2, "0")}`;
+          }
+        }
+        const digits = time.replace(/\D/g, "");
+        if (digits.length >= 3) {
+          const h = parseInt(digits.slice(0, digits.length - 2), 10);
+          const m = parseInt(digits.slice(-2), 10);
+          return `${(h % 24).toString().padStart(2, "0")}:${(m % 60)
+            .toString()
+            .padStart(2, "0")}`;
+        }
+        if (digits.length > 0) {
+          const h = parseInt(digits, 10) % 24;
+          return `${h.toString().padStart(2, "0")}:00`;
+        }
+        return "00:00";
+      };
+
       const toMinutes = (time?: string) => {
         if (!time) return 0;
-        const [h, m] = time.split(":").map(Number);
+        const [h, m] = toHHMM(time).split(":").map(Number);
         return (h || 0) * 60 + (m || 0);
       };
 
-      const in1 = toMinutes(entry.in1);
-      const out1 = toMinutes(entry.out1);
-      const in2 = toMinutes(entry.in2);
-      const out2 = toMinutes(entry.out2);
+      // Collect pairs from legacy fields
+      const pairs: Array<{ in?: string; out?: string }> = [
+        { in: entry.in1, out: entry.out1 },
+        { in: entry.in2, out: entry.out2 },
+        { in: entry.in3, out: entry.out3 },
+        { in: entry.in4, out: entry.out4 },
+      ];
+      // Include shifts array if present
+      if (Array.isArray(entry.shifts)) {
+        entry.shifts.forEach((s) => pairs.push({ in: s.in, out: s.out }));
+      }
 
       let totalMinutes = 0;
-      if (out1 > in1) totalMinutes += out1 - in1;
-      if (out2 > in2) totalMinutes += out2 - in2;
+      pairs.forEach((p) => {
+        const tin = toMinutes(p.in);
+        const tout = toMinutes(p.out);
+        if (tout > tin && tin > 0) totalMinutes += tout - tin;
+      });
 
       dtr.entries[entryIndex].totalHours = totalMinutes;
     }
@@ -771,6 +862,95 @@ export const markDayAsExcused = catchErrors(
         validatedData.excusedStatus === "excused"
           ? "Day marked as excused successfully"
           : "Excused status removed successfully",
+      dtr,
+    });
+  }
+);
+
+/**
+ * Mark a day as absent or remove absent status (Office use)
+ * POST /api/dtr/office/mark-day-absent
+ */
+export const markDayAsAbsent = catchErrors(
+  async (req: Request, res: Response) => {
+    const validatedData = MarkDayAbsentSchema.parse(req.body);
+    const officeUserId = req.userID;
+
+    if (!officeUserId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const user = await UserModel.findById(officeUserId);
+
+    if (!user || user.role !== "office") {
+      return res.status(403).json({ message: "Access denied - Office only" });
+    }
+
+    const dtr = await DTRService.getDTRById(validatedData.dtrId);
+
+    if (!dtr) {
+      return res.status(404).json({ message: "DTR not found" });
+    }
+
+    const entryIndex = dtr.entries.findIndex(
+      (e: any) => e.day === validatedData.day
+    );
+
+    if (entryIndex === -1) {
+      return res.status(404).json({ message: "Entry not found" });
+    }
+
+    // Get profile name if available
+    let profileName = `${user.firstname} ${user.lastname}`;
+    if (req.profileID) {
+      const profile = await OfficeProfileModel.findById(req.profileID);
+      if (profile) {
+        profileName = profile.profileName;
+      }
+    }
+
+    if (validatedData.absentStatus === "absent") {
+      // Mark as absent: clear times, set totals to 0, confirm entry
+      dtr.entries[entryIndex].status = "Absent";
+      dtr.entries[entryIndex].excusedStatus = "none";
+      dtr.entries[entryIndex].excusedReason = "";
+      dtr.entries[entryIndex].in1 = undefined;
+      dtr.entries[entryIndex].out1 = undefined;
+      dtr.entries[entryIndex].in2 = undefined;
+      dtr.entries[entryIndex].out2 = undefined;
+      dtr.entries[entryIndex].in3 = undefined;
+      dtr.entries[entryIndex].out3 = undefined;
+      dtr.entries[entryIndex].in4 = undefined;
+      dtr.entries[entryIndex].out4 = undefined;
+      dtr.entries[entryIndex].shifts = [];
+      dtr.entries[entryIndex].late = 0;
+      dtr.entries[entryIndex].undertime = 0;
+      dtr.entries[entryIndex].totalHours = 0;
+      dtr.entries[entryIndex].confirmationStatus = "confirmed";
+      dtr.entries[entryIndex].confirmedBy = officeUserId;
+      dtr.entries[entryIndex].confirmedByProfile = profileName;
+      dtr.entries[entryIndex].confirmedAt = new Date();
+    } else {
+      // Remove absent status
+      dtr.entries[entryIndex].status = "";
+      if (validatedData.confirmationStatus) {
+        dtr.entries[entryIndex].confirmationStatus =
+          validatedData.confirmationStatus;
+        if (validatedData.confirmationStatus === "unconfirmed") {
+          dtr.entries[entryIndex].confirmedBy = undefined;
+          dtr.entries[entryIndex].confirmedByProfile = undefined;
+          dtr.entries[entryIndex].confirmedAt = undefined;
+        }
+      }
+    }
+
+    await dtr.save();
+
+    res.status(200).json({
+      message:
+        validatedData.absentStatus === "absent"
+          ? "Day marked as absent successfully"
+          : "Absent status removed successfully",
       dtr,
     });
   }

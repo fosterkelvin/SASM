@@ -10,10 +10,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getClassSchedule,
   addDutyHoursToSchedule,
+  removeDutyHoursFromSchedule,
   getOfficeTrainees,
   getOfficeScholars,
 } from "@/lib/api";
-import { ArrowLeft, Clock, Plus, Save } from "lucide-react";
+import { ArrowLeft, Clock, Plus, Save, Trash2 } from "lucide-react";
 
 interface DutyHourEntry {
   day: string;
@@ -124,6 +125,25 @@ const TraineeSchedule: React.FC = () => {
     },
   });
 
+  // Remove duty hours mutation
+  const removeDutyHoursMutation = useMutation({
+    mutationFn: (data: { day: string; startTime: string; endTime: string }) =>
+      // For trainees we use the applicationId directly
+      removeDutyHoursFromSchedule(applicationId!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["classSchedule", applicationId],
+      });
+      alert("Duty hours removed successfully!");
+    },
+    onError: (error: any) => {
+      alert(
+        error.response?.data?.message ||
+          "Failed to remove duty hours. Please try again."
+      );
+    },
+  });
+
   const handleAddDutyHours = () => {
     if (
       !dutyHourEntry.day ||
@@ -146,6 +166,20 @@ const TraineeSchedule: React.FC = () => {
     "Saturday",
     "Sunday",
   ];
+
+  const handleRemoveDutyHours = (dutyHour: {
+    day: string;
+    startTime: string;
+    endTime: string;
+  }) => {
+    if (
+      window.confirm(
+        `Are you sure you want to remove duty hours for ${dutyHour.day} ${dutyHour.startTime}-${dutyHour.endTime}?`
+      )
+    ) {
+      removeDutyHoursMutation.mutate(dutyHour);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900">
@@ -184,7 +218,7 @@ const TraineeSchedule: React.FC = () => {
           </h1>
         </div>
 
-        <div className="p-4 md:p-10 mt-12">
+        <div className="p-4 md:p-10 pt-16 md:pt-10">
           {isLoading ? (
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">
@@ -194,21 +228,196 @@ const TraineeSchedule: React.FC = () => {
                 </p>
               </div>
             </div>
-          ) : error ? (
+          ) : error ||
+            !scheduleData?.scheduleData ||
+            scheduleData.scheduleData.length === 0 ? (
             <Card className="max-w-7xl mx-auto">
-              <CardContent className="p-6 md:p-8 text-center">
-                <div className="text-amber-600 dark:text-amber-400 mb-4">
-                  <Clock className="w-16 h-16 mx-auto mb-4" />
-                  <p className="text-lg font-semibold">
+              <CardContent className="p-6 md:p-8">
+                <div className="text-center mb-6">
+                  <Clock className="w-16 h-16 mx-auto mb-4 text-amber-600 dark:text-amber-400" />
+                  <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                     {isScholar
                       ? "Work Schedule Not Available"
                       : "Schedule Not Available"}
                   </p>
-                  <p className="text-sm mt-2">
+                  <p className="text-sm mt-2 text-gray-600 dark:text-gray-400">
                     {isScholar
                       ? "This scholar needs to upload their work schedule (duty hours and shifts). The old trainee class schedule is no longer applicable now that they are a scholar."
-                      : "The trainee has not uploaded their class schedule yet."}
+                      : "This trainee hasn't uploaded their class schedule yet."}
                   </p>
+                  <p className="text-xs mt-2 text-gray-500">
+                    You can add duty hours now. Once a schedule is uploaded,
+                    these temporary duty hours will be cleared so you can assign
+                    new ones.
+                  </p>
+                </div>
+
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                      {scheduleData?.dutyHours &&
+                      scheduleData.dutyHours.length > 0
+                        ? "Duty Hours Schedule"
+                        : "Temporary Duty Hours"}
+                    </h3>
+                    <Button
+                      onClick={() => setShowAddDutyForm(!showAddDutyForm)}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      {showAddDutyForm ? "Cancel" : "Add Duty Hours"}
+                    </Button>
+                  </div>
+
+                  {showAddDutyForm && (
+                    <Card className="mb-6 border-red-200 dark:border-red-800">
+                      <CardContent className="p-4">
+                        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+                          Add Duty Hours
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="day">Day</Label>
+                            <select
+                              id="day"
+                              value={dutyHourEntry.day}
+                              onChange={(e) =>
+                                setDutyHourEntry({
+                                  ...dutyHourEntry,
+                                  day: e.target.value,
+                                })
+                              }
+                              className="w-full mt-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2"
+                            >
+                              <option value="">Select day</option>
+                              {daysOfWeek.map((day) => (
+                                <option key={day} value={day}>
+                                  {day}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <Label htmlFor="location">Location</Label>
+                            <Input
+                              id="location"
+                              value={dutyHourEntry.location}
+                              onChange={(e) =>
+                                setDutyHourEntry({
+                                  ...dutyHourEntry,
+                                  location: e.target.value,
+                                })
+                              }
+                              placeholder="e.g., Main Office"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="startTime">Start Time</Label>
+                            <Input
+                              id="startTime"
+                              type="time"
+                              value={dutyHourEntry.startTime}
+                              onChange={(e) =>
+                                setDutyHourEntry({
+                                  ...dutyHourEntry,
+                                  startTime: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="endTime">End Time</Label>
+                            <Input
+                              id="endTime"
+                              type="time"
+                              value={dutyHourEntry.endTime}
+                              onChange={(e) =>
+                                setDutyHourEntry({
+                                  ...dutyHourEntry,
+                                  endTime: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <Button
+                              onClick={handleAddDutyHours}
+                              disabled={addDutyHoursMutation.isPending}
+                              className="w-full bg-red-600 hover:bg-red-700"
+                            >
+                              <Save className="w-4 h-4 mr-2" />
+                              {addDutyHoursMutation.isPending
+                                ? "Adding..."
+                                : "Add Duty Hours"}
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {scheduleData?.dutyHours &&
+                  scheduleData.dutyHours.length > 0 ? (
+                    <div className="mt-4 space-y-4">
+                      <Card className="border-red-200 dark:border-red-800">
+                        <CardContent className="p-4">
+                          <h4 className="text-sm font-semibold mb-3 text-gray-700 dark:text-gray-300">
+                            Current Duty Hours ({scheduleData.dutyHours.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {scheduleData.dutyHours.map(
+                              (dh: any, index: number) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800"
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                        {dh.day}
+                                      </span>
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        {dh.startTime} - {dh.endTime}
+                                      </span>
+                                    </div>
+                                    {dh.location && (
+                                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                        📍 {dh.location}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveDutyHours(dh)}
+                                    disabled={removeDutyHoursMutation.isPending}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-300">
+                          Schedule Preview
+                        </h4>
+                        <ScheduleVisualization
+                          scheduleClasses={[]}
+                          dutyHours={scheduleData.dutyHours}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      No duty hours added yet. Click "Add Duty Hours" to get
+                      started.
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -348,6 +557,53 @@ const TraineeSchedule: React.FC = () => {
                       </CardContent>
                     </Card>
                   )}
+
+                  {/* Duty Hours Management - Show if any duty hours exist */}
+                  {scheduleData?.dutyHours &&
+                    scheduleData.dutyHours.length > 0 && (
+                      <Card className="mb-6 border-red-200 dark:border-red-800">
+                        <CardContent className="p-4">
+                          <h4 className="text-sm font-semibold mb-3 text-gray-700 dark:text-gray-300">
+                            Current Duty Hours ({scheduleData.dutyHours.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {scheduleData.dutyHours.map(
+                              (dh: any, index: number) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800"
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                        {dh.day}
+                                      </span>
+                                      <span className="text-gray-600 dark:text-gray-400">
+                                        {dh.startTime} - {dh.endTime}
+                                      </span>
+                                    </div>
+                                    {dh.location && (
+                                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                        📍 {dh.location}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveDutyHours(dh)}
+                                    disabled={removeDutyHoursMutation.isPending}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
 
                   <ScheduleVisualization
                     scheduleClasses={scheduleData.scheduleData}

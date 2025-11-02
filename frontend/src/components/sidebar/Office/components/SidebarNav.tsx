@@ -1,12 +1,23 @@
 import React from "react";
 import SidebarItem from "./SidebarItem";
-import { Home, Calendar, FileText, Users, ClipboardCheck, Bell } from "lucide-react";
+import {
+  Home,
+  Calendar,
+  FileText,
+  Users,
+  ClipboardCheck,
+  Bell,
+} from "lucide-react";
 
 interface NavProps {
   handlers: Record<string, () => void>;
+  unreadNotificationCount?: number;
 }
 
-const SidebarNav: React.FC<NavProps> = ({ handlers }) => {
+const SidebarNav: React.FC<NavProps> = ({
+  handlers,
+  unreadNotificationCount,
+}) => {
   return (
     <nav
       className={`transition-all duration-300 p-4 flex-1 overflow-y-auto mt-0`}
@@ -67,6 +78,11 @@ const SidebarNav: React.FC<NavProps> = ({ handlers }) => {
             label="Notifications"
             onClick={handlers.notifications}
             IconComponent={Bell}
+            badge={
+              unreadNotificationCount && unreadNotificationCount > 0
+                ? unreadNotificationCount
+                : undefined
+            }
           />
         </li>
       </ul>

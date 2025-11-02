@@ -116,6 +116,7 @@ const OfficeDTRCheck: React.FC = () => {
   const [showExcusedModal, setShowExcusedModal] = useState(false);
   const [excusedDay, setExcusedDay] = useState<number | null>(null);
   const [excusedReason, setExcusedReason] = useState("");
+  const [absentLoadingDay, setAbsentLoadingDay] = useState<number | null>(null);
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [inquiryMessage, setInquiryMessage] = useState("");
   const [sendingInquiry, setSendingInquiry] = useState(false);
@@ -288,6 +289,30 @@ const OfficeDTRCheck: React.FC = () => {
     }
   };
 
+  // Unconfirm single entry
+  const handleUnconfirmEntry = async (day: number) => {
+    if (!dtr) return;
+    try {
+      const response = await API.post("/dtr/office/unconfirm-entry", {
+        dtrId: dtr._id,
+        day,
+      });
+
+      setDtr(response.data.dtr);
+      const mappedEntries = (response.data.dtr.entries || []).map(
+        (entry: any) => ({
+          ...entry,
+          id: entry.day,
+        })
+      );
+      setEntries(mappedEntries);
+      addToast("Entry set to unconfirmed", "success");
+    } catch (error) {
+      console.error("Error unconfirming entry:", error);
+      addToast("Failed to unconfirm entry", "error");
+    }
+  };
+
   // Confirm all entries
   const handleConfirmAll = async () => {
     if (!dtr) return;
@@ -314,11 +339,6 @@ const OfficeDTRCheck: React.FC = () => {
 
   // Start editing an entry
   const handleStartEdit = (entry: Entry) => {
-    // Don't allow editing on Sundays
-    if (isSunday(entry.day)) {
-      addToast("Cannot edit entries on Sundays", "error");
-      return;
-    }
     setEditingEntry(entry.day);
     // Ensure shifts array exists in edit values
     const editEntry = { ...entry };
@@ -474,6 +494,61 @@ const OfficeDTRCheck: React.FC = () => {
     } catch (error) {
       console.error("Error removing excused status:", error);
       addToast("Failed to remove excused status", "error");
+    }
+  };
+
+  // Mark day as absent
+  const handleMarkAbsent = async (day: number) => {
+    if (!dtr) return;
+    setAbsentLoadingDay(day);
+    try {
+      const response = await API.post("/dtr/office/mark-day-absent", {
+        dtrId: dtr._id,
+        day,
+        absentStatus: "absent",
+      });
+      setDtr(response.data.dtr);
+      const mappedEntries = (response.data.dtr.entries || []).map(
+        (entry: any) => ({
+          ...entry,
+          id: entry.day,
+        })
+      );
+      setEntries(mappedEntries);
+      addToast("Day marked as absent", "success");
+    } catch (error) {
+      console.error("Error marking day as absent:", error);
+      addToast("Failed to mark day as absent", "error");
+    } finally {
+      setAbsentLoadingDay(null);
+    }
+  };
+
+  // Remove absent status
+  const handleRemoveAbsent = async (day: number) => {
+    if (!dtr) return;
+    setAbsentLoadingDay(day);
+    try {
+      const response = await API.post("/dtr/office/mark-day-absent", {
+        dtrId: dtr._id,
+        day,
+        absentStatus: "none",
+        confirmationStatus: "unconfirmed",
+      });
+      setDtr(response.data.dtr);
+      const mappedEntries = (response.data.dtr.entries || []).map(
+        (entry: any) => ({
+          ...entry,
+          id: entry.day,
+        })
+      );
+      setEntries(mappedEntries);
+      addToast("Absent status removed", "success");
+    } catch (error) {
+      console.error("Error removing absent status:", error);
+      addToast("Failed to remove absent status", "error");
+    } finally {
+      setAbsentLoadingDay(null);
     }
   };
 
@@ -1020,7 +1095,27 @@ const OfficeDTRCheck: React.FC = () => {
                         );
                         const minutes = (currentEntry?.totalHours || 0) % 60;
                         const hasTimeData =
-                          entry.in1 || entry.out1 || entry.in2 || entry.out2;
+                          // Prefer dynamic shifts if present
+                          (Array.isArray(entry.shifts) &&
+                            entry.shifts.some(
+                              (s: any) =>
+                                (s?.in && String(s.in).trim() !== "") ||
+                                (s?.out && String(s.out).trim() !== "")
+                            )) ||
+                          // Fallback to legacy fields
+                          !!(
+                            entry.in1 ||
+                            entry.out1 ||
+                            entry.in2 ||
+                            entry.out2 ||
+                            entry.in3 ||
+                            entry.out3 ||
+                            entry.in4 ||
+                            entry.out4
+                          ) ||
+                          // Or computed total hours
+                          (typeof entry.totalHours === "number" &&
+                            entry.totalHours > 0);
 
                         return (
                           <tr
@@ -1176,7 +1271,12 @@ const OfficeDTRCheck: React.FC = () => {
                             </td>
                             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
                               <div className="flex items-center justify-center gap-2">
-                                {entry.excusedStatus === "excused" ? (
+                                {entry.status === "Absent" ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                                    <AlertCircle className="h-3 w-3" />
+                                    Absent
+                                  </span>
+                                ) : entry.excusedStatus === "excused" ? (
                                   <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
                                     <ShieldCheck className="h-3 w-3" />
                                     Excused
@@ -1324,7 +1424,20 @@ const OfficeDTRCheck: React.FC = () => {
                               ) : (
                                 <div className="flex items-center justify-center gap-2">
                                   {/* Excused Status Buttons */}
-                                  {entry.excusedStatus === "excused" ? (
+                                  {entry.status === "Absent" ? (
+                                    <button
+                                      onClick={() =>
+                                        handleRemoveAbsent(entry.day)
+                                      }
+                                      className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium"
+                                      title="Remove absent status"
+                                      disabled={absentLoadingDay === entry.day}
+                                    >
+                                      {absentLoadingDay === entry.day
+                                        ? "..."
+                                        : "Remove Absent"}
+                                    </button>
+                                  ) : entry.excusedStatus === "excused" ? (
                                     <button
                                       onClick={() =>
                                         handleRemoveExcused(entry.day)
@@ -1336,19 +1449,31 @@ const OfficeDTRCheck: React.FC = () => {
                                     </button>
                                   ) : entry.confirmationStatus !==
                                     "confirmed" ? (
-                                    <button
-                                      onClick={() =>
-                                        handleMarkAsExcused(entry.day)
-                                      }
-                                      className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-medium"
-                                      title="Mark as excused (e.g., earthquake, emergency)"
-                                    >
-                                      Mark Excused
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={() =>
+                                          handleMarkAsExcused(entry.day)
+                                        }
+                                        className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-medium"
+                                        title="Mark as excused (e.g., earthquake, emergency)"
+                                      >
+                                        Mark Excused
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          handleMarkAbsent(entry.day)
+                                        }
+                                        className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium"
+                                        title="Mark as absent"
+                                      >
+                                        Mark Absent
+                                      </button>
+                                    </div>
                                   ) : null}
 
                                   {/* Regular Edit/Confirm Buttons */}
                                   {entry.excusedStatus !== "excused" &&
+                                    entry.status !== "Absent" &&
                                     entry.confirmationStatus !==
                                       "confirmed" && (
                                       <button
@@ -1361,6 +1486,7 @@ const OfficeDTRCheck: React.FC = () => {
                                     )}
                                   {hasTimeData &&
                                     entry.excusedStatus !== "excused" &&
+                                    entry.status !== "Absent" &&
                                     entry.confirmationStatus !==
                                       "confirmed" && (
                                       <button
@@ -1373,11 +1499,19 @@ const OfficeDTRCheck: React.FC = () => {
                                         <Check className="h-4 w-4" />
                                       </button>
                                     )}
-                                  {entry.confirmationStatus === "confirmed" && (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 italic">
-                                      Locked
-                                    </span>
-                                  )}
+                                  {entry.confirmationStatus === "confirmed" &&
+                                    entry.excusedStatus !== "excused" &&
+                                    entry.status !== "Absent" && (
+                                      <button
+                                        onClick={() =>
+                                          handleUnconfirmEntry(entry.day)
+                                        }
+                                        className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-xs font-medium"
+                                        title="Unconfirm this entry"
+                                      >
+                                        Unconfirm
+                                      </button>
+                                    )}
                                 </div>
                               )}
                             </td>

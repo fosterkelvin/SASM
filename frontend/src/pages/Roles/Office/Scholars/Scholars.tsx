@@ -115,6 +115,8 @@ const Scholars: React.FC = () => {
             onProgramChange={setProgramFilter}
             statusFilter={statusFilter}
             onStatusChange={setStatusFilter}
+            totalCount={data.length}
+            filteredCount={filtered.length}
           />
 
           {isLoading ? (

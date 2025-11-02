@@ -19,6 +19,7 @@ interface Props {
   darkMode: boolean;
   onToggleTheme: () => void;
   onSignout: () => void;
+  unreadNotificationCount?: number;
 }
 
 const CollapsedSidebar: React.FC<Props> = ({
@@ -27,6 +28,7 @@ const CollapsedSidebar: React.FC<Props> = ({
   darkMode,
   onToggleTheme,
   onSignout,
+  unreadNotificationCount,
 }) => {
   return (
     <div
@@ -124,7 +126,16 @@ const CollapsedSidebar: React.FC<Props> = ({
               aria-label="Notifications"
               title="Notifications"
             >
-              <Bell size={16} />
+              <div className="relative">
+                <Bell size={16} />
+                {unreadNotificationCount && unreadNotificationCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+                    {unreadNotificationCount > 9
+                      ? "9+"
+                      : unreadNotificationCount}
+                  </span>
+                )}
+              </div>
             </button>
           </div>
         </div>

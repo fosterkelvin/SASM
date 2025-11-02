@@ -32,6 +32,10 @@ const MyTrainees = () => {
   const queryClient = useQueryClient();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
   const [selectedTrainee, setSelectedTrainee] = useState<any>(null);
 
   useEffect(() => {
@@ -272,6 +276,23 @@ const MyTrainees = () => {
 
   const trainees = traineesData?.trainees || [];
 
+  // Filter and search trainees
+  const filteredTrainees = trainees.filter((trainee: any) => {
+    // Search filter - check name and email
+    const searchLower = searchQuery.toLowerCase();
+    const fullName =
+      `${trainee.userID?.firstname} ${trainee.userID?.lastname}`.toLowerCase();
+    const email = trainee.userID?.email?.toLowerCase() || "";
+    const matchesSearch =
+      fullName.includes(searchLower) || email.includes(searchLower);
+
+    // Status filter
+    const matchesStatus =
+      statusFilter === "all" || trainee.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
@@ -308,6 +329,55 @@ const MyTrainees = () => {
         </div>
 
         <div className="p-6 md:p-10">
+          {/* Search and Filter Controls */}
+          <Card className="bg-white dark:bg-gray-800 border border-red-100 dark:border-red-900/30 mb-6">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row gap-4">
+                {/* Search Input */}
+                <div className="flex-1">
+                  <Label className="text-gray-700 dark:text-gray-300 mb-2 block">
+                    Search by Name or Email
+                  </Label>
+                  <Input
+                    type="text"
+                    placeholder="Search trainees..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                {/* Status Filter */}
+                <div className="w-full md:w-64">
+                  <Label className="text-gray-700 dark:text-gray-300 mb-2 block">
+                    Filter by Status
+                  </Label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="pending_office_interview">
+                      Pending Interview
+                    </option>
+                    <option value="office_interview_scheduled">
+                      Interview Scheduled
+                    </option>
+                    <option value="trainee">Active</option>
+                    <option value="training_completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Results count */}
+              <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                Showing {filteredTrainees.length} of {trainees.length}{" "}
+                trainee(s)
+              </div>
+            </CardContent>
+          </Card>
+
           {isLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 dark:border-red-400 mx-auto"></div>
@@ -324,9 +394,28 @@ const MyTrainees = () => {
                 </p>
               </CardContent>
             </Card>
+          ) : filteredTrainees.length === 0 ? (
+            <Card className="bg-white dark:bg-gray-800 border border-red-100 dark:border-red-900/30">
+              <CardContent className="py-12 text-center">
+                <Users className="w-16 h-16 mx-auto text-red-300 dark:text-red-700 mb-4" />
+                <p className="text-gray-600 dark:text-gray-400">
+                  No trainees match your search criteria
+                </p>
+                <Button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setStatusFilter("all");
+                  }}
+                  variant="outline"
+                  className="mt-4"
+                >
+                  Clear Filters
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {trainees.map((trainee: any) => (
+              {filteredTrainees.map((trainee: any) => (
                 <Card
                   key={trainee._id}
                   className="bg-white dark:bg-gray-800 border border-red-100 dark:border-red-900/30 hover:shadow-xl hover:shadow-red-100 dark:hover:shadow-red-900/20 transition-all duration-300"

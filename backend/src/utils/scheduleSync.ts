@@ -222,7 +222,45 @@ function getDayName(date: Date): string {
 /**
  * Calculate time difference in minutes
  */
+function toHHMM(time: string): string {
+  if (!time) return "00:00";
+  // Already in HH:MM
+  if (/^\d{1,2}:\d{2}$/.test(time)) return time;
+  // Try formats like 07:00 AM / 7 AM
+  const ampm = time.match(/(am|pm)/i);
+  if (ampm) {
+    const hasColon = time.match(/(\d{1,2})(?::(\d{2}))?/i);
+    if (hasColon) {
+      const h = parseInt(hasColon[1] || "0", 10);
+      const m = parseInt((hasColon[2] as any) || "0", 10);
+      const period = ampm[1].toUpperCase();
+      let hours = h;
+      if (period === "PM" && hours !== 12) hours += 12;
+      if (period === "AM" && hours === 12) hours = 0;
+      return `${hours.toString().padStart(2, "0")}:${m
+        .toString()
+        .padStart(2, "0")}`;
+    }
+  }
+  // Fallback: numbers only like "7" or "700"
+  const digits = time.replace(/\D/g, "");
+  if (digits.length >= 3) {
+    const h = parseInt(digits.slice(0, digits.length - 2), 10);
+    const m = parseInt(digits.slice(-2), 10);
+    return `${(h % 24).toString().padStart(2, "0")}:${(m % 60)
+      .toString()
+      .padStart(2, "0")}`;
+  }
+  if (digits.length > 0) {
+    const h = parseInt(digits, 10) % 24;
+    return `${h.toString().padStart(2, "0")}:00`;
+  }
+  return "00:00";
+}
+
 function calculateMinutesDifference(time1: string, time2: string): number {
+  time1 = toHHMM(time1);
+  time2 = toHHMM(time2);
   const [hours1, minutes1] = time1.split(":").map(Number);
   const [hours2, minutes2] = time2.split(":").map(Number);
 
@@ -253,7 +291,10 @@ export function calculateLateAndUndertime(
   scheduledEndTime: string | null;
 } {
   const dayName = getDayName(date);
-  const daySchedule = scheduleMap[dayName] || [];
+  const dayScheduleAll = scheduleMap[dayName] || [];
+  // Prefer duty slots; if none, use all (e.g., class schedule)
+  const dutySlots = dayScheduleAll.filter((s) => s.type === "duty");
+  const daySchedule = dutySlots.length > 0 ? dutySlots : dayScheduleAll;
 
   let late = 0;
   let undertime = 0;
@@ -270,45 +311,43 @@ export function calculateLateAndUndertime(
     };
   }
 
-  // Get the earliest start time and latest end time from schedule
-  const firstSlot = daySchedule[0];
-  const lastSlot = daySchedule[daySchedule.length - 1];
+  // Normalize actual shifts provided (up to 4 pairs)
+  const actualPairs: { start?: string; end?: string }[] = [];
+  if (in1 || out1) actualPairs.push({ start: in1, end: out1 });
+  if (in2 || out2) actualPairs.push({ start: in2, end: out2 });
+  if (in3 || out3) actualPairs.push({ start: in3, end: out3 });
+  if (in4 || out4) actualPairs.push({ start: in4, end: out4 });
 
-  scheduledStartTime = firstSlot.startTime;
-  scheduledEndTime = lastSlot.endTime;
+  // Sort actual pairs by start time for deterministic mapping
+  actualPairs.sort((a, b) =>
+    toHHMM(a.start || "99:99").localeCompare(toHHMM(b.start || "99:99"))
+  );
 
-  // Calculate late (if student came in late)
-  // Use the first IN time that is provided
-  const firstInTime = in1 || in2 || in3 || in4;
-  if (firstInTime) {
-    const minutesLate = calculateMinutesDifference(
-      scheduledStartTime,
-      firstInTime
-    );
-    if (minutesLate > 0) {
-      late = minutesLate;
+  // Map scheduled slots to actual pairs in order (1-to-1 best effort)
+  scheduledStartTime = daySchedule[0]?.startTime || null;
+  scheduledEndTime = daySchedule[daySchedule.length - 1]?.endTime || null;
+
+  for (let i = 0; i < daySchedule.length; i++) {
+    const slot = daySchedule[i];
+    const pair = actualPairs[i];
+
+    // If there is no record at all for this slot, do not mark undertime yet.
+    // We only count undertime when there's an actual OUT and it's earlier than the scheduled end.
+    if (!pair || (!pair.start && !pair.end)) {
+      continue;
     }
-  } else {
-    // No time in at all - consider entire period as late/absent
-    // This is handled by status field, not late calculation
-    late = 0;
-  }
 
-  // Calculate undertime (if student left early)
-  // Use the last OUT time that is provided (check in reverse order)
-  const actualOutTime = out4 || out3 || out2 || out1;
-  if (actualOutTime && scheduledEndTime) {
-    const minutesEarly = calculateMinutesDifference(
-      actualOutTime,
-      scheduledEndTime
-    );
-    if (minutesEarly > 0) {
-      undertime = minutesEarly;
+    // Late: only compute if we have an IN time
+    if (pair.start) {
+      const slotLate = calculateMinutesDifference(slot.startTime, pair.start);
+      if (slotLate > 0) late += slotLate;
     }
-  } else if (!actualOutTime && scheduledEndTime) {
-    // No time out at all - consider entire period as undertime
-    // This is handled by status field, not undertime calculation
-    undertime = 0;
+
+    // Undertime: only compute if we have an OUT time
+    if (pair.end) {
+      const slotUnder = calculateMinutesDifference(pair.end, slot.endTime);
+      if (slotUnder > 0) undertime += slotUnder;
+    }
   }
 
   return { late, undertime, scheduledStartTime, scheduledEndTime };
@@ -390,9 +429,29 @@ export async function syncDTRWithSchedule(
         };
       }
 
-      // Get class schedule and duty hours from application (trainees)
-      classScheduleData = application.classScheduleData || [];
-      dutyHours = application.dutyHours || [];
+      // Prefer the unified Schedule model for trainees as well (supports temporary duty hours)
+      let traineeSchedule = await ScheduleModel.findOne({
+        userId: userId,
+        userType: "trainee",
+      });
+
+      // Fallback: locate by applicationId if not found by userId
+      if (!traineeSchedule) {
+        traineeSchedule = await ScheduleModel.findOne({
+          applicationId: application._id,
+          userType: "trainee",
+        });
+      }
+
+      if (traineeSchedule) {
+        // Use schedule document as source of truth
+        classScheduleData = traineeSchedule.classScheduleData || [];
+        dutyHours = traineeSchedule.dutyHours || [];
+      } else {
+        // Legacy fallback to application fields
+        classScheduleData = application.classScheduleData || [];
+        dutyHours = application.dutyHours || [];
+      }
     }
 
     // Build schedule map

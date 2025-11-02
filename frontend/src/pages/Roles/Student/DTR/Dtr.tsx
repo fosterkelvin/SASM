@@ -329,9 +329,42 @@ const Dtr: React.FC = () => {
 
   // Stats calculation
   const calculateStats = () => {
-    const present = entries.filter((e) => e.status === "Present").length;
+    const hasAnyTime = (e: Entry) => {
+      // Use dynamic shifts first
+      if (e.shifts && e.shifts.length > 0) {
+        return e.shifts.some(
+          (s) => (s.in && s.in.trim()) || (s.out && s.out.trim())
+        );
+      }
+      // Fall back to legacy fields
+      const fields = [
+        e.in1,
+        e.out1,
+        e.in2,
+        e.out2,
+        e.in3,
+        e.out3,
+        e.in4,
+        e.out4,
+      ];
+      return (
+        fields.some((v) => typeof v === "string" && v.trim() !== "") ||
+        (typeof e.totalHours === "number" && e.totalHours > 0)
+      );
+    };
+
+    // Present = any recorded time (shifts or legacy) or computed hours > 0
+    const present = entries.filter((e) => hasAnyTime(e)).length;
+
+    // Absent = explicitly marked absent by office (do not infer to avoid false positives)
     const absent = entries.filter((e) => e.status === "Absent").length;
-    const late = entries.filter((e) => e.status === "Late").length;
+
+    // Late = either computed late minutes > 0 or explicitly tagged as Late
+    const late = entries.filter(
+      (e) => (typeof e.late === "number" && e.late > 0) || e.status === "Late"
+    ).length;
+
+    // On Leave = explicit status
     const onLeave = entries.filter((e) => e.status === "On Leave").length;
 
     return { present, absent, late, onLeave };

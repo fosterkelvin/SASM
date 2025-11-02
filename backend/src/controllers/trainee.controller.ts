@@ -449,6 +449,48 @@ export const deployTraineeHandler = catchErrors(
 
     await application.save();
 
+    // Notify office users about the deployment (no email, just in-app notification)
+    try {
+      const officeUsers = await UserModel.find({
+        role: "office",
+        officeName: traineeOffice,
+      });
+
+      const studentName = student
+        ? `${student.firstname} ${student.lastname}`
+        : "A student";
+
+      const notificationTitle = isScholar
+        ? `New Scholar Deployed to ${traineeOffice}`
+        : `New Trainee Deployed to ${traineeOffice}`;
+
+      const notificationMessage = isScholar
+        ? `${studentName} has been deployed to your office as a Scholar (${application.position}).${traineeNotes ? ` Notes: ${traineeNotes}` : ""}`
+        : `${studentName} has been deployed to your office as a Trainee and is pending office interview. Required hours: ${requiredHours}.${traineeNotes ? ` Notes: ${traineeNotes}` : ""}`;
+
+      // Create notification for each office user
+      const notificationPromises = officeUsers.map((officeUser) =>
+        createNotification({
+          userID: (officeUser._id as Types.ObjectId).toString(),
+          title: notificationTitle,
+          message: notificationMessage,
+          type: "info",
+          relatedApplicationID: (application._id as Types.ObjectId).toString(),
+        })
+      );
+
+      await Promise.all(notificationPromises);
+      console.log(
+        `✅ Sent notifications to ${officeUsers.length} office user(s) in ${traineeOffice}`
+      );
+    } catch (notificationError) {
+      console.error(
+        "❌ Failed to send office notifications:",
+        notificationError
+      );
+      // Don't fail the deployment if notifications fail
+    }
+
     // Populate for response
     await application.populate("userID", "firstname lastname email");
     await application.populate("traineeSupervisor", "firstname lastname email");
@@ -1384,11 +1426,14 @@ export const uploadClassScheduleHandler = catchErrors(
       }
     }
 
-    // Clear temporary duty hours when scholar uploads their actual schedule
-    // The uploaded schedule is the official work schedule, replacing temporary duty hours
-    if (isScholar && schedule.dutyHours && schedule.dutyHours.length > 0) {
+    // Clear any existing duty hours when a new schedule is uploaded
+    // Rationale:
+    // - For scholars: previously added temporary duty hours should be replaced by the uploaded work schedule
+    // - For trainees: temporary duty hours added before class schedule upload should be cleared so office can add fresh duty hours based on the official class schedule
+    if (schedule.dutyHours && schedule.dutyHours.length > 0) {
+      const who = isScholar ? "scholar" : "trainee";
       console.log(
-        `🗑️ Clearing ${schedule.dutyHours.length} temporary duty hours for scholar (replaced by uploaded schedule)`
+        `🗑️ Clearing ${schedule.dutyHours.length} temporary duty hours for ${who} (replaced by uploaded schedule)`
       );
       schedule.dutyHours = [];
     }

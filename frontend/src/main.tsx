@@ -9,6 +9,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import queryClient from "./config/queryClient.ts";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/context/ToastContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import { setNavigate } from "./lib/navigation";
 
 const AppWithNavigation = () => {
@@ -23,8 +24,10 @@ createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <ToastProvider>
           <AuthProvider>
-            <AppWithNavigation />
-            <ReactQueryDevtools position="bottom" initialIsOpen={false} />
+            <NotificationProvider>
+              <AppWithNavigation />
+              <ReactQueryDevtools position="bottom" initialIsOpen={false} />
+            </NotificationProvider>
           </AuthProvider>
         </ToastProvider>
       </BrowserRouter>

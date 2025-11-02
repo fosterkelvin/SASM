@@ -394,6 +394,25 @@ export class DTRService {
   }
 
   /**
+   * Unconfirm DTR entry (Office use)
+   */
+  async unconfirmDTREntry(dtrId: string, day: number): Promise<IDTR | null> {
+    const dtr = await DTRModel.findById(dtrId);
+    if (!dtr) return null;
+
+    const entryIndex = dtr.entries.findIndex((e) => e.day === day);
+    if (entryIndex === -1) return null;
+
+    dtr.entries[entryIndex].confirmationStatus = "unconfirmed";
+    dtr.entries[entryIndex].confirmedBy = undefined;
+    dtr.entries[entryIndex].confirmedByProfile = undefined;
+    dtr.entries[entryIndex].confirmedAt = undefined;
+
+    await dtr.save();
+    return dtr;
+  }
+
+  /**
    * Confirm all DTR entries for a month (Office use)
    */
   async confirmAllDTREntries(

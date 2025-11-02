@@ -24,6 +24,9 @@ export interface Entry {
   confirmationStatus?: "unconfirmed" | "confirmed";
   confirmedBy?: string;
   confirmedAt?: string;
+  // Office status flags
+  excusedStatus?: "none" | "excused";
+  excusedReason?: string;
 }
 
 export const defaultStatusOptions = ["Present", "Absent", "Late", "On Leave"];

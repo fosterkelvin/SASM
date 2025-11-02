@@ -6,6 +6,7 @@ import CollapsedSidebar from "./components/CollapsedSidebar";
 import MobileHeader from "./components/MobileHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useUnreadNotificationCount } from "@/hooks/useUnreadNotificationCount";
 
 interface OfficeSidebarProps {
   currentPage?: string;
@@ -20,6 +21,8 @@ const OfficeSidebar = ({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const { data: unreadCountData } = useUnreadNotificationCount();
+  const unreadCount = unreadCountData?.unreadCount || 0;
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("theme") === "dark"
   );
@@ -207,6 +210,7 @@ const OfficeSidebar = ({
           isOpen ? "opacity-50 visible" : "opacity-0 invisible"
         }`}
         onClick={() => setIsOpen(false)}
+        aria-hidden={!isOpen}
       />
 
       {/* Sidebar */}
@@ -215,14 +219,12 @@ const OfficeSidebar = ({
         ref={sidebarRef}
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out z-50 border-r border-gray-200 dark:border-gray-700 focus:outline-none ${
+        className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out z-50 border-r border-gray-200 dark:border-gray-700 focus:outline-none flex flex-col overflow-hidden ${
           // Mobile: slide in/out full width. Desktop: present and optionally collapsed.
           isOpen ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 ${
-          isDesktopCollapsed
-            ? "md:w-20 w-full md:overflow-visible"
-            : "md:w-64 w-full"
-        } overflow-y-auto md:overflow-visible md:overflow-y-visible pb-32`}
+          isDesktopCollapsed ? "md:w-20 w-full" : "md:w-64 w-full"
+        }`}
         aria-label="Office Sidebar"
       >
         {/* Mobile close button inside the sidebar for easier access */}
@@ -240,60 +242,65 @@ const OfficeSidebar = ({
           onToggleCollapse={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
         />
 
-        {/* Menu Items - use modular SidebarNav */}
-        <div className={isDesktopCollapsed ? "md:hidden" : ""}>
-          <SidebarNav
-            handlers={{
-              dashboard: handleDashboardClick,
-              dtrCheck: () => {
-                navigate("/office/dtr-check");
-                setIsOpen(false);
-              },
-              evaluation: () => {
-                navigate("/office/evaluation");
-                setIsOpen(false);
-              },
-              leave: () => {
-                navigate("/office/leave-requests");
-                setIsOpen(false);
-              },
-              requests: () => {
-                navigate("/office/requests");
-                setIsOpen(false);
-              },
-              scholars: () => {
-                navigate("/office/scholars");
-                setIsOpen(false);
-              },
-              trainees: () => {
-                navigate("/office/my-trainees");
-                setIsOpen(false);
-              },
-              notifications: handleNotificationsClick,
-            }}
-          />
+        {/* Scrollable middle area */}
+        <div className="flex-1 min-h-0">
+          {!isDesktopCollapsed ? (
+            <div className="h-full overflow-y-auto">
+              <div className={isDesktopCollapsed ? "md:hidden" : ""}>
+                <SidebarNav
+                  handlers={{
+                    dashboard: handleDashboardClick,
+                    dtrCheck: () => {
+                      navigate("/office/dtr-check");
+                      setIsOpen(false);
+                    },
+                    evaluation: () => {
+                      navigate("/office/evaluation");
+                      setIsOpen(false);
+                    },
+                    leave: () => {
+                      navigate("/office/leave-requests");
+                      setIsOpen(false);
+                    },
+                    requests: () => {
+                      navigate("/office/requests");
+                      setIsOpen(false);
+                    },
+                    scholars: () => {
+                      navigate("/office/scholars");
+                      setIsOpen(false);
+                    },
+                    trainees: () => {
+                      navigate("/office/my-trainees");
+                      setIsOpen(false);
+                    },
+                    notifications: handleNotificationsClick,
+                  }}
+                  unreadNotificationCount={unreadCount}
+                />
+              </div>
+            </div>
+          ) : (
+            <CollapsedSidebar
+              onExpand={() => setIsDesktopCollapsed(false)}
+              handlers={{
+                dashboard: () => navigate("/office-dashboard"),
+                dtrCheck: () => navigate("/office/dtr-check"),
+                evaluation: () => navigate("/office/evaluation"),
+                leave: () => navigate("/office/leave-requests"),
+                requests: () => navigate("/office/requests"),
+                scholars: () => navigate("/office/scholars"),
+                trainees: () => navigate("/office/my-trainees"),
+                notifications: () => navigate("/notifications"),
+                profile: () => navigate("/office/profile"),
+              }}
+              darkMode={darkMode}
+              onToggleTheme={() => setDarkMode(!darkMode)}
+              onSignout={() => logout()}
+              unreadNotificationCount={unreadCount}
+            />
+          )}
         </div>
-
-        {/* Collapsed state - reuse CollapsedSidebar component */}
-        {isDesktopCollapsed && (
-          <CollapsedSidebar
-            onExpand={() => setIsDesktopCollapsed(false)}
-            handlers={{
-              dashboard: () => navigate("/office-dashboard"),
-              dtrCheck: () => navigate("/office/dtr-check"),
-              evaluation: () => navigate("/office/evaluation"),
-              leave: () => navigate("/office/leave-requests"),
-              requests: () => navigate("/office/requests"),
-              scholars: () => navigate("/office/scholars"),
-              trainees: () => navigate("/office/my-trainees"),
-              notifications: () => navigate("/notifications"),
-              profile: () => navigate("/office/profile"),
-            }}
-            darkMode={darkMode}
-            onToggleTheme={() => setDarkMode(!darkMode)}
-            onSignout={() => logout()}
-          />
-        )}
 
         {/* Re-introduced User Info for desktop (bottom) */}
         {!isDesktopCollapsed ? (

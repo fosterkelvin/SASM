@@ -12,10 +12,12 @@ import {
   getDTRStats,
   deleteDTR,
   confirmDTREntry,
+  unconfirmDTREntry,
   confirmAllDTREntries,
   getUserDTRForOffice,
   updateUserEntryForOffice,
   markDayAsExcused,
+  markDayAsAbsent,
   sendDTRInquiry,
   getScheduleForDate,
 } from "../controllers/dtr.controller";
@@ -42,10 +44,12 @@ dtrRoutes.get("/office/submitted", getSubmittedDTRs);
 dtrRoutes.post("/office/approve", approveDTR);
 dtrRoutes.post("/office/reject", rejectDTR);
 dtrRoutes.post("/office/confirm-entry", confirmDTREntry);
+dtrRoutes.post("/office/unconfirm-entry", unconfirmDTREntry);
 dtrRoutes.post("/office/confirm-all-entries", confirmAllDTREntries);
 dtrRoutes.post("/office/get-user-dtr", getUserDTRForOffice);
 dtrRoutes.put("/office/update-user-entry", updateUserEntryForOffice);
 dtrRoutes.post("/office/mark-day-excused", markDayAsExcused);
+dtrRoutes.post("/office/mark-day-absent", markDayAsAbsent);
 dtrRoutes.post("/office/send-inquiry", sendDTRInquiry);
 
 export default dtrRoutes;
