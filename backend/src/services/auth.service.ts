@@ -31,7 +31,8 @@ import {
   getPasswordResetTemplate,
   getVerifyEmailTemplate,
 } from "../utils/emailTemplate";
-import { hashValue } from "../utils/bcrypt";
+// Note: password hashing is handled by the UserModel pre-save hook
+// in `models/user.model.ts`. Do not hash manually in services.
 import { getRoleBasedRedirect } from "../utils/roleRedirect";
 import { createNotification } from "./notification.service";
 
@@ -384,7 +385,10 @@ export const resetPassword = async ({
     "New password must be different from old password"
   );
 
-  user.password = await hashValue(password);
+  // Don't hash here – the UserModel pre-save hook already hashes when the
+  // password field is modified. Hashing here would double-hash and make the
+  // new password impossible to use for sign in.
+  user.password = password;
   await user.save();
 
   await validCode.deleteOne();
