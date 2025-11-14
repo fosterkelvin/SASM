@@ -10,6 +10,8 @@ import {
 } from "../services/notification.service";
 import { sendMail } from "../utils/sendMail";
 import { getApplicationStatusEmailTemplate } from "../utils/emailTemplate";
+// Fixed required hours for all trainees
+const DEFAULT_REQUIRED_HOURS = 130;
 
 // Schedule Psychometric Test
 export const schedulePsychometricTestHandler = catchErrors(
@@ -133,8 +135,11 @@ export const submitPsychometricTestScoreHandler = catchErrors(
   async (req: Request, res: Response) => {
     const userID = req.userID!;
     const applicationId = req.params.id;
-    const { psychometricTestScore, psychometricTestPassed, psychometricTestNotes } =
-      req.body;
+    const {
+      psychometricTestScore,
+      psychometricTestPassed,
+      psychometricTestNotes,
+    } = req.body;
 
     const user = await UserModel.findById(userID);
     appAssert(user, NOT_FOUND, "User not found");
@@ -300,8 +305,8 @@ export const scheduleInterviewHandler = catchErrors(
             interviewLocation
               ? `Location: ${interviewLocation}`
               : interviewLink
-              ? `Link: ${interviewLink}`
-              : ""
+                ? `Link: ${interviewLink}`
+                : ""
           }`,
           type: "info",
           relatedApplicationID: applicationId,
@@ -357,7 +362,9 @@ export const submitInterviewResultHandler = catchErrors(
     application.interviewPassed = interviewPassed;
     application.interviewNotes = interviewNotes;
     application.interviewCompletedAt = new Date();
-    application.status = interviewPassed ? "interview_passed" : "interview_failed";
+    application.status = interviewPassed
+      ? "interview_passed"
+      : "interview_failed";
 
     // Add timeline entry
     application.timeline = application.timeline || [];
@@ -410,7 +417,7 @@ export const setAsTraineeHandler = catchErrors(
     const applicationId = req.params.id;
     const {
       traineeStartDate,
-      requiredHours,
+      // requiredHours is ignored; we use DEFAULT_REQUIRED_HOURS
       traineeOffice,
       traineeSupervisor,
       traineeNotes,
@@ -433,17 +440,13 @@ export const setAsTraineeHandler = catchErrors(
       "Applicant must pass interview before being set as trainee"
     );
 
-    appAssert(
-      traineeStartDate && requiredHours,
-      BAD_REQUEST,
-      "Start date and required hours are required"
-    );
+    appAssert(traineeStartDate, BAD_REQUEST, "Start date is required");
 
     // Update application
     const previousStatus = application.status;
     application.status = "trainee";
     application.traineeStartDate = new Date(traineeStartDate);
-    application.requiredHours = requiredHours;
+    application.requiredHours = DEFAULT_REQUIRED_HOURS;
     application.completedHours = 0;
     application.traineeOffice = traineeOffice;
     application.traineeSupervisor = traineeSupervisor;
@@ -458,7 +461,7 @@ export const setAsTraineeHandler = catchErrors(
       timestamp: new Date(),
       previousStatus,
       newStatus: "trainee",
-      notes: `Set as trainee. Required hours: ${requiredHours}. Start date: ${traineeStartDate}`,
+      notes: `Set as trainee. Required hours: ${DEFAULT_REQUIRED_HOURS}. Start date: ${traineeStartDate}`,
     } as any);
 
     await application.save();
@@ -474,7 +477,7 @@ export const setAsTraineeHandler = catchErrors(
         await createNotification({
           userID: String(applicant._id),
           title: "Welcome! You're now a Trainee",
-          message: `Congratulations! You have been set as a trainee. You need to complete ${requiredHours} hours starting from ${traineeStartDate}. ${
+          message: `Congratulations! You have been set as a trainee. You need to complete ${DEFAULT_REQUIRED_HOURS} hours starting from ${traineeStartDate}. ${
             traineeOffice ? `Office: ${traineeOffice}` : ""
           }`,
           type: "success",
@@ -638,7 +641,8 @@ export const acceptApplicationHandler = catchErrors(
     }
 
     // Update user status based on position
-    const newUserStatus = application.position === "student_assistant" ? "SA" : "SM";
+    const newUserStatus =
+      application.position === "student_assistant" ? "SA" : "SM";
     const previousUserStatus = applicant.status;
     applicant.status = newUserStatus;
     await applicant.save();
@@ -674,24 +678,24 @@ export const acceptApplicationHandler = catchErrors(
         await createNotification({
           userID: String(applicant._id),
           title: "Application Accepted! 🎉",
-        message: `Congratulations! Your application has been accepted. You are now officially a ${
+          message: `Congratulations! Your application has been accepted. You are now officially a ${
+            application.position === "student_assistant"
+              ? "Student Assistant"
+              : "Student Marshal"
+          }. Welcome to the team!`,
+          type: "success",
+          relatedApplicationID: applicationId,
+        });
+
+        // Send email
+        const emailTemplate = getApplicationStatusEmailTemplate(
+          `${applicant.firstname} ${applicant.lastname}`,
           application.position === "student_assistant"
             ? "Student Assistant"
-            : "Student Marshal"
-        }. Welcome to the team!`,
-        type: "success",
-        relatedApplicationID: applicationId,
-      });
-
-      // Send email
-      const emailTemplate = getApplicationStatusEmailTemplate(
-        `${applicant.firstname} ${applicant.lastname}`,
-        application.position === "student_assistant"
-          ? "Student Assistant"
-          : "Student Marshal",
-        "accepted",
-        "Your application has been accepted! Welcome to the team."
-      );
+            : "Student Marshal",
+          "accepted",
+          "Your application has been accepted! Welcome to the team."
+        );
 
         await sendMail({
           to: applicant.email,
@@ -729,11 +733,7 @@ export const rejectApplicationHandler = catchErrors(
     const application = await ApplicationModel.findById(applicationId);
     appAssert(application, NOT_FOUND, "Application not found");
 
-    appAssert(
-      rejectionReason,
-      BAD_REQUEST,
-      "Rejection reason is required"
-    );
+    appAssert(rejectionReason, BAD_REQUEST, "Rejection reason is required");
 
     // Update application
     const previousStatus = application.status;

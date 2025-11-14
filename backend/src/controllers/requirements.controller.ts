@@ -8,15 +8,50 @@ import cloudinary from "../config/cloudinary";
 import mongoose from "mongoose";
 import { createNotification } from "../services/notification.service";
 
-// Helper to extract URL from uploaded file
+// Helper to extract URL from uploaded file (robust for PDFs/raw)
+// This is kept for compatibility when a storage adapter provides direct URLs,
+// but requirements now use memory storage + manual upload.
 const getFileUrl = (file: any): string | null => {
-  const url = file.secure_url || file.url || file.path;
-  if (url) return url;
+  // Prefer the direct URL returned by the storage adapter
+  const direct = file?.secure_url || file?.url || file?.path;
+  const isPdf = file?.mimetype === "application/pdf";
+  if (direct) {
+    // If it's a PDF and the URL doesn't end with .pdf, attempt to generate a canonical PDF URL
+    try {
+      if (
+        isPdf &&
+        typeof direct === "string" &&
+        !direct.toLowerCase().endsWith(".pdf")
+      ) {
+        const pub = file?.public_id || file?.publicId;
+        if (pub) {
+          try {
+            return cloudinary.url(pub, {
+              resource_type: "raw",
+              format: "pdf",
+              secure: true,
+            });
+          } catch {
+            // Fallback: append .pdf to the provided URL (best-effort)
+            return `${direct}.pdf`;
+          }
+        }
+      }
+    } catch {
+      // ignore and return direct below
+    }
+    return direct;
+  }
 
-  const publicId = file.public_id || file.publicId;
+  // If no direct URL, try constructing one from public_id
+  const publicId = file?.public_id || file?.publicId;
   if (publicId) {
     try {
-      return cloudinary.url(publicId, { secure: true });
+      return cloudinary.url(publicId, {
+        resource_type: isPdf ? "raw" : "image",
+        format: isPdf ? "pdf" : undefined,
+        secure: true,
+      });
     } catch (e) {
       return null;
     }
@@ -27,6 +62,43 @@ const getFileUrl = (file: any): string | null => {
 // Helper to extract public ID from file
 const getFilePublicId = (file: any): string | null => {
   return file.public_id || file.publicId || null;
+};
+
+// Upload a single file buffer to Cloudinary and return the result
+const uploadToCloudinary = async (
+  file: Express.Multer.File,
+  fieldname: string
+): Promise<{ url: string; publicId: string }> => {
+  const isPdf = file.mimetype === "application/pdf";
+  const folder = `uploads/${fieldname}`;
+  const publicId = `${fieldname}-${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+
+  return await new Promise((resolve, reject) => {
+    const options: any = {
+      resource_type: isPdf ? "raw" : "image",
+      folder,
+      public_id: publicId,
+      use_filename: false,
+      unique_filename: false,
+      overwrite: true,
+    };
+
+    const uploadStream = cloudinary.uploader.upload_stream(
+      options,
+      (err, result) => {
+        if (err || !result) {
+          return reject(err || new Error("Failed to upload file"));
+        }
+        resolve({
+          url: (result.secure_url as string) || (result.url as string),
+          publicId: (result.public_id as string) || "",
+        });
+      }
+    );
+
+    // Write the in-memory buffer to Cloudinary
+    uploadStream.end(file.buffer);
+  });
 };
 
 // Create or update requirements submission
@@ -61,6 +133,21 @@ export const createRequirementsSubmission = catchErrors(
 
     // Build the complete items array
     const processedItems: any[] = [];
+    // Track uploaded assets in case we need to roll back on a later failure
+    const uploadedTemp: Array<{ publicId: string; mimetype: string }> = [];
+
+    const rollbackUploads = async () => {
+      for (const up of uploadedTemp) {
+        try {
+          const isPdf = (up.mimetype || "").includes("pdf");
+          await cloudinary.uploader.destroy(up.publicId, {
+            resource_type: isPdf ? "raw" : "image",
+          });
+        } catch (e) {
+          console.error("[requirements] rollback failed for", up.publicId, e);
+        }
+      }
+    };
 
     for (let idx = 0; idx < itemsJson.length; idx++) {
       const jsonItem = itemsJson[idx];
@@ -70,15 +157,41 @@ export const createRequirementsSubmission = catchErrors(
       const uploadedFile = files.find((f) => f.fieldname === expectedFieldname);
 
       if (uploadedFile) {
-        // New file uploaded - use it
-        const url = getFileUrl(uploadedFile);
-        const publicId = getFilePublicId(uploadedFile);
-
-        if (!url) {
-          console.error(
-            `[requirements] No URL for uploaded file at index ${idx}`
+        // New file uploaded - send to Cloudinary (memory storage -> cloud)
+        let url: string | null = null;
+        let publicId: string | null = null;
+        try {
+          const uploaded = await uploadToCloudinary(
+            uploadedFile,
+            expectedFieldname
           );
-          continue;
+          url = uploaded.url;
+          publicId = uploaded.publicId;
+          // Track temp upload for potential rollback
+          if (publicId) {
+            uploadedTemp.push({ publicId, mimetype: uploadedFile.mimetype });
+          }
+        } catch (e: any) {
+          console.error(
+            `[requirements] Cloudinary upload failed at index ${idx}`,
+            e
+          );
+          // Attempt to rollback previously uploaded assets so we don't leave orphans
+          await rollbackUploads();
+          // Surface a clear error for empty file condition
+          if (
+            e?.message &&
+            String(e.message).toLowerCase().includes("empty file")
+          ) {
+            return res.status(400).json({
+              message: `Upload failed for item ${idx + 1}: File appears to be empty. Please reselect and try again.`,
+              failedIndex: idx,
+            });
+          }
+          return res.status(400).json({
+            message: `Upload failed for item ${idx + 1}. Please try again.`,
+            failedIndex: idx,
+          });
         }
 
         console.log(`[requirements] New upload at index ${idx}:`, {

@@ -154,6 +154,101 @@ const TraineeSchedule: React.FC = () => {
       alert("Please fill in all fields");
       return;
     }
+
+    // Helper: convert time string (24h or 12h) to minutes since midnight
+    const timeToMinutes = (time: string): number => {
+      if (!time) return 0;
+      const hasMeridiem = /am|pm/i.test(time);
+      if (!hasMeridiem) {
+        const [h, m] = time.split(":").map(Number);
+        return h * 60 + m;
+      }
+      const [tp, mer] = time.trim().split(/\s+/);
+      let [h, m] = tp.split(":").map(Number);
+      const merUpper = (mer || "").toUpperCase();
+      if (merUpper === "PM" && h !== 12) h += 12;
+      if (merUpper === "AM" && h === 12) h = 0;
+      return h * 60 + m;
+    };
+
+    // Validate start < end
+    const startMin = timeToMinutes(dutyHourEntry.startTime);
+    const endMin = timeToMinutes(dutyHourEntry.endTime);
+    if (endMin <= startMin) {
+      alert("End time must be after start time");
+      return;
+    }
+
+    const dayUpper = dutyHourEntry.day.toUpperCase();
+
+    // 1) Check overlap with existing duty hours
+    const dutyOverlap = (scheduleData?.dutyHours || []).some((dh: any) => {
+      if (!dh?.day) return false;
+      const sameDay = (dh.day as string).toUpperCase() === dayUpper;
+      if (!sameDay) return false;
+      const s = timeToMinutes(dh.startTime);
+      const e = timeToMinutes(dh.endTime);
+      // Overlap if newStart < existEnd && newEnd > existStart
+      return startMin < e && endMin > s;
+    });
+    if (dutyOverlap) {
+      alert(
+        "The duty hours you entered conflict with existing duty hours for this day. Please choose a different time."
+      );
+      return;
+    }
+
+    // 2) Check overlap with class/work schedules in scheduleData.scheduleData
+    // Parse schedule strings like "T/Th 8:00 AM-9:30 AM / F215"
+    const parseSchedule = (schedule: string) => {
+      const results: Array<{ day: string; start: number; end: number }> = [];
+      if (!schedule) return results;
+      const dayMap: Record<string, string> = {
+        M: "MONDAY",
+        T: "TUESDAY",
+        W: "WEDNESDAY",
+        Th: "THURSDAY",
+        F: "FRIDAY",
+        S: "SATURDAY",
+        Su: "SUNDAY",
+      };
+
+      // Split segments by comma
+      const segments = schedule.split(",").map((s) => s.trim());
+      for (const seg of segments) {
+        const daysMatch = seg.match(
+          /^((?:[MTWFS]|Th|Su)(?:\/(?:[MTWFS]|Th|Su))*)\s+/
+        );
+        const timeMatch = seg.match(
+          /(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/i
+        );
+        if (!daysMatch || !timeMatch) continue;
+        const dayTokens = daysMatch[1].split("/").map((d) => d.trim());
+        const start = timeToMinutes(timeMatch[1].trim());
+        const end = timeToMinutes(timeMatch[2].trim());
+        for (const token of dayTokens) {
+          const mapped = dayMap[token];
+          if (mapped) results.push({ day: mapped, start, end });
+        }
+      }
+      return results;
+    };
+
+    const classOverlap = (scheduleData?.scheduleData || []).some((cls: any) => {
+      const parsed = parseSchedule(cls?.schedule || "");
+      return parsed.some((p) => {
+        if (p.day !== dayUpper) return false;
+        return startMin < p.end && endMin > p.start;
+      });
+    });
+
+    if (classOverlap) {
+      alert(
+        "The duty hours you entered conflict with an existing class/work schedule. Please choose a different time."
+      );
+      return;
+    }
+
     addDutyHoursMutation.mutate(dutyHourEntry);
   };
 
@@ -218,7 +313,7 @@ const TraineeSchedule: React.FC = () => {
           </h1>
         </div>
 
-        <div className="p-4 md:p-10 pt-16 md:pt-10">
+        <div className="p-4 md:p-10 pt-16 md:pt-[96px]">
           {isLoading ? (
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">

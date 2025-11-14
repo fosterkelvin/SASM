@@ -17,7 +17,9 @@ const storage = new CloudinaryStorage({
       public_id: `${file.fieldname}-${Date.now()}-${Math.round(
         Math.random() * 1e9
       )}`,
+      // Keep using raw for PDFs to ensure direct PDF serving; image for others
       resource_type: isPdf ? "raw" : "image",
+      // Do not force format for safety; Cloudinary will keep original
       format: isPdf ? "pdf" : undefined,
     };
   },
@@ -47,7 +49,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 25 * 1024 * 1024, // 25MB limit to match frontend for PDFs
     files: 15, // Maximum 15 files per request
   },
 });
@@ -62,6 +64,16 @@ export const uploadApplicationFiles = upload.fields([
 ]);
 
 // Generic any-files middleware for endpoints that accept dynamic file fields
-export const uploadRequirementsFiles = upload.any();
+// NOTE: For requirements, we use memory storage and upload to Cloudinary in-controller
+const memoryStorage = multer.memoryStorage();
+const uploadRequirements = multer({
+  storage: memoryStorage,
+  fileFilter,
+  limits: {
+    fileSize: 25 * 1024 * 1024, // 25MB per file
+    files: 15,
+  },
+});
+export const uploadRequirementsFiles = uploadRequirements.any();
 
 export default upload;

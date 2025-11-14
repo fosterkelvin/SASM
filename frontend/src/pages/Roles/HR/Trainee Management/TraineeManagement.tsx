@@ -51,7 +51,7 @@ const TraineeManagement = () => {
   const [deploymentData, setDeploymentData] = useState({
     traineeOffice: "",
     traineeSupervisor: "",
-    requiredHours: "",
+    requiredHours: "130",
     completedHours: "",
     traineeNotes: "",
   });
@@ -127,7 +127,7 @@ const TraineeManagement = () => {
     setDeploymentData({
       traineeOffice: "",
       traineeSupervisor: "",
-      requiredHours: "",
+      requiredHours: "130",
       completedHours: "",
       traineeNotes: "",
     });
@@ -138,7 +138,8 @@ const TraineeManagement = () => {
     setDeploymentData({
       traineeOffice: trainee.traineeOffice || "",
       traineeSupervisor: trainee.traineeSupervisor?._id || "",
-      requiredHours: trainee.requiredHours?.toString() || "",
+      // Required hours are fixed to 130 for all trainees
+      requiredHours: "130",
       completedHours: trainee.dtrCompletedHours?.toString() || "0",
       traineeNotes: trainee.traineeNotes || "",
     });
@@ -228,7 +229,8 @@ const TraineeManagement = () => {
 
     const data: any = {
       traineeOffice: deploymentData.traineeOffice,
-      requiredHours: parseInt(deploymentData.requiredHours),
+      // Enforce fixed required hours (server also enforces)
+      requiredHours: 130,
     };
 
     if (deploymentData.traineeSupervisor)
@@ -668,26 +670,10 @@ const TraineeManagement = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="requiredHours">
-                    Required Hours <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="requiredHours"
-                    type="number"
-                    min="0"
-                    value={deploymentData.requiredHours}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      // Only allow non-negative numbers
-                      if (value === "" || parseInt(value) >= 0) {
-                        setDeploymentData({
-                          ...deploymentData,
-                          requiredHours: value,
-                        });
-                      }
-                    }}
-                    placeholder="e.g., 200"
-                  />
+                  <Label>Required Hours:</Label>
+                  <div className="text-gray-900 dark:text-gray-100 ">
+                    130 hours
+                  </div>
                 </div>
 
                 {selectedTrainee.traineeOffice && (

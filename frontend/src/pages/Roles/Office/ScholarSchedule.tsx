@@ -219,7 +219,7 @@ const ScholarSchedule: React.FC = () => {
           </h1>
         </div>
 
-        <div className="p-4 md:p-10 mt-12">
+        <div className="p-4 md:p-10 pt-8 md:pt-[96px]">
           {isLoading ? (
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">

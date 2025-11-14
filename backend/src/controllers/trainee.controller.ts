@@ -10,6 +10,9 @@ import { BAD_REQUEST, NOT_FOUND, OK, FORBIDDEN } from "../constants/http";
 import appAssert from "../utils/appAssert";
 import { createNotification } from "../services/notification.service";
 
+// Fixed required hours for all trainees
+const DEFAULT_REQUIRED_HOURS = 130;
+
 // Get all trainees (for HR)
 export const getAllTraineesHandler = catchErrors(
   async (req: Request, res: Response) => {
@@ -318,7 +321,7 @@ export const deployTraineeHandler = catchErrors(
       traineeSupervisor,
       traineeStartDate,
       traineeEndDate,
-      requiredHours,
+      // requiredHours is ignored; we use DEFAULT_REQUIRED_HOURS
       traineeNotes,
     } = req.body;
 
@@ -406,7 +409,8 @@ export const deployTraineeHandler = catchErrors(
       application.traineeEndDate = traineeEndDate
         ? new Date(traineeEndDate)
         : undefined;
-      application.requiredHours = requiredHours;
+      // Enforce fixed required hours for trainees
+      application.requiredHours = DEFAULT_REQUIRED_HOURS;
       application.completedHours = 0;
       application.traineeNotes = traineeNotes || "";
     }
@@ -432,7 +436,7 @@ export const deployTraineeHandler = catchErrors(
     const newStatus = isScholar ? "accepted" : "pending_office_interview";
     const actionNotes = isScholar
       ? `Scholar deployed to ${traineeOffice}${traineeNotes ? `. Notes: ${traineeNotes}` : ""}`
-      : `Deployed to ${traineeOffice}. Pending office interview. Required hours: ${requiredHours}`;
+      : `Deployed to ${traineeOffice}. Pending office interview. Required hours: ${DEFAULT_REQUIRED_HOURS}`;
 
     const timelineEntry = {
       action: isScholar ? "scholar_deployed" : "deployed_to_office",
@@ -466,7 +470,7 @@ export const deployTraineeHandler = catchErrors(
 
       const notificationMessage = isScholar
         ? `${studentName} has been deployed to your office as a Scholar (${application.position}).${traineeNotes ? ` Notes: ${traineeNotes}` : ""}`
-        : `${studentName} has been deployed to your office as a Trainee and is pending office interview. Required hours: ${requiredHours}.${traineeNotes ? ` Notes: ${traineeNotes}` : ""}`;
+        : `${studentName} has been deployed to your office as a Trainee and is pending office interview. Required hours: ${DEFAULT_REQUIRED_HOURS}.${traineeNotes ? ` Notes: ${traineeNotes}` : ""}`;
 
       // Create notification for each office user
       const notificationPromises = officeUsers.map((officeUser) =>
@@ -618,8 +622,8 @@ export const updateTraineeDeploymentHandler = catchErrors(
         application.traineeEndDate = traineeEndDate
           ? new Date(traineeEndDate)
           : undefined;
-      if (requiredHours !== undefined)
-        application.requiredHours = requiredHours;
+      // Always enforce the fixed required hours for trainees
+      application.requiredHours = DEFAULT_REQUIRED_HOURS;
       if (completedHours !== undefined)
         application.completedHours = completedHours;
       if (traineeNotes !== undefined) application.traineeNotes = traineeNotes;
@@ -1542,6 +1546,15 @@ export const addDutyHoursHandler = catchErrors(
 
     // Import Scholar model
     const ScholarModel = require("../models/scholar.model").default;
+    // Utilities for schedule parsing
+    const { buildScheduleMap } = require("../utils/scheduleSync");
+
+    // Helper to convert HH:MM to minutes
+    const toMinutes = (hhmm: string): number => {
+      if (!hhmm) return 0;
+      const [h, m] = hhmm.split(":").map((n: string) => parseInt(n, 10));
+      return (h || 0) * 60 + (m || 0);
+    };
 
     // Check if this is a scholar first
     const scholar = await ScholarModel.findOne({ applicationId });
@@ -1589,6 +1602,33 @@ export const addDutyHoursHandler = catchErrors(
           "You can only add duty hours for scholars assigned to your office"
         );
       }
+
+      // Build schedule map and validate conflicts before adding
+      const scheduleMap = buildScheduleMap(
+        schedule.classScheduleData || [],
+        schedule.dutyHours || []
+      );
+      const slots = scheduleMap[day] || [];
+      const newStart = toMinutes(startTime);
+      const newEnd = toMinutes(endTime);
+
+      appAssert(
+        newEnd > newStart,
+        BAD_REQUEST,
+        "End time must be after start time"
+      );
+
+      const hasConflict = slots.some((s: any) => {
+        const sStart = toMinutes(s.startTime);
+        const sEnd = toMinutes(s.endTime);
+        return newStart < sEnd && newEnd > sStart;
+      });
+
+      appAssert(
+        !hasConflict,
+        BAD_REQUEST,
+        "Duty hours conflict with existing schedule on this day"
+      );
 
       // Add duty hour entry to schedule
       const dutyHourEntry = {
@@ -1655,6 +1695,33 @@ export const addDutyHoursHandler = catchErrors(
 
         console.log("✅ Created new trainee schedule structure");
       }
+
+      // Build schedule map and validate conflicts before adding
+      const scheduleMap = buildScheduleMap(
+        schedule.classScheduleData || [],
+        schedule.dutyHours || []
+      );
+      const slots = scheduleMap[day] || [];
+      const newStart = toMinutes(startTime);
+      const newEnd = toMinutes(endTime);
+
+      appAssert(
+        newEnd > newStart,
+        BAD_REQUEST,
+        "End time must be after start time"
+      );
+
+      const hasConflict = slots.some((s: any) => {
+        const sStart = toMinutes(s.startTime);
+        const sEnd = toMinutes(s.endTime);
+        return newStart < sEnd && newEnd > sStart;
+      });
+
+      appAssert(
+        !hasConflict,
+        BAD_REQUEST,
+        "Duty hours conflict with existing schedule on this day"
+      );
 
       // Add duty hour entry to schedule
       const dutyHourEntry = {
