@@ -21,6 +21,7 @@ interface NavProps {
   isEmailUpdateRequired?: boolean;
   isPersonalInfoIncomplete?: boolean;
   isTrainee?: boolean;
+  isDeployedToOffice?: boolean;
   isScholar?: boolean;
 }
 
@@ -33,6 +34,7 @@ const SidebarNav: React.FC<NavProps> = ({
   isEmailUpdateRequired = false,
   isPersonalInfoIncomplete = false,
   isTrainee = false,
+  isDeployedToOffice = false,
   isScholar = false,
 }) => {
   return (
@@ -60,8 +62,8 @@ const SidebarNav: React.FC<NavProps> = ({
             disabled={false}
           />
         </li>
-        {/* Show DTR, Schedule, and Leave for verified trainees OR scholars */}
-        {isVerified && (isTrainee || isScholar) && (
+        {/* Show DTR, Schedule, and Leave for deployed trainees OR scholars */}
+        {isVerified && (isDeployedToOffice || isScholar) && (
           <>
             <li>
               <SidebarItem

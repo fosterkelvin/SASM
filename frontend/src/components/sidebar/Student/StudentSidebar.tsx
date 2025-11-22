@@ -68,6 +68,14 @@ const StudentSidebar = ({
         app.status === "trainee" || app.status === "training_completed"
     ) || false;
 
+  // Check if trainee is deployed to an office (has traineeOffice)
+  const isDeployedToOffice =
+    userApplicationsData?.applications?.some(
+      (app: any) =>
+        (app.status === "trainee" || app.status === "training_completed") &&
+        app.traineeOffice
+    ) || false;
+
   // Check if user is deployed as a scholar (NEW)
   const { data: scholarData } = useQuery({
     queryKey: ["myScholarInfo"],
@@ -440,6 +448,7 @@ const StudentSidebar = ({
                     user?.status === "applicant" || user?.status === "trainee"
                   }
                   isTrainee={isTrainee}
+                  isDeployedToOffice={isDeployedToOffice}
                   isScholar={isScholar}
                   isAccepted={hasAcceptedApplication}
                   isEmailUpdateRequired={isEmailUpdateRequired}
@@ -479,6 +488,7 @@ const StudentSidebar = ({
                 user?.status === "applicant" || user?.status === "trainee"
               }
               isTrainee={isTrainee}
+              isDeployedToOffice={isDeployedToOffice}
               isAccepted={hasAcceptedApplication}
               isEmailUpdateRequired={isEmailUpdateRequired}
               darkMode={darkMode}

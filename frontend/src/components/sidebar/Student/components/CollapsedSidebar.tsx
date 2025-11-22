@@ -28,6 +28,7 @@ interface Props {
   isAccepted?: boolean;
   isEmailUpdateRequired?: boolean;
   isTrainee?: boolean;
+  isDeployedToOffice?: boolean;
 }
 
 const CollapsedSidebar: React.FC<Props> = ({
@@ -42,6 +43,7 @@ const CollapsedSidebar: React.FC<Props> = ({
   isAccepted = false,
   isEmailUpdateRequired = false,
   isTrainee = false,
+  isDeployedToOffice = false,
 }) => {
   return (
     <div
@@ -93,8 +95,8 @@ const CollapsedSidebar: React.FC<Props> = ({
               )}
             </button>
           </div>
-          {/* Show DTR, Leave, and Schedule for verified trainees */}
-          {isVerified && isTrainee && (
+          {/* Show DTR, Leave, and Schedule for deployed trainees */}
+          {isVerified && isDeployedToOffice && (
             <>
               <div className="group relative">
                 <button
