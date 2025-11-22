@@ -1,18 +1,10 @@
 // React JSX runtime used — no named React imports needed
-import { LeaveFilters as LF, LeaveStatus, LeaveType } from "./types";
+import { LeaveFilters as LF, LeaveStatus } from "./types";
 
 interface Props {
   filters: LF;
   onChange: (next: LF) => void;
 }
-
-const TYPES: Array<LeaveType | "all"> = [
-  "all",
-  "Sick Leave",
-  "Social Orientation",
-  "Bereavement Leave",
-  "Others",
-];
 
 export default function LeaveFilters({ filters, onChange }: Props) {
   return (
@@ -28,24 +20,21 @@ export default function LeaveFilters({ filters, onChange }: Props) {
         className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-sm"
       >
         <option value="all">All statuses</option>
-        <option value="pending">pending</option>
-        <option value="approved">approved</option>
-        <option value="rejected">rejected</option>
-        <option value="cancelled">cancelled</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="disapproved">Disapproved</option>
       </select>
 
       <select
         value={filters.type || "all"}
-        onChange={(e) =>
-          onChange({ ...filters, type: e.target.value as LeaveType | "all" })
-        }
+        onChange={(e) => onChange({ ...filters, type: e.target.value })}
         className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-sm"
       >
-        {TYPES.map((t) => (
-          <option key={t} value={t}>
-            {t}
-          </option>
-        ))}
+        <option value="all">All types</option>
+        <option value="Sick Leave">Sick Leave</option>
+        <option value="Social Orientation">Social Orientation</option>
+        <option value="Bereavement Leave">Bereavement Leave</option>
+        <option value="Others">Others</option>
       </select>
 
       <input

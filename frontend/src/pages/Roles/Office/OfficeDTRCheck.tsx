@@ -120,6 +120,7 @@ const OfficeDTRCheck: React.FC = () => {
   const [showInquiryModal, setShowInquiryModal] = useState(false);
   const [inquiryMessage, setInquiryMessage] = useState("");
   const [sendingInquiry, setSendingInquiry] = useState(false);
+  const [actionsModalDay, setActionsModalDay] = useState<number | null>(null);
 
   // Refs
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -449,6 +450,121 @@ const OfficeDTRCheck: React.FC = () => {
     return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
   };
 
+  // Calculate weekly hours and check 30h limit
+  const calculateWeeklyHours = () => {
+    const weeks: {
+      weekNum: number;
+      hours: number;
+      days: number[];
+      exceeds: boolean;
+    }[] = [];
+
+    let currentWeek: number[] = [];
+
+    // Group days by week (Sunday to Saturday)
+    entries.forEach((entry) => {
+      const dayOfMonth = entry.day;
+      const date = new Date(selectedYear, selectedMonth - 1, dayOfMonth);
+      const dayOfWeek = date.getDay();
+
+      // Start new week on Sunday
+      if (dayOfWeek === 0 && currentWeek.length > 0) {
+        // Calculate hours for the completed week (only confirmed entries)
+        const weekHours = currentWeek.reduce((sum, day) => {
+          const e = entries.find((ent) => ent.day === day);
+          // Only count hours if the entry is confirmed
+          if (e?.confirmationStatus === "confirmed") {
+            return sum + (e?.totalHours || 0);
+          }
+          return sum;
+        }, 0);
+
+        const weekHoursInHours = weekHours / 60;
+        const exceeds = weekHoursInHours > 30;
+
+        weeks.push({
+          weekNum: weeks.length + 1,
+          hours: weekHours,
+          days: [...currentWeek],
+          exceeds,
+        });
+
+        currentWeek = [];
+      }
+
+      currentWeek.push(dayOfMonth);
+    });
+
+    // Add the last week if it has days
+    if (currentWeek.length > 0) {
+      const weekHours = currentWeek.reduce((sum, day) => {
+        const e = entries.find((ent) => ent.day === day);
+        // Only count hours if the entry is confirmed
+        if (e?.confirmationStatus === "confirmed") {
+          return sum + (e?.totalHours || 0);
+        }
+        return sum;
+      }, 0);
+
+      const weekHoursInHours = weekHours / 60;
+      const exceeds = weekHoursInHours > 30;
+
+      weeks.push({
+        weekNum: weeks.length + 1,
+        hours: weekHours,
+        days: [...currentWeek],
+        exceeds,
+      });
+    }
+
+    return weeks;
+  };
+
+  // Calculate attendance statistics
+  const calculateStats = () => {
+    const hasAnyTime = (e: Entry) => {
+      // Use dynamic shifts first
+      if (e.shifts && e.shifts.length > 0) {
+        return e.shifts.some(
+          (s) => (s.in && s.in.trim()) || (s.out && s.out.trim())
+        );
+      }
+      // Fall back to legacy fields
+      const fields = [
+        e.in1,
+        e.out1,
+        e.in2,
+        e.out2,
+        e.in3,
+        e.out3,
+        e.in4,
+        e.out4,
+      ];
+      return (
+        fields.some((v) => typeof v === "string" && v.trim() !== "") ||
+        (typeof e.totalHours === "number" && e.totalHours > 0)
+      );
+    };
+
+    // Present = any recorded time (shifts or legacy) or computed hours > 0
+    const present = entries.filter((e) => hasAnyTime(e)).length;
+
+    // Absent = explicitly marked absent by office (do not infer to avoid false positives)
+    const absent = entries.filter((e) => e.status === "Absent").length;
+
+    // Late = either computed late minutes > 0 or explicitly tagged as Late
+    const late = entries.filter(
+      (e) => (typeof e.late === "number" && e.late > 0) || e.status === "Late"
+    ).length;
+
+    // Undertime = computed undertime minutes > 0
+    const undertime = entries.filter(
+      (e) => typeof e.undertime === "number" && e.undertime > 0
+    ).length;
+
+    return { present, absent, late, undertime };
+  };
+
   // Get day name
   const getDayName = (day: number) => {
     const date = new Date(selectedYear, selectedMonth - 1, day);
@@ -467,6 +583,7 @@ const OfficeDTRCheck: React.FC = () => {
     const entry = entries.find((e) => e.day === day);
     setExcusedReason(entry?.excusedReason || "");
     setShowExcusedModal(true);
+    setActionsModalDay(null); // Close actions modal
   };
 
   // Handle removing excused status
@@ -959,36 +1076,205 @@ const OfficeDTRCheck: React.FC = () => {
                 </div>
               </div>
 
-              {/* Confirm All Button */}
-              {dtr && entries.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Total Monthly Hours:
-                    </span>
-                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                      {formatTotalHours()}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={handleOpenInquiryModal}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
-                      title="Send email inquiry to trainee/scholar"
-                    >
-                      <Mail className="h-4 w-4" />
-                      Send Inquiry
-                    </button>
-                    <button
-                      onClick={handleConfirmAll}
-                      className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      Confirm All
-                    </button>
+              {/* Quick Stats */}
+              {dtr && !loading && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex flex-wrap items-center gap-4 text-sm">
+                    {(() => {
+                      const stats = calculateStats();
+                      return (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              Present:{" "}
+                              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                {stats.present}
+                              </span>
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              Absent:{" "}
+                              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                {stats.absent}
+                              </span>
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              Late:{" "}
+                              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                {stats.late}
+                              </span>
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              Undertime:{" "}
+                              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                {stats.undertime}
+                              </span>
+                            </span>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
+              )}
+
+              {/* Confirm All Button */}
+              {dtr && entries.length > 0 && (
+                <>
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Total Monthly Hours:
+                      </span>
+                      <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                        {formatTotalHours()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleOpenInquiryModal}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+                        title="Send email inquiry to trainee/scholar"
+                      >
+                        <Mail className="h-4 w-4" />
+                        Send Inquiry
+                      </button>
+                      <button
+                        onClick={handleConfirmAll}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        Confirm All
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Weekly Hours Breakdown */}
+                  {(() => {
+                    const weeklyHours = calculateWeeklyHours();
+                    const hasWeeklyViolations = weeklyHours.some(
+                      (w) => w.exceeds
+                    );
+
+                    return weeklyHours.length > 0 ? (
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Weekly Hours (30h Limit)
+                            </span>
+                          </div>
+                          {hasWeeklyViolations && (
+                            <span className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              Limit Exceeded
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          {weeklyHours.map((week) => {
+                            const hours = Math.floor(week.hours / 60);
+                            const minutes = week.hours % 60;
+                            const percentage = (week.hours / 60 / 30) * 100;
+                            const isWarning =
+                              percentage > 80 && percentage <= 100;
+                            const isDanger = percentage > 100;
+
+                            return (
+                              <div
+                                key={week.weekNum}
+                                className={`p-3 rounded-lg border-2 transition-all ${
+                                  isDanger
+                                    ? "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700"
+                                    : isWarning
+                                    ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700"
+                                    : "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                    Week {week.weekNum}
+                                  </span>
+                                  {isDanger && (
+                                    <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                  )}
+                                </div>
+                                <div className="text-lg font-bold mb-1">
+                                  <span
+                                    className={
+                                      isDanger
+                                        ? "text-red-700 dark:text-red-300"
+                                        : isWarning
+                                        ? "text-yellow-700 dark:text-yellow-300"
+                                        : "text-gray-800 dark:text-gray-200"
+                                    }
+                                  >
+                                    {hours}h{" "}
+                                    {minutes.toString().padStart(2, "0")}m
+                                  </span>
+                                </div>
+                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden mb-1">
+                                  <div
+                                    className={`h-full transition-all duration-300 ${
+                                      isDanger
+                                        ? "bg-gradient-to-r from-red-500 to-red-600"
+                                        : isWarning
+                                        ? "bg-gradient-to-r from-yellow-500 to-yellow-600"
+                                        : "bg-gradient-to-r from-green-500 to-green-600"
+                                    }`}
+                                    style={{
+                                      width: `${Math.min(percentage, 100)}%`,
+                                    }}
+                                  ></div>
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  {percentage > 100 ? (
+                                    <span className="text-red-600 dark:text-red-400 font-semibold">
+                                      +{(percentage - 100).toFixed(0)}% over
+                                      limit
+                                    </span>
+                                  ) : (
+                                    <span>{percentage.toFixed(0)}% of 30h</span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                  Days {week.days[0]}-
+                                  {week.days[week.days.length - 1]}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {hasWeeklyViolations && (
+                          <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                              <div className="text-sm text-red-800 dark:text-red-200">
+                                <span className="font-semibold">Warning:</span>{" "}
+                                This trainee/scholar has exceeded the 30-hour
+                                weekly limit. Please review their hours to
+                                ensure compliance with program requirements.
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : null;
+                  })()}
+                </>
               )}
             </CardContent>
           </Card>
@@ -1422,96 +1708,16 @@ const OfficeDTRCheck: React.FC = () => {
                                   </button>
                                 </div>
                               ) : (
-                                <div className="flex items-center justify-center gap-2">
-                                  {/* Excused Status Buttons */}
-                                  {entry.status === "Absent" ? (
-                                    <button
-                                      onClick={() =>
-                                        handleRemoveAbsent(entry.day)
-                                      }
-                                      className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium"
-                                      title="Remove absent status"
-                                      disabled={absentLoadingDay === entry.day}
-                                    >
-                                      {absentLoadingDay === entry.day
-                                        ? "..."
-                                        : "Remove Absent"}
-                                    </button>
-                                  ) : entry.excusedStatus === "excused" ? (
-                                    <button
-                                      onClick={() =>
-                                        handleRemoveExcused(entry.day)
-                                      }
-                                      className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-medium"
-                                      title="Remove excused status"
-                                    >
-                                      Remove Excused
-                                    </button>
-                                  ) : entry.confirmationStatus !==
-                                    "confirmed" ? (
-                                    <div className="flex items-center gap-2">
-                                      <button
-                                        onClick={() =>
-                                          handleMarkAsExcused(entry.day)
-                                        }
-                                        className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-medium"
-                                        title="Mark as excused (e.g., earthquake, emergency)"
-                                      >
-                                        Mark Excused
-                                      </button>
-                                      <button
-                                        onClick={() =>
-                                          handleMarkAbsent(entry.day)
-                                        }
-                                        className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-medium"
-                                        title="Mark as absent"
-                                      >
-                                        Mark Absent
-                                      </button>
-                                    </div>
-                                  ) : null}
-
-                                  {/* Regular Edit/Confirm Buttons */}
-                                  {entry.excusedStatus !== "excused" &&
-                                    entry.status !== "Absent" &&
-                                    entry.confirmationStatus !==
-                                      "confirmed" && (
-                                      <button
-                                        onClick={() => handleStartEdit(entry)}
-                                        className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium"
-                                        title="Edit times"
-                                      >
-                                        Edit
-                                      </button>
-                                    )}
-                                  {hasTimeData &&
-                                    entry.excusedStatus !== "excused" &&
-                                    entry.status !== "Absent" &&
-                                    entry.confirmationStatus !==
-                                      "confirmed" && (
-                                      <button
-                                        onClick={() =>
-                                          handleConfirmEntry(entry.day)
-                                        }
-                                        className="p-1.5 bg-green-600 hover:bg-green-700 text-white rounded"
-                                        title="Confirm this entry"
-                                      >
-                                        <Check className="h-4 w-4" />
-                                      </button>
-                                    )}
-                                  {entry.confirmationStatus === "confirmed" &&
-                                    entry.excusedStatus !== "excused" &&
-                                    entry.status !== "Absent" && (
-                                      <button
-                                        onClick={() =>
-                                          handleUnconfirmEntry(entry.day)
-                                        }
-                                        className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-xs font-medium"
-                                        title="Unconfirm this entry"
-                                      >
-                                        Unconfirm
-                                      </button>
-                                    )}
+                                <div className="flex items-center justify-center">
+                                  <button
+                                    onClick={() =>
+                                      setActionsModalDay(entry.day)
+                                    }
+                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors"
+                                    title="Open actions menu"
+                                  >
+                                    Actions
+                                  </button>
                                 </div>
                               )}
                             </td>
@@ -1558,12 +1764,11 @@ const OfficeDTRCheck: React.FC = () => {
                   <AlertCircle className="h-5 w-5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-purple-800 dark:text-purple-300">
                     <p className="font-semibold mb-1">
-                      Excused days count as 5 hours
+                      Excused days do NOT count towards hours
                     </p>
                     <p>
-                      Use this for emergencies like earthquakes, typhoons, or
-                      other valid reasons where the trainee/scholar cannot
-                      fulfill duty hours.
+                      Use this for medical or personal emergencies where the
+                      trainee/scholar cannot fulfill duty hours.
                     </p>
                   </div>
                 </div>
@@ -1590,7 +1795,7 @@ const OfficeDTRCheck: React.FC = () => {
                 <textarea
                   value={excusedReason}
                   onChange={(e) => setExcusedReason(e.target.value)}
-                  placeholder="e.g., Earthquake - classes suspended, Typhoon - university closed"
+                  placeholder="e.g., Medical emergency, Family emergency, etc."
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
                 />
@@ -1740,6 +1945,196 @@ const OfficeDTRCheck: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Actions Modal */}
+      {actionsModalDay !== null &&
+        (() => {
+          const entry = entries.find((e) => e.day === actionsModalDay);
+          if (!entry) return null;
+          const hasTimeData = getShifts(entry).some((s) => s.in || s.out);
+          const isAbsent = entry.status === "Absent";
+          const isExcused = entry.excusedStatus === "excused";
+          const isConfirmed = entry.confirmationStatus === "confirmed";
+
+          return (
+            <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-md w-full">
+                <div className="p-6">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                      Day {actionsModalDay} - Actions
+                    </h3>
+                    <button
+                      onClick={() => setActionsModalDay(null)}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
+
+                  {/* Day Info */}
+                  <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {getDayName(actionsModalDay)},{" "}
+                      {months.find((m) => m.value === selectedMonth)?.label}{" "}
+                      {actionsModalDay}, {selectedYear}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Status:{" "}
+                      <span className="font-medium">
+                        {entry.status || "No Status"}
+                      </span>
+                    </p>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
+                    {/* Status Actions */}
+                    {isAbsent ? (
+                      <button
+                        onClick={() => {
+                          handleRemoveAbsent(actionsModalDay);
+                          setActionsModalDay(null);
+                        }}
+                        disabled={absentLoadingDay === actionsModalDay}
+                        className="w-full px-4 py-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors text-left flex items-center gap-3"
+                      >
+                        <X className="h-5 w-5" />
+                        <div>
+                          <div>Remove Absent Status</div>
+                          <div className="text-xs text-red-100">
+                            Reset this day to unconfirmed
+                          </div>
+                        </div>
+                      </button>
+                    ) : isExcused ? (
+                      <button
+                        onClick={() => {
+                          handleRemoveExcused(actionsModalDay);
+                          setActionsModalDay(null);
+                        }}
+                        className="w-full px-4 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors text-left flex items-center gap-3"
+                      >
+                        <X className="h-5 w-5" />
+                        <div>
+                          <div>Remove Excused Status</div>
+                          <div className="text-xs text-purple-100">
+                            Reset this day to unconfirmed
+                          </div>
+                        </div>
+                      </button>
+                    ) : (
+                      <>
+                        {!isConfirmed && (
+                          <>
+                            <button
+                              onClick={() =>
+                                handleMarkAsExcused(actionsModalDay)
+                              }
+                              className="w-full px-4 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors text-left flex items-center gap-3"
+                            >
+                              <ShieldCheck className="h-5 w-5" />
+                              <div>
+                                <div>Mark as Excused</div>
+                                <div className="text-xs text-purple-100">
+                                  For medical/personal emergencies
+                                </div>
+                              </div>
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                handleMarkAbsent(actionsModalDay);
+                                setActionsModalDay(null);
+                              }}
+                              className="w-full px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors text-left flex items-center gap-3"
+                            >
+                              <X className="h-5 w-5" />
+                              <div>
+                                <div>Mark as Absent</div>
+                                <div className="text-xs text-red-100">
+                                  No hours for this day
+                                </div>
+                              </div>
+                            </button>
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {/* Edit/Confirm Actions */}
+                    {!isExcused && !isAbsent && (
+                      <>
+                        {!isConfirmed && (
+                          <button
+                            onClick={() => {
+                              handleStartEdit(entry);
+                              setActionsModalDay(null);
+                            }}
+                            className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors text-left flex items-center gap-3"
+                          >
+                            <Clock className="h-5 w-5" />
+                            <div>
+                              <div>Edit Time Entries</div>
+                              <div className="text-xs text-blue-100">
+                                Modify in/out times
+                              </div>
+                            </div>
+                          </button>
+                        )}
+
+                        {hasTimeData && !isConfirmed && (
+                          <button
+                            onClick={() => {
+                              handleConfirmEntry(actionsModalDay);
+                              setActionsModalDay(null);
+                            }}
+                            className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors text-left flex items-center gap-3"
+                          >
+                            <CheckCircle2 className="h-5 w-5" />
+                            <div>
+                              <div>Confirm Entry</div>
+                              <div className="text-xs text-green-100">
+                                Mark as verified
+                              </div>
+                            </div>
+                          </button>
+                        )}
+
+                        {isConfirmed && (
+                          <button
+                            onClick={() => {
+                              handleUnconfirmEntry(actionsModalDay);
+                              setActionsModalDay(null);
+                            }}
+                            className="w-full px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-colors text-left flex items-center gap-3"
+                          >
+                            <AlertCircle className="h-5 w-5" />
+                            <div>
+                              <div>Unconfirm Entry</div>
+                              <div className="text-xs text-amber-200">
+                                Reset to unconfirmed status
+                              </div>
+                            </div>
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  {/* Close Button */}
+                  <button
+                    onClick={() => setActionsModalDay(null)}
+                    className="w-full mt-4 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
     </div>
   );
 };

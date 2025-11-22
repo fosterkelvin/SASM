@@ -3,33 +3,14 @@ import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import UsersList from "./components/UsersList";
 import UserFilters from "./components/UserFilters";
 import UserModal from "./components/UserModal";
+import API from "@/config/apiClient";
 import type { UserRow } from "./types";
-
-// Frontend-only mock users
-const mockUsers: UserRow[] = [
-  {
-    _id: "u1",
-    firstName: "Alice",
-    lastName: "Mendez",
-    email: "alice@example.com",
-    role: "hr",
-    status: "active",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    _id: "u2",
-    firstName: "Ben",
-    lastName: "Lopez",
-    email: "ben@example.com",
-    role: "student",
-    status: "inactive",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(),
-  },
-];
 
 const Users: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [data, setData] = useState<UserRow[]>(mockUsers);
+  const [data, setData] = useState<UserRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -37,14 +18,52 @@ const Users: React.FC = () => {
 
   useEffect(() => {
     document.title = "Users | SASM-IMS";
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log("Fetching users from /users endpoint...");
+      // Add a dummy query parameter to trigger getUsersHandler instead of getUserHandler
+      const response = await API.get("/users", { params: { all: "true" } });
+      console.log("API response:", response);
+      console.log("API response.data:", response.data);
+
+      // The API returns { users: [...], count: number }
+      if (response.data && response.data.users) {
+        // Map the API response to match our UserRow type
+        const mappedUsers = response.data.users.map((user: any) => ({
+          ...user,
+          firstName: user.firstname,
+          lastName: user.lastname,
+        }));
+        console.log("Mapped users:", mappedUsers);
+        setData(mappedUsers);
+      } else {
+        console.warn("No users found in response");
+        setData([]);
+      }
+    } catch (err: any) {
+      console.error("Error fetching users:", err);
+      console.error("Error details:", err.response);
+      setError(
+        err.response?.data?.message || err.message || "Failed to fetch users"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = data.filter((d) => {
     const s = searchTerm.trim().toLowerCase();
     if (s) {
+      const firstName = d.firstName || d.firstname || "";
+      const lastName = d.lastName || d.lastname || "";
       const match =
-        d.firstName.toLowerCase().includes(s) ||
-        d.lastName.toLowerCase().includes(s) ||
+        firstName.toLowerCase().includes(s) ||
+        lastName.toLowerCase().includes(s) ||
         d.email.toLowerCase().includes(s);
       if (!match) return false;
     }
@@ -94,7 +113,22 @@ const Users: React.FC = () => {
             onStatusChange={setStatusFilter}
           />
 
-          <UsersList data={filtered} onOpen={openUser} />
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-gray-500">Loading users...</div>
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-800 dark:text-red-200">
+              {error}
+            </div>
+          ) : (
+            <>
+              <div className="mb-4 text-sm text-gray-600">
+                Found {data.length} users ({filtered.length} after filters)
+              </div>
+              <UsersList data={filtered} onOpen={openUser} />
+            </>
+          )}
         </div>
       </div>
 

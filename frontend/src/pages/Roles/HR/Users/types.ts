@@ -1,9 +1,16 @@
 export type UserRow = {
   _id: string;
-  firstName: string;
-  lastName: string;
+  firstname: string;
+  lastname: string;
   email: string;
   role?: string;
   status?: string;
+  verified?: boolean;
   createdAt?: string;
+  updatedAt?: string;
+  office?: string;
+  officeName?: string;
+  // For display compatibility
+  firstName?: string;
+  lastName?: string;
 };

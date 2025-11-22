@@ -23,7 +23,8 @@ const UserModal: React.FC<Props> = ({ user, onClose, onSave, onChange }) => {
           </div>
           <div className="flex-1">
             <h3 className="text-xl font-bold">
-              {user.firstName} {user.lastName}
+              {user.firstName || user.firstname}{" "}
+              {user.lastName || user.lastname}
             </h3>
             <div className="text-sm text-gray-500">{user.email}</div>
           </div>
@@ -40,9 +41,23 @@ const UserModal: React.FC<Props> = ({ user, onClose, onSave, onChange }) => {
               <option value="">(none)</option>
               <option value="admin">Admin</option>
               <option value="hr">HR</option>
+              <option value="office">Office</option>
               <option value="student">Student</option>
             </select>
           </div>
+
+          {user.role === "office" && (
+            <div>
+              <Label className="text-sm font-medium">Office Name</Label>
+              <input
+                type="text"
+                value={user.officeName || ""}
+                onChange={(e) => onChange({ officeName: e.target.value })}
+                className="w-full px-3 py-2 border rounded"
+                placeholder="Enter office name"
+              />
+            </div>
+          )}
 
           <div>
             <Label className="text-sm font-medium">Status</Label>
@@ -53,15 +68,21 @@ const UserModal: React.FC<Props> = ({ user, onClose, onSave, onChange }) => {
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
-              <option value="suspended">Suspended</option>
             </select>
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" className="bg-gray-400 hover:bg-gray-500" onClick={onClose}>
+            <Button
+              variant="outline"
+              className="bg-gray-400 hover:bg-gray-500"
+              onClick={onClose}
+            >
               Cancel
             </Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => onSave(user)}>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => onSave(user)}
+            >
               Save
             </Button>
           </div>

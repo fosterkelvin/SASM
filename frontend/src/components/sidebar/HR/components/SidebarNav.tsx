@@ -9,6 +9,7 @@ import {
   GraduationCap,
   ClipboardCheck,
   Bell,
+  UserPlus,
 } from "lucide-react";
 
 interface NavProps {
@@ -77,6 +78,13 @@ const SidebarNav: React.FC<NavProps> = ({ handlers, unreadCount = 0 }) => {
             label="Scholars"
             onClick={handlers.scholars}
             IconComponent={GraduationCap}
+          />
+        </li>
+        <li>
+          <SidebarItem
+            label="Scholar Requests"
+            onClick={handlers.scholarRequests}
+            IconComponent={UserPlus}
           />
         </li>
         <li>

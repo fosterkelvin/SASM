@@ -163,9 +163,7 @@ DTRSchema.pre("save", function (next) {
     this.totalMonthlyHours = this.entries.reduce((sum, entry) => {
       // Only count hours from confirmed entries
       if (entry.confirmationStatus === "confirmed") {
-        // Apply 5-hour (300 minutes) daily limit for official total
-        const cappedHours = Math.min(entry.totalHours || 0, 300);
-        return sum + cappedHours;
+        return sum + (entry.totalHours || 0);
       }
       return sum;
     }, 0);

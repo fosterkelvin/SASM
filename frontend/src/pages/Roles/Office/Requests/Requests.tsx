@@ -1,6 +1,7 @@
 import { useState } from "react";
 import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
 import RequestForm from "./components/RequestForm";
+import MyRequests from "./components/MyRequests";
 import { Card, CardContent } from "@/components/ui/card";
 
 const RequestsPage: React.FC = () => {
@@ -50,9 +51,13 @@ const RequestsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div>
+              <div className="space-y-8">
                 <div className="max-w-4xl mx-auto">
                   <RequestForm />
+                </div>
+
+                <div className="border-t pt-8">
+                  <MyRequests />
                 </div>
               </div>
             </CardContent>

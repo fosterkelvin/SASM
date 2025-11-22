@@ -485,28 +485,12 @@ const DayRow: React.FC<DayRowProps> = ({
         ) : (
           (() => {
             const totalDisplay = computeTotal();
-            const totalMinutes = entry.totalHours || 0;
-            const exceeds5Hours = totalMinutes > 300;
 
             return (
               <div className="flex flex-col items-center gap-0.5">
-                <span
-                  className={`font-semibold ${
-                    exceeds5Hours
-                      ? "text-orange-600 dark:text-orange-400"
-                      : "text-blue-600 dark:text-blue-400"
-                  }`}
-                >
+                <span className="font-semibold text-blue-600 dark:text-blue-400">
                   {totalDisplay}
                 </span>
-                {exceeds5Hours && (
-                  <span
-                    className="text-xs text-orange-600 dark:text-orange-400 font-medium"
-                    title="Only 5 hours will count towards official total"
-                  >
-                    Max: 5:00
-                  </span>
-                )}
               </div>
             );
           })()

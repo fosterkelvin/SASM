@@ -4,6 +4,7 @@ import DTRService from "../services/dtr.service";
 import UserModel from "../models/user.model";
 import OfficeProfileModel from "../models/officeProfile.model";
 import catchErrors from "../utils/catchErrors";
+import { createNotification } from "../services/notification.service";
 
 // Validation schemas
 const DTRShiftSchema = z.object({
@@ -771,8 +772,9 @@ export const markDayAsExcused = catchErrors(
     if (validatedData.excusedStatus === "excused") {
       dtr.entries[entryIndex].excusedStatus = "excused";
       dtr.entries[entryIndex].excusedReason = validatedData.excusedReason || "";
-      // Excused days count as 5 hours (300 minutes)
-      dtr.entries[entryIndex].totalHours = 300;
+      // Excused days do NOT count towards hours
+      dtr.entries[entryIndex].totalHours = 0;
+      dtr.entries[entryIndex].status = "Excused";
       // Auto-confirm excused days since office staff is marking them
       dtr.entries[entryIndex].confirmationStatus = "confirmed";
       dtr.entries[entryIndex].confirmedBy = officeUserId;
@@ -1134,3 +1136,131 @@ export const getScheduleForDate = catchErrors(
     });
   }
 );
+
+/**
+ * POST /api/dtr/hr/bulk-emergency-cancel
+ * HR only - Apply emergency cancellation to all students for a specific date
+ */
+export const bulkEmergencyCancelForDate = catchErrors(
+  async (req: Request, res: Response) => {
+    const hrUserId = req.userID;
+
+    if (!hrUserId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const user = await UserModel.findById(hrUserId);
+
+    if (!user || user.role !== "hr") {
+      return res.status(403).json({ message: "Access denied - HR only" });
+    }
+
+    const { year, month, day, reason } = req.body;
+
+    if (!year || !month || !day || !reason) {
+      return res.status(400).json({
+        message: "Year, month, day, and reason are required",
+      });
+    }
+
+    // Validate date values
+    if (month < 1 || month > 12 || day < 1 || day > 31) {
+      return res.status(400).json({ message: "Invalid date values" });
+    }
+
+    // Find all DTRs for the specified month and year
+    const dtrs = await DTRService.getAllDTRsByMonthYear(month, year);
+
+    let updatedCount = 0;
+    let createdCount = 0;
+    const notifiedUserIds: string[] = [];
+
+    // Process each DTR
+    for (const dtr of dtrs) {
+      // Find or create entry for the specific day
+      let entryIndex = dtr.entries.findIndex((e: any) => e.day === day);
+
+      if (entryIndex === -1) {
+        // Create new entry if it doesn't exist
+        dtr.entries.push({
+          day,
+          shifts: [],
+          late: 0,
+          undertime: 0,
+          totalHours: 0,
+          status: "Excused",
+          excusedStatus: "excused",
+          excusedReason: `🚨 EMERGENCY CANCELLATION: ${reason}`,
+          confirmationStatus: "confirmed",
+          confirmedBy: hrUserId,
+          confirmedByProfile: `${user.firstname} ${user.lastname} (HR)`,
+          confirmedAt: new Date(),
+        });
+        createdCount++;
+      } else {
+        // Update existing entry
+        dtr.entries[entryIndex].excusedStatus = "excused";
+        dtr.entries[entryIndex].excusedReason =
+          `🚨 EMERGENCY CANCELLATION: ${reason}`;
+        dtr.entries[entryIndex].status = "Excused";
+        dtr.entries[entryIndex].totalHours = 0;
+        dtr.entries[entryIndex].confirmationStatus = "confirmed";
+        dtr.entries[entryIndex].confirmedBy = hrUserId;
+        dtr.entries[entryIndex].confirmedByProfile =
+          `${user.firstname} ${user.lastname} (HR)`;
+        dtr.entries[entryIndex].confirmedAt = new Date();
+        updatedCount++;
+      }
+
+      // Sort entries by day
+      dtr.entries.sort((a: any, b: any) => a.day - b.day);
+
+      // Save the DTR
+      await dtr.save();
+
+      // Create notification for the student
+      try {
+        await createNotification({
+          userID: dtr.userId,
+          title: "Emergency Cancellation Applied",
+          message: `Your DTR for ${getMonthName(month)} ${day}, ${year} has been marked as excused due to: ${reason}. This day will not count towards your duty hours.`,
+          type: "warning",
+        });
+        notifiedUserIds.push(dtr.userId.toString());
+      } catch (notifError) {
+        console.error(
+          `Failed to create notification for user ${dtr.userId}:`,
+          notifError
+        );
+        // Continue processing other DTRs even if notification fails
+      }
+    }
+
+    res.status(200).json({
+      message: "Emergency cancellation applied successfully",
+      totalDTRs: dtrs.length,
+      updatedEntries: updatedCount,
+      createdEntries: createdCount,
+      notifiedUsers: notifiedUserIds.length,
+    });
+  }
+);
+
+// Helper function to get month name
+function getMonthName(month: number): string {
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  return months[month - 1] || "";
+}

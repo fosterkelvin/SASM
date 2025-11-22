@@ -20,6 +20,7 @@ import {
   markDayAsAbsent,
   sendDTRInquiry,
   getScheduleForDate,
+  bulkEmergencyCancelForDate,
 } from "../controllers/dtr.controller";
 import authenticate from "../middleware/authenticate";
 
@@ -51,5 +52,8 @@ dtrRoutes.put("/office/update-user-entry", updateUserEntryForOffice);
 dtrRoutes.post("/office/mark-day-excused", markDayAsExcused);
 dtrRoutes.post("/office/mark-day-absent", markDayAsAbsent);
 dtrRoutes.post("/office/send-inquiry", sendDTRInquiry);
+
+// HR routes
+dtrRoutes.post("/hr/bulk-emergency-cancel", bulkEmergencyCancelForDate);
 
 export default dtrRoutes;

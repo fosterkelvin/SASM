@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-export type LeaveStatus = "pending" | "approved" | "rejected" | "cancelled";
+export type LeaveStatus = "pending" | "approved" | "disapproved";
 
 export type LeaveType =
   | "Sick Leave"
@@ -14,16 +14,17 @@ export interface LeaveRecord {
   name: string;
   startDate: string; // ISO
   endDate: string; // ISO
-  type: LeaveType;
+  type: string;
   reason?: string;
   status: LeaveStatus;
   hrNote?: string;
   createdAt: string;
+  proofUrl?: string;
 }
 
 export interface LeaveFilters {
   status?: LeaveStatus | "all";
-  type?: LeaveType | "all";
+  type?: string | "all";
   query?: string; // name search
 }
 

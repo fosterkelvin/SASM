@@ -792,3 +792,132 @@ export const getUserDTRForOffice = async (
   });
   return response.data;
 };
+
+// Leave APIs
+export const submitLeaveRequest = async (data: {
+  name: string;
+  schoolDept?: string;
+  courseYear?: string;
+  typeOfLeave: string;
+  dateFrom: string; // ISO or yyyy-mm-dd
+  dateTo: string; // ISO or yyyy-mm-dd
+  daysHours?: string;
+  reasons: string;
+  proofFile?: File | null; // Optional proof file
+}) => {
+  const formData = new FormData();
+
+  // Append all text fields
+  formData.append("name", data.name);
+  if (data.schoolDept) formData.append("schoolDept", data.schoolDept);
+  if (data.courseYear) formData.append("courseYear", data.courseYear);
+  formData.append("typeOfLeave", data.typeOfLeave);
+  formData.append("dateFrom", data.dateFrom);
+  formData.append("dateTo", data.dateTo);
+  if (data.daysHours) formData.append("daysHours", data.daysHours);
+  formData.append("reasons", data.reasons);
+
+  // Append proof file if exists
+  if (data.proofFile) {
+    formData.append("proof", data.proofFile);
+  }
+
+  const response = await API.post("/leave", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
+
+export const getMyLeaves = async () => {
+  const response = await API.get("/leave/my");
+  return response.data;
+};
+
+// Office/HR: list all leaves with optional filters
+export const getOfficeLeaves = async (params?: {
+  status?: "pending" | "approved" | "disapproved";
+  q?: string;
+}) => {
+  const search = new URLSearchParams();
+  if (params?.status) search.set("status", params.status);
+  if (params?.q) search.set("q", params.q);
+  const response = await API.get(`/leave/office?${search.toString()}`);
+  return response.data;
+};
+
+// Office/HR: decide a leave request
+export const decideLeaveRequest = async (
+  id: string,
+  data: { status: "approved" | "disapproved"; remarks?: string }
+) => {
+  const response = await API.post(`/leave/${id}/decision`, data);
+  return response.data;
+};
+
+// Scholar Requests API
+export const createScholarRequest = async (data: {
+  totalScholars: number;
+  maleScholars: number;
+  femaleScholars: number;
+  scholarType: string;
+  notes?: string;
+}) => {
+  const response = await API.post("/scholar-requests", data);
+  return response.data;
+};
+
+export const getUserScholarRequests = async (params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.status) searchParams.append("status", params.status);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+
+  const response = await API.get(
+    `/scholar-requests?${searchParams.toString()}`
+  );
+  return response.data;
+};
+
+export const getAllScholarRequests = async (params?: {
+  status?: string;
+  scholarType?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.status) searchParams.append("status", params.status);
+  if (params?.scholarType)
+    searchParams.append("scholarType", params.scholarType);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+
+  const response = await API.get(
+    `/scholar-requests/all?${searchParams.toString()}`
+  );
+  return response.data;
+};
+
+export const getScholarRequestById = async (id: string) => {
+  const response = await API.get(`/scholar-requests/${id}`);
+  return response.data;
+};
+
+export const reviewScholarRequest = async (data: {
+  requestId: string;
+  status: "approved" | "rejected";
+  reviewNotes?: string;
+}) => {
+  const response = await API.patch("/scholar-requests/review", data);
+  return response.data;
+};
+
+export const deleteScholarRequest = async (id: string) => {
+  const response = await API.delete(`/scholar-requests/${id}`);
+  return response.data;
+};

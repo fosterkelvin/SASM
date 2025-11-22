@@ -3,6 +3,7 @@ import React from "react";
 interface Filters {
   query: string;
   status: "all" | "pending" | "approved" | "disapproved";
+  type: string;
 }
 
 interface Props {
@@ -18,7 +19,7 @@ const LeaveFilters: React.FC<Props> = ({ filters, setFilters }) => {
           type="text"
           value={filters.query}
           onChange={(e) => setFilters({ ...filters, query: e.target.value })}
-          placeholder="Search by student name or ID"
+          placeholder="Search by student name or reason"
           className="w-full md:w-96 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-red-300 text-sm"
         />
 
@@ -33,6 +34,18 @@ const LeaveFilters: React.FC<Props> = ({ filters, setFilters }) => {
           <option value="pending">Pending</option>
           <option value="approved">Approved</option>
           <option value="disapproved">Disapproved</option>
+        </select>
+
+        <select
+          value={filters.type}
+          onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+          className="px-3 py-2 border rounded text-sm"
+        >
+          <option value="all">All types</option>
+          <option value="sick">Sick</option>
+          <option value="emergency">Emergency</option>
+          <option value="personal">Personal</option>
+          <option value="vacation">Vacation</option>
         </select>
       </div>
 

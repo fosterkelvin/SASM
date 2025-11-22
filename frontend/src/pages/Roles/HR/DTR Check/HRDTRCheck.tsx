@@ -11,6 +11,7 @@ import {
   Info,
   ShieldCheck,
   X,
+  AlertCircle,
 } from "lucide-react";
 import API from "@/config/apiClient";
 
@@ -106,6 +107,11 @@ const HRDTRCheck: React.FC = () => {
   const [tooltipPosition, setTooltipPosition] = useState<{
     [key: number]: "top" | "bottom";
   }>({});
+  const [showBulkCancelModal, setShowBulkCancelModal] = useState(false);
+  const [bulkCancelDate, setBulkCancelDate] = useState("");
+  const [bulkCancelReason, setBulkCancelReason] = useState("");
+  const [bulkCancelLoading, setBulkCancelLoading] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Refs
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -301,6 +307,53 @@ const HRDTRCheck: React.FC = () => {
     }
   };
 
+  // Handle bulk emergency cancellation
+  const handleBulkEmergencyCancel = async () => {
+    if (!bulkCancelDate || !bulkCancelReason.trim()) {
+      addToast("Please select a date and provide a reason", "error");
+      return;
+    }
+
+    // Show custom confirmation dialog
+    setShowConfirmDialog(true);
+  };
+
+  const confirmBulkCancel = async () => {
+    setShowConfirmDialog(false);
+    setBulkCancelLoading(true);
+    try {
+      const date = new Date(bulkCancelDate);
+      const response = await API.post("/dtr/hr/bulk-emergency-cancel", {
+        year: date.getFullYear(),
+        month: date.getMonth() + 1,
+        day: date.getDate(),
+        reason: bulkCancelReason,
+      });
+
+      addToast(
+        `Emergency cancellation applied to ${response.data.totalDTRs} students. ${response.data.notifiedUsers} notifications sent.`,
+        "success"
+      );
+      setShowBulkCancelModal(false);
+      setBulkCancelDate("");
+      setBulkCancelReason("");
+
+      // Refresh current DTR if one is selected
+      if (selectedTrainee) {
+        fetchDTR();
+      }
+    } catch (error: any) {
+      console.error("Error applying bulk emergency cancellation:", error);
+      addToast(
+        error?.response?.data?.message ||
+          "Failed to apply emergency cancellation",
+        "error"
+      );
+    } finally {
+      setBulkCancelLoading(false);
+    }
+  };
+
   const selectedTraineeName = selectedTrainee
     ? trainees.find((t) => t.userID._id === selectedTrainee)?.userID
     : null;
@@ -335,12 +388,36 @@ const HRDTRCheck: React.FC = () => {
               : "md:w-[calc(100%-16rem)] md:ml-64"
           }`}
         >
-          <h1 className="text-2xl font-bold text-white ml-4">
-            DTR Checking (View Only)
-          </h1>
+          <h1 className="text-2xl font-bold text-white ml-4">DTR Checking</h1>
         </div>
 
         <div className="p-4 md:p-10 mt-12 max-w-7xl mx-auto">
+          {/* Bulk Emergency Cancellation Button */}
+          <Card className="mb-6 shadow-lg border-l-4 border-amber-500">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                  <div>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                      Emergency Day Cancellation (All Students)
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Apply emergency cancellation (typhoon, earthquake, etc.)
+                      to all students for a specific date
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowBulkCancelModal(true)}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-colors whitespace-nowrap"
+                >
+                  Apply Bulk Cancellation
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Selection Card */}
           <Card className="mb-6 shadow-lg">
             <CardContent className="p-6">
@@ -799,6 +876,250 @@ const HRDTRCheck: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Bulk Emergency Cancellation Modal */}
+      {showBulkCancelModal && (
+        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-md w-full">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                    Bulk Emergency Cancellation
+                  </h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowBulkCancelModal(false);
+                    setBulkCancelDate("");
+                    setBulkCancelReason("");
+                  }}
+                  disabled={bulkCancelLoading}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* Info Alert */}
+              <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <div className="flex gap-2">
+                  <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-amber-800 dark:text-amber-300">
+                    <p className="font-semibold mb-1">
+                      Apply to ALL Students - No Hours Added
+                    </p>
+                    <p>
+                      This will mark the selected date as excused for ALL
+                      students (trainees and scholars). The day will be
+                      auto-confirmed but will NOT count towards duty hours. Use
+                      for force majeure events.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Date Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Select Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={bulkCancelDate}
+                  onChange={(e) => setBulkCancelDate(e.target.value)}
+                  disabled={bulkCancelLoading}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50"
+                />
+              </div>
+
+              {/* Quick Reason Buttons */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Quick Reasons
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() =>
+                      setBulkCancelReason("Typhoon - University closed")
+                    }
+                    disabled={bulkCancelLoading}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded text-sm transition-colors disabled:opacity-50"
+                  >
+                    🌪️ Typhoon
+                  </button>
+                  <button
+                    onClick={() =>
+                      setBulkCancelReason("Earthquake - Classes suspended")
+                    }
+                    disabled={bulkCancelLoading}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded text-sm transition-colors disabled:opacity-50"
+                  >
+                    🏚️ Earthquake
+                  </button>
+                  <button
+                    onClick={() =>
+                      setBulkCancelReason("Flood - University closed")
+                    }
+                    disabled={bulkCancelLoading}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded text-sm transition-colors disabled:opacity-50"
+                  >
+                    🌊 Flood
+                  </button>
+                  <button
+                    onClick={() => setBulkCancelReason("Class Suspension")}
+                    disabled={bulkCancelLoading}
+                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded text-sm transition-colors disabled:opacity-50"
+                  >
+                    🏫 Suspension
+                  </button>
+                </div>
+              </div>
+
+              {/* Reason Input */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Emergency Reason <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={bulkCancelReason}
+                  onChange={(e) => setBulkCancelReason(e.target.value)}
+                  disabled={bulkCancelLoading}
+                  placeholder="e.g., Typhoon Pepito - Signal No. 3, all classes suspended"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none disabled:opacity-50"
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  This reason will be shown on all students' DTRs.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowBulkCancelModal(false);
+                    setBulkCancelDate("");
+                    setBulkCancelReason("");
+                  }}
+                  disabled={bulkCancelLoading}
+                  className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkEmergencyCancel}
+                  disabled={
+                    !bulkCancelDate ||
+                    !bulkCancelReason.trim() ||
+                    bulkCancelLoading
+                  }
+                  className="flex-1 px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  {bulkCancelLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Applying...
+                    </>
+                  ) : (
+                    "Apply to All Students"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full border-2 border-amber-500 dark:border-amber-600">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-start gap-4 mb-6">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                  <AlertCircle className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                    Confirm Emergency Cancellation
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Apply emergency cancellation for{" "}
+                    <span className="font-semibold text-amber-600 dark:text-amber-400">
+                      {bulkCancelDate}
+                    </span>{" "}
+                    to ALL students?
+                  </p>
+                </div>
+              </div>
+
+              {/* Info Box */}
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-l-4 border-amber-500 dark:border-amber-600 rounded-lg p-4 mb-6">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-amber-500 dark:bg-amber-600 flex items-center justify-center mt-0.5">
+                      <CheckCircle2 className="h-3 w-3 text-white" />
+                    </div>
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                      Mark the day as{" "}
+                      <span className="font-semibold">
+                        excused for all students
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-amber-500 dark:bg-amber-600 flex items-center justify-center mt-0.5">
+                      <Clock className="h-3 w-3 text-white" />
+                    </div>
+                    <div className="text-sm text-gray-700 dark:text-gray-300">
+                      Set hours to{" "}
+                      <span className="font-semibold">0 for that day</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reason Display */}
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 mb-6">
+                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                  Emergency Reason
+                </div>
+                <div className="text-sm text-gray-800 dark:text-gray-200 font-medium">
+                  {bulkCancelReason}
+                </div>
+              </div>
+
+              {/* Warning */}
+              <div className="flex items-center gap-2 mb-6 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                <p className="text-sm text-red-800 dark:text-red-300 font-medium">
+                  This action cannot be undone
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirmDialog(false)}
+                  className="flex-1 px-5 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmBulkCancel}
+                  className="flex-1 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl"
+                >
+                  Yes, Apply to All
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

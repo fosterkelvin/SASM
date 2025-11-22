@@ -7,6 +7,8 @@ export interface UserDataDocument extends mongoose.Document {
   civilStatus?: string;
   phoneNumber?: string;
   address?: string;
+  college?: string; // School/Department
+  courseYear?: string; // Course & Year
   createdAt: Date;
   updatedAt: Date;
   getAge(): number | null;
@@ -42,6 +44,14 @@ const userDataSchema = new mongoose.Schema<UserDataDocument>(
       type: String,
       default: null,
     },
+    college: {
+      type: String,
+      default: null,
+    },
+    courseYear: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -60,12 +70,18 @@ userDataSchema.methods.getAge = function (): number | null {
   const monthDiff = today.getMonth() - birthDate.getMonth();
 
   // Adjust age if birthday hasn't occurred yet this year
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
     age--;
   }
 
   return age;
 };
 
-const UserDataModel = mongoose.model<UserDataDocument>("UserData", userDataSchema);
+const UserDataModel = mongoose.model<UserDataDocument>(
+  "UserData",
+  userDataSchema
+);
 export default UserDataModel;

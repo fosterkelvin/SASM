@@ -15,6 +15,7 @@ import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
 import PersonalInfoCard from "./components/PersonalInfoCard";
+import AcademicInfoCard from "./components/AcademicInfoCard";
 import EmailManagementCard from "./components/EmailManagementCard";
 import ChangePasswordCard from "./components/ChangePasswordCard";
 import ActiveSessionsCard from "./components/ActiveSessionsCard";
@@ -542,9 +543,13 @@ const Profile = () => {
               />
             </div>
 
+            {/* Academic Info Row - Only for students */}
+            {user?.role === "student" && (
+              <AcademicInfoCard user={user} colorScheme={colorScheme} />
+            )}
+
             {/* Bottom Row - Password and Sessions */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
               <ChangePasswordCard
                 passwordData={passwordData}
                 errors={errors}

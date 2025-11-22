@@ -65,7 +65,8 @@ const UsersList: React.FC<Props> = ({ data, onOpen }) => {
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
-                            {u.firstName} {u.lastName}
+                            {u.firstName || u.firstname}{" "}
+                            {u.lastName || u.lastname}
                           </div>
                           <div className="text-sm text-gray-500">{u.email}</div>
                         </div>

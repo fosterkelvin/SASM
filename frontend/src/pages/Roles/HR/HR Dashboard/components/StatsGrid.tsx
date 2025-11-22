@@ -1,6 +1,20 @@
-import { Users, FileText, Building2, Star } from "lucide-react";
+import { Users, FileText, Building2, GraduationCap } from "lucide-react";
 
-const StatsGrid = () => {
+interface StatsGridProps {
+  totalUsers?: number;
+  pendingLeaveRequests?: number;
+  activeOffices?: number;
+  traineeCount?: number;
+  loading?: boolean;
+}
+
+const StatsGrid = ({
+  totalUsers = 234,
+  pendingLeaveRequests = 18,
+  activeOffices = 12,
+  traineeCount = 0,
+  loading = false,
+}: StatsGridProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       {/* Total Employees Card */}
@@ -10,7 +24,7 @@ const StatsGrid = () => {
             <Users className="w-6 h-6 text-white" />
           </div>
           <span className="text-2xl font-bold text-red-600 dark:text-red-400">
-            234
+            {loading ? "..." : totalUsers}
           </span>
         </div>
         <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">
@@ -19,18 +33,18 @@ const StatsGrid = () => {
         <p className="text-sm text-gray-600 dark:text-gray-400">Active users</p>
       </div>
 
-      {/* Pending Applications Card */}
+      {/* Pending Leave Requests Card */}
       <div className="bg-gradient-to-br from-orange-50 via-white to-orange-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 rounded-xl shadow-md border border-orange-100 dark:border-orange-700/60 p-6 hover:shadow-lg transition-shadow duration-200">
         <div className="flex items-center justify-between mb-4">
           <div className="w-10 h-10 bg-orange-500 dark:bg-orange-700 rounded-lg flex items-center justify-center">
             <FileText className="w-6 h-6 text-white" />
           </div>
           <span className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-            18
+            {loading ? "..." : pendingLeaveRequests}
           </span>
         </div>
         <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">
-          Pending Reviews
+          Pending Leave Requests
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
           Awaiting approval
@@ -44,7 +58,7 @@ const StatsGrid = () => {
             <Building2 className="w-6 h-6 text-white" />
           </div>
           <span className="text-2xl font-bold text-green-600 dark:text-green-400">
-            12
+            {loading ? "..." : activeOffices}
           </span>
         </div>
         <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">
@@ -55,21 +69,21 @@ const StatsGrid = () => {
         </p>
       </div>
 
-      {/* Average Satisfaction Card */}
+      {/* Trainee Count Card */}
       <div className="bg-gradient-to-br from-purple-50 via-white to-purple-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 rounded-xl shadow-md border border-purple-100 dark:border-purple-700/60 p-6 hover:shadow-lg transition-shadow duration-200">
         <div className="flex items-center justify-between mb-4">
           <div className="w-10 h-10 bg-purple-600 dark:bg-purple-700 rounded-lg flex items-center justify-center">
-            <Star className="w-6 h-6 text-white" />
+            <GraduationCap className="w-6 h-6 text-white" />
           </div>
           <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-            4.2
+            {loading ? "..." : traineeCount}
           </span>
         </div>
         <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">
-          Satisfaction
+          Trainees
         </h3>
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Office Representative rating
+          Currently in training
         </p>
       </div>
     </div>

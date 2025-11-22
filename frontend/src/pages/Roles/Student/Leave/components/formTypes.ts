@@ -1,6 +1,5 @@
 export type LeaveFormData = {
   name: string;
-  idNumber: string;
   schoolDept: string;
   courseYear: string;
   typeOfLeave: string;
@@ -8,13 +7,11 @@ export type LeaveFormData = {
   dateTo: string;
   daysHours: string;
   reasons: string;
-  signatureName: string;
-  signatureDate: string;
+  proofUrl?: string;
 };
 
 export const defaultLeaveData: LeaveFormData = {
   name: "",
-  idNumber: "",
   schoolDept: "",
   courseYear: "",
   typeOfLeave: "",
@@ -22,6 +19,5 @@ export const defaultLeaveData: LeaveFormData = {
   dateTo: "",
   daysHours: "",
   reasons: "",
-  signatureName: "",
-  signatureDate: "",
+  proofUrl: "",
 };

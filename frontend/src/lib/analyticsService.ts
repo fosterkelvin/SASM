@@ -1,5 +1,34 @@
-// Mock analytics service for frontend-only demo
+import API from "@/config/apiClient";
+
+// Get dashboard statistics from backend (for HR Dashboard)
+export const getDashboardSummary = async () => {
+  try {
+    const response = await API.get("/dashboard/stats");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    throw error;
+  }
+};
+
+// Get analytics data from backend (for Analytics page)
 export const getSummary = async (start?: string, end?: string) => {
+  try {
+    const params = new URLSearchParams();
+    if (start) params.append("start", start);
+    if (end) params.append("end", end);
+
+    const response = await API.get(`/dashboard/analytics?${params.toString()}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching analytics:", error);
+    // Fallback to mock data if API fails
+    return getFallbackSummary(start, end);
+  }
+};
+
+// Fallback mock data for demo purposes
+const getFallbackSummary = async (start?: string, end?: string) => {
   // small delay to simulate network
   await new Promise((r) => setTimeout(r, 160));
 
@@ -41,6 +70,20 @@ export const getSummary = async (start?: string, end?: string) => {
 };
 
 export const getTrends = async (start?: string, end?: string) => {
+  try {
+    const params = new URLSearchParams();
+    if (start) params.append("start", start);
+    if (end) params.append("end", end);
+
+    const response = await API.get(`/dashboard/analytics?${params.toString()}`);
+    return response.data.trends || [];
+  } catch (error) {
+    console.error("Error fetching trends:", error);
+    return getFallbackTrends(start, end);
+  }
+};
+
+const getFallbackTrends = async (start?: string, end?: string) => {
   await new Promise((r) => setTimeout(r, 160));
 
   const days =
@@ -68,6 +111,20 @@ export const getTrends = async (start?: string, end?: string) => {
 };
 
 export const getPipeline = async (start?: string, end?: string) => {
+  try {
+    const params = new URLSearchParams();
+    if (start) params.append("start", start);
+    if (end) params.append("end", end);
+
+    const response = await API.get(`/dashboard/analytics?${params.toString()}`);
+    return response.data.pipeline || {};
+  } catch (error) {
+    console.error("Error fetching pipeline:", error);
+    return getFallbackPipeline(start, end);
+  }
+};
+
+const getFallbackPipeline = async (start?: string, end?: string) => {
   await new Promise((r) => setTimeout(r, 140));
   // Keep pipeline totals stable but scale minorly with date range
   const scale =

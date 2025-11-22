@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { LeaveRequest, LeaveStatus } from "./types";
 import { Button } from "@/components/ui/button";
+import { FileText, ExternalLink } from "lucide-react";
 
 interface Props {
   request: LeaveRequest | null;
@@ -43,15 +44,34 @@ export const LeaveActionsModal: React.FC<Props> = ({
           </h3>
         </div>
 
-        <div className="mt-3 text-sm text-gray-700">
+        <div className="mt-3 text-sm text-gray-700 space-y-2">
           <div>
-            <strong>Leave:</strong>{" "}
+            <strong>Dates:</strong>{" "}
             {new Date(request.startDate).toLocaleDateString()} —{" "}
             {new Date(request.endDate).toLocaleDateString()}
           </div>
-          <div className="mt-2">
+          <div>
+            <strong>Submitted:</strong>{" "}
+            {new Date(request.submittedAt).toLocaleString()}
+          </div>
+          <div>
             <strong>Reason:</strong> {request.reason}
           </div>
+          {request.proofUrl && (
+            <div>
+              <strong>Proof Document:</strong>
+              <a
+                href={request.proofUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-2 inline-flex items-center gap-1 text-red-600 hover:text-red-700 underline"
+              >
+                <FileText className="w-4 h-4" />
+                View Document
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          )}
         </div>
 
         <div className="mt-4">

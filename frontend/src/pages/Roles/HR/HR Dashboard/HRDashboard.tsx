@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import { WelcomeCard, StatsGrid } from "./components";
 import PieCard from "../Analytics/components/PieCard";
-import { getSummary } from "@/lib/analyticsService";
+import { getDashboardSummary } from "@/lib/analyticsService";
 
 const HRDashboard = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -14,8 +14,10 @@ const HRDashboard = () => {
     const fetch = async () => {
       setLoading(true);
       try {
-        const s = await getSummary();
+        const s = await getDashboardSummary();
         if (mounted) setSummary(s);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -55,28 +57,30 @@ const HRDashboard = () => {
         <div className="p-6 md:p-10">
           <WelcomeCard />
 
-          <StatsGrid />
+          <StatsGrid
+            totalUsers={summary?.totalUsers}
+            pendingLeaveRequests={summary?.pendingLeaveRequests}
+            activeOffices={summary?.activeOffices}
+            traineeCount={summary?.traineeCount}
+            loading={loading}
+          />
 
           {/* Two pie charts reused from Analytics */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
             <PieCard
               title="Gender"
               data={
-                loading
+                loading || !summary?.genderDistribution
                   ? []
                   : [
                       {
                         label: "Female",
-                        value: Math.round(
-                          (summary?.activeStudents ?? 0) * 0.425
-                        ),
+                        value: summary.genderDistribution.female,
                         color: "#ef4444",
                       },
                       {
                         label: "Male",
-                        value: Math.round(
-                          (summary?.activeStudents ?? 0) * 0.575
-                        ),
+                        value: summary.genderDistribution.male,
                         color: "#3b82f6",
                       },
                     ]
@@ -86,17 +90,17 @@ const HRDashboard = () => {
             <PieCard
               title="Scholarship"
               data={
-                loading
+                loading || !summary?.scholarshipDistribution
                   ? []
                   : [
                       {
                         label: "Student Assistant",
-                        value: Math.round((summary?.activeStudents ?? 0) * 0.5),
+                        value: summary.scholarshipDistribution.studentAssistant,
                         color: "#f59e0b",
                       },
                       {
                         label: "Student Marshal",
-                        value: Math.round((summary?.activeStudents ?? 0) * 0.5),
+                        value: summary.scholarshipDistribution.studentMarshal,
                         color: "#10b981",
                       },
                     ]

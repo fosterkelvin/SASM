@@ -66,9 +66,16 @@ export const getUsersHandler = catchErrors(
       query = { role: { $in: roles } };
     }
 
+    console.log("=== GET USERS DEBUG ===");
+    console.log("Query:", query);
+    console.log("User making request:", req.userID);
+
     const users = await UserModel.find(query).select(
       "-password -verificationCode"
     );
+
+    console.log("Users found:", users.length);
+    console.log("Sample user:", users[0]);
 
     return res.status(OK).json({
       users,

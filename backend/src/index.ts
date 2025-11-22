@@ -21,6 +21,9 @@ import auditLogRoutes from "./routes/auditLog.route";
 import workflowRoutes from "./routes/workflow.route";
 import traineeRoutes from "./routes/trainee.route";
 import dtrRoutes from "./routes/dtr.route";
+import leaveRoutes from "./routes/leave.route";
+import scholarRequestRoutes from "./routes/scholarRequest.route";
+import dashboardRoutes from "./routes/dashboard.route";
 
 const app = express();
 
@@ -107,6 +110,14 @@ app.use("/trainees", authenticate, traineeRoutes);
 app.use("/scholars", authenticate, traineeRoutes);
 // DTR (Daily Time Record) management
 app.use("/dtr", dtrRoutes);
+// Leave requests (students submit; office/HR review)
+app.use("/leave", leaveRoutes);
+// Leave management
+app.use("/leave", leaveRoutes);
+// Scholar requests (office staff request scholars; HR reviews)
+app.use("/scholar-requests", scholarRequestRoutes);
+// Dashboard statistics
+app.use("/dashboard", dashboardRoutes);
 
 app.use(errorHandler);
 

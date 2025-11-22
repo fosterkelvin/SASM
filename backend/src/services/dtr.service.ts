@@ -497,6 +497,13 @@ export class DTRService {
 
     return stats;
   }
+
+  /**
+   * Get all DTRs for a specific month and year (for bulk operations)
+   */
+  async getAllDTRsByMonthYear(month: number, year: number): Promise<IDTR[]> {
+    return await DTRModel.find({ month, year });
+  }
 }
 
 export default new DTRService();

@@ -16,6 +16,8 @@ export const getUserDataHandler = catchErrors(async (req, res) => {
       civilStatus: null,
       phoneNumber: null,
       address: null,
+      college: null,
+      courseYear: null,
       age: null,
     });
   }
@@ -30,7 +32,15 @@ export const getUserDataHandler = catchErrors(async (req, res) => {
 
 // Create or update user data
 export const upsertUserDataHandler = catchErrors(async (req, res) => {
-  const { gender, birthdate, civilStatus, phoneNumber, address } = req.body;
+  const {
+    gender,
+    birthdate,
+    civilStatus,
+    phoneNumber,
+    address,
+    college,
+    courseYear,
+  } = req.body;
 
   // Validate birthdate if provided
   if (birthdate) {
@@ -46,10 +56,16 @@ export const upsertUserDataHandler = catchErrors(async (req, res) => {
   if (userData) {
     // Update existing userData
     userData.gender = gender !== undefined ? gender : userData.gender;
-    userData.birthdate = birthdate !== undefined ? birthdate : userData.birthdate;
-    userData.civilStatus = civilStatus !== undefined ? civilStatus : userData.civilStatus;
-    userData.phoneNumber = phoneNumber !== undefined ? phoneNumber : userData.phoneNumber;
+    userData.birthdate =
+      birthdate !== undefined ? birthdate : userData.birthdate;
+    userData.civilStatus =
+      civilStatus !== undefined ? civilStatus : userData.civilStatus;
+    userData.phoneNumber =
+      phoneNumber !== undefined ? phoneNumber : userData.phoneNumber;
     userData.address = address !== undefined ? address : userData.address;
+    userData.college = college !== undefined ? college : userData.college;
+    userData.courseYear =
+      courseYear !== undefined ? courseYear : userData.courseYear;
 
     await userData.save();
   } else {
@@ -61,6 +77,8 @@ export const upsertUserDataHandler = catchErrors(async (req, res) => {
       civilStatus,
       phoneNumber,
       address,
+      college,
+      courseYear,
     });
   }
 

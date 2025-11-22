@@ -61,9 +61,16 @@ const UserFilters: React.FC<Props> = ({
             className="w-full px-3 py-2 border rounded"
           >
             <option value="">All</option>
+            <option value="applicant">Applicant</option>
+            <option value="pending_office_interview">
+              Pending Office Interview
+            </option>
+            <option value="pending_hr_interview">Pending HR Interview</option>
+            <option value="accepted">Accepted</option>
+            <option value="trainee">Trainee</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
-            <option value="suspended">Suspended</option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
       </div>

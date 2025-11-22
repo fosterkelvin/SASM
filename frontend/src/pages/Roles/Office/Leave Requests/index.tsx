@@ -1,39 +1,18 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { LeaveRequest } from "./types";
 import LeaveActionsModal from "./LeaveActionsModal";
 import LeaveFilters from "./LeaveFilters";
 import LeaveTable from "./LeaveTable";
-
-const mockData: LeaveRequest[] = [
-  {
-    id: "lr1",
-    studentName: "John Doe",
-    studentId: "S12345",
-    startDate: new Date().toISOString(),
-    endDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    reason: "Medical appointment",
-    status: "pending",
-    submittedAt: new Date().toISOString(),
-  },
-  {
-    id: "lr2",
-    studentName: "Jane Smith",
-    studentId: "S54321",
-    startDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    reason: "Family event",
-    status: "approved",
-    remarks: "Approved by Admin",
-    submittedAt: new Date().toISOString(),
-  },
-];
+import { decideLeaveRequest, getOfficeLeaves } from "@/lib/api";
+import { useToast } from "@/context/ToastContext";
 
 const LeaveRequestsPage: React.FC = () => {
-  const [requests, setRequests] = useState<LeaveRequest[]>(mockData);
+  const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [active, setActive] = useState<LeaveRequest | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const { addToast } = useToast();
 
   const openActions = (r: LeaveRequest) => setActive(r);
   const closeActions = () => setActive(null);
@@ -41,16 +20,64 @@ const LeaveRequestsPage: React.FC = () => {
   const [filters, setFilters] = useState<{
     query: string;
     status: "all" | "pending" | "approved" | "disapproved";
-  }>({ query: "", status: "all" });
+    type: string;
+  }>({ query: "", status: "all", type: "all" });
 
-  const onSubmit = (
+  // Load leaves from API
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const resp = await getOfficeLeaves({
+          status: filters.status === "all" ? undefined : filters.status,
+          q: filters.query || undefined,
+        });
+        const items: LeaveRequest[] = (resp.leaves || []).map((l: any) => ({
+          id: l._id,
+          studentName: l.name,
+          startDate: l.dateFrom,
+          endDate: l.dateTo,
+          reason: l.reasons,
+          type: l.typeOfLeave,
+          remarks: l.remarks,
+          status: l.status,
+          submittedAt: l.createdAt,
+          proofUrl: l.proofUrl,
+          decidedByProfile: l.decidedByProfile,
+          decidedAt: l.decidedAt,
+        }));
+        setRequests(items);
+      } catch (e: any) {
+        addToast(
+          e?.message || e?.data?.message || "Failed to load leave requests.",
+          "error"
+        );
+      }
+    };
+    load();
+  }, [filters.status, filters.query]);
+
+  const onSubmit = async (
     id: string,
     status: LeaveRequest["status"],
     remarks?: string
   ) => {
-    setRequests((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status, remarks } : p))
-    );
+    try {
+      if (status === "pending") {
+        addToast("Use Approve or Disapprove to decide.", "warning");
+        return;
+      }
+      await decideLeaveRequest(id, { status, remarks });
+      setRequests((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, status, remarks } : p))
+      );
+      addToast("Decision saved.", "success");
+      setActive(null);
+    } catch (e: any) {
+      addToast(
+        e?.message || e?.data?.message || "Failed to submit decision.",
+        "error"
+      );
+    }
   };
 
   const counts = useMemo(() => {
@@ -123,10 +150,14 @@ const LeaveRequestsPage: React.FC = () => {
                     const q = filters.query.trim().toLowerCase();
                     if (filters.status !== "all" && r.status !== filters.status)
                       return false;
+                    if (
+                      filters.type !== "all" &&
+                      r.type?.toLowerCase() !== filters.type
+                    )
+                      return false;
                     if (!q) return true;
                     return (
                       r.studentName.toLowerCase().includes(q) ||
-                      r.studentId.toLowerCase().includes(q) ||
                       r.reason.toLowerCase().includes(q)
                     );
                   })}

@@ -1,5 +1,6 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { getUserData } from "@/lib/api";
 import type { LeaveFormData } from "./formTypes";
 
 type Props = {
@@ -11,75 +12,68 @@ type Props = {
 
 const PersonalInfoSection: React.FC<Props> = ({ data, onChange }) => {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if ((!data.name || !data.name.trim()) && user) {
-      const fullName = `${user.firstname || ""} ${user.lastname || ""}`.trim();
-      if (fullName) {
-        const evt = { target: { name: "name", value: fullName } } as unknown as
-          | React.ChangeEvent<HTMLInputElement>
-          | React.ChangeEvent<HTMLTextAreaElement>;
-        onChange(evt);
+    const fetchAndPopulateData = async () => {
+      if (!user) return;
+
+      // Auto-populate name
+      if (!data.name || !data.name.trim()) {
+        const fullName = `${user.firstname || ""} ${
+          user.lastname || ""
+        }`.trim();
+        if (fullName) {
+          const evt = {
+            target: { name: "name", value: fullName },
+          } as unknown as
+            | React.ChangeEvent<HTMLInputElement>
+            | React.ChangeEvent<HTMLTextAreaElement>;
+          onChange(evt);
+        }
       }
-    }
+
+      // Fetch user profile data to populate school/department and course/year
+      if ((!data.schoolDept || !data.courseYear) && !loading) {
+        try {
+          setLoading(true);
+          const userData = await getUserData();
+
+          if (userData) {
+            // Auto-populate school/department from profile
+            if (!data.schoolDept && userData.college) {
+              const schoolEvt = {
+                target: { name: "schoolDept", value: userData.college },
+              } as unknown as React.ChangeEvent<HTMLInputElement>;
+              onChange(schoolEvt);
+            }
+
+            // Auto-populate course/year from profile
+            if (!data.courseYear && userData.courseYear) {
+              const courseEvt = {
+                target: { name: "courseYear", value: userData.courseYear },
+              } as unknown as React.ChangeEvent<HTMLInputElement>;
+              onChange(courseEvt);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch user profile data:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchAndPopulateData();
   }, [user]);
 
   return (
-    <div className="p-6 border rounded bg-white dark:bg-gray-800">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Name
-          </label>
-          <input
-            name="name"
-            value={data.name}
-            onChange={onChange}
-            className="mt-1 block w-full rounded-md border-gray-200 shadow-sm p-2"
-            placeholder="Full name"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            ID #
-          </label>
-          <input
-            name="idNumber"
-            value={data.idNumber}
-            onChange={onChange}
-            className="mt-1 block w-full rounded-md border-gray-200 shadow-sm p-2"
-            placeholder="Student ID"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            School / Department
-          </label>
-          <input
-            name="schoolDept"
-            value={data.schoolDept}
-            onChange={onChange}
-            className="mt-1 block w-full rounded-md border-gray-200 shadow-sm p-2"
-            placeholder="e.g. College of Science"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Course & Year
-          </label>
-          <input
-            name="courseYear"
-            value={data.courseYear}
-            onChange={onChange}
-            className="mt-1 block w-full rounded-md border-gray-200 shadow-sm p-2"
-            placeholder="e.g. BS Computer Science - 2nd Year"
-          />
-        </div>
-      </div>
-    </div>
+    <>
+      {/* Hidden inputs to keep the data but not display them */}
+      <input type="hidden" name="name" value={data.name} />
+      <input type="hidden" name="schoolDept" value={data.schoolDept} />
+      <input type="hidden" name="courseYear" value={data.courseYear} />
+    </>
   );
 };
 

@@ -1,13 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import LeaveForm from "./components/LeaveForm";
+import MyLeavesList from "./components/MyLeavesList";
 import { useAuth } from "@/context/AuthContext";
 
 const Leave: React.FC = () => {
   const { user } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const refreshLeavesRef = useRef<(() => void) | null>(null);
 
   if (user && !user.verified) {
     return (
@@ -90,9 +92,13 @@ const Leave: React.FC = () => {
                 </div>
               </div>
 
-              <LeaveForm />
+              <LeaveForm
+                onLeaveSubmitted={() => refreshLeavesRef.current?.()}
+              />
             </CardContent>
           </Card>
+
+          <MyLeavesList refreshRef={refreshLeavesRef} />
         </div>
       </div>
     </div>

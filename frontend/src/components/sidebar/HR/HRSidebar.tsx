@@ -135,6 +135,11 @@ const HRSidebar = ({
     setIsOpen(false);
   };
 
+  const handleScholarRequestsClick = () => {
+    navigate("/hr/scholar-requests");
+    setIsOpen(false);
+  };
+
   const handleLeavesClick = () => {
     navigate("/leave-management");
     setIsOpen(false);
@@ -163,6 +168,8 @@ const HRSidebar = ({
   const handleCollapsedUsersClick = () => navigate("/hr/users");
   const handleCollapsedTraineesClick = () => navigate("/hr/trainees");
   const handleCollapsedScholarsClick = () => navigate("/hr/scholars");
+  const handleCollapsedScholarRequestsClick = () =>
+    navigate("/hr/scholar-requests");
   const handleCollapsedLeavesClick = () => navigate("/leave-management");
   const handleCollapsedDTRCheckClick = () => navigate("/hr/dtr-check");
   const handleCollapsedNotificationsClick = () => navigate("/notifications");
@@ -175,6 +182,7 @@ const HRSidebar = ({
     { label: "Reapplications", handler: handleReapplicationsClick },
     { label: "Trainees", handler: handleTraineesClick },
     { label: "Scholars", handler: handleScholarsClick },
+    { label: "Scholar Requests", handler: handleScholarRequestsClick },
     { label: "Leave Management", handler: handleLeavesClick },
     { label: "DTR Check", handler: handleDTRCheckClick },
     { label: "Notifications", handler: handleNotificationsClick },
@@ -277,6 +285,7 @@ const HRSidebar = ({
                     users: handleUsersClick,
                     trainees: handleTraineesClick,
                     scholars: handleScholarsClick,
+                    scholarRequests: handleScholarRequestsClick,
                     leaves: handleLeavesClick,
                     dtrCheck: handleDTRCheckClick,
                     notifications: handleNotificationsClick,
@@ -298,6 +307,7 @@ const HRSidebar = ({
                 users: handleCollapsedUsersClick,
                 trainees: handleCollapsedTraineesClick,
                 scholars: handleCollapsedScholarsClick,
+                scholarRequests: handleCollapsedScholarRequestsClick,
                 leaves: handleCollapsedLeavesClick,
                 dtrCheck: handleCollapsedDTRCheckClick,
                 notifications: handleCollapsedNotificationsClick,

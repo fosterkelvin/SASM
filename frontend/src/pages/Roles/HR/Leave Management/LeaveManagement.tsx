@@ -2,111 +2,66 @@ import * as React from "react";
 import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import LeaveList from "./components/LeaveList";
 import LeaveFilters from "./components/LeaveFilters";
-import LeaveForm from "./components/LeaveForm";
+import LeaveDetailsModal from "./components/LeaveDetailsModal";
 import { LeaveRecord, LeaveFilters as LF } from "./components/types";
-
-const STORAGE_KEY = "sasm:leaves:v1";
-
-function seed(): LeaveRecord[] {
-  return [
-    {
-      id: "1",
-      userId: "u1",
-      name: "Alice Johnson",
-      startDate: new Date().toISOString(),
-      endDate: new Date(Date.now() + 86400000 * 2).toISOString(),
-      type: "Social Orientation",
-      reason: "Vacation",
-      status: "pending",
-      createdAt: new Date().toISOString(),
-      hrNote: "",
-    },
-    {
-      id: "2",
-      userId: "u2",
-      name: "Bob Smith",
-      startDate: new Date(Date.now() + 86400000 * 7).toISOString(),
-      endDate: new Date(Date.now() + 86400000 * 9).toISOString(),
-      type: "Sick Leave",
-      reason: "Medical",
-      status: "approved",
-      createdAt: new Date().toISOString(),
-      hrNote: "Approved by HR.",
-    },
-  ];
-}
-
-function readStorage(): LeaveRecord[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return seed();
-    return JSON.parse(raw) as LeaveRecord[];
-  } catch (e) {
-    return seed();
-  }
-}
+import { getOfficeLeaves } from "@/lib/api";
+import { useToast } from "@/context/ToastContext";
 
 export default function LeaveManagement() {
-  const [leaves, setLeaves] = React.useState<LeaveRecord[]>(() =>
-    readStorage()
-  );
+  const [leaves, setLeaves] = React.useState<LeaveRecord[]>([]);
   const [filters, setFilters] = React.useState<LF>({
     status: "all",
     type: "all",
     query: "",
   });
-  const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [formOpen, setFormOpen] = React.useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
+  const [selectedLeave, setSelectedLeave] = React.useState<LeaveRecord | null>(
+    null
+  );
+  const { addToast } = useToast();
 
+  // Load leaves from API
   React.useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(leaves));
-  }, [leaves]);
+    const loadLeaves = async () => {
+      try {
+        setLoading(true);
+        const resp = await getOfficeLeaves({
+          status:
+            filters.status === "all"
+              ? undefined
+              : (filters.status as "pending" | "approved" | "disapproved"),
+          q: filters.query || undefined,
+        });
 
-  const openEdit = (id: string) => {
-    setEditingId(id);
-    setFormOpen(true);
-  };
-
-  const changeStatus = (id: string, status: LeaveRecord["status"]) => {
-    setLeaves((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
-  };
-
-  const saveNote = (id: string, values: Partial<{ hrNote: string }>) => {
-    setLeaves((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...values } : p))
-    );
-  };
-
-  const resetData = () => {
-    if (
-      !confirm(
-        "Reset leave data to seeded defaults? This will overwrite any local changes."
-      )
-    )
-      return;
-    localStorage.removeItem(STORAGE_KEY);
-    const seeded = seed();
-    setLeaves(seeded);
-  };
-
-  const selected = editingId
-    ? leaves.find((l) => l.id === editingId) || null
-    : null;
+        const items: LeaveRecord[] = (resp.leaves || []).map((l: any) => ({
+          id: l._id,
+          userId: l.userId || "",
+          name: l.name,
+          startDate: l.dateFrom,
+          endDate: l.dateTo,
+          type: l.typeOfLeave,
+          reason: l.reasons,
+          status: l.status,
+          createdAt: l.createdAt,
+          hrNote: l.remarks || "",
+          proofUrl: l.proofUrl,
+        }));
+        setLeaves(items);
+      } catch (e: any) {
+        addToast(
+          e?.message || e?.data?.message || "Failed to load leave requests.",
+          "error"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadLeaves();
+  }, [filters.status, filters.query]);
 
   const filtered = leaves.filter((l) => {
-    if (
-      filters.status &&
-      filters.status !== "all" &&
-      l.status !== filters.status
-    )
-      return false;
     if (filters.type && filters.type !== "all" && l.type !== filters.type)
-      return false;
-    if (
-      filters.query &&
-      !l.name.toLowerCase().includes((filters.query || "").toLowerCase())
-    )
       return false;
     return true;
   });
@@ -142,38 +97,33 @@ export default function LeaveManagement() {
                   Leave Management
                 </h2>
                 <p className="text-sm text-gray-500">
-                  Manage employee leave requests and HR notes
+                  View scholar and trainee leave requests and HR notes
                 </p>
               </div>
 
               <div className="flex items-center gap-3">
                 <LeaveFilters filters={filters} onChange={setFilters} />
-                <button
-                  onClick={resetData}
-                  className="px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 text-sm"
-                >
-                  Reset data
-                </button>
               </div>
             </div>
 
             <div className="mt-4">
-              <LeaveList
-                leaves={filtered}
-                onChangeStatus={changeStatus}
-                onOpen={openEdit}
-              />
+              {loading ? (
+                <div className="text-center py-8 text-gray-500">
+                  Loading leave requests...
+                </div>
+              ) : (
+                <LeaveList leaves={filtered} onView={setSelectedLeave} />
+              )}
             </div>
-
-            <LeaveForm
-              record={selected}
-              open={formOpen}
-              onClose={() => setFormOpen(false)}
-              onSave={saveNote}
-            />
           </div>
         </div>
       </div>
+
+      <LeaveDetailsModal
+        leave={selectedLeave}
+        open={!!selectedLeave}
+        onClose={() => setSelectedLeave(null)}
+      />
     </div>
   );
 }

@@ -7,7 +7,7 @@ type Props = {
 
 const PipelineCard: React.FC<Props> = ({ data }) => {
   const total = Object.values(data).reduce((s, v) => s + v, 0) || 1;
-  const entries = Object.entries(data);
+  const entries = Object.entries(data).filter(([k]) => k !== "_id");
 
   return (
     <Card>
