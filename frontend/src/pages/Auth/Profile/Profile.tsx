@@ -70,7 +70,7 @@ const cancelEmailChange = async () => {
 };
 
 const Profile = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -230,13 +230,17 @@ const Profile = () => {
 
   const cancelEmailMutation = useMutation({
     mutationFn: cancelEmailChange,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setEmailSuccessMessage(
         data.message || "Email change cancelled successfully!"
       );
       setErrors({});
       // Refresh user data to update the UI
-      window.location.reload(); // Simple refresh for now
+      try {
+        await refreshUser();
+      } catch (error) {
+        console.error("Failed to refresh user data:", error);
+      }
     },
     onError: (error: any) => {
       console.error("Cancel email error:", error);
@@ -293,6 +297,19 @@ const Profile = () => {
       // ignore
     }
   }, []);
+
+  // Refresh user data on mount to ensure email is up-to-date
+  // This handles the case where user verified email change in another tab/window
+  useEffect(() => {
+    const refreshUserData = async () => {
+      try {
+        await refreshUser();
+      } catch (error) {
+        console.error("Failed to refresh user data:", error);
+      }
+    };
+    refreshUserData();
+  }, [refreshUser]);
 
   // Countdown timer for block
   useEffect(() => {

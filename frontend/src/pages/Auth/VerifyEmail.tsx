@@ -9,7 +9,7 @@ const VerifyEmail = () => {
   document.title = "Email Verification | SASM";
 
   const { code } = useParams();
-  const { refreshUser } = useAuth();
+  const { refreshUser, user } = useAuth();
   const navigate = useNavigate();
 
   const {
@@ -17,6 +17,7 @@ const VerifyEmail = () => {
     isPending,
     isError,
     isSuccess,
+    data: verificationResponse,
   } = useMutation({
     mutationFn: () => verifyEmail(code!),
     onSuccess: async (response) => {
@@ -99,7 +100,7 @@ const VerifyEmail = () => {
             {isSuccess && (
               <div className="space-y-2">
                 <p className="text-green-500 dark:text-green-400 mb-4">
-                  Email verified successfully!
+                  {verificationResponse?.message || "Email verified successfully!"}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   You will be redirected to your dashboard in a few seconds...

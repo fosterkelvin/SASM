@@ -516,7 +516,7 @@ export const cancelEmailChange = async (userID: string) => {
 
   // Delete any verification codes for email change
   await VerificationCodeModel.deleteMany({
-    userId: userID,
+    userID: userID,
     type: VerificationCodeType.EmailVerification,
   });
 
