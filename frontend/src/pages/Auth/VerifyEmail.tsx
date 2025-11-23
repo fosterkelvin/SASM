@@ -26,17 +26,17 @@ const VerifyEmail = () => {
       console.log("Response message:", response.message);
       console.log("Response user:", response.user);
       console.log("Redirect URL from response:", response.redirectUrl);
-      
+
       // Refresh auth context to get the authenticated user
       try {
         console.log("Calling refreshUser...");
         await refreshUser();
         console.log("refreshUser completed successfully");
-        
+
         // Redirect to dashboard after successful verification
         const redirectUrl = response.redirectUrl || "/student-dashboard";
         console.log("Will redirect to:", redirectUrl);
-        
+
         setTimeout(() => {
           console.log("Redirecting now to:", redirectUrl);
           navigate(redirectUrl, {
