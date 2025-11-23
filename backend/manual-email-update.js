@@ -17,9 +17,9 @@ async function updateEmail() {
     console.log("Connected to MongoDB");
 
     // Find the user with pending email
-    const user = await User.findOne({ 
+    const user = await User.findOne({
       email: "vinkelfoster17@gmail.com",
-      pendingEmail: "20197992@s.ubaguio.edu" 
+      pendingEmail: "20197992@s.ubaguio.edu",
     });
 
     if (!user) {
@@ -46,7 +46,6 @@ async function updateEmail() {
 
     console.log("\n✅ Email updated successfully!");
     console.log("You can now sign in with: 20197992@s.ubaguio.edu");
-
   } catch (error) {
     console.error("Error:", error);
   } finally {

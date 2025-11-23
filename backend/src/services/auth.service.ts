@@ -250,20 +250,20 @@ export const verifyEmail = async (code: string) => {
 
     // This is an email change verification
     const newEmail = user.pendingEmail;
-    
+
     // Update email and clear pendingEmail using findByIdAndUpdate to ensure atomic operation
     const updatedUser = await UserModel.findByIdAndUpdate(
       user._id,
       {
-        $set: { 
+        $set: {
           email: newEmail,
-          verified: true 
+          verified: true,
         },
-        $unset: { pendingEmail: "" }
+        $unset: { pendingEmail: "" },
       },
       { new: true }
     );
-    
+
     appAssert(updatedUser, INTERNAL_SERVER_ERROR, "Failed to update email");
 
     console.log("Email updated successfully!");

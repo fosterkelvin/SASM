@@ -32,7 +32,7 @@ async function checkVerificationCode() {
     const specificCode = "69226138d7ad0222b126e624";
     console.log("\n=== CHECKING SPECIFIC CODE ===");
     console.log("Code ID:", specificCode);
-    
+
     const code = await VerificationCode.findById(specificCode);
     if (code) {
       console.log("Code found!");
@@ -41,7 +41,7 @@ async function checkVerificationCode() {
       console.log("  Created At:", code.createdAt);
       console.log("  Expires At:", code.expiresAt);
       console.log("  Is Expired:", code.expiresAt < new Date());
-      
+
       // Find the user for this code
       const user = await User.findById(code.userID);
       if (user) {
