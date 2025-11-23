@@ -222,6 +222,9 @@ export const refreshUserAccessToken = async (refreshToken: string) => {
 };
 
 export const verifyEmail = async (code: string) => {
+  console.log("=== VERIFY EMAIL START ===");
+  console.log("Verification code:", code);
+  
   const validCode = await VerificationCodeModel.findOne({
     _id: code,
     type: VerificationCodeType.EmailVerification,
@@ -232,19 +235,36 @@ export const verifyEmail = async (code: string) => {
   const user = await UserModel.findById(validCode.userID);
   appAssert(user, NOT_FOUND, "User not found");
 
+  console.log("User found:", { 
+    id: user._id, 
+    email: user.email, 
+    pendingEmail: user.pendingEmail,
+    verified: user.verified 
+  });
+
   // Check if this is an email change verification
   if (user.pendingEmail) {
+    console.log("=== EMAIL CHANGE VERIFICATION ===");
+    console.log("Changing email from:", user.email);
+    console.log("Changing email to:", user.pendingEmail);
+    
     // This is an email change verification
+    const oldEmail = user.email;
     user.email = user.pendingEmail;
     user.pendingEmail = undefined;
     user.verified = true;
     await user.save();
+
+    console.log("Email updated successfully!");
+    console.log("New email:", user.email);
+    console.log("Pending email cleared:", user.pendingEmail);
 
     await validCode.deleteOne();
 
     // For email change, return the role-based redirect URL
     const redirectUrl = getRoleBasedRedirect(user.role);
 
+    console.log("Returning response with redirectUrl:", redirectUrl);
     return {
       message: "Email changed and verified successfully",
       user: user.omitPassword(),

@@ -129,10 +129,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const refreshUser = async () => {
+    console.log("=== REFRESH USER START ===");
     try {
       const userData = await getUser();
+      console.log("Received user data from API:", userData.data);
+      console.log("User email from API:", userData.data?.email);
+      console.log("User pendingEmail from API:", userData.data?.pendingEmail);
       setUser(userData.data);
+      console.log("User state updated successfully");
     } catch (error) {
+      console.error("Error in refreshUser:", error);
       // Error is already handled by the API interceptor
       setUser(null);
     }
