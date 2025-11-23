@@ -10,7 +10,8 @@ const verificationCodeSchema = new mongoose.Schema({
 
 const VerificationCode = mongoose.model(
   "VerificationCode",
-  verificationCodeSchema
+  verificationCodeSchema,
+  "verification_codes" // Use the correct collection name with underscore
 );
 
 const userSchema = new mongoose.Schema({
@@ -29,7 +30,7 @@ async function checkVerificationCode() {
     console.log("Connected to MongoDB");
 
     // Check the specific verification code from the email
-    const specificCode = "69226138d7ad0222b126e624";
+    const specificCode = "692266a2d7ad0222b1270838";
     console.log("\n=== CHECKING SPECIFIC CODE ===");
     console.log("Code ID:", specificCode);
 
