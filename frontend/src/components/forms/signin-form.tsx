@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, ChevronDown, ChevronUp } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { resendVerificationEmail } from "@/lib/api";
@@ -23,10 +23,25 @@ export function SigninForm({
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [showErrorDetails, setShowErrorDetails] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { login } = useAuth();
+
+  // Check for success message from email verification
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.message) {
+      setSuccessMessage(state.message);
+      if (state?.newEmail) {
+        setEmail(state.newEmail);
+      }
+      // Clear the state
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   const {
     mutate: signinMutate,
@@ -95,6 +110,7 @@ export function SigninForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(""); // Clear any previous errors
+    setSuccessMessage(""); // Clear success message
     signinMutate({ email, password });
   };
 
@@ -121,6 +137,22 @@ export function SigninForm({
                   Sign in to your SASM-IMS account
                 </p>
               </div>
+              {successMessage && (
+                <div className="border rounded-md p-3 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      <span className="text-green-600 dark:text-green-400 text-sm">
+                        ✅
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                        {successMessage}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {(isError || errorMessage) && (
                 <div
                   className={`border rounded-md p-3 ${

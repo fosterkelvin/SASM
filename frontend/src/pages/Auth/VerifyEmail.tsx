@@ -3,14 +3,15 @@ import DefNav from "@/navbar/DefNav";
 import { useAuth } from "@/context/AuthContext";
 import { useMutation } from "@tanstack/react-query";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const VerifyEmail = () => {
   document.title = "Email Verification | SASM";
 
   const { code } = useParams();
-  const { refreshUser, user } = useAuth();
+  const { refreshUser, user, logout } = useAuth();
   const navigate = useNavigate();
+  const [needsReLogin, setNeedsReLogin] = useState(false);
 
   const {
     mutate: verifyEmailMutate,
@@ -27,24 +28,54 @@ const VerifyEmail = () => {
       console.log("Response user:", response.user);
       console.log("Redirect URL from response:", response.redirectUrl);
 
-      // Refresh auth context to get the authenticated user
-      try {
-        console.log("Calling refreshUser...");
-        await refreshUser();
-        console.log("refreshUser completed successfully");
+      // Check if this is an email change (no tokens in response)
+      const isEmailChange = !response.accessToken && !response.refreshToken;
 
-        // Redirect to dashboard after successful verification
-        const redirectUrl = response.redirectUrl || "/student-dashboard";
-        console.log("Will redirect to:", redirectUrl);
+      if (isEmailChange) {
+        // For email changes, the user needs to sign in again with the new email
+        console.log("Email change detected - user needs to sign in again");
+        setNeedsReLogin(true);
 
-        setTimeout(() => {
-          console.log("Redirecting now to:", redirectUrl);
-          navigate(redirectUrl, {
+        // Sign out the user after a delay
+        setTimeout(async () => {
+          await logout();
+          navigate("/signin", {
             replace: true,
+            state: {
+              message:
+                "Email changed successfully! Please sign in with your new email address.",
+              newEmail: response.user?.email,
+            },
           });
-        }, 2000);
-      } catch (error) {
-        console.error("Error refreshing user data:", error);
+        }, 3000);
+      } else {
+        // Regular email verification - try to refresh user data
+        try {
+          console.log("Calling refreshUser...");
+          await refreshUser();
+          console.log("refreshUser completed successfully");
+
+          // Redirect to dashboard after successful verification
+          const redirectUrl = response.redirectUrl || "/student-dashboard";
+          console.log("Will redirect to:", redirectUrl);
+
+          setTimeout(() => {
+            console.log("Redirecting now to:", redirectUrl);
+            navigate(redirectUrl, {
+              replace: true,
+            });
+          }, 2000);
+        } catch (error) {
+          console.error("Error refreshing user data:", error);
+          // If refresh fails, also redirect to sign in
+          setNeedsReLogin(true);
+          setTimeout(() => {
+            navigate("/signin", {
+              replace: true,
+              state: { message: "Please sign in again to continue." },
+            });
+          }, 2000);
+        }
       }
     },
     onError: (error) => {
@@ -114,7 +145,9 @@ const VerifyEmail = () => {
                     "Email verified successfully!"}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  You will be redirected to your dashboard in a few seconds...
+                  {needsReLogin
+                    ? "Please sign in again with your new email address..."
+                    : "You will be redirected to your dashboard in a few seconds..."}
                 </p>
               </div>
             )}
