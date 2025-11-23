@@ -100,7 +100,8 @@ const VerifyEmail = () => {
             {isSuccess && (
               <div className="space-y-2">
                 <p className="text-green-500 dark:text-green-400 mb-4">
-                  {verificationResponse?.message || "Email verified successfully!"}
+                  {verificationResponse?.message ||
+                    "Email verified successfully!"}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   You will be redirected to your dashboard in a few seconds...
