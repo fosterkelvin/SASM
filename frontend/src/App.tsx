@@ -18,6 +18,7 @@ import EvaluationManagement from "./pages/Roles/HR/Evaluation Management/Evaluat
 import TraineeManagement from "./pages/Roles/HR/Trainee Management/TraineeManagement";
 import ScholarManagement from "./pages/Roles/HR/Scholar Management/ScholarManagement";
 import ScholarRequestsManagement from "./pages/Roles/HR/Scholar Requests/ScholarRequestsManagement";
+import Archives from "./pages/Roles/HR/Archives/Archives";
 import Scholars from "./pages/Roles/Office/Scholars/Scholars";
 import MyTrainees from "./pages/Roles/Office/MyTrainees";
 import TraineeSchedule from "./pages/Roles/Office/TraineeSchedule";
@@ -179,6 +180,7 @@ function App(): ReactElement {
         <Route path="/applications" element={<HRApplicationManagement />} />
         <Route path="/leave-management" element={<LeaveManagement />} />
         <Route path="/reapplications" element={<ReApplicationManagement />} />
+        <Route path="/archives" element={<Archives />} />
         <Route path="/hr/users" element={<Users />} />
         <Route path="/hr/evaluations" element={<EvaluationManagement />} />
         <Route path="/hr/trainees" element={<TraineeManagement />} />

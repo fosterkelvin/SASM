@@ -927,3 +927,40 @@ export const resetScholarsToApplicants = async () => {
   const response = await API.post("/users/reset-to-applicants");
   return response.data;
 };
+
+// Archived Applications API
+export const getArchivedApplications = async (params?: {
+  semesterYear?: string;
+  search?: string;
+  position?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.semesterYear)
+    searchParams.append("semesterYear", params.semesterYear);
+  if (params?.search) searchParams.append("search", params.search);
+  if (params?.position) searchParams.append("position", params.position);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+
+  const response = await API.get(
+    `/archived-applications?${searchParams.toString()}`
+  );
+  return response.data;
+};
+
+export const getSemesterYears = async () => {
+  const response = await API.get("/archived-applications/semester-years");
+  return response.data;
+};
+
+export const getArchivedApplicationById = async (id: string) => {
+  const response = await API.get(`/archived-applications/${id}`);
+  return response.data;
+};
+
+export const getArchivedStats = async () => {
+  const response = await API.get("/archived-applications/stats");
+  return response.data;
+};

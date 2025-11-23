@@ -120,6 +120,12 @@ const HRSidebar = ({
     setIsOpen(false);
   };
 
+  const handleArchivesClick = () => {
+    console.log("Archives clicked - navigating to /archives");
+    navigate("/archives");
+    setIsOpen(false);
+  };
+
   const handleUsersClick = () => {
     navigate("/hr/users");
     setIsOpen(false);
@@ -164,6 +170,7 @@ const HRSidebar = ({
   const handleCollapsedApplicationsClick = () => navigate("/applications");
   const handleCollapsedRequirementsClick = () => navigate("/hr/requirements");
   const handleCollapsedReapplicationsClick = () => navigate("/reapplications");
+  const handleCollapsedArchivesClick = () => navigate("/archives");
   const handleCollapsedEvaluationsClick = () => navigate("/hr/evaluations");
   const handleCollapsedUsersClick = () => navigate("/hr/users");
   const handleCollapsedTraineesClick = () => navigate("/hr/trainees");
@@ -180,6 +187,7 @@ const HRSidebar = ({
     { label: "Analytics", handler: handleAnalyticsClick },
     { label: "Applications", handler: handleApplicationsClick },
     { label: "Reapplications", handler: handleReapplicationsClick },
+    { label: "Archives", handler: handleArchivesClick },
     { label: "Trainees", handler: handleTraineesClick },
     { label: "Scholars", handler: handleScholarsClick },
     { label: "Scholar Requests", handler: handleScholarRequestsClick },
@@ -281,6 +289,7 @@ const HRSidebar = ({
                     analytics: handleAnalyticsClick,
                     applications: handleApplicationsClick,
                     reapplications: handleReapplicationsClick,
+                    archives: handleArchivesClick,
                     requirements: handleRequirementsClick,
                     users: handleUsersClick,
                     trainees: handleTraineesClick,
@@ -302,6 +311,7 @@ const HRSidebar = ({
                 analytics: handleCollapsedAnalyticsClick,
                 applications: handleCollapsedApplicationsClick,
                 reapplications: handleCollapsedReapplicationsClick,
+                archives: handleCollapsedArchivesClick,
                 requirements: handleCollapsedRequirementsClick,
                 evaluations: handleCollapsedEvaluationsClick,
                 users: handleCollapsedUsersClick,

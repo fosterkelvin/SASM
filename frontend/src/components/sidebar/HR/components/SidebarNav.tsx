@@ -10,6 +10,7 @@ import {
   ClipboardCheck,
   Bell,
   UserPlus,
+  Archive,
 } from "lucide-react";
 
 interface NavProps {
@@ -57,6 +58,13 @@ const SidebarNav: React.FC<NavProps> = ({ handlers, unreadCount = 0 }) => {
             label="Reapplications"
             onClick={handlers.reapplications}
             IconComponent={FileText}
+          />
+        </li>
+        <li>
+          <SidebarItem
+            label="Archives"
+            onClick={handlers.archives}
+            IconComponent={Archive}
           />
         </li>
         <li>

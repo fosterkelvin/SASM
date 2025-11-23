@@ -24,6 +24,7 @@ import dtrRoutes from "./routes/dtr.route";
 import leaveRoutes from "./routes/leave.route";
 import scholarRequestRoutes from "./routes/scholarRequest.route";
 import dashboardRoutes from "./routes/dashboard.route";
+import archivedApplicationRoutes from "./routes/archivedApplication.route";
 
 const app = express();
 
@@ -95,6 +96,7 @@ app.use("/users", authenticate, userRoutes); // For getting multiple users (e.g.
 app.use("/userdata", authenticate, userDataRoutes);
 app.use("/sessions", authenticate, sessionRoutes);
 app.use("/applications", applicationRoutes);
+app.use("/archived-applications", authenticate, archivedApplicationRoutes);
 app.use("/notifications", authenticate, notificationRoutes);
 // Requirements submissions (students upload requirements)
 app.use("/requirements", requirementsRoutes);

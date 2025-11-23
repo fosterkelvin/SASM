@@ -3,6 +3,7 @@ import { NOT_FOUND, OK } from "../constants/http";
 import UserModel from "../models/user.model";
 import OfficeProfileModel from "../models/officeProfile.model";
 import ApplicationModel from "../models/application.model";
+import ArchivedApplicationModel from "../models/archivedApplication.model";
 import ScheduleModel from "../models/schedule.model";
 import appAssert from "../utils/appAssert";
 import catchErrors from "../utils/catchErrors";
@@ -117,6 +118,36 @@ export const resetScholarsToApplicantsHandler = catchErrors(
     });
     console.log("Found accepted applications:", acceptedApplications.length);
 
+    // Get current semester year for archiving
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const semester = month >= 1 && month <= 5 ? "Second" : "First";
+    const academicYear =
+      month >= 8 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+    const semesterYear = `${academicYear} ${semester} Semester`;
+
+    // Archive all accepted applications
+    const archivedApplications = acceptedApplications.map((app) => ({
+      originalApplication: app.toObject(),
+      archivedBy: req.userID,
+      archivedReason: "End of Semester - Scholar Reset",
+      semesterYear,
+      userID: app.userID,
+      firstName: app.firstName,
+      lastName: app.lastName,
+      position: app.position,
+      email: app.email,
+      originalStatus: app.status,
+    }));
+
+    let archivedCount = 0;
+    if (archivedApplications.length > 0) {
+      await ArchivedApplicationModel.insertMany(archivedApplications);
+      archivedCount = archivedApplications.length;
+      console.log("Applications archived:", archivedCount);
+    }
+
     // Get user IDs for schedule deletion
     const acceptedUserIds = acceptedUsers.map((user) => user._id);
 
@@ -134,26 +165,28 @@ export const resetScholarsToApplicantsHandler = catchErrors(
       { $set: { status: "reapplicant" } }
     );
 
-    // Update applications to "pending" status (ready for reapplication)
-    const applicationUpdateResult = await ApplicationModel.updateMany(
-      { status: "accepted" },
-      { $set: { status: "pending" } }
-    );
+    // Delete the original accepted applications (they're now archived)
+    const applicationDeleteResult = await ApplicationModel.deleteMany({
+      status: "accepted",
+    });
 
-    const totalUpdated =
-      userUpdateResult.modifiedCount + applicationUpdateResult.modifiedCount;
+    const totalUpdated = userUpdateResult.modifiedCount;
 
     console.log("Users updated:", userUpdateResult.modifiedCount);
-    console.log("Applications updated:", applicationUpdateResult.modifiedCount);
+    console.log(
+      "Applications archived and deleted:",
+      applicationDeleteResult.deletedCount
+    );
     console.log("Total records updated:", totalUpdated);
 
     return res.status(OK).json({
       success: true,
-      message: `Successfully reset ${userUpdateResult.modifiedCount} scholars to reapplicant status`,
+      message: `Successfully reset ${userUpdateResult.modifiedCount} scholars to reapplicant status and archived ${archivedCount} applications`,
       details: {
         usersUpdated: userUpdateResult.modifiedCount,
-        applicationsUpdated: applicationUpdateResult.modifiedCount,
+        applicationsArchived: archivedCount,
         schedulesDeleted: scheduleDeleteResult.deletedCount,
+        semesterYear,
         totalUpdated,
       },
     });

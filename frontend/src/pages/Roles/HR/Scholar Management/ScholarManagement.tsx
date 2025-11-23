@@ -387,7 +387,7 @@ const ScholarManagement = () => {
             type="button"
             onClick={handleEndSemester}
             disabled={isResetting}
-            className="bg-orange-600 hover:bg-orange-700 text-white font-semibold mr-4 shadow-lg"
+            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold mr-4 shadow-lg"
           >
             {isResetting ? "Resetting..." : "🔄 End Semester"}
           </Button>
@@ -397,7 +397,7 @@ const ScholarManagement = () => {
           {/* Filters */}
           <Card className="mb-6">
             <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pb-4">
                 <div>
                   <Label htmlFor="search">Search</Label>
                   <div className="relative">
@@ -1127,6 +1127,12 @@ const ScholarManagement = () => {
                   <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                     <span className="text-orange-500 font-bold mt-0.5">•</span>
                     <span>Delete their class schedules and duty hours</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-orange-500 font-bold mt-0.5">•</span>
+                    <span>
+                      Archive their applications for historical records
+                    </span>
                   </li>
                   <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                     <span className="text-orange-500 font-bold mt-0.5">•</span>
