@@ -30,7 +30,7 @@ async function checkVerificationCode() {
     console.log("Connected to MongoDB");
 
     // Check the specific verification code from the email
-    const specificCode = "692266a2d7ad0222b1270838";
+    const specificCode = "69226a291cf80daf43f19f76";
     console.log("\n=== CHECKING SPECIFIC CODE ===");
     console.log("Code ID:", specificCode);
 
