@@ -28,7 +28,35 @@ async function checkVerificationCode() {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("Connected to MongoDB");
 
+    // Check the specific verification code from the email
+    const specificCode = "69226138d7ad0222b126e624";
+    console.log("\n=== CHECKING SPECIFIC CODE ===");
+    console.log("Code ID:", specificCode);
+    
+    const code = await VerificationCode.findById(specificCode);
+    if (code) {
+      console.log("Code found!");
+      console.log("  Type:", code.type);
+      console.log("  User ID:", code.userID);
+      console.log("  Created At:", code.createdAt);
+      console.log("  Expires At:", code.expiresAt);
+      console.log("  Is Expired:", code.expiresAt < new Date());
+      
+      // Find the user for this code
+      const user = await User.findById(code.userID);
+      if (user) {
+        console.log("\n=== USER INFO FOR THIS CODE ===");
+        console.log("User ID:", user._id);
+        console.log("Current Email:", user.email);
+        console.log("Pending Email:", user.pendingEmail);
+        console.log("Verified:", user.verified);
+      }
+    } else {
+      console.log("Code NOT found in database!");
+    }
+
     // Find the user with pending email
+    console.log("\n=== SEARCHING FOR USER WITH PENDING EMAIL ===");
     const user = await User.findOne({ pendingEmail: "20197992@s.ubaguio.edu" });
 
     if (!user) {

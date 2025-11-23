@@ -249,25 +249,36 @@ export const verifyEmail = async (code: string) => {
     console.log("Changing email to:", user.pendingEmail);
 
     // This is an email change verification
-    const oldEmail = user.email;
-    user.email = user.pendingEmail;
-    user.pendingEmail = undefined;
-    user.verified = true;
-    await user.save();
+    const newEmail = user.pendingEmail;
+    
+    // Update email and clear pendingEmail using findByIdAndUpdate to ensure atomic operation
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      user._id,
+      {
+        $set: { 
+          email: newEmail,
+          verified: true 
+        },
+        $unset: { pendingEmail: "" }
+      },
+      { new: true }
+    );
+    
+    appAssert(updatedUser, INTERNAL_SERVER_ERROR, "Failed to update email");
 
     console.log("Email updated successfully!");
-    console.log("New email:", user.email);
-    console.log("Pending email cleared:", user.pendingEmail);
+    console.log("New email:", updatedUser.email);
+    console.log("Pending email cleared:", updatedUser.pendingEmail);
 
     await validCode.deleteOne();
 
     // For email change, return the role-based redirect URL
-    const redirectUrl = getRoleBasedRedirect(user.role);
+    const redirectUrl = getRoleBasedRedirect(updatedUser.role);
 
     console.log("Returning response with redirectUrl:", redirectUrl);
     return {
       message: "Email changed and verified successfully",
-      user: user.omitPassword(),
+      user: updatedUser.omitPassword(),
       accessToken: null,
       refreshToken: null,
       redirectUrl,
@@ -530,9 +541,12 @@ export const cancelEmailChange = async (userID: string) => {
   appAssert(user, NOT_FOUND, "User not found");
   appAssert(user.pendingEmail, BAD_REQUEST, "No pending email change found");
 
-  // Clear the pending email
-  user.pendingEmail = undefined;
-  await user.save();
+  // Clear the pending email using $unset to properly remove the field
+  await UserModel.findByIdAndUpdate(
+    userID,
+    { $unset: { pendingEmail: "" } },
+    { new: true }
+  );
 
   // Delete any verification codes for email change
   await VerificationCodeModel.deleteMany({
