@@ -921,3 +921,9 @@ export const deleteScholarRequest = async (id: string) => {
   const response = await API.delete(`/scholar-requests/${id}`);
   return response.data;
 };
+
+// Reset accepted scholars to applicants for new semester
+export const resetScholarsToApplicants = async () => {
+  const response = await API.post("/users/reset-to-applicants");
+  return response.data;
+};

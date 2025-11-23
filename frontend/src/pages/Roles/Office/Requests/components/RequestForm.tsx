@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import NumberRow from "./NumberRow";
 import RequestTypes from "./RequestTypes";
 import { Button } from "@/components/ui/button";
-import { createScholarRequest } from "@/lib/api";
+import { createScholarRequest, resetScholarsToApplicants } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
 
 type FormState = {
@@ -22,6 +22,7 @@ const RequestForm: React.FC = () => {
     notes: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const { addToast } = useToast();
 
   const updateNumbers = (vals: {
@@ -87,11 +88,61 @@ const RequestForm: React.FC = () => {
     }
   };
 
+  const handleEndSemester = async () => {
+    // Confirm action
+    const confirmed = window.confirm(
+      "⚠️ WARNING: This will reset ALL accepted scholars back to REAPPLICANT status for reapplication.\n\n" +
+        "This action will:\n" +
+        "• Change their status from 'accepted' to 'reapplicant'\n" +
+        "• Delete their class schedules and duty hours\n" +
+        "• Preserve their DTR records for historical tracking\n" +
+        "• Allow them to reapply for the new semester\n\n" +
+        "This should only be performed at the end of a semester when starting a new application cycle.\n\n" +
+        "Are you sure you want to continue?"
+    );
+
+    if (!confirmed) return;
+
+    setIsResetting(true);
+
+    try {
+      const result = await resetScholarsToApplicants();
+
+      addToast(
+        `Successfully reset ${result.details.usersUpdated} scholars to reapplicant status and deleted ${result.details.schedulesDeleted} schedules. They can now reapply for the new semester.`,
+        "success"
+      );
+
+      console.log("End Semester Result:", result);
+    } catch (error: any) {
+      console.error("Error resetting scholars:", error);
+      addToast(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to reset scholars. Please try again.",
+        "error"
+      );
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <form onSubmit={submit} className="w-full space-y-4">
-      <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-        Create Scholar Request
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+          Create Scholar Request
+        </h2>
+
+        <Button
+          type="button"
+          onClick={handleEndSemester}
+          disabled={isResetting || isSubmitting}
+          className="bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+        >
+          {isResetting ? "Resetting..." : "🔄 End Semester"}
+        </Button>
+      </div>
 
       <NumberRow
         label="Scholars needed"

@@ -16,6 +16,7 @@ import {
   CalendarDays,
   ClipboardList,
   GraduationCap,
+  AlertTriangle,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -26,14 +27,19 @@ import {
   getOfficeUsers,
   getUserDTRForOffice,
   getClassSchedule,
+  resetScholarsToApplicants,
 } from "@/lib/api";
+import { useToast } from "@/context/ToastContext";
 import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import ScheduleVisualization from "@/pages/Roles/Student/Schedule/components/ScheduleVisualization";
 
 const ScholarManagement = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [showEndSemesterModal, setShowEndSemesterModal] = useState(false);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -316,6 +322,40 @@ const ScholarManagement = () => {
     return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
   };
 
+  const handleEndSemester = async () => {
+    // Show custom modal instead of window.confirm
+    setShowEndSemesterModal(true);
+  };
+
+  const confirmEndSemester = async () => {
+    setShowEndSemesterModal(false);
+    setIsResetting(true);
+
+    try {
+      const result = await resetScholarsToApplicants();
+
+      addToast(
+        `Successfully reset ${result.details.usersUpdated} scholars to reapplicant status and deleted ${result.details.schedulesDeleted} schedules. They can now reapply for the new semester.`,
+        "success"
+      );
+
+      // Refresh scholars list
+      queryClient.invalidateQueries({ queryKey: ["scholars"] });
+
+      console.log("End Semester Result:", result);
+    } catch (error: any) {
+      console.error("Error resetting scholars:", error);
+      addToast(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to reset scholars. Please try again.",
+        "error"
+      );
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   if (!user) {
     return <div>Loading...</div>;
   }
@@ -333,7 +373,7 @@ const ScholarManagement = () => {
         }`}
       >
         <div
-          className={`hidden md:flex items-center gap-4 fixed top-0 left-0 z-30 bg-gradient-to-r from-red-600 to-red-700 h-[81px] ${
+          className={`hidden md:flex items-center justify-between gap-4 fixed top-0 left-0 z-30 bg-gradient-to-r from-red-600 to-red-700 h-[81px] ${
             isSidebarCollapsed
               ? "md:w-[calc(100%-5rem)] md:ml-20"
               : "md:w-[calc(100%-16rem)] md:ml-64"
@@ -342,6 +382,15 @@ const ScholarManagement = () => {
           <h1 className="text-2xl font-bold text-white ml-4">
             Scholar Management
           </h1>
+
+          <Button
+            type="button"
+            onClick={handleEndSemester}
+            disabled={isResetting}
+            className="bg-orange-600 hover:bg-orange-700 text-white font-semibold mr-4 shadow-lg"
+          >
+            {isResetting ? "Resetting..." : "🔄 End Semester"}
+          </Button>
         </div>
 
         <div className="p-6 md:p-10">
@@ -1021,6 +1070,112 @@ const ScholarManagement = () => {
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* End Semester Confirmation Modal */}
+      {showEndSemesterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden border-2 border-orange-500/30">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-full">
+                  <AlertTriangle className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">End Semester</h3>
+                  <p className="text-orange-50 text-sm">
+                    This action cannot be undone
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                <p className="text-sm font-semibold text-orange-900 dark:text-orange-200 mb-2">
+                  ⚠️ WARNING: This will reset ALL accepted scholars
+                </p>
+                <p className="text-sm text-orange-800 dark:text-orange-300">
+                  This action will change their status to{" "}
+                  <strong>REAPPLICANT</strong> for the new semester.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  This action will:
+                </p>
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-orange-500 font-bold mt-0.5">•</span>
+                    <span>
+                      Change status from{" "}
+                      <span className="font-semibold text-green-600 dark:text-green-400">
+                        'accepted'
+                      </span>{" "}
+                      to{" "}
+                      <span className="font-semibold text-blue-600 dark:text-blue-400">
+                        'reapplicant'
+                      </span>
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-orange-500 font-bold mt-0.5">•</span>
+                    <span>Delete their class schedules and duty hours</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-orange-500 font-bold mt-0.5">•</span>
+                    <span>
+                      Preserve their DTR records for historical tracking
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <span className="text-orange-500 font-bold mt-0.5">•</span>
+                    <span>Allow them to reapply for the new semester</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                  This should only be performed at the end of a semester when
+                  starting a new application cycle. Make sure all evaluations
+                  and records are completed before proceeding.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 flex gap-3 justify-end border-t border-gray-200 dark:border-gray-700">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowEndSemesterModal(false)}
+                disabled={isResetting}
+                className="px-6 font-medium"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={confirmEndSemester}
+                disabled={isResetting}
+                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white px-8 font-semibold shadow-lg"
+              >
+                {isResetting ? (
+                  <span className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Resetting...
+                  </span>
+                ) : (
+                  "Confirm End Semester"
+                )}
+              </Button>
             </div>
           </div>
         </div>

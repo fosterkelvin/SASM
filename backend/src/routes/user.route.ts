@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getUserHandler,
   getUsersHandler,
+  resetScholarsToApplicantsHandler,
 } from "../controllers/user.controller";
 import authenticate from "../middleware/authenticate";
 
@@ -18,5 +19,12 @@ userRoutes.get("/", authenticate, (req, res, next) => {
   // Otherwise, get current user
   return getUserHandler(req, res, next);
 });
+
+// POST /users/reset-to-applicants - Reset accepted scholars to applicants for new semester
+userRoutes.post(
+  "/reset-to-applicants",
+  authenticate,
+  resetScholarsToApplicantsHandler
+);
 
 export default userRoutes;
