@@ -20,6 +20,7 @@ export interface ILeave extends Document {
   decidedBy?: mongoose.Types.ObjectId; // office user id
   decidedByProfile?: string; // office profile name or user name
   decidedAt?: Date;
+  allowResubmit?: boolean; // Allow student to resubmit this request
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +54,7 @@ const LeaveSchema = new Schema<ILeave>(
     decidedBy: { type: Schema.Types.ObjectId, ref: "User" },
     decidedByProfile: { type: String },
     decidedAt: { type: Date },
+    allowResubmit: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

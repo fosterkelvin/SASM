@@ -13,6 +13,8 @@ import {
   X,
   CheckCircle,
   Star,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -25,6 +27,83 @@ import {
 import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+
+// Custom Alert Modal Component
+const CustomAlert = ({
+  isOpen,
+  onClose,
+  title,
+  message,
+  type = "success",
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+  type?: "success" | "error" | "warning";
+}) => {
+  if (!isOpen) return null;
+
+  const icons = {
+    success: (
+      <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
+    ),
+    error: <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />,
+    warning: (
+      <AlertCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+    ),
+  };
+
+  const bgColors = {
+    success: "bg-green-100 dark:bg-green-900/30",
+    error: "bg-red-100 dark:bg-red-900/30",
+    warning: "bg-yellow-100 dark:bg-yellow-900/30",
+  };
+
+  const buttonColors = {
+    success: "bg-green-600 hover:bg-green-700",
+    error: "bg-red-600 hover:bg-red-700",
+    warning: "bg-yellow-600 hover:bg-yellow-700",
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-md w-full mx-4 animate-in fade-in zoom-in duration-200">
+        <div className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <div
+                className={`w-12 h-12 rounded-full ${bgColors[type]} flex items-center justify-center`}
+              >
+                {icons[type]}
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                {title}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                {message}
+              </p>
+            </div>
+          </div>
+          <div className="mt-6 flex justify-end">
+            <Button
+              onClick={onClose}
+              className={`${buttonColors[type]} text-white px-6 py-2 rounded-lg font-medium transition-colors`}
+            >
+              OK
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const MyTrainees = () => {
   const { user } = useAuth();
@@ -61,6 +140,26 @@ const MyTrainees = () => {
   const [acceptNotes, setAcceptNotes] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
 
+  // Custom alert state
+  const [alertModal, setAlertModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success" as "success" | "error" | "warning",
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: "success" | "error" | "warning" = "success"
+  ) => {
+    setAlertModal({ isOpen: true, title, message, type });
+  };
+
+  const closeAlert = () => {
+    setAlertModal({ isOpen: false, title: "", message: "", type: "success" });
+  };
+
   // Fetch trainees ONLY (not scholars - they have their own page)
   const { data: traineesData, isLoading } = useQuery({
     queryKey: ["office-trainees"],
@@ -79,10 +178,14 @@ const MyTrainees = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["office-trainees"] });
       closeRatingModal();
-      alert("Trainee rating submitted successfully!");
+      showAlert("Success", "Trainee rating submitted successfully!", "success");
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || "Failed to submit rating");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Failed to submit rating",
+        "error"
+      );
     },
   });
 
@@ -109,7 +212,11 @@ const MyTrainees = () => {
     if (!selectedTrainee) return;
 
     if (ratingData.rating === 0) {
-      alert("Please select a rating");
+      showAlert(
+        "Validation Error",
+        "Please select a rating before submitting.",
+        "warning"
+      );
       return;
     }
 
@@ -144,10 +251,18 @@ const MyTrainees = () => {
         deploymentInterviewLocation: "",
         deploymentInterviewWhatToBring: "",
       });
-      alert("Interview scheduled successfully!");
+      showAlert(
+        "Success",
+        "Interview scheduled successfully! The trainee will be notified via email.",
+        "success"
+      );
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || "Failed to schedule interview");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Failed to schedule interview",
+        "error"
+      );
     },
   });
 
@@ -165,10 +280,18 @@ const MyTrainees = () => {
       setShowAcceptModal(false);
       setSelectedTrainee(null);
       setAcceptNotes("");
-      alert("Deployment accepted successfully!");
+      showAlert(
+        "Success",
+        "Deployment accepted successfully! The trainee has been notified.",
+        "success"
+      );
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || "Failed to accept deployment");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Failed to accept deployment",
+        "error"
+      );
     },
   });
 
@@ -186,10 +309,18 @@ const MyTrainees = () => {
       setShowRejectModal(false);
       setSelectedTrainee(null);
       setRejectionReason("");
-      alert("Deployment rejected");
+      showAlert(
+        "Deployment Rejected",
+        "The deployment has been rejected and the trainee has been notified.",
+        "warning"
+      );
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || "Failed to reject deployment");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Failed to reject deployment",
+        "error"
+      );
     },
   });
 
@@ -205,7 +336,11 @@ const MyTrainees = () => {
       !interviewData.deploymentInterviewDate ||
       !interviewData.deploymentInterviewTime
     ) {
-      alert("Please provide interview date and time");
+      showAlert(
+        "Validation Error",
+        "Please provide both interview date and time.",
+        "warning"
+      );
       return;
     }
 
@@ -215,7 +350,11 @@ const MyTrainees = () => {
     today.setHours(0, 0, 0, 0);
 
     if (selectedDate < today) {
-      alert("Interview date must be in the future");
+      showAlert(
+        "Invalid Date",
+        "Interview date must be in the future.",
+        "warning"
+      );
       return;
     }
 
@@ -228,7 +367,11 @@ const MyTrainees = () => {
     const maxTime = 17 * 60; // 5:00 PM
 
     if (timeInMinutes < minTime || timeInMinutes > maxTime) {
-      alert("Interview time must be between 8:00 AM and 5:00 PM");
+      showAlert(
+        "Invalid Time",
+        "Interview time must be between 8:00 AM and 5:00 PM.",
+        "warning"
+      );
       return;
     }
 
@@ -264,7 +407,11 @@ const MyTrainees = () => {
     if (!selectedTrainee) return;
 
     if (!rejectionReason.trim()) {
-      alert("Please provide a rejection reason");
+      showAlert(
+        "Validation Error",
+        "Please provide a reason for rejection.",
+        "warning"
+      );
       return;
     }
 
@@ -1042,6 +1189,15 @@ const MyTrainees = () => {
           </div>
         </div>
       )}
+
+      {/* Custom Alert Modal */}
+      <CustomAlert
+        isOpen={alertModal.isOpen}
+        onClose={closeAlert}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+      />
     </div>
   );
 };

@@ -10,6 +10,18 @@ const Leave: React.FC = () => {
   const { user } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const refreshLeavesRef = useRef<(() => void) | null>(null);
+  const [resubmitLeave, setResubmitLeave] = useState<any>(null);
+
+  const handleResubmit = (leave: any) => {
+    setResubmitLeave(leave);
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleLeaveSubmitted = () => {
+    refreshLeavesRef.current?.();
+    setResubmitLeave(null);
+  };
 
   if (user && !user.verified) {
     return (
@@ -93,12 +105,16 @@ const Leave: React.FC = () => {
               </div>
 
               <LeaveForm
-                onLeaveSubmitted={() => refreshLeavesRef.current?.()}
+                onLeaveSubmitted={handleLeaveSubmitted}
+                resubmitData={resubmitLeave}
               />
             </CardContent>
           </Card>
 
-          <MyLeavesList refreshRef={refreshLeavesRef} />
+          <MyLeavesList
+            refreshRef={refreshLeavesRef}
+            onResubmit={handleResubmit}
+          />
         </div>
       </div>
     </div>

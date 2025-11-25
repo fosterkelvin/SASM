@@ -15,6 +15,7 @@ import {
   Bell,
   UserPlus,
   Archive,
+  ClipboardList,
 } from "lucide-react";
 
 interface Props {
@@ -64,6 +65,22 @@ const CollapsedSidebar: React.FC<Props> = ({
 
           <div className="group relative">
             <button
+              onClick={handlers.notifications}
+              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 relative"
+              aria-label="Notifications"
+              title="Notifications"
+            >
+              <Bell size={16} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-semibold">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          <div className="group relative">
+            <button
               onClick={handlers.analytics}
               className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
               aria-label="Analytics"
@@ -79,17 +96,6 @@ const CollapsedSidebar: React.FC<Props> = ({
               className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
               aria-label="Applications"
               title="Applications"
-            >
-              <FileText size={16} />
-            </button>
-          </div>
-
-          <div className="group relative">
-            <button
-              onClick={handlers.requirements}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-              aria-label="Requirements"
-              title="Requirements"
             >
               <FileText size={16} />
             </button>
@@ -114,17 +120,6 @@ const CollapsedSidebar: React.FC<Props> = ({
               title="Archives"
             >
               <Archive size={16} />
-            </button>
-          </div>
-
-          <div className="group relative">
-            <button
-              onClick={handlers.users}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
-              aria-label="Users"
-              title="Users"
-            >
-              <Users size={16} />
             </button>
           </div>
 
@@ -163,6 +158,28 @@ const CollapsedSidebar: React.FC<Props> = ({
 
           <div className="group relative">
             <button
+              onClick={handlers.users}
+              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+              aria-label="Users"
+              title="Users"
+            >
+              <Users size={16} />
+            </button>
+          </div>
+
+          <div className="group relative">
+            <button
+              onClick={handlers.requirements}
+              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+              aria-label="Requirements"
+              title="Requirements"
+            >
+              <FileText size={16} />
+            </button>
+          </div>
+
+          <div className="group relative">
+            <button
               onClick={handlers.leaves}
               className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
               aria-label="Leave Management"
@@ -185,17 +202,12 @@ const CollapsedSidebar: React.FC<Props> = ({
 
           <div className="group relative">
             <button
-              onClick={handlers.notifications}
-              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 relative"
-              aria-label="Notifications"
-              title="Notifications"
+              onClick={handlers.evaluations}
+              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+              aria-label="Evaluations"
+              title="Evaluations"
             >
-              <Bell size={16} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-semibold">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
+              <ClipboardList size={16} />
             </button>
           </div>
         </div>

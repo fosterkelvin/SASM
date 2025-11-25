@@ -10,9 +10,15 @@ type Props = {
 const EvaluationModal: React.FC<Props> = ({ evaluation, onClose }) => {
   if (!evaluation) return null;
 
+  // Calculate average score if items exist
+  const averageScore = evaluation.items
+    ? evaluation.items.reduce((sum, item) => sum + (item.rating || 0), 0) /
+      (evaluation.items.filter((item) => item.rating).length || 1)
+    : 0;
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
-      <div className="bg-white dark:bg-gray-900 rounded max-w-2xl w-full mx-4 p-6">
+      <div className="bg-white dark:bg-gray-900 rounded max-w-2xl w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-start">
           <h2 className="text-xl font-semibold">Evaluation Details</h2>
         </div>
@@ -25,15 +31,20 @@ const EvaluationModal: React.FC<Props> = ({ evaluation, onClose }) => {
 
           <div>
             <div className="text-sm text-muted-foreground">Scholarship</div>
-            <div className="font-medium">
-              {evaluation.scholarship} — {evaluation.office}
-            </div>
+            <div className="font-medium">{evaluation.scholarship}</div>
           </div>
 
           <div>
             <div className="text-sm text-muted-foreground">Office</div>
             <div className="font-medium">{evaluation.office}</div>
           </div>
+
+          {evaluation.evaluatorName && (
+            <div>
+              <div className="text-sm text-muted-foreground">Evaluated By</div>
+              <div className="font-medium">{evaluation.evaluatorName}</div>
+            </div>
+          )}
 
           <div>
             <div className="text-sm text-muted-foreground">Submitted</div>
@@ -42,23 +53,51 @@ const EvaluationModal: React.FC<Props> = ({ evaluation, onClose }) => {
             </div>
           </div>
 
-          {evaluation.score !== undefined && (
+          {evaluation.items && evaluation.items.length > 0 && (
             <div>
-              <div className="text-sm text-muted-foreground">Score</div>
-              <div className="font-medium">{evaluation.score}</div>
-            </div>
-          )}
-
-          {evaluation.remarks && (
-            <div>
-              <div className="text-sm text-muted-foreground">Remarks</div>
-              <div className="whitespace-pre-wrap">{evaluation.remarks}</div>
+              <div className="text-sm text-muted-foreground mb-2">
+                Evaluation Criteria
+              </div>
+              <div className="space-y-2">
+                {evaluation.items.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 bg-gray-50 dark:bg-gray-800 rounded"
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="font-medium">{item.criterion}</span>
+                      {item.rating && (
+                        <span className="text-sm px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded">
+                          {item.rating}/5
+                        </span>
+                      )}
+                    </div>
+                    {item.comment && (
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        {item.comment}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded">
+                <div className="text-sm text-muted-foreground">
+                  Average Score
+                </div>
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                  {averageScore.toFixed(1)}/5
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         <div className="mt-6 flex justify-end">
-          <Button variant="secondary" onClick={onClose} className="bg-gray-400 hover:bg-gray-500">
+          <Button
+            variant="secondary"
+            onClick={onClose}
+            className="bg-gray-400 hover:bg-gray-500"
+          >
             Close
           </Button>
         </div>

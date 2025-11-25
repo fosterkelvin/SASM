@@ -6,8 +6,12 @@ export type EvaluationRow = {
   scholarship: string;
   office: string;
   submittedAt: string;
-  score?: number;
-  remarks?: string;
+  evaluatorName?: string;
+  items?: {
+    criterion: string;
+    rating?: number;
+    comment?: string;
+  }[];
 };
 
 type Props = {

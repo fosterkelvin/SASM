@@ -15,6 +15,7 @@ import {
   getOfficeScholars,
 } from "@/lib/api";
 import { ArrowLeft, Clock, Plus, Save, Trash2 } from "lucide-react";
+import { CustomAlert, useCustomAlert } from "@/components/ui/custom-alert";
 
 interface DutyHourEntry {
   day: string;
@@ -35,6 +36,8 @@ const TraineeSchedule: React.FC = () => {
     endTime: "",
     location: "",
   });
+  const [pendingDutyHours, setPendingDutyHours] = useState<DutyHourEntry[]>([]);
+  const { alertState, showAlert, closeAlert } = useCustomAlert();
 
   useEffect(() => {
     document.title = "Schedule Management | SASM-IMS";
@@ -100,27 +103,34 @@ const TraineeSchedule: React.FC = () => {
     enabled: !!applicationId,
   });
 
-  // Add duty hours mutation
+  // Add duty hours mutation (for batch addition)
   const addDutyHoursMutation = useMutation({
-    mutationFn: (data: DutyHourEntry) =>
-      addDutyHoursToSchedule(applicationId!, data),
+    mutationFn: async (entries: DutyHourEntry[]) => {
+      // Add each entry sequentially
+      for (const entry of entries) {
+        await addDutyHoursToSchedule(applicationId!, entry);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["classSchedule", applicationId],
       });
       setShowAddDutyForm(false);
+      setPendingDutyHours([]);
       setDutyHourEntry({
         day: "",
         startTime: "",
         endTime: "",
         location: "",
       });
-      alert("Duty hours added successfully!");
+      showAlert("Success", "All duty hours added successfully!", "success");
     },
     onError: (error: any) => {
-      alert(
+      showAlert(
+        "Error",
         error.response?.data?.message ||
-          "Failed to add duty hours. Please try again."
+          "Failed to add duty hours. Please try again.",
+        "error"
       );
     },
   });
@@ -134,15 +144,33 @@ const TraineeSchedule: React.FC = () => {
       queryClient.invalidateQueries({
         queryKey: ["classSchedule", applicationId],
       });
-      alert("Duty hours removed successfully!");
+      showAlert("Success", "Duty hours removed successfully!", "success");
     },
     onError: (error: any) => {
-      alert(
+      showAlert(
+        "Error",
         error.response?.data?.message ||
-          "Failed to remove duty hours. Please try again."
+          "Failed to remove duty hours. Please try again.",
+        "error"
       );
     },
   });
+
+  // Helper: convert time string (24h or 12h) to minutes since midnight
+  const timeToMinutes = (time: string): number => {
+    if (!time) return 0;
+    const hasMeridiem = /am|pm/i.test(time);
+    if (!hasMeridiem) {
+      const [h, m] = time.split(":").map(Number);
+      return h * 60 + m;
+    }
+    const [tp, mer] = time.trim().split(/\s+/);
+    let [h, m] = tp.split(":").map(Number);
+    const merUpper = (mer || "").toUpperCase();
+    if (merUpper === "PM" && h !== 12) h += 12;
+    if (merUpper === "AM" && h === 12) h = 0;
+    return h * 60 + m;
+  };
 
   const handleAddDutyHours = () => {
     if (
@@ -151,31 +179,23 @@ const TraineeSchedule: React.FC = () => {
       !dutyHourEntry.endTime ||
       !dutyHourEntry.location
     ) {
-      alert("Please fill in all fields");
+      showAlert(
+        "Validation Error",
+        "Please fill in all required fields.",
+        "warning"
+      );
       return;
     }
-
-    // Helper: convert time string (24h or 12h) to minutes since midnight
-    const timeToMinutes = (time: string): number => {
-      if (!time) return 0;
-      const hasMeridiem = /am|pm/i.test(time);
-      if (!hasMeridiem) {
-        const [h, m] = time.split(":").map(Number);
-        return h * 60 + m;
-      }
-      const [tp, mer] = time.trim().split(/\s+/);
-      let [h, m] = tp.split(":").map(Number);
-      const merUpper = (mer || "").toUpperCase();
-      if (merUpper === "PM" && h !== 12) h += 12;
-      if (merUpper === "AM" && h === 12) h = 0;
-      return h * 60 + m;
-    };
 
     // Validate start < end
     const startMin = timeToMinutes(dutyHourEntry.startTime);
     const endMin = timeToMinutes(dutyHourEntry.endTime);
     if (endMin <= startMin) {
-      alert("End time must be after start time");
+      showAlert(
+        "Invalid Time",
+        "End time must be after start time.",
+        "warning"
+      );
       return;
     }
 
@@ -192,8 +212,27 @@ const TraineeSchedule: React.FC = () => {
       return startMin < e && endMin > s;
     });
     if (dutyOverlap) {
-      alert(
-        "The duty hours you entered conflict with existing duty hours for this day. Please choose a different time."
+      showAlert(
+        "Schedule Conflict",
+        "The duty hours you entered conflict with existing duty hours for this day. Please choose a different time.",
+        "warning"
+      );
+      return;
+    }
+
+    // 2) Check overlap with pending duty hours
+    const pendingOverlap = pendingDutyHours.some((pdh) => {
+      const sameDay = pdh.day.toUpperCase() === dayUpper;
+      if (!sameDay) return false;
+      const s = timeToMinutes(pdh.startTime);
+      const e = timeToMinutes(pdh.endTime);
+      return startMin < e && endMin > s;
+    });
+    if (pendingOverlap) {
+      showAlert(
+        "Schedule Conflict",
+        "The duty hours you entered conflict with pending duty hours for this day. Please choose a different time.",
+        "warning"
       );
       return;
     }
@@ -243,13 +282,51 @@ const TraineeSchedule: React.FC = () => {
     });
 
     if (classOverlap) {
-      alert(
-        "The duty hours you entered conflict with an existing class/work schedule. Please choose a different time."
+      showAlert(
+        "Schedule Conflict",
+        "The duty hours you entered conflict with an existing class/work schedule. Please choose a different time.",
+        "warning"
       );
       return;
     }
 
-    addDutyHoursMutation.mutate(dutyHourEntry);
+    // Add to pending list instead of immediately saving
+    setPendingDutyHours([...pendingDutyHours, dutyHourEntry]);
+
+    // Reset the form for the next entry
+    setDutyHourEntry({
+      day: "",
+      startTime: "",
+      endTime: "",
+      location: "",
+    });
+  };
+
+  const handleRemovePendingDutyHour = (index: number) => {
+    setPendingDutyHours(pendingDutyHours.filter((_, i) => i !== index));
+  };
+
+  const handleSaveAllDutyHours = () => {
+    if (pendingDutyHours.length === 0) {
+      showAlert(
+        "Validation Error",
+        "Please add at least one duty hour entry before saving.",
+        "warning"
+      );
+      return;
+    }
+    addDutyHoursMutation.mutate(pendingDutyHours);
+  };
+
+  const handleCancelAddDutyForm = () => {
+    setShowAddDutyForm(false);
+    setPendingDutyHours([]);
+    setDutyHourEntry({
+      day: "",
+      startTime: "",
+      endTime: "",
+      location: "",
+    });
   };
 
   const daysOfWeek = [
@@ -356,7 +433,11 @@ const TraineeSchedule: React.FC = () => {
                         : "Temporary Duty Hours"}
                     </h3>
                     <Button
-                      onClick={() => setShowAddDutyForm(!showAddDutyForm)}
+                      onClick={() =>
+                        showAddDutyForm
+                          ? handleCancelAddDutyForm()
+                          : setShowAddDutyForm(true)
+                      }
                       className="bg-red-600 hover:bg-red-700"
                     >
                       <Plus className="w-4 h-4 mr-2" />
@@ -370,11 +451,54 @@ const TraineeSchedule: React.FC = () => {
                         <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
                           Add Duty Hours
                         </h3>
+
+                        {/* Show pending duty hours if any */}
+                        {pendingDutyHours.length > 0 && (
+                          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <h4 className="text-sm font-semibold mb-2 text-blue-900 dark:text-blue-100">
+                              Pending Duty Hours ({pendingDutyHours.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {pendingDutyHours.map((pdh, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-blue-200 dark:border-blue-700"
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                        {pdh.day}
+                                      </span>
+                                      <span className="text-gray-600 dark:text-gray-400 text-sm">
+                                        {pdh.startTime} - {pdh.endTime}
+                                      </span>
+                                      <span className="text-gray-500 dark:text-gray-400 text-sm">
+                                        📍 {pdh.location}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleRemovePendingDutyHour(index)
+                                    }
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label htmlFor="day">Day</Label>
+                            <Label htmlFor="day">Day of Week</Label>
                             <select
                               id="day"
+                              aria-label="Select day of week"
                               value={dutyHourEntry.day}
                               onChange={(e) =>
                                 setDutyHourEntry({
@@ -384,7 +508,7 @@ const TraineeSchedule: React.FC = () => {
                               }
                               className="w-full mt-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2"
                             >
-                              <option value="">Select day</option>
+                              <option value="">Select a day</option>
                               {daysOfWeek.map((day) => (
                                 <option key={day} value={day}>
                                   {day}
@@ -403,7 +527,7 @@ const TraineeSchedule: React.FC = () => {
                                   location: e.target.value,
                                 })
                               }
-                              placeholder="e.g., Main Office"
+                              placeholder="e.g., Main Office, Room 205"
                             />
                           </div>
                           <div>
@@ -437,15 +561,37 @@ const TraineeSchedule: React.FC = () => {
                           <div className="md:col-span-2">
                             <Button
                               onClick={handleAddDutyHours}
-                              disabled={addDutyHoursMutation.isPending}
-                              className="w-full bg-red-600 hover:bg-red-700"
+                              variant="outline"
+                              className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
                             >
-                              <Save className="w-4 h-4 mr-2" />
-                              {addDutyHoursMutation.isPending
-                                ? "Adding..."
-                                : "Add Duty Hours"}
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add to List
                             </Button>
                           </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="mt-4 flex gap-2">
+                          <Button
+                            onClick={handleSaveAllDutyHours}
+                            disabled={
+                              addDutyHoursMutation.isPending ||
+                              pendingDutyHours.length === 0
+                            }
+                            className="flex-1 bg-green-600 hover:bg-green-700"
+                          >
+                            <Save className="w-4 h-4 mr-2" />
+                            {addDutyHoursMutation.isPending
+                              ? "Saving..."
+                              : `Save All (${pendingDutyHours.length})`}
+                          </Button>
+                          <Button
+                            onClick={handleCancelAddDutyForm}
+                            variant="outline"
+                            className="flex-1"
+                          >
+                            Cancel
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -549,7 +695,11 @@ const TraineeSchedule: React.FC = () => {
                         </Button>
                       )}
                       <Button
-                        onClick={() => setShowAddDutyForm(!showAddDutyForm)}
+                        onClick={() =>
+                          showAddDutyForm
+                            ? handleCancelAddDutyForm()
+                            : setShowAddDutyForm(true)
+                        }
                         className="bg-red-600 hover:bg-red-700"
                       >
                         <Plus className="w-4 h-4 mr-2" />
@@ -565,11 +715,54 @@ const TraineeSchedule: React.FC = () => {
                           <Clock className="w-5 h-5 text-red-600" />
                           Add Duty Hours
                         </h3>
+
+                        {/* Show pending duty hours if any */}
+                        {pendingDutyHours.length > 0 && (
+                          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <h4 className="text-sm font-semibold mb-2 text-blue-900 dark:text-blue-100">
+                              Pending Duty Hours ({pendingDutyHours.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {pendingDutyHours.map((pdh, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-blue-200 dark:border-blue-700"
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                        {pdh.day}
+                                      </span>
+                                      <span className="text-gray-600 dark:text-gray-400 text-sm">
+                                        {pdh.startTime} - {pdh.endTime}
+                                      </span>
+                                      <span className="text-gray-500 dark:text-gray-400 text-sm">
+                                        📍 {pdh.location}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleRemovePendingDutyHour(index)
+                                    }
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label htmlFor="day">Day of Week</Label>
+                            <Label htmlFor="duty-day-2">Day of Week</Label>
                             <select
-                              id="day"
+                              id="duty-day-2"
+                              aria-label="Select day of week"
                               value={dutyHourEntry.day}
                               onChange={(e) =>
                                 setDutyHourEntry({
@@ -588,9 +781,9 @@ const TraineeSchedule: React.FC = () => {
                             </select>
                           </div>
                           <div>
-                            <Label htmlFor="location">Location</Label>
+                            <Label htmlFor="duty-location-2">Location</Label>
                             <Input
-                              id="location"
+                              id="duty-location-2"
                               type="text"
                               value={dutyHourEntry.location}
                               onChange={(e) =>
@@ -603,9 +796,9 @@ const TraineeSchedule: React.FC = () => {
                             />
                           </div>
                           <div>
-                            <Label htmlFor="startTime">Start Time</Label>
+                            <Label htmlFor="duty-startTime-2">Start Time</Label>
                             <Input
-                              id="startTime"
+                              id="duty-startTime-2"
                               type="time"
                               value={dutyHourEntry.startTime}
                               onChange={(e) =>
@@ -617,9 +810,9 @@ const TraineeSchedule: React.FC = () => {
                             />
                           </div>
                           <div>
-                            <Label htmlFor="endTime">End Time</Label>
+                            <Label htmlFor="duty-endTime-2">End Time</Label>
                             <Input
-                              id="endTime"
+                              id="duty-endTime-2"
                               type="time"
                               value={dutyHourEntry.endTime}
                               onChange={(e) =>
@@ -630,21 +823,35 @@ const TraineeSchedule: React.FC = () => {
                               }
                             />
                           </div>
+                          <div className="md:col-span-2">
+                            <Button
+                              onClick={handleAddDutyHours}
+                              variant="outline"
+                              className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add to List
+                            </Button>
+                          </div>
                         </div>
                         <div className="flex gap-2 mt-4">
                           <Button
-                            onClick={handleAddDutyHours}
-                            disabled={addDutyHoursMutation.isPending}
-                            className="bg-green-600 hover:bg-green-700"
+                            onClick={handleSaveAllDutyHours}
+                            disabled={
+                              addDutyHoursMutation.isPending ||
+                              pendingDutyHours.length === 0
+                            }
+                            className="flex-1 bg-green-600 hover:bg-green-700"
                           >
                             <Save className="w-4 h-4 mr-2" />
                             {addDutyHoursMutation.isPending
                               ? "Saving..."
-                              : "Save Duty Hours"}
+                              : `Save All (${pendingDutyHours.length})`}
                           </Button>
                           <Button
-                            onClick={() => setShowAddDutyForm(false)}
+                            onClick={handleCancelAddDutyForm}
                             variant="outline"
+                            className="flex-1"
                           >
                             Cancel
                           </Button>
@@ -722,6 +929,15 @@ const TraineeSchedule: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Custom Alert Modal */}
+      <CustomAlert
+        isOpen={alertState.isOpen}
+        onClose={closeAlert}
+        title={alertState.title}
+        message={alertState.message}
+        type={alertState.type}
+      />
     </div>
   );
 };

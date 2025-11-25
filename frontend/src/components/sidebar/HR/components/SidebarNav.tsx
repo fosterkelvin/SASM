@@ -11,6 +11,7 @@ import {
   Bell,
   UserPlus,
   Archive,
+  ClipboardList,
 } from "lucide-react";
 
 interface NavProps {
@@ -34,9 +35,10 @@ const SidebarNav: React.FC<NavProps> = ({ handlers, unreadCount = 0 }) => {
         </li>
         <li>
           <SidebarItem
-            label="Requirements"
-            onClick={handlers.requirements}
-            IconComponent={FileText}
+            label="Notifications"
+            onClick={handlers.notifications}
+            IconComponent={Bell}
+            badge={unreadCount > 0 ? unreadCount : undefined}
           />
         </li>
         <li>
@@ -69,13 +71,6 @@ const SidebarNav: React.FC<NavProps> = ({ handlers, unreadCount = 0 }) => {
         </li>
         <li>
           <SidebarItem
-            label="Users"
-            onClick={handlers.users}
-            IconComponent={Users}
-          />
-        </li>
-        <li>
-          <SidebarItem
             label="Trainees"
             onClick={handlers.trainees}
             IconComponent={GraduationCap}
@@ -97,6 +92,20 @@ const SidebarNav: React.FC<NavProps> = ({ handlers, unreadCount = 0 }) => {
         </li>
         <li>
           <SidebarItem
+            label="Users"
+            onClick={handlers.users}
+            IconComponent={Users}
+          />
+        </li>
+        <li>
+          <SidebarItem
+            label="Requirements"
+            onClick={handlers.requirements}
+            IconComponent={FileText}
+          />
+        </li>
+        <li>
+          <SidebarItem
             label="Leave Management"
             onClick={handlers.leaves}
             IconComponent={Calendar}
@@ -111,10 +120,9 @@ const SidebarNav: React.FC<NavProps> = ({ handlers, unreadCount = 0 }) => {
         </li>
         <li>
           <SidebarItem
-            label="Notifications"
-            onClick={handlers.notifications}
-            IconComponent={Bell}
-            badge={unreadCount > 0 ? unreadCount : undefined}
+            label="Evaluations"
+            onClick={handlers.evaluations}
+            IconComponent={ClipboardList}
           />
         </li>
       </ul>

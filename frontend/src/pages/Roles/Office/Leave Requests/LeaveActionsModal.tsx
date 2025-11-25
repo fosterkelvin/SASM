@@ -6,7 +6,12 @@ import { FileText, ExternalLink } from "lucide-react";
 interface Props {
   request: LeaveRequest | null;
   onClose: () => void;
-  onSubmit: (id: string, status: LeaveStatus, remarks?: string) => void;
+  onSubmit: (
+    id: string,
+    status: LeaveStatus,
+    remarks?: string,
+    allowResubmit?: boolean
+  ) => void;
 }
 
 export const LeaveActionsModal: React.FC<Props> = ({
@@ -16,11 +21,13 @@ export const LeaveActionsModal: React.FC<Props> = ({
 }) => {
   const [remarks, setRemarks] = useState("");
   const [status, setStatus] = useState<LeaveStatus>("pending");
+  const [allowResubmit, setAllowResubmit] = useState(false);
 
   React.useEffect(() => {
     if (request) {
       setRemarks(request.remarks || "");
       setStatus(request.status);
+      setAllowResubmit(request.allowResubmit || false);
     }
   }, [request]);
 
@@ -125,6 +132,24 @@ export const LeaveActionsModal: React.FC<Props> = ({
           />
         </div>
 
+        {status === "disapproved" && (
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="allowResubmit"
+              checked={allowResubmit}
+              onChange={(e) => setAllowResubmit(e.target.checked)}
+              className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+            />
+            <label
+              htmlFor="allowResubmit"
+              className="text-sm text-gray-700 cursor-pointer"
+            >
+              Allow student to resubmit this request with corrections
+            </label>
+          </div>
+        )}
+
         <div className="mt-4 flex justify-end gap-2">
           <Button
             variant="outline"
@@ -135,7 +160,7 @@ export const LeaveActionsModal: React.FC<Props> = ({
           </Button>
           <Button
             className="bg-red-600 hover:bg-red-700 text-white"
-            onClick={() => onSubmit(request.id, status, remarks)}
+            onClick={() => onSubmit(request.id, status, remarks, allowResubmit)}
           >
             Submit
           </Button>

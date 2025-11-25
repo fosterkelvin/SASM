@@ -199,9 +199,10 @@ export const decideLeave = catchErrors(async (req: Request, res: Response) => {
   );
 
   const id = req.params.id;
-  const { status, remarks } = req.body as {
+  const { status, remarks, allowResubmit } = req.body as {
     status: "approved" | "disapproved";
     remarks?: string;
+    allowResubmit?: boolean;
   };
   appAssert(
     status === "approved" || status === "disapproved",
@@ -229,6 +230,8 @@ export const decideLeave = catchErrors(async (req: Request, res: Response) => {
   leave.decidedBy = new mongoose.Types.ObjectId(userID);
   leave.decidedByProfile = profileName;
   leave.decidedAt = new Date();
+  leave.allowResubmit =
+    status === "disapproved" ? allowResubmit || false : false;
   await leave.save();
 
   // If approved, automatically mark dates as excused in DTR
@@ -276,4 +279,70 @@ export const cancelLeave = catchErrors(async (req: Request, res: Response) => {
   return res
     .status(OK)
     .json({ message: "Leave request cancelled successfully" });
+});
+
+export const updateLeave = catchErrors(async (req: Request, res: Response) => {
+  const userID = req.userID!;
+  appAssert(userID, FORBIDDEN, "Not authorized");
+
+  const id = req.params.id;
+  const leave = await LeaveModel.findById(id);
+  appAssert(leave, NOT_FOUND, "Leave not found");
+
+  // Check if the leave belongs to the user
+  appAssert(
+    leave.userId.toString() === userID,
+    FORBIDDEN,
+    "You can only update your own leave requests"
+  );
+
+  // Only allow updating disapproved requests with allowResubmit flag
+  appAssert(
+    leave.status === "disapproved" && leave.allowResubmit,
+    BAD_REQUEST,
+    "Only disapproved leave requests with resubmit permission can be updated"
+  );
+
+  const parsed = createLeaveSchema.safeParse(req.body);
+  appAssert(parsed.success, BAD_REQUEST, "Invalid payload");
+
+  const body = parsed.data;
+  const from = new Date(body.dateFrom);
+  const to = new Date(body.dateTo);
+  appAssert(
+    !isNaN(from.getTime()) && !isNaN(to.getTime()),
+    BAD_REQUEST,
+    "Invalid date values"
+  );
+  appAssert(
+    to.getTime() >= from.getTime(),
+    BAD_REQUEST,
+    "dateTo cannot be before dateFrom"
+  );
+
+  // Get uploaded proof URL from Cloudinary (if uploaded)
+  const proofUrl = (req.file as any)?.path || body.proofUrl || leave.proofUrl;
+
+  // Update the leave request
+  leave.name = body.name;
+  leave.schoolDept = body.schoolDept;
+  leave.courseYear = body.courseYear;
+  leave.typeOfLeave = body.typeOfLeave;
+  leave.dateFrom = from;
+  leave.dateTo = to;
+  leave.daysHours = body.daysHours;
+  leave.reasons = body.reasons;
+  leave.proofUrl = proofUrl;
+  leave.status = "pending"; // Reset to pending
+  leave.remarks = undefined; // Clear previous remarks
+  leave.decidedBy = undefined;
+  leave.decidedByProfile = undefined;
+  leave.decidedAt = undefined;
+  leave.allowResubmit = false; // Reset flag
+
+  await leave.save();
+
+  return res
+    .status(OK)
+    .json({ message: "Leave request updated and resubmitted", leave });
 });

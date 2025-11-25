@@ -3,39 +3,49 @@ import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import EvaluationFilters from "./components/EvaluationFilters";
 import EvaluationsList, { EvaluationRow } from "./components/EvaluationsList";
 import EvaluationModal from "./components/EvaluationModal";
-
-const mock: EvaluationRow[] = [
-  {
-    id: "e1",
-    studentName: "Juan Dela Cruz",
-    scholarship: "Student Assistant",
-    office: "Library",
-    submittedAt: new Date().toISOString(),
-    score: 88,
-    remarks: "Punctual, good communication.",
-  },
-  {
-    id: "e2",
-    studentName: "Maria Santos",
-    scholarship: "Student Marshal",
-    office: "Registrar",
-    submittedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-    score: 92,
-    remarks: "Excellent leadership and reliability.",
-  },
-];
+import { getAllEvaluations } from "@/lib/api";
+import { useToast } from "@/context/ToastContext";
 
 const EvaluationManagement: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [data] = useState<EvaluationRow[]>(mock);
+  const [data, setData] = useState<EvaluationRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [scholarshipFilter, setScholarshipFilter] = useState("");
   const [officeFilter, setOfficeFilter] = useState("");
   const [selected, setSelected] = useState<EvaluationRow | null>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     document.title = "Evaluations | SASM-IMS";
+    fetchEvaluations();
   }, []);
+
+  const fetchEvaluations = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllEvaluations();
+      const evaluations: EvaluationRow[] = (response.evaluations || []).map(
+        (e: any) => ({
+          id: e._id,
+          studentName: e.scholarName || "Unknown",
+          scholarship: e.scholarshipType || "Unknown",
+          office: e.officeName,
+          submittedAt: e.createdAt,
+          evaluatorName: e.evaluatorName,
+          items: e.items,
+        })
+      );
+      setData(evaluations);
+    } catch (error: any) {
+      addToast(
+        error?.response?.data?.message || "Failed to load evaluations.",
+        "error"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = data.filter((d) => {
     const s = searchTerm.trim().toLowerCase();
@@ -90,7 +100,15 @@ const EvaluationManagement: React.FC = () => {
             onOfficeChange={setOfficeFilter}
           />
 
-          <EvaluationsList data={filtered} onOpen={(r) => setSelected(r)} />
+          {loading ? (
+            <div className="p-6 bg-white dark:bg-gray-800 rounded border text-center">
+              <p className="text-gray-600 dark:text-gray-400">
+                Loading evaluations...
+              </p>
+            </div>
+          ) : (
+            <EvaluationsList data={filtered} onOpen={(r) => setSelected(r)} />
+          )}
         </div>
       </div>
 

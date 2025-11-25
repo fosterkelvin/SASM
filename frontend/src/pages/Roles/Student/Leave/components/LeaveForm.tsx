@@ -2,21 +2,25 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getUserData, getMyLeaves } from "@/lib/api";
+import { getUserData, getMyLeaves, getMyScholarInfo } from "@/lib/api";
 import PersonalInfoSection from "./PersonalInfoSection";
 import LeaveDetailsSection from "./LeaveDetailsSection";
 import ReasonsSection from "./ReasonsSection";
 import ProofSection from "./ProofSection";
 import type { LeaveFormData } from "./formTypes";
 import { defaultLeaveData } from "./formTypes";
-import { submitLeaveRequest } from "@/lib/api";
+import { submitLeaveRequest, updateLeaveRequest } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
 
 interface LeaveFormProps {
   onLeaveSubmitted?: () => void;
+  resubmitData?: any;
 }
 
-const LeaveForm: React.FC<LeaveFormProps> = ({ onLeaveSubmitted }) => {
+const LeaveForm: React.FC<LeaveFormProps> = ({
+  onLeaveSubmitted,
+  resubmitData,
+}) => {
   const [data, setData] = useState<LeaveFormData>(defaultLeaveData);
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -30,9 +34,20 @@ const LeaveForm: React.FC<LeaveFormProps> = ({ onLeaveSubmitted }) => {
   useEffect(() => {
     const checkRequirements = async () => {
       try {
-        // Check academic info
+        // Check if user is a deployed scholar
+        let isScholar = false;
+        try {
+          const scholarInfo = await getMyScholarInfo();
+          isScholar = scholarInfo?.scholar?.status === "active";
+        } catch (error) {
+          // User is not a scholar, they are a trainee
+          isScholar = false;
+        }
+
+        // Check academic info - only required for scholars
         const userData = await getUserData();
-        const missing = !userData.college || !userData.courseYear;
+        const missing =
+          isScholar && (!userData.college || !userData.courseYear);
         setAcademicInfoMissing(missing);
 
         // Check for pending leave requests
@@ -50,6 +65,28 @@ const LeaveForm: React.FC<LeaveFormProps> = ({ onLeaveSubmitted }) => {
 
     checkRequirements();
   }, []);
+
+  // Populate form with resubmit data
+  useEffect(() => {
+    if (resubmitData) {
+      setData({
+        name: resubmitData.name || "",
+        schoolDept: resubmitData.schoolDept || "",
+        courseYear: resubmitData.courseYear || "",
+        typeOfLeave: resubmitData.typeOfLeave || "",
+        dateFrom: resubmitData.dateFrom
+          ? new Date(resubmitData.dateFrom).toISOString().split("T")[0]
+          : "",
+        dateTo: resubmitData.dateTo
+          ? new Date(resubmitData.dateTo).toISOString().split("T")[0]
+          : "",
+        daysHours: resubmitData.daysHours || "",
+        reasons: resubmitData.reasons || "",
+        proofUrl: resubmitData.proofUrl || "",
+      });
+      setHasPendingRequest(false); // Allow form submission for resubmit
+    }
+  }, [resubmitData]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -93,13 +130,37 @@ const LeaveForm: React.FC<LeaveFormProps> = ({ onLeaveSubmitted }) => {
 
     try {
       setSubmitting(true);
-      await submitLeaveRequest({
-        ...data,
-        dateFrom: data.dateFrom,
-        dateTo: data.dateTo,
-        proofFile: proofFile,
-      });
-      addToast("Leave application submitted successfully.", "success");
+
+      if (resubmitData?._id) {
+        // Resubmitting - update the existing leave request
+        const formData = new FormData();
+        formData.append("name", data.name);
+        formData.append("schoolDept", data.schoolDept || "");
+        formData.append("courseYear", data.courseYear || "");
+        formData.append("typeOfLeave", data.typeOfLeave);
+        formData.append("dateFrom", new Date(data.dateFrom).toISOString());
+        formData.append("dateTo", new Date(data.dateTo).toISOString());
+        formData.append("daysHours", data.daysHours || "");
+        formData.append("reasons", data.reasons);
+        if (proofFile) {
+          formData.append("proof", proofFile);
+        } else if (data.proofUrl) {
+          formData.append("proofUrl", data.proofUrl);
+        }
+
+        await updateLeaveRequest(resubmitData._id, formData);
+        addToast("Leave application resubmitted successfully.", "success");
+      } else {
+        // New submission
+        await submitLeaveRequest({
+          ...data,
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+          proofFile: proofFile,
+        });
+        addToast("Leave application submitted successfully.", "success");
+      }
+
       setData(defaultLeaveData);
       setProofFile(null);
 
@@ -140,8 +201,9 @@ const LeaveForm: React.FC<LeaveFormProps> = ({ onLeaveSubmitted }) => {
                 Academic Information Required
               </h3>
               <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-4">
-                You need to set your School/Department and Course & Year in your
-                profile before you can submit a leave application.
+                As a deployed scholar, you need to set your School/Department
+                and Course & Year in your profile before you can submit a leave
+                application.
               </p>
               <Button
                 onClick={() => navigate("/profile")}
@@ -180,6 +242,28 @@ const LeaveForm: React.FC<LeaveFormProps> = ({ onLeaveSubmitted }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {resubmitData && (
+        <div className="p-4 border border-blue-200 dark:border-blue-800 rounded bg-blue-50 dark:bg-blue-900/20">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-base font-semibold text-blue-800 dark:text-blue-200 mb-1">
+                Resubmitting Leave Request
+              </h3>
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                You are updating your previously disapproved request. Make the
+                necessary corrections and submit again.
+              </p>
+              {resubmitData.remarks && (
+                <div className="mt-2 p-2 bg-white dark:bg-gray-800 rounded text-sm">
+                  <strong>Previous Remarks:</strong> {resubmitData.remarks}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <PersonalInfoSection data={data} onChange={handleChange} />
       <LeaveDetailsSection data={data} onChange={handleChange} />
       <ReasonsSection data={data} onChange={handleChange} />
@@ -204,7 +288,11 @@ const LeaveForm: React.FC<LeaveFormProps> = ({ onLeaveSubmitted }) => {
           className="bg-red-600 hover:bg-red-700 text-white"
           disabled={submitting}
         >
-          {submitting ? "Submitting..." : "Submit Leave Application"}
+          {submitting
+            ? "Submitting..."
+            : resubmitData
+            ? "Resubmit Leave Application"
+            : "Submit Leave Application"}
         </Button>
       </div>
     </form>

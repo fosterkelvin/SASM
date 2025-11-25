@@ -648,7 +648,7 @@ export const updateApplicationStatusHandler = catchErrors(
         reviewedAt: new Date(),
         timeline: currentApplication.timeline,
       },
-      { new: true }
+      { new: true, runValidators: false }
     )
       .populate("userID", "firstname lastname email role")
       .populate("reviewedBy", "firstname lastname email role")

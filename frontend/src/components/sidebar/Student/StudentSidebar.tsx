@@ -11,31 +11,45 @@ import { useUnreadNotificationCount } from "@/hooks/useUnreadNotificationCount";
 import { useQuery } from "@tanstack/react-query";
 import { getUserApplications, getUserData } from "@/lib/api";
 import { checkEmailRequirement } from "@/lib/emailRequirement";
-        <SidebarNav
-          unreadCount={unreadCount}
-          isVerified={!!user?.verified}
-          isApplicant={user?.status === "applicant"}
-          isTrainee={isTrainee}
-          isDeployedToOffice={isDeployedToOffice}
-          isScholar={isScholar}
-          isAccepted={hasAcceptedApplication}
-          isEmailUpdateRequired={isEmailUpdateRequired}
-          isPersonalInfoIncomplete={!personalInfoComplete}
-          hasActiveApplication={hasActiveApplication}
-          isReapplicant={user?.status === "reapplicant"}
-          handlers={{
-            dashboard: handleDashboardClick,
-            notifications: handleNotificationsClick,
-            apply: handleApplyClick,
-            reapply: handleReapplyClick,
-            leave: handleLeaveClick,
-            requirements: handleRequirementsClick,
-            grades: handleGradesClick,
-            dtr: handleDtrClick,
-            schedule: handleScheduleClick,
-            signout: handleSignout,
-          }}
-        />
+
+// Helper function to check if personal info is complete
+const isPersonalInfoComplete = (userData: any): boolean => {
+  if (!userData) return false;
+  // Check required fields for applying: gender, birthdate, and civil status
+  const requiredFields = ["gender", "birthdate", "civilStatus"];
+  return requiredFields.every(
+    (field) => userData[field] && userData[field] !== ""
+  );
+};
+
+// Helper function to get missing personal info fields
+const getMissingPersonalInfoFields = (userData: any): string[] => {
+  if (!userData) return [];
+  const fieldLabels: Record<string, string> = {
+    gender: "Gender",
+    birthdate: "Birthdate",
+    civilStatus: "Civil Status",
+  };
+  const requiredFields = Object.keys(fieldLabels);
+  return requiredFields
+    .filter((field) => !userData[field] || userData[field] === "")
+    .map((field) => fieldLabels[field]);
+};
+
+interface StudentSidebarProps {
+  onCollapseChange?: (collapsed: boolean) => void;
+  currentPage?: string;
+}
+
+const StudentSidebar: React.FC<StudentSidebarProps> = ({
+  onCollapseChange,
+  currentPage,
+}) => {
+  const { user, logout, addToast } = useAuth();
+  const navigate = useNavigate();
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const unreadCount = useUnreadNotificationCount();
+
   // Fetch user applications to check if any application is accepted
   const { data: userApplicationsData } = useQuery({
     queryKey: ["userApplications"],
@@ -144,7 +158,7 @@ import { checkEmailRequirement } from "@/lib/emailRequirement";
     if (!personalInfoComplete) {
       const missingFields = getMissingPersonalInfoFields(userData);
       addToast(
-        `Please complete your personal information in Profile Settings before applying. Missing: ${missingFields.join(
+        `Please complete your personal information before applying. Missing: ${missingFields.join(
           ", "
         )}`,
         "error",
@@ -159,19 +173,6 @@ import { checkEmailRequirement } from "@/lib/emailRequirement";
   };
 
   const handleReapplyClick = () => {
-    if (!personalInfoComplete) {
-      const missingFields = getMissingPersonalInfoFields(userData);
-      addToast(
-        `Please complete your personal information in Profile Settings before re-applying. Missing: ${missingFields.join(
-          ", "
-        )}`,
-        "error",
-        6000
-      );
-      navigate("/profile");
-      setIsOpen(false);
-      return;
-    }
     navigate("/re-apply");
     setIsOpen(false);
   };
@@ -225,7 +226,7 @@ import { checkEmailRequirement } from "@/lib/emailRequirement";
     if (!personalInfoComplete) {
       const missingFields = getMissingPersonalInfoFields(userData);
       addToast(
-        `Please complete your personal information in Profile Settings before applying. Missing: ${missingFields.join(
+        `Please complete your personal information before applying. Missing: ${missingFields.join(
           ", "
         )}`,
         "error",
@@ -238,18 +239,6 @@ import { checkEmailRequirement } from "@/lib/emailRequirement";
   };
 
   const handleCollapsedReapplyClick = () => {
-    if (!personalInfoComplete) {
-      const missingFields = getMissingPersonalInfoFields(userData);
-      addToast(
-        `Please complete your personal information in Profile Settings before re-applying. Missing: ${missingFields.join(
-          ", "
-        )}`,
-        "error",
-        6000
-      );
-      navigate("/profile");
-      return;
-    }
     navigate("/re-apply");
   };
 
@@ -421,7 +410,7 @@ import { checkEmailRequirement } from "@/lib/emailRequirement";
           isOpen ? "opacity-50 visible" : "opacity-0 invisible"
         } md:hidden`}
         onClick={() => setIsOpen(false)}
-        aria-hidden={!isOpen ? "true" : "false"}
+        aria-hidden={!isOpen ? true : false}
       />
 
       {/* Sidebar - always overlaps page */}

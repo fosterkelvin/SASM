@@ -850,9 +850,62 @@ export const getOfficeLeaves = async (params?: {
 // Office/HR: decide a leave request
 export const decideLeaveRequest = async (
   id: string,
-  data: { status: "approved" | "disapproved"; remarks?: string }
+  data: {
+    status: "approved" | "disapproved";
+    remarks?: string;
+    allowResubmit?: boolean;
+  }
 ) => {
   const response = await API.post(`/leave/${id}/decision`, data);
+  return response.data;
+};
+
+// Student: update and resubmit a disapproved leave request
+export const updateLeaveRequest = async (id: string, data: FormData) => {
+  const response = await API.put(`/leave/${id}`, data, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
+
+// Evaluation API
+export const submitEvaluation = async (data: {
+  scholarId: string;
+  items: {
+    criterion: string;
+    rating?: number;
+    comment?: string;
+  }[];
+}) => {
+  const response = await API.post("/evaluations", data);
+  return response.data;
+};
+
+export const getMyEvaluations = async () => {
+  const response = await API.get("/evaluations/my");
+  return response.data;
+};
+
+export const getAllEvaluations = async (params?: {
+  office?: string;
+  scholar?: string;
+  startDate?: string;
+  endDate?: string;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.office) searchParams.append("office", params.office);
+  if (params?.scholar) searchParams.append("scholar", params.scholar);
+  if (params?.startDate) searchParams.append("startDate", params.startDate);
+  if (params?.endDate) searchParams.append("endDate", params.endDate);
+
+  const response = await API.get(`/evaluations/all?${searchParams.toString()}`);
+  return response.data;
+};
+
+export const getEvaluationDetails = async (id: string) => {
+  const response = await API.get(`/evaluations/${id}`);
   return response.data;
 };
 

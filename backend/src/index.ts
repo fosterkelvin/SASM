@@ -22,6 +22,7 @@ import workflowRoutes from "./routes/workflow.route";
 import traineeRoutes from "./routes/trainee.route";
 import dtrRoutes from "./routes/dtr.route";
 import leaveRoutes from "./routes/leave.route";
+import evaluationRoutes from "./routes/evaluation.route";
 import scholarRequestRoutes from "./routes/scholarRequest.route";
 import dashboardRoutes from "./routes/dashboard.route";
 import archivedApplicationRoutes from "./routes/archivedApplication.route";
@@ -114,8 +115,8 @@ app.use("/scholars", authenticate, traineeRoutes);
 app.use("/dtr", dtrRoutes);
 // Leave requests (students submit; office/HR review)
 app.use("/leave", leaveRoutes);
-// Leave management
-app.use("/leave", leaveRoutes);
+// Evaluation management (office submits; HR reviews)
+app.use("/evaluations", evaluationRoutes);
 // Scholar requests (office staff request scholars; HR reviews)
 app.use("/scholar-requests", scholarRequestRoutes);
 // Dashboard statistics

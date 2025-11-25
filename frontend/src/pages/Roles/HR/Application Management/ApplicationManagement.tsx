@@ -15,6 +15,7 @@ import {
   Search,
   Mail,
   X,
+  AlertCircle,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllApplications, updateApplicationStatus } from "@/lib/api";
@@ -24,11 +25,79 @@ import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
 import ApplicationTimeline from "@/components/ui/application-timeline";
 
+// Custom Alert Modal Component
+const AlertModal = ({
+  isOpen,
+  onClose,
+  title,
+  message,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      {/* Modal */}
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-md w-full mx-4 animate-in fade-in zoom-in duration-200">
+        <div className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                {title}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                {message}
+              </p>
+            </div>
+          </div>
+          <div className="mt-6 flex justify-end">
+            <Button
+              onClick={onClose}
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+            >
+              OK
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ApplicationManagement = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { triggerNotificationUpdate } = useNotificationUpdater();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Alert modal state
+  const [alertModal, setAlertModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (title: string, message: string) => {
+    setAlertModal({ isOpen: true, title, message });
+  };
+
+  const closeAlert = () => {
+    setAlertModal({ isOpen: false, title: "", message: "" });
+  };
 
   // Filters and pagination
   const [filters, setFilters] = useState({
@@ -180,7 +249,7 @@ const ApplicationManagement = () => {
         error?.response?.data?.message ||
         error?.message ||
         "Failed to update application status";
-      alert(errorMessage);
+      showAlert("Error", errorMessage);
     },
   });
 
@@ -287,7 +356,8 @@ const ApplicationManagement = () => {
           !statusUpdateData.psychometricTestLocation ||
           !statusUpdateData.psychometricTestWhatToBring
         ) {
-          alert(
+          showAlert(
+            "Missing Required Fields",
             "Please fill in all required psychometric test scheduling fields (Date, Time, Location, and What to Bring)."
           );
           return;
@@ -305,11 +375,15 @@ const ApplicationManagement = () => {
             hh > 17 ||
             (hh === 17 && mm > 0)
           ) {
-            alert("Psychometric test time must be between 08:00 and 17:00.");
+            showAlert(
+              "Invalid Test Time",
+              "Psychometric test time must be between 08:00 and 17:00."
+            );
             return;
           }
         } catch (e) {
-          alert(
+          showAlert(
+            "Invalid Test Time",
             "Invalid test time. Please choose a time between 08:00 and 17:00."
           );
           return;
@@ -324,7 +398,8 @@ const ApplicationManagement = () => {
           !statusUpdateData.interviewLocation ||
           !statusUpdateData.interviewWhatToBring
         ) {
-          alert(
+          showAlert(
+            "Missing Required Fields",
             "Please fill in all required interview scheduling fields (Date, Time, Location, and What to Bring)."
           );
           return;
@@ -342,11 +417,15 @@ const ApplicationManagement = () => {
             hh > 17 ||
             (hh === 17 && mm > 0)
           ) {
-            alert("Interview time must be between 08:00 and 17:00.");
+            showAlert(
+              "Invalid Interview Time",
+              "Interview time must be between 08:00 and 17:00."
+            );
             return;
           }
         } catch (e) {
-          alert(
+          showAlert(
+            "Invalid Interview Time",
             "Invalid interview time. Please choose a time between 08:00 and 17:00."
           );
           return;
@@ -494,6 +573,14 @@ const ApplicationManagement = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={closeAlert}
+        title={alertModal.title}
+        message={alertModal.message}
+      />
+
       {renderSidebar()}
       <div
         className={`flex-1 pt-16 md:pt-[81px] transition-all duration-300 ${

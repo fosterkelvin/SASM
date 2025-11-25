@@ -16,13 +16,18 @@ interface Leave {
   remarks?: string;
   createdAt: string;
   proofUrl?: string;
+  allowResubmit?: boolean;
 }
 
 interface MyLeavesListProps {
   refreshRef?: React.MutableRefObject<(() => void) | null>;
+  onResubmit?: (leave: Leave) => void;
 }
 
-const MyLeavesList: React.FC<MyLeavesListProps> = ({ refreshRef }) => {
+const MyLeavesList: React.FC<MyLeavesListProps> = ({
+  refreshRef,
+  onResubmit,
+}) => {
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState<string | null>(null);
@@ -204,6 +209,20 @@ const MyLeavesList: React.FC<MyLeavesListProps> = ({ refreshRef }) => {
                           Cancel
                         </>
                       )}
+                    </Button>
+                  </div>
+                )}
+
+                {leave.status === "disapproved" && leave.allowResubmit && (
+                  <div className="sm:ml-4">
+                    <Button
+                      onClick={() => onResubmit?.(leave)}
+                      variant="outline"
+                      size="sm"
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
+                      <FileText className="w-4 h-4 mr-1" />
+                      Resubmit
                     </Button>
                   </div>
                 )}

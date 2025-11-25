@@ -4,14 +4,7 @@ import PieCard from "./components/PieCard";
 import TimeSeriesChart from "./components/TimeSeriesChart";
 import PipelineCard from "./components/PipelineCard";
 import { getSummary, getTrends, getPipeline } from "@/lib/analyticsService";
-import {
-  Users,
-  UserPlus,
-  FileText,
-  Clock,
-  TrendingUp,
-  TrendingDown,
-} from "lucide-react";
+import { Users, UserPlus, FileText, Clock } from "lucide-react";
 
 const Analytics: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -79,7 +72,7 @@ const Analytics: React.FC = () => {
           },
         ];
 
-  const StatCard = ({ title, value, icon: Icon, color, trend }: any) => (
+  const StatCard = ({ title, value, icon: Icon, color }: any) => (
     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow duration-200">
       <div className="flex items-center justify-between mb-4">
         <div
@@ -87,20 +80,6 @@ const Analytics: React.FC = () => {
         >
           <Icon className="w-6 h-6 text-white" />
         </div>
-        {trend !== undefined && (
-          <div
-            className={`flex items-center gap-1 text-sm ${
-              trend >= 0 ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {trend >= 0 ? (
-              <TrendingUp className="w-4 h-4" />
-            ) : (
-              <TrendingDown className="w-4 h-4" />
-            )}
-            <span>{Math.abs(trend)}</span>
-          </div>
-        )}
       </div>
       <h3 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-1">
         {loading ? "..." : value ?? "0"}
@@ -139,35 +118,31 @@ const Analytics: React.FC = () => {
               value={summary?.activeStudents}
               icon={Users}
               color="bg-blue-600"
-              trend={5}
             />
             <StatCard
               title="New This Month"
               value={summary?.newThisMonth}
               icon={UserPlus}
               color="bg-green-600"
-              trend={2}
             />
             <StatCard
               title="Pending Applications"
               value={summary?.pendingApplications}
               icon={FileText}
               color="bg-orange-600"
-              trend={-1}
             />
             <StatCard
               title="Pending Leaves"
               value={summary?.pendingLeaves}
               icon={Clock}
               color="bg-purple-600"
-              trend={1}
             />
           </div>
 
           {/* Date Filters */}
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 mb-8">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-              Date Range Filter
+              Applications Date Filter
             </h3>
             <div className="flex flex-wrap gap-4">
               <div className="flex-1 min-w-[200px]">

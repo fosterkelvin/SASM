@@ -32,6 +32,7 @@ import {
 import { useToast } from "@/context/ToastContext";
 import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import ScheduleVisualization from "@/pages/Roles/Student/Schedule/components/ScheduleVisualization";
+import { CustomAlert, useCustomAlert } from "@/components/ui/custom-alert";
 
 const ScholarManagement = () => {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ const ScholarManagement = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [showEndSemesterModal, setShowEndSemesterModal] = useState(false);
+  const { alertState, showAlert, closeAlert } = useCustomAlert();
 
   // Filters
   const [filters, setFilters] = useState({
@@ -103,10 +105,14 @@ const ScholarManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scholars"] });
       closeDeployModal();
-      alert("Scholar deployed successfully!");
+      showAlert("Success", "Scholar deployed successfully!", "success");
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || "Failed to deploy scholar");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Failed to deploy scholar",
+        "error"
+      );
     },
   });
 
@@ -122,10 +128,14 @@ const ScholarManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scholars"] });
       closeDeployModal();
-      alert("Deployment updated successfully!");
+      showAlert("Success", "Deployment updated successfully!", "success");
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || "Failed to update deployment");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Failed to update deployment",
+        "error"
+      );
     },
   });
 
@@ -134,10 +144,14 @@ const ScholarManagement = () => {
     mutationFn: (applicationId: string) => undeployScholar(applicationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scholars"] });
-      alert("Scholar undeployed successfully!");
+      showAlert("Success", "Scholar undeployed successfully!", "success");
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || "Failed to update deployment");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Failed to update deployment",
+        "error"
+      );
     },
   });
 
@@ -208,7 +222,7 @@ const ScholarManagement = () => {
       setDtrData(response.dtr);
     } catch (error) {
       console.error("Error fetching DTR:", error);
-      alert("Failed to load DTR data");
+      showAlert("Error", "Failed to load DTR data. Please try again.", "error");
     } finally {
       setLoadingDTR(false);
     }
@@ -221,7 +235,11 @@ const ScholarManagement = () => {
       setScheduleData(response);
     } catch (error) {
       console.error("Error fetching schedule:", error);
-      alert("Failed to load schedule data");
+      showAlert(
+        "Error",
+        "Failed to load schedule data. Please try again.",
+        "error"
+      );
     } finally {
       setLoadingSchedule(false);
     }
@@ -242,7 +260,11 @@ const ScholarManagement = () => {
         setDtrData(response.dtr);
       } catch (error) {
         console.error("Error fetching DTR:", error);
-        alert("Failed to load DTR data");
+        showAlert(
+          "Error",
+          "Failed to load DTR data. Please try again.",
+          "error"
+        );
       } finally {
         setLoadingDTR(false);
       }
@@ -1195,6 +1217,15 @@ const ScholarManagement = () => {
           </div>
         </div>
       )}
+
+      {/* Custom Alert Modal */}
+      <CustomAlert
+        isOpen={alertState.isOpen}
+        onClose={closeAlert}
+        title={alertState.title}
+        message={alertState.message}
+        type={alertState.type}
+      />
     </div>
   );
 };

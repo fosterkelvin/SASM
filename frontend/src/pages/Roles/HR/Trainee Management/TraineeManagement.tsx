@@ -15,6 +15,8 @@ import {
   FileText,
   CalendarDays,
   ClipboardList,
+  AlertCircle,
+  CheckCircle,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -28,10 +30,99 @@ import {
 import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import ScheduleVisualization from "@/pages/Roles/Student/Schedule/components/ScheduleVisualization";
 
+// Custom Alert Modal Component
+const AlertModal = ({
+  isOpen,
+  onClose,
+  title,
+  message,
+  type = "error",
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  message: string;
+  type?: "success" | "error";
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      {/* Modal */}
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-2xl max-w-md w-full mx-4 animate-in fade-in zoom-in duration-200">
+        <div className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <div
+                className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                  type === "success"
+                    ? "bg-green-100 dark:bg-green-900/30"
+                    : "bg-red-100 dark:bg-red-900/30"
+                }`}
+              >
+                {type === "success" ? (
+                  <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                ) : (
+                  <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                )}
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                {title}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                {message}
+              </p>
+            </div>
+          </div>
+          <div className="mt-6 flex justify-end">
+            <Button
+              onClick={onClose}
+              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                type === "success"
+                  ? "bg-green-600 hover:bg-green-700 text-white"
+                  : "bg-red-600 hover:bg-red-700 text-white"
+              }`}
+            >
+              OK
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const TraineeManagement = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Alert modal state
+  const [alertModal, setAlertModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "error" as "success" | "error",
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: "success" | "error" = "error"
+  ) => {
+    setAlertModal({ isOpen: true, title, message, type });
+  };
+
+  const closeAlert = () => {
+    setAlertModal({ isOpen: false, title: "", message: "", type: "error" });
+  };
 
   // Filters
   const [filters, setFilters] = useState({
@@ -93,10 +184,13 @@ const TraineeManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trainees"] });
       closeDeployModal();
-      alert("Trainee deployed successfully!");
+      showAlert("Success", "Trainee deployed successfully!", "success");
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || "Failed to deploy trainee");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Failed to deploy trainee"
+      );
     },
   });
 
@@ -112,10 +206,13 @@ const TraineeManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["trainees"] });
       closeDeployModal();
-      alert("Deployment updated successfully!");
+      showAlert("Success", "Deployment updated successfully!", "success");
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || "Failed to update deployment");
+      showAlert(
+        "Error",
+        error.response?.data?.message || "Failed to update deployment"
+      );
     },
   });
 
@@ -181,7 +278,7 @@ const TraineeManagement = () => {
       setDtrData(response.dtr);
     } catch (error) {
       console.error("Error fetching DTR:", error);
-      alert("Failed to load DTR data");
+      showAlert("Error", "Failed to load DTR data");
     } finally {
       setLoadingDTR(false);
     }
@@ -217,7 +314,7 @@ const TraineeManagement = () => {
         setDtrData(response.dtr);
       } catch (error) {
         console.error("Error fetching DTR:", error);
-        alert("Failed to load DTR data");
+        showAlert("Error", "Failed to load DTR data");
       } finally {
         setLoadingDTR(false);
       }
@@ -279,6 +376,15 @@ const TraineeManagement = () => {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-900 dark:via-gray-800 dark:to-red-900/20">
+      {/* Alert Modal */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={closeAlert}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+      />
+
       <HRSidebar
         currentPage="Trainees"
         onCollapseChange={setIsSidebarCollapsed}

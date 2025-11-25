@@ -5,6 +5,7 @@ import { Submission } from "./components/HRRequirementsList";
 import ViewSubmissionModal from "./components/ViewSubmissionModal";
 import API from "@/config/apiClient";
 import { FileText, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { CustomAlert, useCustomAlert } from "@/components/ui/custom-alert";
 
 const RequirementsManagement: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -14,6 +15,7 @@ const RequirementsManagement: React.FC = () => {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<any | null>(null);
   const [approving, setApproving] = useState<string | null>(null);
+  const { alertState, showAlert, closeAlert } = useCustomAlert();
 
   useEffect(() => {
     document.title = "Requirements Management (HR) | SASM-IMS";
@@ -46,10 +48,14 @@ const RequirementsManagement: React.FC = () => {
       await fetchRequirements();
 
       // Show success message (you can use a toast notification here)
-      alert("Requirements approved successfully!");
+      showAlert("Success", "Requirements approved successfully!", "success");
     } catch (err: any) {
       console.error("Error approving requirements:", err);
-      alert(err.response?.data?.message || "Failed to approve requirements");
+      showAlert(
+        "Error",
+        err.response?.data?.message || "Failed to approve requirements",
+        "error"
+      );
     } finally {
       setApproving(null);
     }
@@ -67,10 +73,18 @@ const RequirementsManagement: React.FC = () => {
       // Refresh the list
       await fetchRequirements();
 
-      alert("Requirements rejected successfully!");
+      showAlert(
+        "Success",
+        "Requirements rejected successfully. The applicant has been notified.",
+        "warning"
+      );
     } catch (err: any) {
       console.error("Error rejecting requirements:", err);
-      alert(err.response?.data?.message || "Failed to reject requirements");
+      showAlert(
+        "Error",
+        err.response?.data?.message || "Failed to reject requirements",
+        "error"
+      );
     } finally {
       setApproving(null);
     }
@@ -363,6 +377,15 @@ const RequirementsManagement: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Custom Alert Modal */}
+      <CustomAlert
+        isOpen={alertState.isOpen}
+        onClose={closeAlert}
+        title={alertState.title}
+        message={alertState.message}
+        type={alertState.type}
+      />
     </div>
   );
 };

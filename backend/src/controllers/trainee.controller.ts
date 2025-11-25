@@ -223,7 +223,8 @@ export const getOfficeScholarsHandler = catchErrors(
 
     // Build filter for scholars
     let filter: any = {
-      status: "active", // Only active scholars
+      // Include both active and inactive scholars for evaluation purposes
+      status: { $in: ["active", "inactive"] },
     };
 
     if (user.role === "office") {
@@ -451,7 +452,7 @@ export const deployTraineeHandler = catchErrors(
     application.timeline = application.timeline || [];
     application.timeline.push(timelineEntry as any);
 
-    await application.save();
+    await application.save({ validateBeforeSave: false });
 
     // Notify office users about the deployment (no email, just in-app notification)
     try {
@@ -663,7 +664,7 @@ export const updateTraineeDeploymentHandler = catchErrors(
       application.timeline.push(timelineEntry as any);
     }
 
-    await application.save();
+    await application.save({ validateBeforeSave: false });
 
     // Populate for response
     await application.populate("userID", "firstname lastname email");
@@ -757,7 +758,7 @@ export const undeployScholarHandler = catchErrors(
     application.timeline = application.timeline || [];
     application.timeline.push(timelineEntry as any);
 
-    await application.save();
+    await application.save({ validateBeforeSave: false });
 
     // Populate for response
     await application.populate("userID", "firstname lastname email");
@@ -859,7 +860,7 @@ export const updateTraineeHoursHandler = catchErrors(
       application.timeline.push(completionEntry as any);
     }
 
-    await application.save();
+    await application.save({ validateBeforeSave: false });
 
     // Notify HR when office rates a trainee
     if (traineePerformanceRating !== undefined) {
@@ -1082,7 +1083,7 @@ export const scheduleDeploymentInterviewHandler = catchErrors(
     application.timeline = application.timeline || [];
     application.timeline.push(timelineEntry as any);
 
-    await application.save();
+    await application.save({ validateBeforeSave: false });
 
     // Populate for response
     await application.populate("userID", "firstname lastname email");
@@ -1205,7 +1206,7 @@ export const acceptDeploymentHandler = catchErrors(
     application.timeline = application.timeline || [];
     application.timeline.push(timelineEntry as any);
 
-    await application.save();
+    await application.save({ validateBeforeSave: false });
 
     // Populate for response
     await application.populate("userID", "firstname lastname email");
@@ -1314,7 +1315,7 @@ export const rejectDeploymentHandler = catchErrors(
     application.timeline = application.timeline || [];
     application.timeline.push(timelineEntry as any);
 
-    await application.save();
+    await application.save({ validateBeforeSave: false });
 
     // Populate for response
     await application.populate("userID", "firstname lastname email");
@@ -1751,7 +1752,7 @@ export const addDutyHoursHandler = catchErrors(
 
       application.timeline = application.timeline || [];
       application.timeline.push(timelineEntry as any);
-      await application.save();
+      await application.save({ validateBeforeSave: false });
 
       console.log("✅ Duty hours added to trainee schedule");
 

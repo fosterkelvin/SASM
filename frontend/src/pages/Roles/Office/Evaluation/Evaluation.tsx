@@ -1,38 +1,41 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import ScholarList from "./components/ScholarList";
 import EvaluationForm from "./components/EvaluationForm";
 import { Scholar } from "./components/types";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { getOfficeScholars } from "@/lib/api";
 
 const OfficeEvaluationPage: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [scholars] = useState<Scholar[]>(() => {
-    try {
-      const raw = localStorage.getItem("office_scholars");
-      if (raw) return JSON.parse(raw) as Scholar[];
-    } catch (e) {
-      // ignore
-    }
-    const list = [
-      { id: "s1", name: "Juan Dela Cruz" },
-      { id: "s2", name: "Maria Santos" },
-      { id: "s3", name: "Pedro Reyes" },
-    ];
-    try {
-      localStorage.setItem("office_scholars", JSON.stringify(list));
-    } catch (e) {
-      // ignore
-    }
-    return list;
-  });
-
   const [selected, setSelected] = useState<null | Scholar>(null);
 
-  useEffect(() => {
-    // placeholder if needed
-  }, []);
+  // Fetch real scholars from backend
+  const {
+    data: scholarsData,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["office-scholars"],
+    queryFn: getOfficeScholars,
+  });
+
+  // Transform backend data to Scholar format
+  const scholars: Scholar[] =
+    scholarsData?.scholars?.map((s: any) => ({
+      id: s._id,
+      name: `${s.userId?.firstname || ""} ${s.userId?.lastname || ""}`.trim(),
+    })) || [];
+
+  // Debug logging
+  React.useEffect(() => {
+    if (scholarsData) {
+      console.log("📊 Scholars data received:", scholarsData);
+      console.log("📊 Transformed scholars:", scholars);
+    }
+  }, [scholarsData, scholars]);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900">
@@ -54,7 +57,7 @@ const OfficeEvaluationPage: React.FC = () => {
           }`}
         >
           <h1 className="text-2xl font-bold text-white ml-4">
-            Office - Scholar Evaluation
+            Scholar Evaluation
           </h1>
           <div className="ml-auto mr-4" />
         </div>
@@ -74,15 +77,24 @@ const OfficeEvaluationPage: React.FC = () => {
                       Scholar Evaluation
                     </h2>
                     <p className="text-sm sm:text-base md:text-lg font-semibold text-red-600 dark:text-red-400">
-                      Evaluate scholars using modular criteria. This is a
-                      frontend-only mock.
+                      Evaluate scholars using modular criteria.
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="mt-4">
-                {!selected ? (
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">Loading scholars...</p>
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-8">
+                    <p className="text-red-500">
+                      Error loading scholars. Please try again.
+                    </p>
+                  </div>
+                ) : !selected ? (
                   <ScholarList scholars={scholars} onSelect={setSelected} />
                 ) : (
                   <div>

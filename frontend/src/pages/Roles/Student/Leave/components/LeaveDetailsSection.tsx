@@ -11,6 +11,8 @@ type Props = {
 };
 
 const LeaveDetailsSection: React.FC<Props> = ({ data, onChange }) => {
+  const [showOthersInput, setShowOthersInput] = React.useState(false);
+
   // Calculate number of days when dates change
   useEffect(() => {
     if (data.dateFrom && data.dateTo) {
@@ -36,6 +38,17 @@ const LeaveDetailsSection: React.FC<Props> = ({ data, onChange }) => {
     }
   }, [data.dateFrom, data.dateTo]);
 
+  // Check if current value is a custom "others" type
+  useEffect(() => {
+    const isPredefinedType = ["", "sick", "social", "bereavement"].includes(
+      data.typeOfLeave
+    );
+    setShowOthersInput(!isPredefinedType);
+  }, [data.typeOfLeave]);
+
+  // Determine dropdown value
+  const dropdownValue = showOthersInput ? "others" : data.typeOfLeave;
+
   return (
     <div className="p-6 border rounded bg-white dark:bg-gray-800">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -45,8 +58,20 @@ const LeaveDetailsSection: React.FC<Props> = ({ data, onChange }) => {
           </label>
           <select
             name="typeOfLeave"
-            value={data.typeOfLeave === "others" ? "others" : data.typeOfLeave}
-            onChange={onChange}
+            value={dropdownValue}
+            onChange={(e) => {
+              if (e.target.value === "others") {
+                setShowOthersInput(true);
+                // Clear the value so user can type custom text
+                const evt = {
+                  target: { name: "typeOfLeave", value: "" },
+                } as React.ChangeEvent<HTMLSelectElement>;
+                onChange(evt);
+              } else {
+                setShowOthersInput(false);
+                onChange(e);
+              }
+            }}
             className="mt-1 block w-full rounded-md border-gray-200 shadow-sm p-2"
           >
             <option value="">Select leave type</option>
@@ -55,10 +80,10 @@ const LeaveDetailsSection: React.FC<Props> = ({ data, onChange }) => {
             <option value="bereavement">Bereavement Leave</option>
             <option value="others">Others</option>
           </select>
-          {data.typeOfLeave === "others" && (
+          {showOthersInput && (
             <input
               name="typeOfLeave"
-              value={data.typeOfLeave === "others" ? "" : data.typeOfLeave}
+              value={data.typeOfLeave}
               onChange={onChange}
               className="mt-2 block w-full rounded-md border-gray-200 shadow-sm p-2"
               placeholder="Specify leave type"

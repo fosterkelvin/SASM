@@ -156,6 +156,11 @@ const HRSidebar = ({
     setIsOpen(false);
   };
 
+  const handleEvaluationsClick = () => {
+    navigate("/hr/evaluations");
+    setIsOpen(false);
+  };
+
   const handleNotificationsClick = () => {
     navigate("/notifications");
     setIsOpen(false);
@@ -183,7 +188,7 @@ const HRSidebar = ({
 
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
-    { label: "Requirements", handler: handleRequirementsClick },
+    { label: "Notifications", handler: handleNotificationsClick },
     { label: "Analytics", handler: handleAnalyticsClick },
     { label: "Applications", handler: handleApplicationsClick },
     { label: "Reapplications", handler: handleReapplicationsClick },
@@ -191,9 +196,11 @@ const HRSidebar = ({
     { label: "Trainees", handler: handleTraineesClick },
     { label: "Scholars", handler: handleScholarsClick },
     { label: "Scholar Requests", handler: handleScholarRequestsClick },
+    { label: "Users", handler: handleUsersClick },
+    { label: "Requirements", handler: handleRequirementsClick },
     { label: "Leave Management", handler: handleLeavesClick },
     { label: "DTR Check", handler: handleDTRCheckClick },
-    { label: "Notifications", handler: handleNotificationsClick },
+    { label: "Evaluations", handler: handleEvaluationsClick },
     { label: "Profile", handler: handleProfileClick },
     { label: "Sign out", handler: handleSignout },
   ];
@@ -297,6 +304,7 @@ const HRSidebar = ({
                     scholarRequests: handleScholarRequestsClick,
                     leaves: handleLeavesClick,
                     dtrCheck: handleDTRCheckClick,
+                    evaluations: handleEvaluationsClick,
                     notifications: handleNotificationsClick,
                   }}
                 />

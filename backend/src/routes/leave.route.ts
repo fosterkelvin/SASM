@@ -8,6 +8,7 @@ import {
   listLeavesForOffice,
   submitLeave,
   cancelLeave,
+  updateLeave,
 } from "../controllers/leave.controller";
 
 const leaveRoutes = Router();
@@ -18,6 +19,7 @@ leaveRoutes.use(authenticate);
 // Student endpoints
 leaveRoutes.post("/", upload.single("proof"), submitLeave);
 leaveRoutes.get("/my", getMyLeaves);
+leaveRoutes.put("/:id", upload.single("proof"), updateLeave);
 leaveRoutes.delete("/:id", cancelLeave);
 
 // Office / HR endpoints

@@ -3,7 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { X, Calendar, Clock, MapPin, Link as LinkIcon, Award, Users } from "lucide-react";
+import {
+  X,
+  Calendar,
+  Clock,
+  MapPin,
+  Link as LinkIcon,
+  Award,
+  Users,
+} from "lucide-react";
+import { useCustomAlert } from "@/components/ui/custom-alert";
 
 // Psychometric Test Schedule Modal
 interface PsychometricScheduleModalProps {
@@ -64,7 +73,10 @@ export const PsychometricScheduleModal = ({
                   type="date"
                   value={formData.psychometricTestDate}
                   onChange={(e) =>
-                    setFormData({ ...formData, psychometricTestDate: e.target.value })
+                    setFormData({
+                      ...formData,
+                      psychometricTestDate: e.target.value,
+                    })
                   }
                   required
                 />
@@ -80,7 +92,10 @@ export const PsychometricScheduleModal = ({
                   type="time"
                   value={formData.psychometricTestTime}
                   onChange={(e) =>
-                    setFormData({ ...formData, psychometricTestTime: e.target.value })
+                    setFormData({
+                      ...formData,
+                      psychometricTestTime: e.target.value,
+                    })
                   }
                   required
                 />
@@ -97,7 +112,10 @@ export const PsychometricScheduleModal = ({
                 placeholder="e.g., HR Office Room 201"
                 value={formData.psychometricTestLocation}
                 onChange={(e) =>
-                  setFormData({ ...formData, psychometricTestLocation: e.target.value })
+                  setFormData({
+                    ...formData,
+                    psychometricTestLocation: e.target.value,
+                  })
                 }
               />
             </div>
@@ -113,7 +131,10 @@ export const PsychometricScheduleModal = ({
                 placeholder="https://test.example.com/abc123"
                 value={formData.psychometricTestLink}
                 onChange={(e) =>
-                  setFormData({ ...formData, psychometricTestLink: e.target.value })
+                  setFormData({
+                    ...formData,
+                    psychometricTestLink: e.target.value,
+                  })
                 }
               />
             </div>
@@ -127,16 +148,28 @@ export const PsychometricScheduleModal = ({
                 placeholder="e.g., Please bring a valid ID"
                 value={formData.psychometricTestNotes}
                 onChange={(e) =>
-                  setFormData({ ...formData, psychometricTestNotes: e.target.value })
+                  setFormData({
+                    ...formData,
+                    psychometricTestNotes: e.target.value,
+                  })
                 }
               />
             </div>
 
             <div className="flex gap-2 justify-end pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
                 {loading ? "Scheduling..." : "Schedule Test"}
               </Button>
             </div>
@@ -205,7 +238,10 @@ export const PsychometricScoreModal = ({
                 placeholder="85"
                 value={formData.psychometricTestScore}
                 onChange={(e) =>
-                  setFormData({ ...formData, psychometricTestScore: e.target.value })
+                  setFormData({
+                    ...formData,
+                    psychometricTestScore: e.target.value,
+                  })
                 }
                 required
               />
@@ -232,7 +268,10 @@ export const PsychometricScoreModal = ({
                     name="passed"
                     checked={formData.psychometricTestPassed === false}
                     onChange={() =>
-                      setFormData({ ...formData, psychometricTestPassed: false })
+                      setFormData({
+                        ...formData,
+                        psychometricTestPassed: false,
+                      })
                     }
                     className="w-4 h-4 text-red-600"
                   />
@@ -250,13 +289,21 @@ export const PsychometricScoreModal = ({
                 placeholder="e.g., Strong analytical skills demonstrated"
                 value={formData.psychometricTestNotes}
                 onChange={(e) =>
-                  setFormData({ ...formData, psychometricTestNotes: e.target.value })
+                  setFormData({
+                    ...formData,
+                    psychometricTestNotes: e.target.value,
+                  })
                 }
               />
             </div>
 
             <div className="flex gap-2 justify-end pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+              >
                 Cancel
               </Button>
               <Button
@@ -361,7 +408,10 @@ export const InterviewScheduleModal = ({
               <Label>Interview Mode *</Label>
               <div className="flex gap-4 mt-2">
                 {["in-person", "virtual", "phone"].map((mode) => (
-                  <label key={mode} className="flex items-center gap-2 cursor-pointer">
+                  <label
+                    key={mode}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
                     <input
                       type="radio"
                       name="mode"
@@ -369,7 +419,10 @@ export const InterviewScheduleModal = ({
                       onChange={() =>
                         setFormData({
                           ...formData,
-                          interviewMode: mode as "in-person" | "virtual" | "phone",
+                          interviewMode: mode as
+                            | "in-person"
+                            | "virtual"
+                            | "phone",
                         })
                       }
                       className="w-4 h-4"
@@ -391,7 +444,10 @@ export const InterviewScheduleModal = ({
                   placeholder="e.g., HR Office Conference Room"
                   value={formData.interviewLocation}
                   onChange={(e) =>
-                    setFormData({ ...formData, interviewLocation: e.target.value })
+                    setFormData({
+                      ...formData,
+                      interviewLocation: e.target.value,
+                    })
                   }
                 />
               </div>
@@ -430,7 +486,12 @@ export const InterviewScheduleModal = ({
             </div>
 
             <div className="flex gap-2 justify-end pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+              >
                 Cancel
               </Button>
               <Button
@@ -493,7 +554,9 @@ export const InterviewResultModal = ({
                   <button
                     key={score}
                     type="button"
-                    onClick={() => setFormData({ ...formData, interviewScore: score })}
+                    onClick={() =>
+                      setFormData({ ...formData, interviewScore: score })
+                    }
                     className={`w-12 h-12 rounded-full border-2 font-bold transition-all ${
                       formData.interviewScore === score
                         ? "bg-blue-600 text-white border-blue-600 scale-110"
@@ -517,7 +580,9 @@ export const InterviewResultModal = ({
                     type="radio"
                     name="passed"
                     checked={formData.interviewPassed === true}
-                    onChange={() => setFormData({ ...formData, interviewPassed: true })}
+                    onChange={() =>
+                      setFormData({ ...formData, interviewPassed: true })
+                    }
                     className="w-4 h-4 text-green-600"
                   />
                   <span className="text-green-600 font-medium">Passed</span>
@@ -527,7 +592,9 @@ export const InterviewResultModal = ({
                     type="radio"
                     name="passed"
                     checked={formData.interviewPassed === false}
-                    onChange={() => setFormData({ ...formData, interviewPassed: false })}
+                    onChange={() =>
+                      setFormData({ ...formData, interviewPassed: false })
+                    }
                     className="w-4 h-4 text-red-600"
                   />
                   <span className="text-red-600 font-medium">Failed</span>
@@ -550,7 +617,12 @@ export const InterviewResultModal = ({
             </div>
 
             <div className="flex gap-2 justify-end pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+              >
                 Cancel
               </Button>
               <Button
@@ -637,7 +709,10 @@ export const SetAsTraineeModal = ({
                   type="date"
                   value={formData.traineeStartDate}
                   onChange={(e) =>
-                    setFormData({ ...formData, traineeStartDate: e.target.value })
+                    setFormData({
+                      ...formData,
+                      traineeStartDate: e.target.value,
+                    })
                   }
                   required
                 />
@@ -679,7 +754,10 @@ export const SetAsTraineeModal = ({
                   className="w-full px-3 py-2 border rounded-md"
                   value={formData.traineeSupervisor}
                   onChange={(e) =>
-                    setFormData({ ...formData, traineeSupervisor: e.target.value })
+                    setFormData({
+                      ...formData,
+                      traineeSupervisor: e.target.value,
+                    })
                   }
                 >
                   <option value="">Select a supervisor...</option>
@@ -708,14 +786,20 @@ export const SetAsTraineeModal = ({
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Once set as trainee, you'll need to regularly update their
-                completed hours. The system will automatically mark training as complete when they
-                reach the required hours.
+                <strong>Note:</strong> Once set as trainee, you'll need to
+                regularly update their completed hours. The system will
+                automatically mark training as complete when they reach the
+                required hours.
               </p>
             </div>
 
             <div className="flex gap-2 justify-end pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+              >
                 Cancel
               </Button>
               <Button
@@ -824,7 +908,8 @@ export const UpdateHoursModal = ({
             {willComplete && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <p className="text-sm text-green-800 font-medium">
-                  🎉 Training will be marked as complete! The trainee has met the required hours.
+                  🎉 Training will be marked as complete! The trainee has met
+                  the required hours.
                 </p>
               </div>
             )}
@@ -844,13 +929,20 @@ export const UpdateHoursModal = ({
             </div>
 
             <div className="flex gap-2 justify-end pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+              >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={loading}
-                className={willComplete ? "bg-green-600 hover:bg-green-700" : ""}
+                className={
+                  willComplete ? "bg-green-600 hover:bg-green-700" : ""
+                }
               >
                 {loading ? "Updating..." : "Update Hours"}
               </Button>
@@ -906,10 +998,12 @@ export const AcceptApplicationModal = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
               <p className="text-green-800 font-medium">
-                You are about to accept <strong>{applicantName}</strong>'s application.
+                You are about to accept <strong>{applicantName}</strong>'s
+                application.
               </p>
               <p className="text-sm text-green-700 mt-2">
-                This is the final step. The applicant will be officially accepted and notified.
+                This is the final step. The applicant will be officially
+                accepted and notified.
               </p>
             </div>
 
@@ -921,7 +1015,10 @@ export const AcceptApplicationModal = ({
                     key={rating}
                     type="button"
                     onClick={() =>
-                      setFormData({ ...formData, traineePerformanceRating: rating })
+                      setFormData({
+                        ...formData,
+                        traineePerformanceRating: rating,
+                      })
                     }
                     className={`w-12 h-12 rounded-full border-2 font-bold transition-all ${
                       formData.traineePerformanceRating === rating
@@ -954,13 +1051,18 @@ export const AcceptApplicationModal = ({
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <p className="text-sm text-yellow-800">
-                <strong>Requirements:</strong> Applicant must have a verified @s.ubaguio.edu email
-                address.
+                <strong>Requirements:</strong> Applicant must have a verified
+                @s.ubaguio.edu email address.
               </p>
             </div>
 
             <div className="flex gap-2 justify-end pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+              >
                 Cancel
               </Button>
               <Button
@@ -1020,7 +1122,8 @@ export const RejectApplicationModal = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
               <p className="text-red-800 font-medium">
-                You are about to reject <strong>{applicantName}</strong>'s application.
+                You are about to reject <strong>{applicantName}</strong>'s
+                application.
               </p>
               <p className="text-sm text-red-700 mt-2">
                 The applicant will be notified. This action cannot be undone.
@@ -1044,7 +1147,12 @@ export const RejectApplicationModal = ({
             </div>
 
             <div className="flex gap-2 justify-end pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+              >
                 Cancel
               </Button>
               <Button

@@ -96,8 +96,8 @@ const SidebarNav: React.FC<NavProps> = ({
           </>
         )}
 
-        {/* Show Apply only for applicants without accepted status and not re-applicants */}
-        {!isAccepted && !hasActiveApplication && !isReapplicant && (
+        {/* Show Apply for applicants who are not re-applicants - allow access even with active application for viewing/withdrawing */}
+        {isApplicant && !isReapplicant && (
           <li>
             <SidebarItem
               label="Apply"

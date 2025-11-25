@@ -14,6 +14,7 @@ import {
   getOfficeScholars,
 } from "@/lib/api";
 import { ArrowLeft, Clock, Plus, Save, Trash2 } from "lucide-react";
+import { CustomAlert, useCustomAlert } from "@/components/ui/custom-alert";
 
 interface DutyHourEntry {
   day: string;
@@ -35,6 +36,7 @@ const ScholarSchedule: React.FC = () => {
     endTime: "",
     location: "",
   });
+  const { alertState, showAlert, closeAlert } = useCustomAlert();
 
   useEffect(() => {
     document.title = "Scholar Work Schedule | SASM-IMS";
@@ -111,14 +113,16 @@ const ScholarSchedule: React.FC = () => {
         endTime: "",
         location: "",
       });
-      alert("Duty hours added successfully!");
+      showAlert("Success", "Duty hours added successfully!", "success");
     },
     onError: (error: any) => {
       console.error("❌ Failed to add duty hours:", error);
       console.error("❌ Error response:", error.response?.data);
-      alert(
+      showAlert(
+        "Error",
         error.response?.data?.message ||
-          "Failed to add duty hours. Please try again."
+          "Failed to add duty hours. Please try again.",
+        "error"
       );
     },
   });
@@ -135,14 +139,16 @@ const ScholarSchedule: React.FC = () => {
       queryClient.invalidateQueries({
         queryKey: ["classSchedule", applicationId],
       });
-      alert("Duty hours removed successfully!");
+      showAlert("Success", "Duty hours removed successfully!", "success");
     },
     onError: (error: any) => {
       console.error("❌ Failed to remove duty hours:", error);
       console.error("❌ Error response:", error.response?.data);
-      alert(
+      showAlert(
+        "Error",
         error.response?.data?.message ||
-          "Failed to remove duty hours. Please try again."
+          "Failed to remove duty hours. Please try again.",
+        "error"
       );
     },
   });
@@ -154,7 +160,11 @@ const ScholarSchedule: React.FC = () => {
       !dutyHourEntry.startTime ||
       !dutyHourEntry.endTime
     ) {
-      alert("Please fill in all required fields");
+      showAlert(
+        "Validation Error",
+        "Please fill in all required fields.",
+        "warning"
+      );
       return;
     }
     addDutyHoursMutation.mutate(dutyHourEntry);
@@ -634,6 +644,15 @@ const ScholarSchedule: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Custom Alert Modal */}
+      <CustomAlert
+        isOpen={alertState.isOpen}
+        onClose={closeAlert}
+        title={alertState.title}
+        message={alertState.message}
+        type={alertState.type}
+      />
     </div>
   );
 };

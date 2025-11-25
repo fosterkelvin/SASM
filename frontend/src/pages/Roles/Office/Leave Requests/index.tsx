@@ -44,6 +44,7 @@ const LeaveRequestsPage: React.FC = () => {
           proofUrl: l.proofUrl,
           decidedByProfile: l.decidedByProfile,
           decidedAt: l.decidedAt,
+          allowResubmit: l.allowResubmit,
         }));
         setRequests(items);
       } catch (e: any) {
@@ -59,16 +60,19 @@ const LeaveRequestsPage: React.FC = () => {
   const onSubmit = async (
     id: string,
     status: LeaveRequest["status"],
-    remarks?: string
+    remarks?: string,
+    allowResubmit?: boolean
   ) => {
     try {
       if (status === "pending") {
         addToast("Use Approve or Disapprove to decide.", "warning");
         return;
       }
-      await decideLeaveRequest(id, { status, remarks });
+      await decideLeaveRequest(id, { status, remarks, allowResubmit });
       setRequests((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, status, remarks } : p))
+        prev.map((p) =>
+          p.id === id ? { ...p, status, remarks, allowResubmit } : p
+        )
       );
       addToast("Decision saved.", "success");
       setActive(null);
