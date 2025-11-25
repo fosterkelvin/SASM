@@ -20,6 +20,7 @@ import EmailManagementCard from "./components/EmailManagementCard";
 import ChangePasswordCard from "./components/ChangePasswordCard";
 import ActiveSessionsCard from "./components/ActiveSessionsCard";
 import CancelEmailModal from "./components/CancelEmailModal";
+import PersonalInfoIncompleteWarning from "./components/PersonalInfoIncompleteWarning";
 import { Monitor, Smartphone } from "lucide-react";
 
 // Validation schema for password change
@@ -539,6 +540,9 @@ const Profile = () => {
         {/* Main content - Better space utilization */}
         <div className="p-4 md:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto space-y-6">
+            {/* Academic Info Incomplete Warning - Only for Students */}
+            {user?.role === "student" && <PersonalInfoIncompleteWarning />}
+
             {/* Top Row - User Info and Email Management */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <PersonalInfoCard user={user} colorScheme={colorScheme} />

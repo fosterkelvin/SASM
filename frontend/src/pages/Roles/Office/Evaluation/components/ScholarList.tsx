@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Scholar } from "./types";
-import { Search, Users } from "lucide-react";
+import { Search, Users, CheckCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface Props {
@@ -19,7 +19,7 @@ const ScholarList: React.FC<Props> = ({ scholars, onSelect }) => {
     return scholars.filter(
       (s) =>
         s.name.toLowerCase().includes(query) ||
-        s.id.toLowerCase().includes(query)
+        s.email.toLowerCase().includes(query)
     );
   }, [scholars, searchQuery]);
 
@@ -33,7 +33,7 @@ const ScholarList: React.FC<Props> = ({ scholars, onSelect }) => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             type="text"
-            placeholder="Search by name or ID..."
+            placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 pr-4 py-2 w-full border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
@@ -73,14 +73,24 @@ const ScholarList: React.FC<Props> = ({ scholars, onSelect }) => {
             <button
               key={s.id}
               onClick={() => onSelect(s)}
-              className="text-left p-4 border rounded-lg hover:shadow-md hover:border-red-300 bg-white dark:bg-gray-800 transition-all duration-200"
+              className="text-left p-4 border rounded-lg hover:shadow-md hover:border-red-300 bg-white dark:bg-gray-800 transition-all duration-200 relative"
             >
+              {s.hasEvaluation && (
+                <div className="absolute top-2 right-2">
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+              )}
               <div className="font-medium text-gray-900 dark:text-gray-100">
                 {s.name}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                ID: {s.id}
+                {s.email}
               </div>
+              {s.hasEvaluation && (
+                <div className="text-xs text-green-600 dark:text-green-400 mt-2 font-medium">
+                  ✓ Evaluated by {s.evaluatorName || "Unknown"}
+                </div>
+              )}
             </button>
           ))}
         </div>

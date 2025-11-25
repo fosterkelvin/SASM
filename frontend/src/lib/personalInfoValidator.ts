@@ -6,11 +6,13 @@ export interface UserData {
   civilStatus?: string | null;
   phoneNumber?: string | null;
   address?: string | null;
+  college?: string | null;
+  courseYear?: string | null;
 }
 
 /**
  * Checks if the student has filled all required personal info fields
- * Required fields: gender, birthdate, civilStatus
+ * Required fields: gender, birthdate, civilStatus, college, courseYear
  */
 export const isPersonalInfoComplete = (
   userData: UserData | undefined | null
@@ -21,8 +23,12 @@ export const isPersonalInfoComplete = (
   const hasGender = !!userData.gender && userData.gender !== "";
   const hasBirthdate = !!userData.birthdate;
   const hasCivilStatus = !!userData.civilStatus && userData.civilStatus !== "";
+  const hasCollege = !!userData.college && userData.college !== "";
+  const hasCourseYear = !!userData.courseYear && userData.courseYear !== "";
 
-  return hasGender && hasBirthdate && hasCivilStatus;
+  return (
+    hasGender && hasBirthdate && hasCivilStatus && hasCollege && hasCourseYear
+  );
 };
 
 /**
@@ -32,7 +38,13 @@ export const getMissingPersonalInfoFields = (
   userData: UserData | undefined | null
 ): string[] => {
   if (!userData) {
-    return ["Gender", "Birthdate", "Civil Status"];
+    return [
+      "Gender",
+      "Birthdate",
+      "Civil Status",
+      "School/Department",
+      "Course & Year",
+    ];
   }
 
   const missing: string[] = [];
@@ -45,6 +57,12 @@ export const getMissingPersonalInfoFields = (
   }
   if (!userData.civilStatus || userData.civilStatus === "") {
     missing.push("Civil Status");
+  }
+  if (!userData.college || userData.college === "") {
+    missing.push("School/Department");
+  }
+  if (!userData.courseYear || userData.courseYear === "") {
+    missing.push("Course & Year");
   }
 
   return missing;

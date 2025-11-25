@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ScholarEvaluation,
   CriterionEvaluation,
@@ -7,17 +7,39 @@ import {
 import { Button } from "@/components/ui/button";
 import { submitEvaluation } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Props {
   scholarId: string;
+  onSuccess?: () => void;
+  existingEvaluation?: any;
 }
 
-const EvaluationForm: React.FC<Props> = ({ scholarId }) => {
-  const [items, setItems] = useState<CriterionEvaluation[]>(() =>
-    defaultCriteria.map((c) => ({ criterion: c }))
-  );
+const EvaluationForm: React.FC<Props> = ({
+  scholarId,
+  onSuccess,
+  existingEvaluation,
+}) => {
+  const [items, setItems] = useState<CriterionEvaluation[]>(() => {
+    // If there's existing evaluation, use its data
+    if (existingEvaluation?.items) {
+      return existingEvaluation.items;
+    }
+    // Otherwise, initialize with empty criteria
+    return defaultCriteria.map((c) => ({ criterion: c }));
+  });
   const [submitting, setSubmitting] = useState(false);
   const { addToast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Update items if existingEvaluation changes
+  useEffect(() => {
+    if (existingEvaluation?.items) {
+      setItems(existingEvaluation.items);
+    } else {
+      setItems(defaultCriteria.map((c) => ({ criterion: c })));
+    }
+  }, [existingEvaluation]);
 
   const updateRating = (index: number, rating?: number) => {
     setItems((prev) =>
@@ -42,8 +64,16 @@ const EvaluationForm: React.FC<Props> = ({ scholarId }) => {
 
       addToast("Evaluation submitted successfully.", "success");
 
+      // Invalidate evaluations cache to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["my-evaluations"] });
+
       // Reset form after save
       setItems(defaultCriteria.map((c) => ({ criterion: c })));
+
+      // Go back to scholar list
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error: any) {
       addToast(
         error?.response?.data?.message || "Failed to submit evaluation.",
@@ -111,7 +141,11 @@ const EvaluationForm: React.FC<Props> = ({ scholarId }) => {
           onClick={handleSave}
           disabled={submitting}
         >
-          {submitting ? "Submitting..." : "Save Evaluation"}
+          {submitting
+            ? "Submitting..."
+            : existingEvaluation
+            ? "Update Evaluation"
+            : "Save Evaluation"}
         </Button>
       </div>
     </div>

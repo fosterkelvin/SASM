@@ -149,6 +149,43 @@ export const deleteApplication = async (id: string) => {
   return response.data;
 };
 
+// Re-application management
+export const createReApplication = async (reApplicationData: FormData) => {
+  const response = await API.post("/reapplications", reApplicationData);
+  return response.data;
+};
+
+export const getUserReApplications = async () => {
+  const response = await API.get("/reapplications/my-reapplications");
+  return response.data;
+};
+
+export const deleteReApplication = async (id: string) => {
+  const response = await API.delete(`/reapplications/${id}`);
+  return response.data;
+};
+
+export const getAllReApplications = async (params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.status) searchParams.append("status", params.status);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+
+  const response = await API.get(
+    `/reapplications/all?${searchParams.toString()}`
+  );
+  return response.data;
+};
+
+export const updateReApplicationStatus = async (id: string, status: string) => {
+  const response = await API.put(`/reapplications/${id}/status`, { status });
+  return response.data;
+};
+
 export const getApplicationStats = async () => {
   const response = await API.get("/applications/stats");
   return response.data;

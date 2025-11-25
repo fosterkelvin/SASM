@@ -142,34 +142,11 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
     setEditing(false);
   };
 
-  // Check if personal info is complete for students
-  const showIncompleteWarning =
-    user?.role === "student" && !isPersonalInfoComplete(userData);
-  const missingFields = showIncompleteWarning
-    ? getMissingPersonalInfoFields(userData)
-    : [];
-
   return (
     <Card
       className={`bg-gradient-to-br ${colorScheme.background} shadow-lg ${colorScheme.cardBorder}`}
     >
       <CardContent className="p-6">
-        {showIncompleteWarning && (
-          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
-                  Complete Your Personal Information
-                </p>
-                <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
-                  You must fill all personal information fields before you can
-                  apply. Missing: {missingFields.join(", ")}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-gradient-to-r from-gray-500 to-gray-700 dark:from-gray-700 dark:to-gray-900 rounded-lg flex items-center justify-center">
             <User size={22} className="text-white" />

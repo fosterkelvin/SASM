@@ -6,7 +6,7 @@ import EvaluationForm from "./components/EvaluationForm";
 import { Scholar } from "./components/types";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { getOfficeScholars } from "@/lib/api";
+import { getOfficeScholars, getMyEvaluations } from "@/lib/api";
 
 const OfficeEvaluationPage: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -22,12 +22,32 @@ const OfficeEvaluationPage: React.FC = () => {
     queryFn: getOfficeScholars,
   });
 
+  // Fetch evaluations to check which scholars have been evaluated
+  const { data: evaluationsData } = useQuery({
+    queryKey: ["my-evaluations"],
+    queryFn: getMyEvaluations,
+  });
+
   // Transform backend data to Scholar format
+  // Note: Backend returns "trainees" key for consistency
   const scholars: Scholar[] =
-    scholarsData?.scholars?.map((s: any) => ({
-      id: s._id,
-      name: `${s.userId?.firstname || ""} ${s.userId?.lastname || ""}`.trim(),
-    })) || [];
+    scholarsData?.trainees?.map((s: any) => {
+      // Check if this scholar has been evaluated
+      // scholarId might be populated as an object or just an ID string
+      const evaluation = evaluationsData?.evaluations?.find((ev: any) => {
+        const evalScholarId =
+          typeof ev.scholarId === "object" ? ev.scholarId?._id : ev.scholarId;
+        return evalScholarId?.toString() === s._id?.toString();
+      });
+
+      return {
+        id: s._id,
+        name: `${s.userID?.firstname || ""} ${s.userID?.lastname || ""}`.trim(),
+        email: s.userID?.email || "N/A",
+        hasEvaluation: !!evaluation,
+        evaluatorName: evaluation?.evaluatorName,
+      };
+    }) || [];
 
   // Debug logging
   React.useEffect(() => {
@@ -35,7 +55,10 @@ const OfficeEvaluationPage: React.FC = () => {
       console.log("📊 Scholars data received:", scholarsData);
       console.log("📊 Transformed scholars:", scholars);
     }
-  }, [scholarsData, scholars]);
+    if (evaluationsData) {
+      console.log("✅ Evaluations data received:", evaluationsData);
+    }
+  }, [scholarsData, scholars, evaluationsData]);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900">
@@ -111,12 +134,27 @@ const OfficeEvaluationPage: React.FC = () => {
                       <div className="text-right">
                         <div className="font-semibold">{selected.name}</div>
                         <div className="text-xs text-gray-500">
-                          {selected.id}
+                          {selected.email}
                         </div>
                       </div>
                     </div>
 
-                    <EvaluationForm scholarId={selected.id} />
+                    <EvaluationForm
+                      scholarId={selected.id}
+                      onSuccess={() => setSelected(null)}
+                      existingEvaluation={evaluationsData?.evaluations?.find(
+                        (ev: any) => {
+                          const evalScholarId =
+                            typeof ev.scholarId === "object"
+                              ? ev.scholarId?._id
+                              : ev.scholarId;
+                          return (
+                            evalScholarId?.toString() ===
+                            selected.id?.toString()
+                          );
+                        }
+                      )}
+                    />
                   </div>
                 )}
               </div>

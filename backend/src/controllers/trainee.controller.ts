@@ -291,7 +291,7 @@ export const getOfficeScholarsHandler = catchErrors(
           position: scholar.scholarType,
           scholarOffice: scholar.scholarOffice,
           scholarNotes: scholar.scholarNotes,
-          status: "accepted", // Map active to accepted for frontend
+          status: scholar.status, // Return actual scholar status (active/inactive)
           createdAt: scholar.createdAt,
           dtrCompletedHours: dtrHoursInHours,
           // Normalize for consistency

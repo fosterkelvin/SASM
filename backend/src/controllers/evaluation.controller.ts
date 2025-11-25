@@ -58,11 +58,14 @@ export const submitEvaluation = catchErrors(
     const scholar = await ScholarModel.findById(scholarId);
     appAssert(scholar, NOT_FOUND, "Scholar not found");
 
+    // Get the office name from the user's officeName field
+    const officeName = user.officeName || user.office || "Unknown Office";
+
     const evaluation = await EvaluationModel.create({
       scholarId: new mongoose.Types.ObjectId(scholarId),
       officeProfileId: new mongoose.Types.ObjectId(profileID),
-      officeName: profile.profileName,
-      evaluatorName: `${user.firstname} ${user.lastname}`,
+      officeName: officeName,
+      evaluatorName: profile.profileName,
       items,
     });
 
@@ -96,7 +99,13 @@ export const getMyEvaluations = catchErrors(
     const evaluations = await EvaluationModel.find({
       officeProfileId: profileID,
     })
-      .populate("scholarId", "name")
+      .populate({
+        path: "scholarId",
+        populate: {
+          path: "userId",
+          select: "firstname lastname email",
+        },
+      })
       .sort({ createdAt: -1 });
 
     return res.status(OK).json({ evaluations });
@@ -140,7 +149,14 @@ export const getAllEvaluations = catchErrors(
     }
 
     const evaluations = await EvaluationModel.find(filter)
-      .populate("scholarId", "name userId scholarType")
+      .populate({
+        path: "scholarId",
+        select: "userId scholarType",
+        populate: {
+          path: "userId",
+          select: "firstname lastname email",
+        },
+      })
       .sort({ createdAt: -1 });
 
     // Get user details for each scholar
@@ -148,10 +164,13 @@ export const getAllEvaluations = catchErrors(
       evaluations.map(async (evaluation: any) => {
         const evaluationObj = evaluation.toObject();
         const scholarData = evaluationObj.scholarId;
+        const userData = scholarData?.userId;
 
         return {
           ...evaluationObj,
-          scholarName: scholarData?.name || "Unknown",
+          scholarName: userData
+            ? `${userData.firstname || ""} ${userData.lastname || ""}`.trim()
+            : "Unknown",
           scholarshipType:
             scholarData?.scholarType === "student_assistant"
               ? "Student Assistant"
@@ -182,10 +201,14 @@ export const getEvaluationDetails = catchErrors(
       "Only HR or Office can view evaluation details"
     );
 
-    const evaluation = await EvaluationModel.findById(id).populate(
-      "scholarId",
-      "name userId"
-    );
+    const evaluation = await EvaluationModel.findById(id).populate({
+      path: "scholarId",
+      select: "userId scholarType",
+      populate: {
+        path: "userId",
+        select: "firstname lastname email",
+      },
+    });
     appAssert(evaluation, NOT_FOUND, "Evaluation not found");
 
     // If office user, verify they own this evaluation

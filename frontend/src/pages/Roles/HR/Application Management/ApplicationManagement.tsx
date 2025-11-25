@@ -638,6 +638,7 @@ const ApplicationManagement = () => {
                     onChange={(e) =>
                       handleFilterChange("status", e.target.value)
                     }
+                    aria-label="Filter by status"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   >
                     <option value="">All Statuses</option>
@@ -669,6 +670,7 @@ const ApplicationManagement = () => {
                     onChange={(e) =>
                       handleFilterChange("position", e.target.value)
                     }
+                    aria-label="Filter by scholarship position"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
                   >
                     <option value="">All Scholarships</option>
@@ -2220,6 +2222,7 @@ const ApplicationManagement = () => {
                                 }),
                               }));
                             }}
+                            aria-label="Update application status"
                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-800 dark:text-gray-100"
                           >
                             {/* Status workflow based on current status */}
@@ -2938,6 +2941,7 @@ const ApplicationManagement = () => {
                                         psychometricTestDate: e.target.value,
                                       }))
                                     }
+                                    aria-label="Psychometric test date"
                                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 dark:bg-gray-800 dark:text-gray-100"
                                     required
                                   />
@@ -3245,6 +3249,7 @@ const ApplicationManagement = () => {
                                         interviewDate: e.target.value,
                                       }))
                                     }
+                                    aria-label="Interview date"
                                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
                                     required
                                   />

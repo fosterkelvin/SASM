@@ -61,6 +61,7 @@ export const uploadApplicationFiles = upload.fields([
   { name: "parentID", maxCount: 1 },
   { name: "certificates", maxCount: 5 },
   { name: "signature", maxCount: 1 },
+  { name: "recentGrades", maxCount: 1 }, // For re-applications
 ]);
 
 // Generic any-files middleware for endpoints that accept dynamic file fields

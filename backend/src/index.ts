@@ -26,6 +26,7 @@ import evaluationRoutes from "./routes/evaluation.route";
 import scholarRequestRoutes from "./routes/scholarRequest.route";
 import dashboardRoutes from "./routes/dashboard.route";
 import archivedApplicationRoutes from "./routes/archivedApplication.route";
+import reapplicationRoutes from "./routes/reapplication.route";
 
 const app = express();
 
@@ -98,6 +99,7 @@ app.use("/userdata", authenticate, userDataRoutes);
 app.use("/sessions", authenticate, sessionRoutes);
 app.use("/applications", applicationRoutes);
 app.use("/archived-applications", authenticate, archivedApplicationRoutes);
+app.use("/reapplications", authenticate, reapplicationRoutes);
 app.use("/notifications", authenticate, notificationRoutes);
 // Requirements submissions (students upload requirements)
 app.use("/requirements", requirementsRoutes);

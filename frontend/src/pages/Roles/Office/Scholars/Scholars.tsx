@@ -36,11 +36,7 @@ const Scholars: React.FC = () => {
             trainee.position === "student_assistant"
               ? "student assistant"
               : "student marshal",
-          status:
-            trainee.status === "trainee" ||
-            trainee.status === "training_completed"
-              ? "active"
-              : "inactive",
+          status: trainee.status || "inactive", // Use the actual status from backend
           createdAt: trainee.createdAt || new Date().toISOString(),
           requiredHours: trainee.requiredHours || 0,
           completedHours: trainee.dtrCompletedHours || 0,

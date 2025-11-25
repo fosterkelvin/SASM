@@ -15,8 +15,14 @@ import { checkEmailRequirement } from "@/lib/emailRequirement";
 // Helper function to check if personal info is complete
 const isPersonalInfoComplete = (userData: any): boolean => {
   if (!userData) return false;
-  // Check required fields for applying: gender, birthdate, and civil status
-  const requiredFields = ["gender", "birthdate", "civilStatus"];
+  // Check required fields for applying: gender, birthdate, civilStatus, college, courseYear
+  const requiredFields = [
+    "gender",
+    "birthdate",
+    "civilStatus",
+    "college",
+    "courseYear",
+  ];
   return requiredFields.every(
     (field) => userData[field] && userData[field] !== ""
   );
@@ -29,6 +35,8 @@ const getMissingPersonalInfoFields = (userData: any): string[] => {
     gender: "Gender",
     birthdate: "Birthdate",
     civilStatus: "Civil Status",
+    college: "School/Department",
+    courseYear: "Course & Year",
   };
   const requiredFields = Object.keys(fieldLabels);
   return requiredFields
@@ -173,6 +181,18 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
   };
 
   const handleReapplyClick = () => {
+    if (!personalInfoComplete) {
+      const missingFields = getMissingPersonalInfoFields(userData);
+      addToast(
+        `Please complete your personal information in Profile Settings before re-applying. Missing: ${missingFields.join(
+          ", "
+        )}`,
+        "error",
+        6000
+      );
+      navigate("/profile");
+      return;
+    }
     navigate("/re-apply");
     setIsOpen(false);
   };
@@ -239,6 +259,18 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
   };
 
   const handleCollapsedReapplyClick = () => {
+    if (!personalInfoComplete) {
+      const missingFields = getMissingPersonalInfoFields(userData);
+      addToast(
+        `Please complete your personal information in Profile Settings before re-applying. Missing: ${missingFields.join(
+          ", "
+        )}`,
+        "error",
+        6000
+      );
+      navigate("/profile");
+      return;
+    }
     navigate("/re-apply");
   };
 
@@ -410,7 +442,7 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
           isOpen ? "opacity-50 visible" : "opacity-0 invisible"
         } md:hidden`}
         onClick={() => setIsOpen(false)}
-        aria-hidden={!isOpen ? true : false}
+        aria-hidden={!isOpen}
       />
 
       {/* Sidebar - always overlaps page */}

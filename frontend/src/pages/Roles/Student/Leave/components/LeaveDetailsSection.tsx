@@ -72,6 +72,7 @@ const LeaveDetailsSection: React.FC<Props> = ({ data, onChange }) => {
                 onChange(e);
               }
             }}
+            aria-label="Type of Leave"
             className="mt-1 block w-full rounded-md border-gray-200 shadow-sm p-2"
           >
             <option value="">Select leave type</option>
@@ -101,6 +102,7 @@ const LeaveDetailsSection: React.FC<Props> = ({ data, onChange }) => {
               value={data.dateFrom}
               onChange={onChange}
               type="date"
+              aria-label="Leave start date"
               className="mt-1 block w-1/2 rounded-md border-gray-200 shadow-sm p-2"
             />
             <input
@@ -109,6 +111,7 @@ const LeaveDetailsSection: React.FC<Props> = ({ data, onChange }) => {
               onChange={onChange}
               type="date"
               min={data.dateFrom || undefined}
+              aria-label="Leave end date"
               className="mt-1 block w-1/2 rounded-md border-gray-200 shadow-sm p-2"
             />
           </div>

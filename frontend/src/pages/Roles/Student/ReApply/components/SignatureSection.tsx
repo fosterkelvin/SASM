@@ -31,6 +31,7 @@ const SignatureSection: React.FC<Props> = ({ data, onChange }) => (
           value={data.signatureDate}
           onChange={onChange}
           type="date"
+          aria-label="Signature date"
           className="mt-1 block w-full rounded-md border-gray-200 shadow-sm p-2"
         />
       </div>

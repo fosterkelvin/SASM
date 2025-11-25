@@ -18,7 +18,7 @@ const TermAcademicSection: React.FC<Props> = ({
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="md:col-span-2">
         <label className="block text-sm font-medium text-gray-700">
-          Term / Sem.
+          Term / Sem. <span className="text-red-500">*</span>
         </label>
         <div className="flex items-center gap-4 mt-2">
           <label className="inline-flex items-center">
@@ -49,19 +49,6 @@ const TermAcademicSection: React.FC<Props> = ({
             <span className="ml-2">Short Term</span>
           </label>
         </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Academic Year
-        </label>
-        <input
-          name="academicYear"
-          value={data.academicYear}
-          onChange={onChange}
-          className="mt-1 block w-full rounded-md border-gray-200 shadow-sm p-2"
-          placeholder="e.g. 2025-2026"
-        />
       </div>
     </div>
   </div>

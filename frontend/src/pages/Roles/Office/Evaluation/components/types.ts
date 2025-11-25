@@ -1,6 +1,9 @@
 export interface Scholar {
   id: string;
   name: string;
+  email: string;
+  hasEvaluation?: boolean;
+  evaluatorName?: string;
 }
 
 export interface CriterionEvaluation {
