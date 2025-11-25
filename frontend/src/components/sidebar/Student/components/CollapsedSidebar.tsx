@@ -174,7 +174,7 @@ const CollapsedSidebar: React.FC<Props> = ({
           )}
           {isVerified && (
             <>
-              {!isApplicant && (
+              {!isApplicant && !isTrainee && (
                 <>
                   <div className="group relative">
                     <button

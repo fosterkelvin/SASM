@@ -104,7 +104,7 @@ const SidebarNav: React.FC<NavProps> = ({
         )}
         {isVerified && (
           <>
-            {!isApplicant && (
+            {!isApplicant && !isTrainee && (
               <>
                 <li>
                   <SidebarItem
