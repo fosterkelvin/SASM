@@ -78,6 +78,9 @@ function App(): ReactElement {
 
   return (
     <Routes>
+      {/* Email verification - accessible to both authenticated and unauthenticated users */}
+      <Route path="/email/verify/:code" element={<VerifyEmail />} />
+
       {/* Public routes grouped under a public layout so shared UI (AppContainer) renders once */}
       <Route
         element={
@@ -91,7 +94,6 @@ function App(): ReactElement {
         <Route path="/signup" element={<Signup />} />
         <Route path="/password/forgot" element={<ForgotPassword />} />
         <Route path="/password/reset" element={<ResetPassword />} />
-        <Route path="/email/verify/:code" element={<VerifyEmail />} />
       </Route>
 
       {/* Protected routes: group under a shared layout (AppContainer) wrapped with RoleProtectedRoute */}
