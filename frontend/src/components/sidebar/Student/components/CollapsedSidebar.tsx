@@ -29,6 +29,7 @@ interface Props {
   isEmailUpdateRequired?: boolean;
   isTrainee?: boolean;
   isDeployedToOffice?: boolean;
+  hasActiveApplication?: boolean;
 }
 
 const CollapsedSidebar: React.FC<Props> = ({
@@ -44,12 +45,12 @@ const CollapsedSidebar: React.FC<Props> = ({
   isEmailUpdateRequired = false,
   isTrainee = false,
   isDeployedToOffice = false,
+  hasActiveApplication = false,
 }) => {
   return (
     <div
-      className="hidden md:flex flex-col items-center py-4 h-full relative overflow-y-auto overflow-x-hidden"
+      className="hidden md:flex flex-col items-center py-4 h-full relative overflow-y-auto overflow-x-hidden min-h-full"
       aria-label="Collapsed Sidebar"
-      style={{ minHeight: "100%" }}
     >
       <div className="flex-1 flex flex-col items-center space-y-4 w-full">
         <div className="group relative">
@@ -174,7 +175,7 @@ const CollapsedSidebar: React.FC<Props> = ({
           )}
           {isVerified && (
             <>
-              {!isApplicant && !isTrainee && (
+              {!hasActiveApplication && (
                 <>
                   <div className="group relative">
                     <button

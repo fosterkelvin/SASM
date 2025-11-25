@@ -68,6 +68,26 @@ const StudentSidebar = ({
         app.status === "trainee" || app.status === "training_completed"
     ) || false;
 
+  // Check if user has an active/pending application (should not see Re-apply)
+  const hasActiveApplication =
+    userApplicationsData?.applications?.some(
+      (app: any) =>
+        app.status === "pending" ||
+        app.status === "under_review" ||
+        app.status === "psychometric_scheduled" ||
+        app.status === "psychometric_completed" ||
+        app.status === "psychometric_passed" ||
+        app.status === "interview_scheduled" ||
+        app.status === "interview_completed" ||
+        app.status === "interview_passed" ||
+        app.status === "pending_office_interview" ||
+        app.status === "office_interview_scheduled" ||
+        app.status === "trainee" ||
+        app.status === "training_completed" ||
+        app.status === "accepted" ||
+        app.status === "on_hold"
+    ) || false;
+
   // Check if trainee is deployed to an office (has traineeOffice)
   const isDeployedToOffice =
     userApplicationsData?.applications?.some(
@@ -403,7 +423,7 @@ const StudentSidebar = ({
           isOpen ? "opacity-50 visible" : "opacity-0 invisible"
         } md:hidden`}
         onClick={() => setIsOpen(false)}
-        aria-hidden={!isOpen}
+        aria-hidden={!isOpen ? "true" : "false"}
       />
 
       {/* Sidebar - always overlaps page */}
@@ -453,6 +473,7 @@ const StudentSidebar = ({
                   isAccepted={hasAcceptedApplication}
                   isEmailUpdateRequired={isEmailUpdateRequired}
                   isPersonalInfoIncomplete={!personalInfoComplete}
+                  hasActiveApplication={hasActiveApplication}
                   handlers={{
                     dashboard: handleDashboardClick,
                     notifications: handleNotificationsClick,
@@ -491,6 +512,7 @@ const StudentSidebar = ({
               isDeployedToOffice={isDeployedToOffice}
               isAccepted={hasAcceptedApplication}
               isEmailUpdateRequired={isEmailUpdateRequired}
+              hasActiveApplication={hasActiveApplication}
               darkMode={darkMode}
               onToggleTheme={() => setDarkMode(!darkMode)}
               onSignout={handleCollapsedSignout}
@@ -506,8 +528,7 @@ const StudentSidebar = ({
             {user && (
               <button
                 onClick={handleProfileClick}
-                className="w-full flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border border-gray-200 hover:border-gray-400 dark:border-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 hover:bg-gray-100 dark:hover:bg-red-900/30 dark:hover:border-red-700 transition-all duration-200"
-                style={{ userSelect: "none" }}
+                className="w-full flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border border-gray-200 hover:border-gray-400 dark:border-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 hover:bg-gray-100 dark:hover:bg-red-900/30 dark:hover:border-red-700 transition-all duration-200 select-none"
                 aria-label="View Profile"
                 title="View Profile"
               >

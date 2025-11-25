@@ -23,6 +23,7 @@ interface NavProps {
   isTrainee?: boolean;
   isDeployedToOffice?: boolean;
   isScholar?: boolean;
+  hasActiveApplication?: boolean;
 }
 
 const SidebarNav: React.FC<NavProps> = ({
@@ -36,6 +37,7 @@ const SidebarNav: React.FC<NavProps> = ({
   isTrainee = false,
   isDeployedToOffice = false,
   isScholar = false,
+  hasActiveApplication = false,
 }) => {
   return (
     <nav
@@ -104,7 +106,7 @@ const SidebarNav: React.FC<NavProps> = ({
         )}
         {isVerified && (
           <>
-            {!isApplicant && !isTrainee && (
+            {!hasActiveApplication && (
               <>
                 <li>
                   <SidebarItem
