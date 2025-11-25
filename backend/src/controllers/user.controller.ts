@@ -161,18 +161,18 @@ export const resetScholarsToApplicantsHandler = catchErrors(
       console.log("Applications archived:", archivedCount);
     }
 
-    // Get user IDs for schedule and scholar deletion
-    const scholarUserIds = scholarUsers.map((user) => user._id);
+    // Get all user IDs from scholar users for deletion operations
+    const allScholarUserIds = scholarUsers.map((user) => user._id);
 
     // Delete scholar records for active scholars
     const scholarDeleteResult = await ScholarModel.deleteMany({
-      userId: { $in: scholarUserIds },
+      userId: { $in: allScholarUserIds },
     });
     console.log("Scholar records deleted:", scholarDeleteResult.deletedCount);
 
     // Delete only schedules for scholars (NOT DTR records)
     const scheduleDeleteResult = await ScheduleModel.deleteMany({
-      userId: { $in: scholarUserIds },
+      userId: { $in: allScholarUserIds },
       userType: "scholar",
     });
     console.log("Schedules deleted:", scheduleDeleteResult.deletedCount);
@@ -180,7 +180,7 @@ export const resetScholarsToApplicantsHandler = catchErrors(
 
     // Update users to "reapplicant" status
     const userUpdateResult = await UserModel.updateMany(
-      { _id: { $in: scholarUserIds } },
+      { _id: { $in: allScholarUserIds } },
       { $set: { status: "reapplicant" } }
     );
 
