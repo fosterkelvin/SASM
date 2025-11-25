@@ -349,6 +349,9 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
                 } else if (statusRaw === "training_completed") {
                   label = "Training Completed";
                   dotClass = "bg-purple-500";
+                } else if (statusRaw === "reapplicant") {
+                  label = "Re-applicant";
+                  dotClass = "bg-orange-500";
                 } else if (
                   statusRaw === "applicant" ||
                   user?.isApplicant ||

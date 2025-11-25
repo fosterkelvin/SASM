@@ -66,8 +66,8 @@ const SidebarNav: React.FC<NavProps> = ({
             disabled={false}
           />
         </li>
-        {/* Show DTR, Schedule, and Leave for deployed trainees OR scholars */}
-        {isVerified && (isDeployedToOffice || isScholar) && (
+        {/* Show DTR, Schedule, and Leave for deployed trainees OR scholars (but NOT re-applicants) */}
+        {isVerified && (isDeployedToOffice || isScholar) && !isReapplicant && (
           <>
             <li>
               <SidebarItem

@@ -98,8 +98,8 @@ const CollapsedSidebar: React.FC<Props> = ({
               )}
             </button>
           </div>
-          {/* Show DTR, Leave, and Schedule for deployed trainees */}
-          {isVerified && isDeployedToOffice && (
+          {/* Show DTR, Leave, and Schedule for deployed trainees (but NOT re-applicants) */}
+          {isVerified && isDeployedToOffice && !isReapplicant && (
             <>
               <div className="group relative">
                 <button
