@@ -219,6 +219,7 @@ const Archives = () => {
                       </Label>
                       <select
                         id="semester"
+                        aria-label="Filter by semester"
                         value={selectedSemester}
                         onChange={(e) => {
                           setSelectedSemester(e.target.value);
@@ -241,6 +242,7 @@ const Archives = () => {
                       </Label>
                       <select
                         id="position"
+                        aria-label="Filter by scholarship type"
                         value={selectedPosition}
                         onChange={(e) => {
                           setSelectedPosition(e.target.value);
@@ -480,6 +482,7 @@ const Archives = () => {
                       </Label>
                       <select
                         id="reapp-semester"
+                        aria-label="Filter by semester"
                         value={selectedSemester}
                         onChange={(e) => {
                           setSelectedSemester(e.target.value);
@@ -497,6 +500,7 @@ const Archives = () => {
                       </Label>
                       <select
                         id="reapp-position"
+                        aria-label="Filter by scholarship type"
                         value={selectedPosition}
                         onChange={(e) => {
                           setSelectedPosition(e.target.value);
@@ -579,6 +583,7 @@ const Archives = () => {
                       </Label>
                       <select
                         id="leave-semester"
+                        aria-label="Filter by semester"
                         value={selectedSemester}
                         onChange={(e) => {
                           setSelectedSemester(e.target.value);
@@ -596,6 +601,7 @@ const Archives = () => {
                       </Label>
                       <select
                         id="leave-status"
+                        aria-label="Filter by status"
                         value={selectedPosition}
                         onChange={(e) => {
                           setSelectedPosition(e.target.value);

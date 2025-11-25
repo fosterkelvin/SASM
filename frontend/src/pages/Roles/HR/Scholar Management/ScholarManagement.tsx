@@ -426,6 +426,7 @@ const ScholarManagement = () => {
                   <Label htmlFor="scholarType">Scholar Type</Label>
                   <select
                     id="scholarType"
+                    aria-label="Filter by scholar type"
                     value={filters.scholarType}
                     onChange={(e) =>
                       setFilters({ ...filters, scholarType: e.target.value })
@@ -441,6 +442,7 @@ const ScholarManagement = () => {
                   <Label htmlFor="status">Filter by Status</Label>
                   <select
                     id="status"
+                    aria-label="Filter by status"
                     value={filters.status}
                     onChange={(e) =>
                       setFilters({ ...filters, status: e.target.value })
@@ -621,6 +623,7 @@ const ScholarManagement = () => {
               </div>
               <button
                 onClick={closeDeployModal}
+                aria-label="Close deploy modal"
                 className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
               >
                 <X className="w-6 h-6" />
@@ -827,6 +830,7 @@ const ScholarManagement = () => {
                   setDtrData(null);
                   setScheduleData(null);
                 }}
+                aria-label="Close details modal"
                 className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
               >
                 <X className="w-6 h-6" />
@@ -882,6 +886,7 @@ const ScholarManagement = () => {
                       <Label>Month</Label>
                       <select
                         value={selectedMonth}
+                        aria-label="Select month"
                         onChange={(e) =>
                           handleMonthYearChange(
                             parseInt(e.target.value),
@@ -906,6 +911,7 @@ const ScholarManagement = () => {
                       <Label>Year</Label>
                       <select
                         value={selectedYear}
+                        aria-label="Select year"
                         onChange={(e) =>
                           handleMonthYearChange(
                             selectedMonth,

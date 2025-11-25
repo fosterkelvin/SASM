@@ -231,13 +231,13 @@ const HRSidebar = ({
       />
 
       {/* Mobile overlay */}
-      <div
-        className={`md:hidden fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 z-40 ${
-          isOpen ? "opacity-50 visible" : "opacity-0 invisible"
-        }`}
-        onClick={() => setIsOpen(false)}
-        aria-hidden={!isOpen}
-      />
+      {isOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 transition-opacity duration-300 z-40"
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       <div
         id="hr-sidebar"
@@ -336,8 +336,7 @@ const HRSidebar = ({
             {user && (
               <button
                 onClick={handleProfileClick}
-                className="w-full flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-gradient-to-r from-red-50 to-red-100 dark:from-gray-900 dark:to-gray-800 border border-red-200 dark:border-red-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 hover:bg-red-100 dark:hover:bg-gray-900/30 transition-all duration-200"
-                style={{ userSelect: "none" }}
+                className="w-full flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-gradient-to-r from-red-50 to-red-100 dark:from-gray-900 dark:to-gray-800 border border-red-200 dark:border-red-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-400 hover:bg-red-100 dark:hover:bg-gray-900/30 transition-all duration-200 select-none"
                 aria-label="View Profile"
                 title="View Profile"
               >

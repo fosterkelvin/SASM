@@ -36,9 +36,8 @@ const CollapsedSidebar: React.FC<Props> = ({
 }) => {
   return (
     <div
-      className="hidden md:flex flex-col items-center py-4 h-full relative overflow-y-auto overflow-x-hidden"
+      className="hidden md:flex flex-col items-center py-4 h-full relative overflow-y-auto overflow-x-hidden min-h-full"
       aria-label="Collapsed Sidebar"
-      style={{ minHeight: "100%" }}
     >
       <div className="flex-1 flex flex-col items-center space-y-4 w-full">
         <div className="group relative">

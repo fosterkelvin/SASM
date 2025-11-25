@@ -60,61 +60,18 @@ function App(): ReactElement {
 
   if (loading) {
     return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          background: "linear-gradient(135deg, #e0e7ff 0%, #f3f4f6 100%)",
-          animation: "fadeIn 0.7s",
-        }}
-      >
+      <div className="flex flex-col justify-center items-center h-screen bg-gradient-to-br from-indigo-100 to-gray-100 animate-[fadeIn_0.7s]">
         <img
           src={"/UBLogo.svg"}
           alt="UB Logo"
-          style={{ width: "90px", height: "90px", marginBottom: "32px" }}
+          className="w-[90px] h-[90px] mb-8"
         />
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            marginBottom: "24px",
-          }}
-        >
-          <div
-            style={{
-              width: "64px",
-              height: "64px",
-              border: "8px solid #e0e7ff",
-              borderTop: "8px solid #6366f1",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite",
-            }}
-          />
+        <div className="flex justify-center items-center mb-6">
+          <div className="w-16 h-16 border-8 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
         </div>
-        <div
-          style={{
-            fontSize: "1.25rem",
-            color: "#6366f1",
-            fontWeight: 500,
-            letterSpacing: "0.05em",
-          }}
-        >
+        <div className="text-xl font-semibold text-indigo-600 tracking-wide text-center px-4">
           Loading, please wait...
         </div>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-          @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-        `}</style>
       </div>
     );
   }

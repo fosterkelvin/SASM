@@ -107,10 +107,14 @@ const RequestForm: React.FC = () => {
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+        <label
+          htmlFor="notes"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+        >
           Notes (optional)
         </label>
         <textarea
+          id="notes"
           value={state.notes}
           onChange={(e) => setState((s) => ({ ...s, notes: e.target.value }))}
           className="w-full p-3 border rounded-md bg-white dark:bg-gray-900 resize-none"
