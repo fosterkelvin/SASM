@@ -48,14 +48,15 @@ type signupParams = {
 // Signup user======================================================
 export const signup = async (data: signupParams) => {
   //verify if user already exists
-  const existingUser = await UserModel.findOne({ email: data.email });
+  const normalizedEmail = data.email.toLowerCase().trim();
+  const existingUser = await UserModel.findOne({ email: normalizedEmail });
   appAssert(!existingUser, CONFLICT, "User already in use.");
 
   //create user
   const user = await UserModel.create({
     firstname: data.firstname,
     lastname: data.lastname,
-    email: data.email,
+    email: normalizedEmail,
     password: data.password,
   });
   const userID = user._id;
@@ -91,7 +92,8 @@ export const signup = async (data: signupParams) => {
 
 // Resend verification email======================================================
 export const resendVerificationEmail = async (email: string) => {
-  const user = await UserModel.findOne({ email });
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await UserModel.findOne({ email: normalizedEmail });
   appAssert(user, NOT_FOUND, "User not found.");
 
   // Check if user is already verified
@@ -135,7 +137,8 @@ export const signinUser = async ({
   password,
   userAgent,
 }: signinParams) => {
-  const user = await UserModel.findOne({ email });
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await UserModel.findOne({ email: normalizedEmail });
   appAssert(user, UNAUTHORIZED, "Invalid email or password.");
 
   const isValid = await user.comparePassword(password);
@@ -343,7 +346,8 @@ export const sendPasswordResetEmail = async (email: string) => {
   // Catch any errors that were thrown and log them (but always return a success)
   // This will prevent leaking sensitive data back to the client (e.g. user not found, email not sent).
   try {
-    const user = await UserModel.findOne({ email });
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await UserModel.findOne({ email: normalizedEmail });
     appAssert(user, NOT_FOUND, "User not found");
 
     // check for max password reset requests (2 emails in 5min)
@@ -498,9 +502,12 @@ export const changeEmail = async ({ newEmail, userID }: ChangeEmailParams) => {
   });
   appAssert(!existingUser, CONFLICT, "Email is already in use");
 
+  // Normalize new email
+  const normalizedNewEmail = newEmail.toLowerCase().trim();
+
   // Check if the new email is the same as current email
   appAssert(
-    user.email !== newEmail,
+    user.email !== normalizedNewEmail,
     CONFLICT,
     "New email must be different from current email"
   );
@@ -519,13 +526,13 @@ export const changeEmail = async ({ newEmail, userID }: ChangeEmailParams) => {
   });
 
   // Store the new email temporarily (we'll update it after verification)
-  user.pendingEmail = newEmail;
+  user.pendingEmail = normalizedNewEmail;
   await user.save();
 
   // Send verification email to the new email address
   const url = `${APP_ORIGIN}/email/verify/${verificationCode._id}`;
   await sendMail({
-    to: newEmail,
+    to: normalizedNewEmail,
     ...getVerifyEmailTemplate(url),
   });
 
