@@ -49,33 +49,33 @@ const VerifyEmail = () => {
           });
         }, 3000);
       } else {
-        // Regular email verification - try to refresh user data
-        try {
-          console.log("Calling refreshUser...");
-          await refreshUser();
-          console.log("refreshUser completed successfully");
+        // Regular email verification - cookies are already set by backend
+        // Wait a bit for cookies to be recognized, then refresh user
+        console.log("New user email verification - setting user directly");
 
-          // Redirect to dashboard after successful verification
-          const redirectUrl = response.redirectUrl || "/student-dashboard";
-          console.log("Will redirect to:", redirectUrl);
+        setTimeout(async () => {
+          try {
+            console.log("Calling refreshUser to get updated user data...");
+            await refreshUser();
+            console.log("refreshUser completed successfully");
 
-          setTimeout(() => {
-            console.log("Redirecting now to:", redirectUrl);
+            // Redirect to dashboard after successful verification
+            const redirectUrl = response.redirectUrl || "/student-dashboard";
+            console.log("Will redirect to:", redirectUrl);
+
             navigate(redirectUrl, {
               replace: true,
             });
-          }, 2000);
-        } catch (error) {
-          console.error("Error refreshing user data:", error);
-          // If refresh fails, also redirect to sign in
-          setNeedsReLogin(true);
-          setTimeout(() => {
+          } catch (error) {
+            console.error("Error refreshing user data:", error);
+            // If refresh fails, redirect to sign in
+            setNeedsReLogin(true);
             navigate("/signin", {
               replace: true,
-              state: { message: "Please sign in again to continue." },
+              state: { message: "Please sign in to continue." },
             });
-          }, 2000);
-        }
+          }
+        }, 500); // Short delay to ensure cookies are set
       }
     },
     onError: (error) => {
