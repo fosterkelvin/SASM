@@ -176,8 +176,8 @@ const CollapsedSidebar: React.FC<Props> = ({
               </button>
             </div>
           )}
-          {/* Show Re-apply for verified users with no active application */}
-          {isVerified && !hasActiveApplication && (
+          {/* Show Re-apply ONLY for re-applicants (verified users with reapplicant status) */}
+          {isVerified && !hasActiveApplication && isReapplicant && (
             <div className="group relative">
               <button
                 onClick={isEmailUpdateRequired ? undefined : handlers.reapply}

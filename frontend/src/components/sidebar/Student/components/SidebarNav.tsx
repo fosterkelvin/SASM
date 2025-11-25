@@ -108,8 +108,8 @@ const SidebarNav: React.FC<NavProps> = ({
           </li>
         )}
 
-        {/* Show Re-apply only for verified users with no active application (including re-applicants) */}
-        {isVerified && !hasActiveApplication && (
+        {/* Show Re-apply ONLY for re-applicants (verified users with reapplicant status) */}
+        {isVerified && !hasActiveApplication && isReapplicant && (
           <li>
             <SidebarItem
               label="Re-apply"
