@@ -5,6 +5,7 @@ import OfficeProfileModel from "../models/officeProfile.model";
 import ApplicationModel from "../models/application.model";
 import ArchivedApplicationModel from "../models/archivedApplication.model";
 import ScheduleModel from "../models/schedule.model";
+import ScholarModel from "../models/scholar.model";
 import appAssert from "../utils/appAssert";
 import catchErrors from "../utils/catchErrors";
 
@@ -151,6 +152,12 @@ export const resetScholarsToApplicantsHandler = catchErrors(
     // Get user IDs for schedule deletion
     const acceptedUserIds = acceptedUsers.map((user) => user._id);
 
+    // Delete scholar records for accepted scholars
+    const scholarDeleteResult = await ScholarModel.deleteMany({
+      userId: { $in: acceptedUserIds },
+    });
+    console.log("Scholar records deleted:", scholarDeleteResult.deletedCount);
+
     // Delete only schedules for accepted scholars (NOT DTR records)
     const scheduleDeleteResult = await ScheduleModel.deleteMany({
       userId: { $in: acceptedUserIds },
@@ -185,6 +192,7 @@ export const resetScholarsToApplicantsHandler = catchErrors(
       details: {
         usersUpdated: userUpdateResult.modifiedCount,
         applicationsArchived: archivedCount,
+        scholarsDeleted: scholarDeleteResult.deletedCount,
         schedulesDeleted: scheduleDeleteResult.deletedCount,
         semesterYear,
         totalUpdated,

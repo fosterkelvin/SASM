@@ -30,6 +30,7 @@ interface Props {
   isTrainee?: boolean;
   isDeployedToOffice?: boolean;
   hasActiveApplication?: boolean;
+  isReapplicant?: boolean;
 }
 
 const CollapsedSidebar: React.FC<Props> = ({
@@ -46,6 +47,7 @@ const CollapsedSidebar: React.FC<Props> = ({
   isTrainee = false,
   isDeployedToOffice = false,
   hasActiveApplication = false,
+  isReapplicant = false,
 }) => {
   return (
     <div
@@ -154,7 +156,8 @@ const CollapsedSidebar: React.FC<Props> = ({
               </div>
             </>
           )}
-          {!isAccepted && (
+          {/* Show Apply only for applicants without accepted status and not re-applicants */}
+          {!isAccepted && !hasActiveApplication && !isReapplicant && (
             <div className="group relative">
               <button
                 onClick={isEmailUpdateRequired ? undefined : handlers.apply}
@@ -173,74 +176,47 @@ const CollapsedSidebar: React.FC<Props> = ({
               </button>
             </div>
           )}
+          {/* Show Re-apply for verified users with no active application */}
+          {isVerified && !hasActiveApplication && (
+            <div className="group relative">
+              <button
+                onClick={isEmailUpdateRequired ? undefined : handlers.reapply}
+                disabled={isEmailUpdateRequired}
+                className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
+                  isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                aria-label="Re-apply"
+                title={
+                  isEmailUpdateRequired
+                    ? "Re-apply (Blocked - Update email required)"
+                    : "Re-apply"
+                }
+              >
+                <RefreshCw size={16} />
+              </button>
+            </div>
+          )}
+          {/* Show Requirements for verified users */}
           {isVerified && (
-            <>
-              {!hasActiveApplication && (
-                <>
-                  <div className="group relative">
-                    <button
-                      onClick={
-                        isEmailUpdateRequired ? undefined : handlers.reapply
-                      }
-                      disabled={isEmailUpdateRequired}
-                      className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
-                        isEmailUpdateRequired
-                          ? "opacity-50 cursor-not-allowed"
-                          : ""
-                      }`}
-                      aria-label="Re-apply"
-                      title={
-                        isEmailUpdateRequired
-                          ? "Re-apply (Blocked - Update email required)"
-                          : "Re-apply"
-                      }
-                    >
-                      <RefreshCw size={16} />
-                    </button>
-                  </div>
-                  <div className="group relative">
-                    <button
-                      onClick={
-                        isEmailUpdateRequired ? undefined : handlers.leave
-                      }
-                      disabled={isEmailUpdateRequired}
-                      className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-gray-400 transition-all duration-200 ${
-                        isEmailUpdateRequired
-                          ? "opacity-50 cursor-not-allowed"
-                          : ""
-                      }`}
-                      aria-label="Leave"
-                      title={
-                        isEmailUpdateRequired
-                          ? "Leave (Blocked - Update email required)"
-                          : "Leave"
-                      }
-                    >
-                      <CalendarMinus size={16} />
-                    </button>
-                  </div>
-                </>
-              )}
-              <div className="group relative">
-                <button
-                  onClick={
-                    isEmailUpdateRequired ? undefined : handlers.requirements
-                  }
-                  disabled={isEmailUpdateRequired}
-                  className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-gray-400 transition-all duration-200 ${
-                    isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  aria-label="Requirements"
-                  title={
-                    isEmailUpdateRequired
-                      ? "Requirements (Blocked - Update email required)"
-                      : "Requirements"
-                  }
-                >
-                  <ClipboardList size={16} />
-                </button>
-              </div>
-            </>
+            <div className="group relative">
+              <button
+                onClick={
+                  isEmailUpdateRequired ? undefined : handlers.requirements
+                }
+                disabled={isEmailUpdateRequired}
+                className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-gray-400 transition-all duration-200 ${
+                  isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                aria-label="Requirements"
+                title={
+                  isEmailUpdateRequired
+                    ? "Requirements (Blocked - Update email required)"
+                    : "Requirements"
+                }
+              >
+                <ClipboardList size={16} />
+              </button>
+            </div>
           )}
         </div>
       </div>

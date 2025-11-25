@@ -474,6 +474,7 @@ const StudentSidebar = ({
                   isEmailUpdateRequired={isEmailUpdateRequired}
                   isPersonalInfoIncomplete={!personalInfoComplete}
                   hasActiveApplication={hasActiveApplication}
+                  isReapplicant={user?.status === "reapplicant"}
                   handlers={{
                     dashboard: handleDashboardClick,
                     notifications: handleNotificationsClick,
@@ -513,6 +514,7 @@ const StudentSidebar = ({
               isAccepted={hasAcceptedApplication}
               isEmailUpdateRequired={isEmailUpdateRequired}
               hasActiveApplication={hasActiveApplication}
+              isReapplicant={user?.status === "reapplicant"}
               darkMode={darkMode}
               onToggleTheme={() => setDarkMode(!darkMode)}
               onSignout={handleCollapsedSignout}

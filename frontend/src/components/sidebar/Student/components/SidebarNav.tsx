@@ -24,6 +24,7 @@ interface NavProps {
   isDeployedToOffice?: boolean;
   isScholar?: boolean;
   hasActiveApplication?: boolean;
+  isReapplicant?: boolean;
 }
 
 const SidebarNav: React.FC<NavProps> = ({
@@ -38,6 +39,7 @@ const SidebarNav: React.FC<NavProps> = ({
   isDeployedToOffice = false,
   isScholar = false,
   hasActiveApplication = false,
+  isReapplicant = false,
 }) => {
   return (
     <nav
@@ -94,7 +96,8 @@ const SidebarNav: React.FC<NavProps> = ({
           </>
         )}
 
-        {!isAccepted && (
+        {/* Show Apply only for applicants without accepted status and not re-applicants */}
+        {!isAccepted && !hasActiveApplication && !isReapplicant && (
           <li>
             <SidebarItem
               label="Apply"
@@ -104,29 +107,29 @@ const SidebarNav: React.FC<NavProps> = ({
             />
           </li>
         )}
+
+        {/* Show Re-apply only for verified users with no active application (including re-applicants) */}
+        {isVerified && !hasActiveApplication && (
+          <li>
+            <SidebarItem
+              label="Re-apply"
+              onClick={handlers.reapply}
+              IconComponent={RefreshCw}
+              disabled={isEmailUpdateRequired || isPersonalInfoIncomplete}
+            />
+          </li>
+        )}
+
+        {/* Show Requirements for verified users */}
         {isVerified && (
-          <>
-            {!hasActiveApplication && (
-              <>
-                <li>
-                  <SidebarItem
-                    label="Re-apply"
-                    onClick={handlers.reapply}
-                    IconComponent={RefreshCw}
-                    disabled={isEmailUpdateRequired || isPersonalInfoIncomplete}
-                  />
-                </li>
-              </>
-            )}
-            <li>
-              <SidebarItem
-                label="Requirements"
-                onClick={handlers.requirements}
-                IconComponent={ClipboardList}
-                disabled={isEmailUpdateRequired}
-              />
-            </li>
-          </>
+          <li>
+            <SidebarItem
+              label="Requirements"
+              onClick={handlers.requirements}
+              IconComponent={ClipboardList}
+              disabled={isEmailUpdateRequired}
+            />
+          </li>
         )}
       </ul>
     </nav>
