@@ -11,33 +11,31 @@ import { useUnreadNotificationCount } from "@/hooks/useUnreadNotificationCount";
 import { useQuery } from "@tanstack/react-query";
 import { getUserApplications, getUserData } from "@/lib/api";
 import { checkEmailRequirement } from "@/lib/emailRequirement";
-import {
-  isPersonalInfoComplete,
-  getMissingPersonalInfoFields,
-} from "@/lib/personalInfoValidator";
-import { useToast } from "@/context/ToastContext";
-
-interface StudentSidebarProps {
-  onCollapseChange?: (collapsed: boolean) => void;
-  currentPage?: string;
-  isCollapsed?: boolean;
-  setIsCollapsed?: React.Dispatch<React.SetStateAction<boolean>>;
-}
-
-const StudentSidebar = ({
-  onCollapseChange,
-  currentPage,
-  isCollapsed: initialCollapsed,
-  setIsCollapsed: externalSetIsCollapsed,
-}: StudentSidebarProps) => {
-  // Ref for keyboard navigation
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const { logout, user } = useAuth();
-  const navigate = useNavigate();
-  const { addToast } = useToast();
-  const { data: unreadCountData } = useUnreadNotificationCount();
-  const unreadCount = unreadCountData?.unreadCount || 0;
-
+        <SidebarNav
+          unreadCount={unreadCount}
+          isVerified={!!user?.verified}
+          isApplicant={user?.status === "applicant"}
+          isTrainee={isTrainee}
+          isDeployedToOffice={isDeployedToOffice}
+          isScholar={isScholar}
+          isAccepted={hasAcceptedApplication}
+          isEmailUpdateRequired={isEmailUpdateRequired}
+          isPersonalInfoIncomplete={!personalInfoComplete}
+          hasActiveApplication={hasActiveApplication}
+          isReapplicant={user?.status === "reapplicant"}
+          handlers={{
+            dashboard: handleDashboardClick,
+            notifications: handleNotificationsClick,
+            apply: handleApplyClick,
+            reapply: handleReapplyClick,
+            leave: handleLeaveClick,
+            requirements: handleRequirementsClick,
+            grades: handleGradesClick,
+            dtr: handleDtrClick,
+            schedule: handleScheduleClick,
+            signout: handleSignout,
+          }}
+        />
   // Fetch user applications to check if any application is accepted
   const { data: userApplicationsData } = useQuery({
     queryKey: ["userApplications"],
@@ -326,10 +324,10 @@ const StudentSidebar = ({
       : []),
     { label: "Profile", handler: handleProfileClick },
     { label: "Notifications", handler: handleNotificationsClick },
-    // Hide Apply for accepted students
-    ...(hasAcceptedApplication
-      ? []
-      : [{ label: "Apply", handler: handleApplyClick }]),
+    // Show Apply only for students with status 'applicant'
+    ...(user?.status === "applicant" && !hasAcceptedApplication
+      ? [{ label: "Apply", handler: handleApplyClick }]
+      : []),
     ...(user?.verified
       ? [
           // If the user is an applicant or trainee, don't include re-apply or leave

@@ -49,13 +49,17 @@ export const applicationSchema = z.object({
   relativeDepartment: z.string().optional(),
   relativeRelationship: z.string().optional(),
   elementary: z.string().min(2, "Elementary school is required"),
-  elementaryYears: z.string().min(2, "Elementary years attended is required"),
+  elementaryFrom: z.string().min(4, "Elementary start year is required"),
+  elementaryTo: z.string().min(4, "Elementary end year is required"),
   highSchool: z.string().min(2, "High school is required"),
-  highSchoolYears: z.string().min(2, "High school years attended is required"),
-  college: z.string().min(2, "College/University is required"),
-  collegeYears: z.string().min(2, "College years attended is required"),
+  highSchoolFrom: z.string().min(4, "High school start year is required"),
+  highSchoolTo: z.string().min(4, "High school end year is required"),
+  college: z.string().min(2, "College/University is required").optional(),
+  collegeFrom: z.string().min(4, "College start year is required").optional(),
+  collegeTo: z.string().min(4, "College end year is required").optional(),
   others: z.string().optional(),
-  othersYears: z.string().optional(),
+  othersFrom: z.string().optional(),
+  othersTo: z.string().optional(),
   seminars: z
     .array(
       z.object({

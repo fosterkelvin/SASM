@@ -93,32 +93,33 @@ export const createApplicationSchema = z.object({
     .optional(),
 
   // Educational Background
-  elementary: z
+  elementary: z.string().min(2, "Elementary school is required").max(200),
+  elementaryFrom: z.string().min(4, "Elementary start year is required").max(4),
+  elementaryTo: z.string().min(4, "Elementary end year is required").max(4),
+  highSchool: z.string().min(2, "High school is required").max(200),
+  highSchoolFrom: z
     .string()
-    .min(2, "Elementary school is required")
-    .max(200),
-  elementaryYears: z
-    .string()
-    .min(2, "Elementary years attended is required")
-    .max(20),
-  highSchool: z
-    .string()
-    .min(2, "High school is required")
-    .max(200),
-  highSchoolYears: z
-    .string()
-    .min(2, "High school years attended is required")
-    .max(20),
+    .min(4, "High school start year is required")
+    .max(4),
+  highSchoolTo: z.string().min(4, "High school end year is required").max(4),
   college: z
     .string()
     .min(2, "College/University is required")
-    .max(200),
-  collegeYears: z
+    .max(200)
+    .optional(),
+  collegeFrom: z
     .string()
-    .min(2, "College years attended is required")
-    .max(20),
+    .min(4, "College start year is required")
+    .max(4)
+    .optional(),
+  collegeTo: z
+    .string()
+    .min(4, "College end year is required")
+    .max(4)
+    .optional(),
   others: z.string().max(200).optional(),
-  othersYears: z.string().max(20).optional(),
+  othersFrom: z.string().max(4).optional(),
+  othersTo: z.string().max(4).optional(),
 
   // Seminars/Trainings
   seminars: z.array(seminarSchema).optional(),

@@ -85,7 +85,7 @@ export default function ContactInfoSection({
             <p className="text-red-600 text-sm mt-1">{errors.baguioContact}</p>
           )}
         </div>
-        <div className="mb-2">
+        <div className="mb-2 hidden">
           <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
             E-mail Address
           </Label>
@@ -113,7 +113,7 @@ export default function ContactInfoSection({
             value={formData.citizenship || ""}
             onChange={(e) => handleInputChange("citizenship", e.target.value)}
             className={errors.citizenship ? "border-red-500" : ""}
-            placeholder="Filipino"
+            placeholder="e.g., Filipino"
           />
           {errors.citizenship && (
             <p className="text-red-600 text-sm mt-1">{errors.citizenship}</p>

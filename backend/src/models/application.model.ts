@@ -56,13 +56,17 @@ export interface ApplicationDocument extends mongoose.Document {
 
   // Educational Background
   elementary: string;
-  elementaryYears: string;
+  elementaryFrom: string;
+  elementaryTo: string;
   highSchool: string;
-  highSchoolYears: string;
+  highSchoolFrom: string;
+  highSchoolTo: string;
   college: string;
-  collegeYears: string;
+  collegeFrom: string;
+  collegeTo: string;
   others?: string;
-  othersYears?: string;
+  othersFrom?: string;
+  othersTo?: string;
 
   // Seminars/Trainings
   seminars?: Array<{
@@ -405,7 +409,12 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
       required: true,
       trim: true,
     },
-    elementaryYears: {
+    elementaryFrom: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    elementaryTo: {
       type: String,
       required: true,
       trim: true,
@@ -415,26 +424,40 @@ const applicationSchema = new mongoose.Schema<ApplicationDocument>(
       required: true,
       trim: true,
     },
-    highSchoolYears: {
+    highSchoolFrom: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    highSchoolTo: {
       type: String,
       required: true,
       trim: true,
     },
     college: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
-    collegeYears: {
+    collegeFrom: {
       type: String,
-      required: true,
+      required: false,
+      trim: true,
+    },
+    collegeTo: {
+      type: String,
+      required: false,
       trim: true,
     },
     others: {
       type: String,
       trim: true,
     },
-    othersYears: {
+    othersFrom: {
+      type: String,
+      trim: true,
+    },
+    othersTo: {
       type: String,
       trim: true,
     },

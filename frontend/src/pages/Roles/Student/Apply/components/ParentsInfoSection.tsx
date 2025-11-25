@@ -40,6 +40,7 @@ export default function ParentsInfoSection({
 
   function toggleFatherUnknown(checked: boolean) {
     setIsFatherUnknown(checked);
+    setIsFatherOccUnknown(checked); // Also check/uncheck father occupation
     // store/restore values
     if (checked) {
       prevFather.current = {
@@ -84,13 +85,19 @@ export default function ParentsInfoSection({
 
   function toggleMotherNameUnknown(checked: boolean) {
     setIsMotherNameUnknown(checked);
+    setIsMotherOccUnknown(checked); // Also check/uncheck mother occupation
     if (checked) {
       prevMotherName.current = formData.motherName;
+      prevMotherOcc.current = formData.motherOccupation;
       handleInputChange("motherName", "");
       handleInputChange("motherNameUnknown", true);
+      handleInputChange("motherOccupation", "");
+      handleInputChange("motherOccupationUnknown", true);
     } else {
       handleInputChange("motherName", prevMotherName.current || "");
       handleInputChange("motherNameUnknown", false);
+      handleInputChange("motherOccupation", prevMotherOcc.current || "");
+      handleInputChange("motherOccupationUnknown", false);
     }
   }
 
