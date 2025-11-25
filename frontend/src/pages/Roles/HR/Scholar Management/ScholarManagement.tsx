@@ -339,8 +339,9 @@ const ScholarManagement = () => {
         "success"
       );
 
-      // Refresh scholars list
+      // Refresh scholars list and user applications to update sidebar visibility
       queryClient.invalidateQueries({ queryKey: ["scholars"] });
+      queryClient.invalidateQueries({ queryKey: ["userApplications"] });
 
       console.log("End Semester Result:", result);
     } catch (error: any) {
