@@ -20,6 +20,7 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const { addToast } = useToast();
 
   // Auto-signout timeout: 1 hour (60 minutes)
@@ -129,7 +130,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const refreshUser = async () => {
+    if (isFetching) {
+      console.warn("refreshUser already in progress, skipping...");
+      return;
+    }
+
     console.log("=== REFRESH USER START ===");
+    setIsFetching(true);
     try {
       const userData = await getUser();
       console.log("Received user data from API:", userData.data);
@@ -141,6 +148,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error("Error in refreshUser:", error);
       // Error is already handled by the API interceptor
       setUser(null);
+    } finally {
+      setIsFetching(false);
     }
   };
 

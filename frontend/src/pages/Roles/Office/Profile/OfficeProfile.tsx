@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
   getProfiles,
   selectProfile,
@@ -72,7 +73,19 @@ const OfficeProfile = () => {
   const { user, logout, refreshUser } = useAuth();
   const { addToast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Redirect non-office/non-hr users
+  useEffect(() => {
+    if (user && user.role !== "office" && user.role !== "hr") {
+      console.warn(
+        `Unauthorized access attempt to Office Profile by ${user.role} user`
+      );
+      addToast("You don't have permission to access this page", "error");
+      navigate("/");
+    }
+  }, [user, navigate, addToast]);
 
   // Modals state
   const [showManageProfilesModal, setShowManageProfilesModal] = useState(false);
@@ -113,7 +126,7 @@ const OfficeProfile = () => {
   const { data: profilesData } = useQuery({
     queryKey: ["profiles"],
     queryFn: getProfiles,
-    enabled: !!user && user.role === "office",
+    enabled: !!user && (user.role === "office" || user.role === "hr"),
   });
 
   // Fetch sessions
