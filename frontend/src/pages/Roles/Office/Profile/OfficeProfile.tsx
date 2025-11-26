@@ -624,7 +624,8 @@ const OfficeProfile = () => {
               Manage Profiles
             </DialogTitle>
             <DialogDescription>
-              Create, edit, and manage your office profiles (Maximum {maxProfiles} profiles)
+              Create, edit, and manage your office profiles (Maximum{" "}
+              {maxProfiles} profiles)
             </DialogDescription>
           </DialogHeader>
 
@@ -639,7 +640,8 @@ const OfficeProfile = () => {
               disabled={profiles.length >= maxProfiles}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Create New Profile {profiles.length >= maxProfiles && "(Maximum reached)"}
+              Create New Profile{" "}
+              {profiles.length >= maxProfiles && "(Maximum reached)"}
             </Button>
 
             {/* Profiles List */}

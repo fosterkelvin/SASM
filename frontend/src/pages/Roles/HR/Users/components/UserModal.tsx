@@ -65,7 +65,9 @@ const UserModal: React.FC<Props> = ({ user, onClose, onSave, onChange }) => {
                   min="1"
                   max="20"
                   value={user.maxProfiles || 5}
-                  onChange={(e) => onChange({ maxProfiles: parseInt(e.target.value) || 5 })}
+                  onChange={(e) =>
+                    onChange({ maxProfiles: parseInt(e.target.value) || 5 })
+                  }
                   className="w-full px-3 py-2 border rounded"
                   placeholder="Maximum profiles (1-20)"
                 />

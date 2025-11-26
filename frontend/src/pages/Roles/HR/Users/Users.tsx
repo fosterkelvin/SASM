@@ -84,11 +84,13 @@ const Users: React.FC = () => {
         officeName: u.officeName,
         maxProfiles: u.maxProfiles,
       });
-      
+
       console.log("User updated:", response.data);
-      
+
       // Update local state
-      setData((prev) => prev.map((p) => (p._id === u._id ? { ...p, ...u } : p)));
+      setData((prev) =>
+        prev.map((p) => (p._id === u._id ? { ...p, ...u } : p))
+      );
       closeModal();
     } catch (err: any) {
       console.error("Error saving user:", err);

@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getProfiles, selectProfile, createProfile, updateProfile, deleteProfile, resetProfilePIN, sendPasswordResetEmail } from "@/lib/api";
+import {
+  getProfiles,
+  selectProfile,
+  createProfile,
+  updateProfile,
+  deleteProfile,
+  resetProfilePIN,
+  sendPasswordResetEmail,
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { User, Plus, Edit, Trash2, LogOut } from "lucide-react";
@@ -35,7 +43,9 @@ function ProfileSelector() {
   // Get user's max profiles limit (default to 5 if not set)
   const maxProfiles = user?.maxProfiles || 5;
 
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(
+    null
+  );
   const [showPINModal, setShowPINModal] = useState(false);
   const [pin, setPin] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -86,7 +96,10 @@ function ProfileSelector() {
       addToast("Profile created successfully!", "success");
     },
     onError: (error: any) => {
-      addToast(error.response?.data?.message || "Failed to create profile", "error");
+      addToast(
+        error.response?.data?.message || "Failed to create profile",
+        "error"
+      );
     },
   });
 
@@ -103,7 +116,10 @@ function ProfileSelector() {
       addToast("Profile updated successfully!", "success");
     },
     onError: (error: any) => {
-      addToast(error.response?.data?.message || "Failed to update profile", "error");
+      addToast(
+        error.response?.data?.message || "Failed to update profile",
+        "error"
+      );
     },
   });
 
@@ -116,7 +132,10 @@ function ProfileSelector() {
       addToast("Profile deleted successfully!", "success");
     },
     onError: (error: any) => {
-      addToast(error.response?.data?.message || "Failed to delete profile", "error");
+      addToast(
+        error.response?.data?.message || "Failed to delete profile",
+        "error"
+      );
     },
   });
 
@@ -128,7 +147,10 @@ function ProfileSelector() {
       setAccountPassword("");
       setNewPIN("");
       setConfirmNewPIN("");
-      addToast("PIN reset successfully! You can now use your new PIN.", "success");
+      addToast(
+        "PIN reset successfully! You can now use your new PIN.",
+        "success"
+      );
     },
     onError: (error: any) => {
       addToast(error.response?.data?.message || "Failed to reset PIN", "error");
@@ -142,7 +164,10 @@ function ProfileSelector() {
       setShowPasswordResetModal(false);
     },
     onError: (error: any) => {
-      addToast(error.response?.data?.message || "Failed to send reset email", "error");
+      addToast(
+        error.response?.data?.message || "Failed to send reset email",
+        "error"
+      );
     },
   });
 
@@ -279,7 +304,9 @@ function ProfileSelector() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
-          <p className="text-gray-900 dark:text-white text-lg">Loading profiles...</p>
+          <p className="text-gray-900 dark:text-white text-lg">
+            Loading profiles...
+          </p>
         </div>
       </div>
     );
@@ -339,14 +366,18 @@ function ProfileSelector() {
                       </h3>
                       {profile.lastAccessedAt && (
                         <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                          Last used: {new Date(profile.lastAccessedAt).toLocaleDateString()}
+                          Last used:{" "}
+                          {new Date(
+                            profile.lastAccessedAt
+                          ).toLocaleDateString()}
                         </p>
                       )}
-                      {selectProfileMutation.isPending && selectedProfileId === profile._id && (
-                        <div className="mt-3">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                        </div>
-                      )}
+                      {selectProfileMutation.isPending &&
+                        selectedProfileId === profile._id && (
+                          <div className="mt-3">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                          </div>
+                        )}
                     </div>
                   </Card>
                 </button>
@@ -394,7 +425,9 @@ function ProfileSelector() {
                     Add Profile
                   </h3>
                   {profiles.length >= maxProfiles && (
-                    <p className="text-xs text-red-500 mt-2">Maximum profiles reached</p>
+                    <p className="text-xs text-red-500 mt-2">
+                      Maximum profiles reached
+                    </p>
                   )}
                 </div>
               </Card>
@@ -409,10 +442,13 @@ function ProfileSelector() {
                   <User className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="text-gray-900 dark:text-white font-semibold mb-2">About Profiles</h3>
+                  <h3 className="text-gray-900 dark:text-white font-semibold mb-2">
+                    About Profiles
+                  </h3>
                   <p className="text-gray-600 dark:text-gray-400 text-sm">
-                    Create up to {maxProfiles} profiles for different users. Each profile has its own 4-digit PIN
-                    for quick access and all actions are tracked for audit purposes.
+                    Create up to {maxProfiles} profiles for different users.
+                    Each profile has its own 4-digit PIN for quick access and
+                    all actions are tracked for audit purposes.
                   </p>
                 </div>
               </div>
@@ -506,7 +542,9 @@ function ProfileSelector() {
                 type="password"
                 maxLength={4}
                 value={profilePIN}
-                onChange={(e) => setProfilePIN(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) =>
+                  setProfilePIN(e.target.value.replace(/\D/g, ""))
+                }
                 placeholder="••••"
                 required
               />
@@ -518,7 +556,9 @@ function ProfileSelector() {
                 type="password"
                 maxLength={4}
                 value={confirmPIN}
-                onChange={(e) => setConfirmPIN(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) =>
+                  setConfirmPIN(e.target.value.replace(/\D/g, ""))
+                }
                 placeholder="••••"
                 required
               />
@@ -542,7 +582,9 @@ function ProfileSelector() {
                 className="flex-1"
                 disabled={createProfileMutation.isPending}
               >
-                {createProfileMutation.isPending ? "Creating..." : "Create Profile"}
+                {createProfileMutation.isPending
+                  ? "Creating..."
+                  : "Create Profile"}
               </Button>
             </div>
           </form>
@@ -570,13 +612,17 @@ function ProfileSelector() {
               />
             </div>
             <div>
-              <Label htmlFor="editProfilePIN">New PIN (optional, 4 digits)</Label>
+              <Label htmlFor="editProfilePIN">
+                New PIN (optional, 4 digits)
+              </Label>
               <Input
                 id="editProfilePIN"
                 type="password"
                 maxLength={4}
                 value={profilePIN}
-                onChange={(e) => setProfilePIN(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) =>
+                  setProfilePIN(e.target.value.replace(/\D/g, ""))
+                }
                 placeholder="••••"
               />
             </div>
@@ -588,7 +634,9 @@ function ProfileSelector() {
                   type="password"
                   maxLength={4}
                   value={confirmPIN}
-                  onChange={(e) => setConfirmPIN(e.target.value.replace(/\D/g, ""))}
+                  onChange={(e) =>
+                    setConfirmPIN(e.target.value.replace(/\D/g, ""))
+                  }
                   placeholder="••••"
                 />
               </div>
@@ -613,7 +661,9 @@ function ProfileSelector() {
                 className="flex-1"
                 disabled={updateProfileMutation.isPending}
               >
-                {updateProfileMutation.isPending ? "Updating..." : "Update Profile"}
+                {updateProfileMutation.isPending
+                  ? "Updating..."
+                  : "Update Profile"}
               </Button>
             </div>
           </form>
@@ -626,7 +676,8 @@ function ProfileSelector() {
           <DialogHeader>
             <DialogTitle>Delete Profile</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deletingProfile?.profileName}"? This action cannot be undone.
+              Are you sure you want to delete "{deletingProfile?.profileName}"?
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2">
@@ -652,7 +703,9 @@ function ProfileSelector() {
                 }
               }}
             >
-              {deleteProfileMutation.isPending ? "Deleting..." : "Delete Profile"}
+              {deleteProfileMutation.isPending
+                ? "Deleting..."
+                : "Delete Profile"}
             </Button>
           </div>
         </DialogContent>
@@ -711,7 +764,9 @@ function ProfileSelector() {
                 type="password"
                 maxLength={4}
                 value={confirmNewPIN}
-                onChange={(e) => setConfirmNewPIN(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) =>
+                  setConfirmNewPIN(e.target.value.replace(/\D/g, ""))
+                }
                 placeholder="••••"
                 required
               />
@@ -744,7 +799,10 @@ function ProfileSelector() {
       </Dialog>
 
       {/* Password Reset Email Modal */}
-      <Dialog open={showPasswordResetModal} onOpenChange={setShowPasswordResetModal}>
+      <Dialog
+        open={showPasswordResetModal}
+        onOpenChange={setShowPasswordResetModal}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reset Your Password</DialogTitle>
@@ -756,8 +814,16 @@ function ProfileSelector() {
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
-                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  <svg
+                    className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </div>
                 <div>
@@ -772,8 +838,9 @@ function ProfileSelector() {
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                After clicking "Send Reset Email", check your inbox for a link to reset your password.
-                The link will expire in 15 minutes for security reasons.
+                After clicking "Send Reset Email", check your inbox for a link
+                to reset your password. The link will expire in 15 minutes for
+                security reasons.
               </p>
             </div>
             <div className="flex gap-2">
@@ -790,7 +857,9 @@ function ProfileSelector() {
                 className="flex-1"
                 disabled={sendPasswordResetMutation.isPending}
               >
-                {sendPasswordResetMutation.isPending ? "Sending..." : "Send Reset Email"}
+                {sendPasswordResetMutation.isPending
+                  ? "Sending..."
+                  : "Send Reset Email"}
               </Button>
             </div>
           </form>
@@ -800,7 +869,8 @@ function ProfileSelector() {
       {/* Footer */}
       <div className="p-6 text-center">
         <p className="text-gray-500 dark:text-gray-500 text-sm">
-          University of Baguio - Student Assistant and Student Marshal Information Management System
+          University of Baguio - Student Assistant and Student Marshal
+          Information Management System
         </p>
       </div>
     </div>

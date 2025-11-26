@@ -93,7 +93,7 @@ export const getUsersHandler = catchErrors(
 export const updateUserHandler = catchErrors(
   async (req: Request, res: Response) => {
     const requestingUser = await UserModel.findById(req.userID);
-    
+
     // Only HR users can update other users
     appAssert(
       requestingUser && requestingUser.role === "hr",
