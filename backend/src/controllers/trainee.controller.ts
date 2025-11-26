@@ -1636,10 +1636,14 @@ export const getClassScheduleHandler = catchErrors(
       // Office/HR can view any trainee/scholar's schedule
       const { applicationId } = req.params;
 
-      // Check if it's a scholar FIRST (scholars have their own schedule with scholarId)
-      const scholar = await ScholarModel.findOne({
-        applicationId: applicationId,
-      });
+      // Check if it's a scholar by _id, userId, or applicationId
+      let scholar = await ScholarModel.findById(applicationId);
+      if (!scholar) {
+        scholar = await ScholarModel.findOne({ userId: applicationId });
+      }
+      if (!scholar) {
+        scholar = await ScholarModel.findOne({ applicationId });
+      }
 
       if (scholar) {
         // This is a scholar - find schedule by scholarId
@@ -1715,8 +1719,14 @@ export const addDutyHoursHandler = catchErrors(
       return (h || 0) * 60 + (m || 0);
     };
 
-    // Check if this is a scholar first
-    const scholar = await ScholarModel.findOne({ applicationId });
+    // Check if this is a scholar by _id, userId, or applicationId
+    let scholar = await ScholarModel.findById(applicationId);
+    if (!scholar) {
+      scholar = await ScholarModel.findOne({ userId: applicationId });
+    }
+    if (!scholar) {
+      scholar = await ScholarModel.findOne({ applicationId });
+    }
 
     if (scholar) {
       // ===== SCHOLAR FLOW =====

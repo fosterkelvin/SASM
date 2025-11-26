@@ -89,6 +89,53 @@ export const getUsersHandler = catchErrors(
 );
 
 // Reset accepted scholars to reapplicant status for new semester
+// Update user information (HR only)
+export const updateUserHandler = catchErrors(
+  async (req: Request, res: Response) => {
+    const requestingUser = await UserModel.findById(req.userID);
+    
+    // Only HR users can update other users
+    appAssert(
+      requestingUser && requestingUser.role === "hr",
+      403,
+      "Unauthorized: Only HR can update user information"
+    );
+
+    const { userId } = req.params;
+    const { role, status, officeName, maxProfiles } = req.body;
+
+    const user = await UserModel.findById(userId);
+    appAssert(user, NOT_FOUND, "User not found");
+
+    console.log("=== UPDATE USER DEBUG ===");
+    console.log("Updating user:", userId);
+    console.log("Update data:", { role, status, officeName, maxProfiles });
+
+    // Update fields if provided
+    if (role !== undefined) user.role = role;
+    if (status !== undefined) user.status = status;
+    if (officeName !== undefined) user.officeName = officeName;
+    if (maxProfiles !== undefined && user.role === "office") {
+      // Validate maxProfiles is a number between 1 and 20
+      const max = parseInt(maxProfiles);
+      appAssert(
+        !isNaN(max) && max >= 1 && max <= 20,
+        400,
+        "maxProfiles must be a number between 1 and 20"
+      );
+      (user as any).maxProfiles = max;
+    }
+
+    await user.save();
+
+    return res.status(OK).json({
+      success: true,
+      message: "User updated successfully",
+      user: user.omitPassword(),
+    });
+  }
+);
+
 export const resetScholarsToApplicantsHandler = catchErrors(
   async (req: Request, res: Response) => {
     const requestingUser = await UserModel.findById(req.userID);

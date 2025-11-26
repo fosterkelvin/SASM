@@ -28,6 +28,7 @@ import dashboardRoutes from "./routes/dashboard.route";
 import archivedApplicationRoutes from "./routes/archivedApplication.route";
 import reapplicationRoutes from "./routes/reapplication.route";
 import serviceDurationRoutes from "./routes/serviceDuration.routes";
+import masterlistRoutes from "./routes/masterlist.route";
 
 const app = express();
 
@@ -126,6 +127,8 @@ app.use("/scholar-requests", scholarRequestRoutes);
 app.use("/dashboard", dashboardRoutes);
 // Service duration tracking
 app.use("/service-duration", serviceDurationRoutes);
+// Masterlist data for PDF generation
+app.use("/masterlist", authenticate, masterlistRoutes);
 
 app.use(errorHandler);
 

@@ -12,6 +12,7 @@ export interface UserDocument extends mongoose.Document {
   pendingEmail?: string;
   office?: string;
   officeName?: string; // For office users: "OSAS", "OSA", etc.
+  maxProfiles?: number; // Maximum profiles allowed for office users
   createdAt: Date;
   updatedAt: Date;
   comparePassword(val: string): Promise<boolean>;
@@ -27,6 +28,7 @@ export interface UserDocument extends mongoose.Document {
     | "pendingEmail"
     | "office"
     | "officeName"
+    | "maxProfiles"
     | "createdAt"
     | "updatedAt"
   >;
@@ -81,6 +83,13 @@ const userSchema = new mongoose.Schema<UserDocument>(
       required: false,
       default: "", // Shows field in MongoDB even if empty
       trim: true,
+    },
+    maxProfiles: {
+      type: Number,
+      required: false,
+      default: 5, // Default maximum profiles for office users
+      min: 1,
+      max: 20,
     },
   },
   {

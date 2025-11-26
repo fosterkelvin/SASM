@@ -212,3 +212,49 @@ div:has(> canvas.signature-canvas) canvas,
 /* Also allow links and buttons to be interactable (so copy link works) */
 /* Note: links and buttons inside .no-select will inherit user-select:none
    by default now. Inputs, textareas and contenteditable elements remain selectable. */
+
+/* Print styles for schedule */
+@media print {
+  /* Hide everything except the schedule */
+  body * {
+    visibility: hidden;
+  }
+
+  .printing,
+  .printing * {
+    visibility: visible !important;
+  }
+
+  .printing {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  /* Ensure table prints properly */
+  .printing table {
+    page-break-inside: auto;
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  .printing tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .printing th,
+  .printing td {
+    border: 1px solid #000 !important;
+    padding: 8px !important;
+    font-size: 10pt;
+  }
+
+  /* Force print background colors */
+  .printing * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}

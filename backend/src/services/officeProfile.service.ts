@@ -11,8 +11,6 @@ import {
 import { signToken, refreshTokenSignOptions } from "../utils/jwt";
 import { createAuditLog } from "./auditLog.service";
 
-const MAX_PROFILES_PER_ACCOUNT = 5; // Netflix-style limit
-
 // Get all profiles for an OFFICE account
 export const getProfiles = async (accountID: string) => {
   const account = await UserModel.findById(accountID);
@@ -57,14 +55,15 @@ export const createProfile = async (params: {
     "Only OFFICE accounts can have profiles"
   );
 
-  // Check profile limit
+  // Check profile limit (use user's maxProfiles or default to 5)
+  const maxProfiles = account.maxProfiles || 5;
   const profileCount = await OfficeProfileModel.countDocuments({
     accountID: params.accountID,
   });
   appAssert(
-    profileCount < MAX_PROFILES_PER_ACCOUNT,
+    profileCount < maxProfiles,
     BAD_REQUEST,
-    `Maximum of ${MAX_PROFILES_PER_ACCOUNT} profiles allowed`
+    `Maximum of ${maxProfiles} profiles allowed`
   );
 
   // Validate PIN (must be 4 digits)

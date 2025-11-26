@@ -10,6 +10,7 @@ export type UserRow = {
   updatedAt?: string;
   office?: string;
   officeName?: string;
+  maxProfiles?: number;
   // For display compatibility
   firstName?: string;
   lastName?: string;

@@ -76,6 +76,9 @@ const OfficeProfile = () => {
   const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
+  // Get user's max profiles limit (default to 5 if not set)
+  const maxProfiles = user?.maxProfiles || 5;
+
   // Redirect non-office/non-hr users
   useEffect(() => {
     if (user && user.role !== "office" && user.role !== "hr") {
@@ -621,7 +624,7 @@ const OfficeProfile = () => {
               Manage Profiles
             </DialogTitle>
             <DialogDescription>
-              Create, edit, and manage your office profiles (Maximum 5 profiles)
+              Create, edit, and manage your office profiles (Maximum {maxProfiles} profiles)
             </DialogDescription>
           </DialogHeader>
 
@@ -633,10 +636,10 @@ const OfficeProfile = () => {
                 setShowCreateModal(true);
               }}
               className="w-full bg-red-600 hover:bg-red-700 text-white"
-              disabled={profiles.length >= 5}
+              disabled={profiles.length >= maxProfiles}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Create New Profile {profiles.length >= 5 && "(Maximum reached)"}
+              Create New Profile {profiles.length >= maxProfiles && "(Maximum reached)"}
             </Button>
 
             {/* Profiles List */}

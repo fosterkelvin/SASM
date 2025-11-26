@@ -17,6 +17,7 @@ import {
   ClipboardList,
   GraduationCap,
   AlertTriangle,
+  Download,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -28,11 +29,13 @@ import {
   getUserDTRForOffice,
   getClassSchedule,
   resetScholarsToApplicants,
+  getMasterlistData,
 } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
 import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import ScheduleVisualization from "@/pages/Roles/Student/Schedule/components/ScheduleVisualization";
 import { CustomAlert, useCustomAlert } from "@/components/ui/custom-alert";
+import { generateMasterlistPDF } from "@/utils/pdfGenerator";
 
 const ScholarManagement = () => {
   const { user } = useAuth();
@@ -381,6 +384,33 @@ const ScholarManagement = () => {
     }
   };
 
+  const handleGenerateMasterlist = async () => {
+    try {
+      showAlert("Generating...", "Fetching masterlist data...", "info");
+      const response = await getMasterlistData();
+
+      if (response.success) {
+        generateMasterlistPDF(response.data);
+        showAlert(
+          "Success",
+          "Masterlist PDF generated successfully!",
+          "success"
+        );
+      } else {
+        throw new Error("Failed to fetch masterlist data");
+      }
+    } catch (error: any) {
+      console.error("Error generating masterlist:", error);
+      showAlert(
+        "Error",
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to generate masterlist. Please try again.",
+        "error"
+      );
+    }
+  };
+
   if (!user) {
     return <div>Loading...</div>;
   }
@@ -408,14 +438,25 @@ const ScholarManagement = () => {
             Scholar Management
           </h1>
 
-          <Button
-            type="button"
-            onClick={handleEndSemester}
-            disabled={isResetting}
-            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold mr-4 shadow-lg"
-          >
-            {isResetting ? "Resetting..." : "🔄 End Semester"}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              onClick={handleGenerateMasterlist}
+              className="bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Generate Masterlist PDF
+            </Button>
+
+            <Button
+              type="button"
+              onClick={handleEndSemester}
+              disabled={isResetting}
+              className="bg-gray-600 hover:bg-gray-700 text-white font-semibold mr-4 shadow-lg"
+            >
+              {isResetting ? "Resetting..." : "🔄 End Semester"}
+            </Button>
+          </div>
         </div>
 
         <div className="p-6 md:p-10">

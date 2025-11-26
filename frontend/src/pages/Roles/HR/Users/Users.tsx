@@ -75,9 +75,27 @@ const Users: React.FC = () => {
   const openUser = (u: UserRow) => setSelected(u);
   const closeModal = () => setSelected(null);
 
-  const saveUser = (u: UserRow) => {
-    setData((prev) => prev.map((p) => (p._id === u._id ? { ...p, ...u } : p)));
-    closeModal();
+  const saveUser = async (u: UserRow) => {
+    try {
+      // Call API to update user
+      const response = await API.patch(`/users/${u._id}`, {
+        role: u.role,
+        status: u.status,
+        officeName: u.officeName,
+        maxProfiles: u.maxProfiles,
+      });
+      
+      console.log("User updated:", response.data);
+      
+      // Update local state
+      setData((prev) => prev.map((p) => (p._id === u._id ? { ...p, ...u } : p)));
+      closeModal();
+    } catch (err: any) {
+      console.error("Error saving user:", err);
+      setError(
+        err.response?.data?.message || err.message || "Failed to save user"
+      );
+    }
   };
 
   const updateSelected = (patch: Partial<UserRow>) => {

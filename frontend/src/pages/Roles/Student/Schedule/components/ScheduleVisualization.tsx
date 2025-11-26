@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 
 interface ScheduleClass {
   section: string;
@@ -29,6 +29,52 @@ const ScheduleVisualization: React.FC<ScheduleVisualizationProps> = ({
   scheduleClasses,
   dutyHours = [],
 }) => {
+  const scheduleRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadSchedule = () => {
+    if (!scheduleRef.current) return;
+
+    try {
+      const button = document.getElementById("download-schedule-btn");
+      if (button) {
+        button.textContent = "Opening Print Dialog...";
+        (button as HTMLButtonElement).disabled = true;
+      }
+
+      // Add printing class for print styles
+      scheduleRef.current.classList.add("printing");
+
+      // Small delay to ensure styles apply
+      setTimeout(() => {
+        // Open print dialog - user can choose "Save as PDF"
+        window.print();
+
+        // Clean up after print dialog closes
+        setTimeout(() => {
+          if (scheduleRef.current) {
+            scheduleRef.current.classList.remove("printing");
+          }
+          if (button) {
+            button.textContent = "📥 Download PDF";
+            (button as HTMLButtonElement).disabled = false;
+          }
+        }, 500);
+      }, 100);
+    } catch (error) {
+      console.error("Error opening print:", error);
+
+      if (scheduleRef.current) {
+        scheduleRef.current.classList.remove("printing");
+      }
+
+      const button = document.getElementById("download-schedule-btn");
+      if (button) {
+        button.textContent = "📥 Download PDF";
+        (button as HTMLButtonElement).disabled = false;
+      }
+    }
+  };
+
   const days = [
     "MONDAY",
     "TUESDAY",
@@ -268,7 +314,10 @@ const ScheduleVisualization: React.FC<ScheduleVisualizationProps> = ({
       </div>
 
       {/* Schedule Grid - Similar to the reference image */}
-      <div className="overflow-x-auto border border-gray-300 dark:border-gray-600 rounded-lg">
+      <div
+        ref={scheduleRef}
+        className="overflow-x-auto border border-gray-300 dark:border-gray-600 rounded-lg"
+      >
         <table className="w-full border-collapse bg-white dark:bg-gray-900">
           <thead>
             <tr className="bg-gray-100 dark:bg-gray-800">

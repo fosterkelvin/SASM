@@ -1073,3 +1073,9 @@ export const getArchivedStats = async () => {
   const response = await API.get("/archived-applications/stats");
   return response.data;
 };
+
+// Masterlist
+export const getMasterlistData = async () => {
+  const response = await API.get("/masterlist");
+  return response.data;
+};

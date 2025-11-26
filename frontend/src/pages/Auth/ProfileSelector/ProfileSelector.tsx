@@ -32,6 +32,9 @@ function ProfileSelector() {
   const { addToast } = useToast();
   const queryClient = useQueryClient();
 
+  // Get user's max profiles limit (default to 5 if not set)
+  const maxProfiles = user?.maxProfiles || 5;
+
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [showPINModal, setShowPINModal] = useState(false);
   const [pin, setPin] = useState("");
@@ -380,7 +383,7 @@ function ProfileSelector() {
             <button
               onClick={() => setShowCreateModal(true)}
               className="group relative"
-              disabled={profiles.length >= 5}
+              disabled={profiles.length >= maxProfiles}
             >
               <Card className="bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-green-600 transition-all duration-300 hover:scale-105 cursor-pointer p-6 flex items-center justify-center min-h-[240px]">
                 <div className="flex flex-col items-center">
@@ -390,7 +393,7 @@ function ProfileSelector() {
                   <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 group-hover:text-green-500 transition-colors">
                     Add Profile
                   </h3>
-                  {profiles.length >= 5 && (
+                  {profiles.length >= maxProfiles && (
                     <p className="text-xs text-red-500 mt-2">Maximum profiles reached</p>
                   )}
                 </div>
@@ -408,7 +411,7 @@ function ProfileSelector() {
                 <div>
                   <h3 className="text-gray-900 dark:text-white font-semibold mb-2">About Profiles</h3>
                   <p className="text-gray-600 dark:text-gray-400 text-sm">
-                    Create up to 5 profiles for different users. Each profile has its own 4-digit PIN
+                    Create up to {maxProfiles} profiles for different users. Each profile has its own 4-digit PIN
                     for quick access and all actions are tracked for audit purposes.
                   </p>
                 </div>
