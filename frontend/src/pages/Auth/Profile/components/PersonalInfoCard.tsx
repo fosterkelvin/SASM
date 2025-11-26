@@ -3,7 +3,7 @@ import { User, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { getUserData, upsertUserData } from "@/lib/api";
+import { getUserData, upsertUserData, getMyServiceDuration } from "@/lib/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   isPersonalInfoComplete,
@@ -35,6 +35,28 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
   const [age, setAge] = useState<number | null>(null);
   const [ageError, setAgeError] = useState<string>("");
 
+  // Fetch user data from backend
+  const { data: userData, refetch } = useQuery({
+    queryKey: ["userData"],
+    queryFn: getUserData,
+    enabled: !!user,
+  });
+
+  // Fetch service duration for students (separate query for real-time updates)
+  const { data: serviceDurationData } = useQuery({
+    queryKey: ["serviceDuration"],
+    queryFn: getMyServiceDuration,
+    enabled: !!user && user.role === "student",
+  });
+
+  // Use service duration from dedicated endpoint, fallback to userData
+  const serviceDuration = serviceDurationData?.serviceDuration ||
+    userData?.serviceDuration || {
+      years: 0,
+      months: 0,
+      totalMonths: 0,
+    };
+
   // Function to calculate age from birthdate
   const calculateAge = (birthdate: string): number => {
     const today = new Date();
@@ -51,13 +73,6 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
 
     return age;
   };
-
-  // Fetch user data from backend
-  const { data: userData, refetch } = useQuery({
-    queryKey: ["userData"],
-    queryFn: getUserData,
-    enabled: !!user,
-  });
 
   // Mutation to save user data
   const saveUserDataMutation = useMutation({
@@ -299,6 +314,56 @@ export default function PersonalInfoCard({ user, colorScheme }: Props) {
               })}
             </p>
           </div>
+
+          {/* Effectivity Date - Only show for scholars (SA/SM/active/re-applicant) */}
+          {user.role === "student" &&
+            (user.status === "SA" ||
+              user.status === "SM" ||
+              user.status === "active" ||
+              user.status === "re-applicant") &&
+            userData?.effectivityDate && (
+              <div className="space-y-1">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Effectivity Date of Scholarship
+                </p>
+                <p className="font-medium text-gray-800 dark:text-gray-200">
+                  {new Date(userData.effectivityDate).toLocaleDateString(
+                    "en-US",
+                    {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    }
+                  )}
+                </p>
+              </div>
+            )}
+
+          {/* Service Duration - Only show for students with service time */}
+          {user.role === "student" && serviceDuration.totalMonths > 0 && (
+            <div className="space-y-1">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Time in Service
+              </p>
+              <p className="font-medium text-gray-800 dark:text-gray-200">
+                {serviceDuration.years > 0 && (
+                  <>
+                    {serviceDuration.years}{" "}
+                    {serviceDuration.years === 1 ? "year" : "years"}
+                  </>
+                )}
+                {serviceDuration.years > 0 && serviceDuration.months > 0 && (
+                  <> and </>
+                )}
+                {serviceDuration.months > 0 && (
+                  <>
+                    {serviceDuration.months}{" "}
+                    {serviceDuration.months === 1 ? "month" : "months"}
+                  </>
+                )}
+              </p>
+            </div>
+          )}
 
           <div className="space-y-1">
             <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>

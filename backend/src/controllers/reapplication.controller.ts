@@ -4,6 +4,7 @@ import ReApplicationModel from "../models/reapplication.model";
 import ArchivedApplicationModel from "../models/archivedApplication.model";
 import ApplicationModel from "../models/application.model";
 import UserModel from "../models/user.model";
+import ScholarModel from "../models/scholar.model";
 import appAssert from "../utils/appAssert";
 import catchErrors from "../utils/catchErrors";
 import cloudinary from "../config/cloudinary";
@@ -156,6 +157,92 @@ export const updateReApplicationStatusHandler = catchErrors(
     );
 
     appAssert(reApplication, BAD_REQUEST, "Re-application not found");
+
+    // If approved, update user status back to SA or SM (based on their scholarship type)
+    if (status === "approved") {
+      const user = await UserModel.findById(reApplication.userID);
+
+      if (user) {
+        // Determine status from position field
+        const newStatus =
+          reApplication.position === "student_assistant" ? "SA" : "SM";
+
+        console.log("🎓 Re-application approved - updating user status:");
+        console.log("- User ID:", user._id);
+        console.log("- Previous status:", user.status);
+        console.log("- New status:", newStatus);
+        console.log("- Position:", reApplication.position);
+
+        user.status = newStatus;
+        await user.save();
+
+        console.log("✅ User status updated successfully!");
+
+        // Create or reactivate Scholar record
+        try {
+          console.log("🔍 Checking for existing scholar record...");
+
+          // Check if scholar record already exists
+          let scholarRecord = await ScholarModel.findOne({ userId: user._id });
+
+          if (scholarRecord) {
+            // Reactivate existing scholar
+            console.log(
+              "📝 Reactivating existing scholar record:",
+              scholarRecord._id
+            );
+            scholarRecord.status = "active";
+            scholarRecord.semesterStartDate = new Date();
+            await scholarRecord.save();
+            console.log("✅ Scholar reactivated!");
+          } else {
+            // Create new scholar record (for scholars who were never deployed before)
+            // These scholars will need to be deployed to an office later
+            console.log("📝 Creating new scholar record for re-applicant");
+            console.log("- userId:", user._id);
+            console.log(
+              "- applicationId:",
+              reApplication.previousApplicationId
+            );
+            console.log("- scholarType:", reApplication.position);
+            console.log(
+              "⚠️  Note: Scholar not yet deployed to office - will appear as 'Not Deployed'"
+            );
+
+            // Get the HR user ID who is approving this
+            const approverID = req.userID;
+
+            scholarRecord = new ScholarModel({
+              userId: user._id,
+              applicationId: reApplication.previousApplicationId,
+              scholarType: reApplication.position,
+              deployedBy: approverID, // HR who approved the re-application
+              scholarOffice: "Not Deployed", // Will be updated when deployed to office
+              status: "active",
+              semesterStartDate: new Date(),
+              semesterMonths: 6,
+              scholarNotes:
+                "Approved via re-application - pending office deployment",
+            });
+
+            const savedScholar = await scholarRecord.save();
+            console.log("✅ New scholar record created!");
+            console.log("- Scholar ID:", savedScholar._id);
+            console.log(
+              "- Full record:",
+              JSON.stringify(savedScholar.toObject(), null, 2)
+            );
+          }
+        } catch (scholarError) {
+          console.error("❌ Error managing scholar record:");
+          console.error("- Error:", scholarError);
+          if (scholarError instanceof Error) {
+            console.error("- Stack:", scholarError.stack);
+          }
+          // Don't throw - user status was already updated
+        }
+      }
+    }
 
     return res.status(OK).json({
       message: "Re-application status updated",

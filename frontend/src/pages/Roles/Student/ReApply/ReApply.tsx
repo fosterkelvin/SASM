@@ -8,6 +8,8 @@ import { useAuth } from "@/context/AuthContext";
 import {
   isPersonalInfoComplete,
   getMissingPersonalInfoFields,
+  isAcademicInfoComplete,
+  getMissingAcademicInfoFields,
 } from "@/lib/personalInfoValidator";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/context/ToastContext";
@@ -103,23 +105,16 @@ const ReApply: React.FC = () => {
     }
   };
 
-  // Check if personal info is complete, redirect if not
+  // Check if academic info is complete, redirect to dashboard if not (where alert will be shown)
   useEffect(() => {
     if (!isLoadingUserData && userData !== undefined) {
-      const personalInfoComplete = isPersonalInfoComplete(userData);
-      if (!personalInfoComplete) {
-        const missingFields = getMissingPersonalInfoFields(userData);
-        addToast(
-          `Please complete your personal information in Profile Settings before re-applying. Missing: ${missingFields.join(
-            ", "
-          )}`,
-          "error",
-          6000
-        );
-        navigate("/profile");
+      const academicInfoComplete = isAcademicInfoComplete(userData);
+
+      if (!academicInfoComplete) {
+        navigate("/student-dashboard");
       }
     }
-  }, [userData, isLoadingUserData, navigate, addToast]);
+  }, [userData, isLoadingUserData, navigate]);
 
   if (user && !user.verified) {
     return (

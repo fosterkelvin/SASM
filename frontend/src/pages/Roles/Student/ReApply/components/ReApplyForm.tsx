@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createReApplication,
   getUserApplications,
@@ -22,6 +22,7 @@ const ReApplyForm: React.FC = () => {
   const { user } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch user's previous application (check active first, then archived)
@@ -50,6 +51,9 @@ const ReApplyForm: React.FC = () => {
     onSuccess: () => {
       addToast("Re-application submitted successfully!", "success");
       setData(defaultData);
+      // Invalidate queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["userReApplications"] });
+      queryClient.invalidateQueries({ queryKey: ["userApplications"] });
       navigate("/student-dashboard");
     },
     onError: (error: any) => {

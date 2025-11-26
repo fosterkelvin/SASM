@@ -11,38 +11,12 @@ import { useUnreadNotificationCount } from "@/hooks/useUnreadNotificationCount";
 import { useQuery } from "@tanstack/react-query";
 import { getUserApplications, getUserData } from "@/lib/api";
 import { checkEmailRequirement } from "@/lib/emailRequirement";
-
-// Helper function to check if personal info is complete
-const isPersonalInfoComplete = (userData: any): boolean => {
-  if (!userData) return false;
-  // Check required fields for applying: gender, birthdate, civilStatus, college, courseYear
-  const requiredFields = [
-    "gender",
-    "birthdate",
-    "civilStatus",
-    "college",
-    "courseYear",
-  ];
-  return requiredFields.every(
-    (field) => userData[field] && userData[field] !== ""
-  );
-};
-
-// Helper function to get missing personal info fields
-const getMissingPersonalInfoFields = (userData: any): string[] => {
-  if (!userData) return [];
-  const fieldLabels: Record<string, string> = {
-    gender: "Gender",
-    birthdate: "Birthdate",
-    civilStatus: "Civil Status",
-    college: "School/Department",
-    courseYear: "Course & Year",
-  };
-  const requiredFields = Object.keys(fieldLabels);
-  return requiredFields
-    .filter((field) => !userData[field] || userData[field] === "")
-    .map((field) => fieldLabels[field]);
-};
+import {
+  isPersonalInfoComplete,
+  getMissingPersonalInfoFields,
+  isAcademicInfoComplete,
+  getMissingAcademicInfoFields,
+} from "@/lib/personalInfoValidator";
 
 interface StudentSidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
@@ -74,6 +48,9 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
 
   // Check if personal info is complete
   const personalInfoComplete = isPersonalInfoComplete(userData);
+
+  // Check if academic info is complete (required for re-apply)
+  const academicInfoComplete = isAcademicInfoComplete(userData);
 
   // Check if user has an accepted application
   const hasAcceptedApplication =
@@ -181,16 +158,10 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
   };
 
   const handleReapplyClick = () => {
-    if (!personalInfoComplete) {
-      const missingFields = getMissingPersonalInfoFields(userData);
-      addToast(
-        `Please complete your personal information in Profile Settings before re-applying. Missing: ${missingFields.join(
-          ", "
-        )}`,
-        "error",
-        6000
-      );
-      navigate("/profile");
+    // Don't navigate if academic info is incomplete - user should see dashboard alert
+    if (!academicInfoComplete) {
+      navigate("/student-dashboard");
+      setIsOpen(false);
       return;
     }
     navigate("/re-apply");
@@ -259,16 +230,9 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
   };
 
   const handleCollapsedReapplyClick = () => {
-    if (!personalInfoComplete) {
-      const missingFields = getMissingPersonalInfoFields(userData);
-      addToast(
-        `Please complete your personal information in Profile Settings before re-applying. Missing: ${missingFields.join(
-          ", "
-        )}`,
-        "error",
-        6000
-      );
-      navigate("/profile");
+    // Don't navigate if academic info is incomplete - user should see dashboard alert
+    if (!academicInfoComplete) {
+      navigate("/student-dashboard");
       return;
     }
     navigate("/re-apply");

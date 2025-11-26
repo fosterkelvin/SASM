@@ -652,6 +652,9 @@ export const acceptApplicationHandler = catchErrors(
     console.log("- Position:", application.position);
     console.log("- Previous status:", previousUserStatus);
     console.log("- New status:", newUserStatus);
+    console.log(
+      "ℹ️  Effectivity date will be set when scholar is deployed to office"
+    );
 
     // Add timeline entry
     application.timeline = application.timeline || [];

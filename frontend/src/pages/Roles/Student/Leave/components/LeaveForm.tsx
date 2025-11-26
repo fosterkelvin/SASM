@@ -34,17 +34,17 @@ const LeaveForm: React.FC<LeaveFormProps> = ({
   useEffect(() => {
     const checkRequirements = async () => {
       try {
-        // Check if user is a deployed scholar
+        // Check if user is a deployed scholar (not trainee)
         let isScholar = false;
         try {
           const scholarInfo = await getMyScholarInfo();
           isScholar = scholarInfo?.scholar?.status === "active";
         } catch (error) {
-          // User is not a scholar, they are a trainee
+          // User is not a scholar, they are a trainee - no academic info required
           isScholar = false;
         }
 
-        // Check academic info - only required for scholars
+        // Check academic info - only required for scholars, NOT required for trainees
         const userData = await getUserData();
         const missing =
           isScholar && (!userData.college || !userData.courseYear);

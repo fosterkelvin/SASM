@@ -32,10 +32,10 @@ const PersonalInfoIncompleteWarning = () => {
         <AlertCircle className="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-base font-semibold text-yellow-800 dark:text-yellow-200">
-            Complete Your Academic Information
+            Complete Your Personal Information
           </p>
           <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-            You must fill all academic information fields before you can apply.
+            You must fill all personal information fields before you can apply.
             Missing:{" "}
             <span className="font-medium">{missingFields.join(", ")}</span>
           </p>

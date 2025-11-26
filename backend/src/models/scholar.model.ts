@@ -10,6 +10,9 @@ export interface IScholar extends Document {
   deployedAt: Date;
   scholarNotes?: string;
   status: "active" | "inactive" | "completed";
+  semesterStartDate?: Date; // When scholar started this semester
+  semesterEndDate?: Date; // When scholar completed/ended this semester
+  semesterMonths?: number; // Months accumulated for this semester (typically 6)
   // Performance tracking
   performanceRating?: number;
   // Timestamps
@@ -56,6 +59,18 @@ const scholarSchema = new Schema<IScholar>(
       type: String,
       enum: ["active", "inactive", "completed"],
       default: "active",
+    },
+    semesterStartDate: {
+      type: Date,
+      default: null,
+    },
+    semesterEndDate: {
+      type: Date,
+      default: null,
+    },
+    semesterMonths: {
+      type: Number,
+      default: 6, // Default semester duration
     },
     performanceRating: {
       type: Number,

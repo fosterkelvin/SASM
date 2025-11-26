@@ -27,6 +27,7 @@ import scholarRequestRoutes from "./routes/scholarRequest.route";
 import dashboardRoutes from "./routes/dashboard.route";
 import archivedApplicationRoutes from "./routes/archivedApplication.route";
 import reapplicationRoutes from "./routes/reapplication.route";
+import serviceDurationRoutes from "./routes/serviceDuration.routes";
 
 const app = express();
 
@@ -123,6 +124,8 @@ app.use("/evaluations", evaluationRoutes);
 app.use("/scholar-requests", scholarRequestRoutes);
 // Dashboard statistics
 app.use("/dashboard", dashboardRoutes);
+// Service duration tracking
+app.use("/service-duration", serviceDurationRoutes);
 
 app.use(errorHandler);
 

@@ -2,8 +2,16 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { getMyLeaves } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
-import { FileText, Calendar, Clock, X } from "lucide-react";
+import { FileText, Calendar, Clock, X, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import API from "@/config/apiClient";
 
 interface Leave {
@@ -31,6 +39,8 @@ const MyLeavesList: React.FC<MyLeavesListProps> = ({
   const [leaves, setLeaves] = useState<Leave[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [leaveToCancel, setLeaveToCancel] = useState<Leave | null>(null);
   const { addToast } = useToast();
 
   const fetchLeaves = async () => {
@@ -64,9 +74,8 @@ const MyLeavesList: React.FC<MyLeavesListProps> = ({
   }, []);
 
   const handleCancel = async (leaveId: string) => {
-    if (!confirm("Are you sure you want to cancel this leave request?")) {
-      return;
-    }
+    setShowCancelDialog(false);
+    setLeaveToCancel(null);
 
     setCancelling(leaveId);
     try {
@@ -81,6 +90,11 @@ const MyLeavesList: React.FC<MyLeavesListProps> = ({
     } finally {
       setCancelling(null);
     }
+  };
+
+  const openCancelDialog = (leave: Leave) => {
+    setLeaveToCancel(leave);
+    setShowCancelDialog(true);
   };
 
   const calculateDays = (from: string, to: string) => {
@@ -195,7 +209,7 @@ const MyLeavesList: React.FC<MyLeavesListProps> = ({
                 {leave.status === "pending" && (
                   <div className="sm:ml-4">
                     <Button
-                      onClick={() => handleCancel(leave._id)}
+                      onClick={() => openCancelDialog(leave)}
                       disabled={cancelling === leave._id}
                       variant="outline"
                       size="sm"
@@ -230,6 +244,72 @@ const MyLeavesList: React.FC<MyLeavesListProps> = ({
             </div>
           ))}
         </div>
+
+        {/* Cancel Confirmation Dialog */}
+        <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/20">
+                  <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-500" />
+                </div>
+                <DialogTitle className="text-xl">
+                  Cancel Leave Request
+                </DialogTitle>
+              </div>
+              <DialogDescription className="text-left">
+                Are you sure you want to cancel this leave request?
+                {leaveToCancel && (
+                  <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-md space-y-1 text-sm">
+                    <p>
+                      <strong>Type:</strong>{" "}
+                      {leaveToCancel.typeOfLeave.charAt(0).toUpperCase() +
+                        leaveToCancel.typeOfLeave.slice(1)}
+                    </p>
+                    <p>
+                      <strong>Period:</strong>{" "}
+                      {new Date(leaveToCancel.dateFrom).toLocaleDateString()} -{" "}
+                      {new Date(leaveToCancel.dateTo).toLocaleDateString()}
+                    </p>
+                    <p>
+                      <strong>Duration:</strong>{" "}
+                      {calculateDays(
+                        leaveToCancel.dateFrom,
+                        leaveToCancel.dateTo
+                      )}{" "}
+                      {calculateDays(
+                        leaveToCancel.dateFrom,
+                        leaveToCancel.dateTo
+                      ) === 1
+                        ? "day"
+                        : "days"}
+                    </p>
+                  </div>
+                )}
+                <p className="mt-3 text-red-600 dark:text-red-400 font-medium">
+                  This action cannot be undone.
+                </p>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex-row gap-2 sm:gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowCancelDialog(false)}
+                className="flex-1"
+              >
+                Keep Request
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => leaveToCancel && handleCancel(leaveToCancel._id)}
+                disabled={!!cancelling}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                {cancelling ? "Cancelling..." : "Yes, Cancel"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

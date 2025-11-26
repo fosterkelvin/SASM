@@ -7,11 +7,14 @@ import {
   WelcomeCard,
   VerificationAlert,
   PersonalInfoAlert,
+  AcademicInfoAlert,
   StatsGrid,
 } from "./components";
 import {
   isPersonalInfoComplete,
   getMissingPersonalInfoFields,
+  isAcademicInfoComplete,
+  getMissingAcademicInfoFields,
 } from "@/lib/personalInfoValidator";
 
 const StudentDashboard = () => {
@@ -43,6 +46,16 @@ const StudentDashboard = () => {
   const missingFields = !personalInfoComplete
     ? getMissingPersonalInfoFields(userData)
     : [];
+
+  // Check if academic info is complete (required for scholars to file leave)
+  const academicInfoComplete = isAcademicInfoComplete(userData);
+  const missingAcademicFields = !academicInfoComplete
+    ? getMissingAcademicInfoFields(userData)
+    : [];
+
+  // Check if user is a deployed scholar (SA, SM, or active status which means deployed)
+  const isScholar =
+    user?.status === "SA" || user?.status === "SM" || user?.status === "active";
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">
@@ -79,6 +92,11 @@ const StudentDashboard = () => {
           {/* Personal Info Completion Alert - Show only if verified but info incomplete */}
           {user && user.verified && !personalInfoComplete && (
             <PersonalInfoAlert missingFields={missingFields} />
+          )}
+
+          {/* Academic Info Completion Alert - Show only for scholars (SA/SM) who need to file leave */}
+          {user && user.verified && !academicInfoComplete && isScholar && (
+            <AcademicInfoAlert missingFields={missingAcademicFields} />
           )}
 
           <StatsGrid />

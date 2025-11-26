@@ -164,6 +164,28 @@ export const resetScholarsToApplicantsHandler = catchErrors(
     // Get all user IDs from scholar users for deletion operations
     const allScholarUserIds = scholarUsers.map((user) => user._id);
 
+    // Add service duration for all active scholars before deleting records
+    console.log("Adding service duration for active scholars...");
+    for (const scholar of activeScholars) {
+      try {
+        const serviceDurationService = require("../services/serviceDuration.service");
+        const serviceDuration = await serviceDurationService.addSemesterService(
+          scholar.userId,
+          scholar._id,
+          scholar.scholarType
+        );
+        console.log(
+          `✅ Added ${scholar.semesterMonths || 6} months to service duration for user ${scholar.userId}. Total: ${serviceDuration.serviceMonths} months`
+        );
+      } catch (error) {
+        console.error(
+          `❌ Failed to add service duration for scholar ${scholar._id}:`,
+          error
+        );
+        // Continue with other scholars even if one fails
+      }
+    }
+
     // Delete scholar records for active scholars
     const scholarDeleteResult = await ScholarModel.deleteMany({
       userId: { $in: allScholarUserIds },

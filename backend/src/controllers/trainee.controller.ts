@@ -18,14 +18,80 @@ export const getAllTraineesHandler = catchErrors(
   async (req: Request, res: Response) => {
     const { office, status, position, scholarStatus } = req.query;
 
-    // If scholarStatus is provided, fetch only accepted scholars
-    // Otherwise, fetch trainees in training statuses
+    // If scholarStatus is provided, fetch scholars from Scholar collection
+    if (scholarStatus) {
+      console.log("🔍 [HR] Fetching scholars from Scholar collection");
+
+      const scholarFilter: any = { status: "active" };
+      if (office) {
+        scholarFilter.scholarOffice = office;
+      }
+      if (position) {
+        scholarFilter.scholarType = position;
+      }
+
+      const scholars = await ScholarModel.find(scholarFilter)
+        .populate("userId", "firstname lastname email status")
+        .sort({ semesterStartDate: -1 });
+
+      console.log(
+        `📊 [HR] Found ${scholars.length} scholars in Scholar collection`
+      );
+
+      // Import DTR model
+      const DTRModel = require("../models/dtr.model").default;
+
+      // For each scholar, get their DTR hours and application data
+      const scholarsWithDetails = await Promise.all(
+        scholars.map(async (scholar) => {
+          if (!scholar.userId || !scholar.userId._id) {
+            console.warn(`⚠️  Scholar ${scholar._id} has no valid userId`);
+            return null;
+          }
+
+          // Get DTR hours
+          const dtrs = await DTRModel.find({ userId: scholar.userId._id });
+          const dtrHours = dtrs.reduce((sum: number, dtr: any) => {
+            return sum + (dtr.totalMonthlyHours || 0);
+          }, 0);
+          const dtrHoursInHours = Math.floor(dtrHours / 60);
+
+          // Get application data if exists
+          const application = await ApplicationModel.findOne({
+            userID: scholar.userId._id,
+            status: "accepted",
+          });
+
+          return {
+            _id: application?._id || scholar._id,
+            userID: scholar.userId,
+            position: scholar.scholarType,
+            status: "accepted",
+            scholarOffice: scholar.scholarOffice || application?.scholarOffice,
+            scholarNotes: scholar.scholarNotes || application?.scholarNotes,
+            dtrCompletedHours: dtrHoursInHours,
+            semesterStartDate: scholar.semesterStartDate,
+            scholarRecord: scholar.toObject(),
+          };
+        })
+      );
+
+      const validScholars = scholarsWithDetails.filter((s) => s !== null);
+
+      console.log(
+        `✅ [HR] Returning ${validScholars.length} scholars with details`
+      );
+
+      return res.status(OK).json({
+        trainees: validScholars,
+        totalCount: validScholars.length,
+      });
+    }
+
+    // Otherwise, fetch trainees in training statuses from Application collection
     const filter: any = {};
 
-    if (scholarStatus) {
-      // For Scholar Management page - only accepted scholars
-      filter.status = scholarStatus;
-    } else if (status) {
+    if (status) {
       // Specific status requested
       filter.status = status;
     } else {
@@ -49,7 +115,7 @@ export const getAllTraineesHandler = catchErrors(
     }
 
     console.log(
-      "🔍 [HR] Fetching scholars/trainees with filter:",
+      "🔍 [HR] Fetching trainees with filter:",
       JSON.stringify(filter, null, 2)
     );
 
@@ -58,7 +124,7 @@ export const getAllTraineesHandler = catchErrors(
       .populate("traineeSupervisor", "firstname lastname email")
       .sort({ traineeStartDate: -1 });
 
-    console.log(`📊 [HR] Found ${trainees.length} scholars/trainees`);
+    console.log(`📊 [HR] Found ${trainees.length} trainees`);
 
     // Import DTR model
     const DTRModel = require("../models/dtr.model").default;
@@ -383,6 +449,8 @@ export const deployTraineeHandler = catchErrors(
           deployedBy: userID,
           scholarNotes: traineeNotes || "",
           status: "active",
+          semesterStartDate: new Date(), // Track when this semester started
+          semesterMonths: 6, // Default semester duration
         });
 
         await newScholar.save();
@@ -390,6 +458,41 @@ export const deployTraineeHandler = catchErrors(
         console.log("- Scholar ID:", newScholar._id);
         console.log("- Office:", newScholar.scholarOffice);
         console.log("- Type:", newScholar.scholarType);
+        console.log("- Semester started:", newScholar.semesterStartDate);
+
+        // Save effectivity date to user data (only if not already set)
+        try {
+          const UserDataModel = (await import("../models/userdata.model"))
+            .default;
+
+          // Check if effectivity date already exists
+          const existingUserData = await UserDataModel.findOne({
+            userId: application.userID,
+          });
+
+          if (!existingUserData?.effectivityDate) {
+            const effectivityDate = new Date(); // Current date when scholar is FIRST deployed
+
+            console.log("🔄 Setting effectivity date (first deployment):");
+            console.log("- User ID:", application.userID);
+            console.log("- Effectivity date:", effectivityDate);
+
+            const result = await UserDataModel.findOneAndUpdate(
+              { userId: application.userID },
+              { effectivityDate },
+              { upsert: true, new: true }
+            );
+
+            console.log("✅ Effectivity date saved successfully!");
+            console.log("- effectivityDate field:", result?.effectivityDate);
+          } else {
+            console.log("ℹ️  Effectivity date already exists, skipping update");
+            console.log("- Existing date:", existingUserData.effectivityDate);
+          }
+        } catch (effectivityError) {
+          console.error("❌ Error saving effectivity date:", effectivityError);
+          // Don't throw - let deployment continue
+        }
 
         // Note: Scholars need to upload their own work schedule
         // Old trainee class schedules are kept as historical data
@@ -525,6 +628,38 @@ export const updateTraineeDeploymentHandler = catchErrors(
       traineePerformanceRating,
     } = req.body;
 
+    // First check if this is a Scholar ID (for scholars created via re-application)
+    let scholar = await ScholarModel.findById(applicationId);
+
+    if (scholar) {
+      console.log("🎓 Updating SCHOLAR directly from Scholar collection:");
+      console.log("- Scholar ID:", scholar._id);
+      console.log("- User ID:", scholar.userId);
+      console.log("- New Office:", traineeOffice);
+
+      // Update scholar record
+      if (traineeOffice !== undefined) scholar.scholarOffice = traineeOffice;
+      if (traineeNotes !== undefined) scholar.scholarNotes = traineeNotes;
+
+      // Reactivate if inactive
+      if (scholar.status === "inactive") {
+        console.log("🔄 Reactivating inactive scholar...");
+        scholar.status = "active";
+        scholar.semesterStartDate = new Date();
+        scholar.semesterEndDate = undefined;
+        scholar.semesterMonths = 6;
+      }
+
+      await scholar.save();
+      console.log("✅ Scholar record updated successfully!");
+
+      return res.status(OK).json({
+        message: "Scholar deployment updated successfully",
+        scholar,
+      });
+    }
+
+    // Otherwise, it's an Application ID
     const application = await ApplicationModel.findById(applicationId);
     appAssert(application, NOT_FOUND, "Application not found");
 
@@ -576,6 +711,9 @@ export const updateTraineeDeploymentHandler = catchErrors(
           if (scholar.status === "inactive") {
             console.log("🔄 Reactivating inactive scholar...");
             scholar.status = "active";
+            scholar.semesterStartDate = new Date(); // Start new semester
+            scholar.semesterEndDate = undefined; // Clear previous end date
+            scholar.semesterMonths = 6; // Reset to 6 months
           }
           await scholar.save();
           console.log("✅ Scholar record updated successfully!");
@@ -592,6 +730,8 @@ export const updateTraineeDeploymentHandler = catchErrors(
             deployedBy: userID,
             scholarNotes: traineeNotes || application.scholarNotes || "",
             status: "active",
+            semesterStartDate: new Date(), // Track when this semester started
+            semesterMonths: 6, // Default semester duration
           });
           await scholar.save();
           console.log("✅ Scholar record created successfully!");
@@ -720,8 +860,26 @@ export const undeployScholarHandler = catchErrors(
       if (scholar) {
         console.log("📋 Deactivating Scholar record:", scholar._id);
         scholar.status = "inactive";
+        scholar.semesterEndDate = new Date(); // Mark when semester ended
         await scholar.save();
         console.log("✅ Scholar record deactivated successfully!");
+
+        // Add service duration for completed semester
+        try {
+          const serviceDurationService = require("../services/serviceDuration.service");
+          const serviceDuration =
+            await serviceDurationService.addSemesterService(
+              application.userID,
+              scholar._id,
+              scholar.scholarType
+            );
+          console.log(
+            `✅ Added ${scholar.semesterMonths || 6} months to service duration. Total: ${serviceDuration.serviceMonths} months`
+          );
+        } catch (error) {
+          console.error("❌ Failed to add service duration:", error);
+          // Don't throw - this is non-critical
+        }
 
         // Convert scholar schedule back to trainee schedule (optional - keep as scholar)
         const scholarSchedule = await ScheduleModel.findOne({

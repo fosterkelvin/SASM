@@ -19,14 +19,18 @@ export const getUserDataHandler = catchErrors(async (req, res) => {
       college: null,
       courseYear: null,
       age: null,
+      serviceMonths: 0,
+      serviceDuration: { years: 0, months: 0 },
     });
   }
 
   const age = userData.getAge();
+  const serviceDuration = userData.getServiceDuration();
 
   return res.status(OK).json({
     ...userData.toObject(),
     age,
+    serviceDuration,
   });
 });
 
@@ -83,12 +87,14 @@ export const upsertUserDataHandler = catchErrors(async (req, res) => {
   }
 
   const age = userData.getAge();
+  const serviceDuration = userData.getServiceDuration();
 
   return res.status(userData ? OK : CREATED).json({
     message: "User data saved successfully",
     data: {
       ...userData.toObject(),
       age,
+      serviceDuration,
     },
   });
 });

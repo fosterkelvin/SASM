@@ -730,6 +730,25 @@ export const deleteUserData = async () => {
   return response.data;
 };
 
+// Service Duration API
+export const getMyServiceDuration = async () => {
+  const response = await API.get("/service-duration/my-service-duration");
+  return response.data;
+};
+
+export const getUserServiceDuration = async (userId: string) => {
+  const response = await API.get(`/service-duration/user/${userId}`);
+  return response.data;
+};
+
+export const completeSemester = async (data: {
+  userId: string;
+  scholarId: string;
+}) => {
+  const response = await API.post("/service-duration/complete-semester", data);
+  return response.data;
+};
+
 // Netflix-Style Profile Management APIs
 export const getProfiles = async () => {
   const response = await API.get("/office/profiles");

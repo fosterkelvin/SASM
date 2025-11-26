@@ -9,9 +9,18 @@ export interface UserDataDocument extends mongoose.Document {
   address?: string;
   college?: string; // School/Department
   courseYear?: string; // Course & Year
+  effectivityDate?: Date; // Effectivity date of scholarship when accepted
+  serviceMonths?: number; // Total months in service (accumulated per semester)
+  servicePeriods?: Array<{
+    startDate: Date;
+    endDate?: Date;
+    months: number;
+    scholarType: "student_assistant" | "student_marshal";
+  }>; // Track individual service periods
   createdAt: Date;
   updatedAt: Date;
   getAge(): number | null;
+  getServiceDuration(): { years: number; months: number };
 }
 
 const userDataSchema = new mongoose.Schema<UserDataDocument>(
@@ -52,6 +61,29 @@ const userDataSchema = new mongoose.Schema<UserDataDocument>(
       type: String,
       default: null,
     },
+    effectivityDate: {
+      type: Date,
+      default: null,
+    },
+    serviceMonths: {
+      type: Number,
+      default: 0,
+    },
+    servicePeriods: {
+      type: [
+        {
+          startDate: { type: Date, required: true },
+          endDate: { type: Date, default: null },
+          months: { type: Number, default: 6 },
+          scholarType: {
+            type: String,
+            enum: ["student_assistant", "student_marshal"],
+            required: true,
+          },
+        },
+      ],
+      default: [],
+    },
   },
   {
     timestamps: true,
@@ -78,6 +110,17 @@ userDataSchema.methods.getAge = function (): number | null {
   }
 
   return age;
+};
+
+// Method to get service duration in years and months
+userDataSchema.methods.getServiceDuration = function (): {
+  years: number;
+  months: number;
+} {
+  const totalMonths = this.serviceMonths || 0;
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+  return { years, months };
 };
 
 const UserDataModel = mongoose.model<UserDataDocument>(
