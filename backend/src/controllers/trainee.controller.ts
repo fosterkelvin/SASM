@@ -156,20 +156,34 @@ export const getAllTraineesHandler = catchErrors(
 
       // Final deduplication check: remove duplicates based on userID
       const seenUserIds = new Set<string>();
+      const seenApplicationIds = new Set<string>();
       const allScholars = [...validScholars, ...validAcceptedApps].filter(
-        (scholar) => {
+        (scholar: any) => {
           const userId = scholar.userID._id.toString();
+          const applicationId = scholar._id.toString();
+
+          // Check for duplicate userID
           if (seenUserIds.has(userId)) {
-            console.log(`🔍 Removing duplicate for user ${userId}`);
+            console.log(`🔍 Removing duplicate scholar for user ${userId}`);
             return false;
           }
+
+          // Check for duplicate applicationID
+          if (seenApplicationIds.has(applicationId)) {
+            console.log(
+              `🔍 Removing duplicate scholar for application ${applicationId}`
+            );
+            return false;
+          }
+
           seenUserIds.add(userId);
+          seenApplicationIds.add(applicationId);
           return true;
         }
       );
 
       console.log(
-        `✅ [HR] Returning ${allScholars.length} scholars total (${validScholars.length} deployed + ${validAcceptedApps.length} accepted but not deployed, after deduplication)`
+        `✅ [HR] Returning ${allScholars.length} unique scholars (${validScholars.length} deployed + ${validAcceptedApps.length} accepted but not deployed, after deduplication)`
       );
 
       return res.status(OK).json({

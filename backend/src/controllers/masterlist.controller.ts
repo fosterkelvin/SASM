@@ -24,20 +24,44 @@ export const getMasterlistData = async (req: Request, res: Response) => {
       .populate("userId", "firstname lastname email")
       .lean();
 
+    // Deduplicate scholars by userId to prevent duplicates in masterlist
+    const seenUserIds = new Set<string>();
+    const uniqueScholars = scholars.filter((scholar) => {
+      const userId = (scholar.userId as any)?._id?.toString();
+      if (!userId || seenUserIds.has(userId)) {
+        console.warn(`⚠️ Skipping duplicate scholar for userId: ${userId}`);
+        return false;
+      }
+      seenUserIds.add(userId);
+      return true;
+    });
+
     const masterlistData: ScholarWithDetails[] = [];
 
     // Process each scholar
-    for (const scholar of scholars) {
+    for (const scholar of uniqueScholars) {
       const userId = scholar.userId as any;
 
-      // Get user details including gender and service months from userdata
+      // Get user details including gender and service months from user model
       const user = await UserModel.findById(scholar.userId).lean();
+
+      // Get the actual userId ObjectId for querying userdatas
+      const userIdForQuery =
+        typeof scholar.userId === "object"
+          ? (scholar.userId as any)._id
+          : scholar.userId;
+
+      // Try to get additional data from userdatas collection
       const userData = await mongoose.connection
         .collection("userdatas")
-        .findOne({ userId: scholar.userId });
+        .findOne({ userId: userIdForQuery });
 
-      const gender = userData?.sex || "Not specified";
-      const serviceMonths = userData?.serviceMonths || 0;
+      console.log(`📊 Scholar ${userId?.firstname} - userData:`, userData);
+
+      // Get gender and serviceMonths from userData collection primarily
+      const gender = userData?.sex || (user as any)?.gender || "Not specified";
+      const serviceMonths =
+        userData?.serviceMonths || (user as any)?.serviceMonths || 0;
 
       // Get evaluation score (average of all evaluations)
       const evaluations = await EvaluationModel.find({

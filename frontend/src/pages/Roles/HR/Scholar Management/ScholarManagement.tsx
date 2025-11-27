@@ -301,8 +301,26 @@ const ScholarManagement = () => {
 
   const scholars = scholarsData?.trainees || [];
 
+  // Additional frontend deduplication safety check
+  const uniqueScholars = scholars.reduce((acc: any[], scholar: any) => {
+    // Check if this scholar (by userID) is already in the accumulator
+    const isDuplicate = acc.some(
+      (s: any) => s.userID?._id === scholar.userID?._id
+    );
+
+    if (!isDuplicate) {
+      acc.push(scholar);
+    } else {
+      console.warn(
+        `🔍 Frontend: Removed duplicate scholar for user ${scholar.userID?._id}`
+      );
+    }
+
+    return acc;
+  }, []);
+
   // Filter scholars by search term
-  const filteredScholars = scholars.filter((scholar: any) => {
+  const filteredScholars = uniqueScholars.filter((scholar: any) => {
     const searchLower = searchTerm.toLowerCase();
     const fullName =
       `${scholar.userID?.firstname} ${scholar.userID?.lastname}`.toLowerCase();
@@ -554,7 +572,7 @@ const ScholarManagement = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredScholars.map((scholar: any) => (
                 <Card
-                  key={scholar._id}
+                  key={`${scholar._id}-${scholar.userID?._id}`}
                   className="hover:shadow-lg transition-shadow"
                 >
                   <CardContent className="p-6">
