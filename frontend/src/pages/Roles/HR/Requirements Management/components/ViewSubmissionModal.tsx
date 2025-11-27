@@ -56,6 +56,51 @@ const ViewSubmissionModal: React.FC<Props> = ({
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
+  const downloadFile = async (
+    url: string,
+    filename: string,
+    mimetype?: string
+  ) => {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Network response was not ok");
+
+      const blob = await res.blob();
+
+      // Ensure proper file extension
+      let finalName = filename;
+      const hasExt = /\.[a-z0-9]{1,6}$/i.test(filename);
+
+      if (!hasExt) {
+        // No extension, add based on mimetype
+        const contentType = mimetype || res.headers.get("content-type") || "";
+        if (/application\/pdf/i.test(contentType)) {
+          finalName = `${filename}.pdf`;
+        } else if (/image\/(jpeg|jpg)/i.test(contentType)) {
+          finalName = `${filename}.jpg`;
+        } else if (/image\/png/i.test(contentType)) {
+          finalName = `${filename}.png`;
+        }
+      } else if (mimetype?.includes("pdf") && !/\.pdf$/i.test(filename)) {
+        // Has extension but it's a PDF and doesn't end with .pdf
+        finalName = `${filename}.pdf`;
+      }
+
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = finalName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Download failed:", err);
+      // Fallback to direct download
+      window.open(url, "_blank");
+    }
+  };
+
   const handleRejectDocument = async (
     documentIndex: number,
     documentLabel: string
@@ -379,23 +424,32 @@ const ViewSubmissionModal: React.FC<Props> = ({
 
                         {/* Actions */}
                         <div className="flex flex-col gap-2">
-                          <a
-                            href={item.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                            Open
-                          </a>
-                          <a
-                            href={item.url}
-                            download={item.originalName}
+                          {/* Show Open button only for non-PDF files */}
+                          {!item.mimetype?.includes("pdf") && (
+                            <a
+                              href={item.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                              Open
+                            </a>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              downloadFile(
+                                item.url,
+                                item.originalName || item.label,
+                                item.mimetype
+                              );
+                            }}
                             className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
                           >
                             <Download className="w-4 h-4" />
                             Download
-                          </a>
+                          </button>
 
                           {/* Reject Button - Only show for pending documents */}
                           {(!item.documentStatus ||

@@ -169,6 +169,7 @@ const ApplicationManagement = () => {
   // Helper to download remote file and force a filename (pure-browser, no deps)
   const downloadUrlAs = async (url: string, filename: string) => {
     try {
+      console.log("downloadUrlAs called with:", { url, filename });
       let finalUrl = url;
       let res = await fetch(finalUrl);
 
@@ -192,6 +193,11 @@ const ApplicationManagement = () => {
       // If filename has no extension, try to infer from content-type
       const hasExt = /\.[a-z0-9]{1,6}$/i.test(filename);
       let finalName = filename;
+      console.log("Filename check:", {
+        filename,
+        hasExt,
+        contentType: res.headers.get("content-type"),
+      });
       if (!hasExt) {
         const contentType = res.headers.get("content-type") || "";
         if (/application\/pdf/i.test(contentType))
@@ -207,6 +213,7 @@ const ApplicationManagement = () => {
         // else leave as-is (browser may still infer when saving)
       }
 
+      console.log("Final download name:", finalName);
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl;
@@ -217,6 +224,7 @@ const ApplicationManagement = () => {
       a.remove();
       URL.revokeObjectURL(blobUrl);
     } catch (err) {
+      console.error("Download failed:", err);
       // fallback to opening in new tab
       window.open(url, "_blank");
     }
@@ -1740,12 +1748,31 @@ const ApplicationManagement = () => {
 
                               const handleCardClick = () => {
                                 if (!certUrl) return;
+
                                 if (isPdf) {
-                                  openPreview(
-                                    certUrl,
-                                    `certificate-${idx + 1}`
-                                  );
+                                  // For PDFs, trigger download
+                                  try {
+                                    const pathPart = certUrl.split("?")[0];
+                                    const parts = pathPart.split("/");
+                                    let name = parts[parts.length - 1];
+
+                                    // If no extension or unclear filename, use default
+                                    if (
+                                      !name ||
+                                      !/\.[a-z0-9]{1,6}$/i.test(name)
+                                    ) {
+                                      name = `certificate-${idx + 1}.pdf`;
+                                    } else if (!/\.pdf$/i.test(name)) {
+                                      // If has extension but not .pdf, add .pdf
+                                      name = `${name}.pdf`;
+                                    }
+                                    // @ts-ignore
+                                    downloadUrlAs(certUrl, name);
+                                  } catch (err) {
+                                    window.open(certUrl, "_blank");
+                                  }
                                 } else {
+                                  // For images, open in new tab
                                   window.open(certUrl, "_blank");
                                 }
                               };
@@ -1772,7 +1799,7 @@ const ApplicationManagement = () => {
                                           PDF Document
                                         </div>
                                         <div className="text-xs text-gray-600 dark:text-gray-400 underline">
-                                          Open
+                                          Download
                                         </div>
                                       </div>
                                     ) : (
@@ -1794,23 +1821,17 @@ const ApplicationManagement = () => {
                                       Certificate {idx + 1}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                      <a
-                                        href={certUrl}
-                                        onClick={(e) => {
-                                          if (!certUrl) return;
-                                          if (isPdf) {
-                                            e.preventDefault();
-                                            openPreview(
-                                              certUrl,
-                                              `certificate-${idx + 1}`
-                                            );
-                                          }
-                                        }}
-                                        rel="noreferrer"
-                                        className="text-xs text-gray-600 dark:text-gray-400 underline hover:text-gray-800 dark:hover:text-gray-200"
-                                      >
-                                        Open
-                                      </a>
+                                      {/* Show Open link only for images, not PDFs */}
+                                      {!isPdf && (
+                                        <a
+                                          href={certUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-xs text-gray-600 dark:text-gray-400 underline hover:text-gray-800 dark:hover:text-gray-200"
+                                        >
+                                          Open
+                                        </a>
+                                      )}
 
                                       {/* Download button - works for both PDFs and images */}
                                       <button
@@ -1822,16 +1843,22 @@ const ApplicationManagement = () => {
                                             const pathPart =
                                               certUrl.split("?")[0];
                                             const parts = pathPart.split("/");
-                                            let name =
-                                              parts[parts.length - 1] ||
-                                              `certificate-${idx + 1}`;
-                                            // default extension for images if none
+                                            let name = parts[parts.length - 1];
+
+                                            // If no extension or unclear filename, use default with extension
                                             if (
+                                              !name ||
                                               !/\.[a-z0-9]{1,6}$/i.test(name)
                                             ) {
                                               name = isPdf
-                                                ? `${name}.pdf`
-                                                : `${name}.jpg`;
+                                                ? `certificate-${idx + 1}.pdf`
+                                                : `certificate-${idx + 1}.jpg`;
+                                            } else if (
+                                              isPdf &&
+                                              !/\.pdf$/i.test(name)
+                                            ) {
+                                              // If PDF but filename doesn't end with .pdf, add it
+                                              name = `${name}.pdf`;
                                             }
                                             // @ts-ignore
                                             downloadUrlAs(certUrl, name);
@@ -1922,9 +1949,31 @@ const ApplicationManagement = () => {
 
                               const handleCardClick = () => {
                                 if (!parentIdUrl) return;
+
                                 if (isPdf) {
-                                  openPreview(parentIdUrl, "parent-valid-id");
+                                  // For PDFs, trigger download
+                                  try {
+                                    const pathPart = parentIdUrl.split("?")[0];
+                                    const parts = pathPart.split("/");
+                                    let name = parts[parts.length - 1];
+
+                                    // If no extension or unclear filename, use default
+                                    if (
+                                      !name ||
+                                      !/\.[a-z0-9]{1,6}$/i.test(name)
+                                    ) {
+                                      name = "parent-guardian-id.pdf";
+                                    } else if (!/\.pdf$/i.test(name)) {
+                                      // If has extension but not .pdf, add .pdf
+                                      name = `${name}.pdf`;
+                                    }
+                                    // @ts-ignore
+                                    downloadUrlAs(parentIdUrl, name);
+                                  } catch (err) {
+                                    window.open(parentIdUrl, "_blank");
+                                  }
                                 } else {
+                                  // For images, open in new tab
                                   window.open(parentIdUrl, "_blank");
                                 }
                               };
@@ -1983,16 +2032,66 @@ const ApplicationManagement = () => {
                                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                       Parent/Guardian ID
                                     </span>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (parentIdUrl)
-                                          window.open(parentIdUrl, "_blank");
-                                      }}
-                                      className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 underline"
-                                    >
-                                      Open
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                      {/* Show Open button only for images */}
+                                      {!isPdf && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (parentIdUrl)
+                                              window.open(
+                                                parentIdUrl,
+                                                "_blank"
+                                              );
+                                          }}
+                                          className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 underline"
+                                        >
+                                          Open
+                                        </button>
+                                      )}
+
+                                      {/* Download button for both PDFs and images */}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (parentIdUrl) {
+                                            try {
+                                              const pathPart =
+                                                parentIdUrl.split("?")[0];
+                                              const parts = pathPart.split("/");
+                                              let name =
+                                                parts[parts.length - 1];
+
+                                              // If no extension or unclear filename, use default with extension
+                                              if (
+                                                !name ||
+                                                !/\.[a-z0-9]{1,6}$/i.test(name)
+                                              ) {
+                                                name = isPdf
+                                                  ? "parent-guardian-id.pdf"
+                                                  : "parent-guardian-id.jpg";
+                                              } else if (
+                                                isPdf &&
+                                                !/\.pdf$/i.test(name)
+                                              ) {
+                                                // If PDF but filename doesn't end with .pdf, add it
+                                                name = `${name}.pdf`;
+                                              }
+                                              // @ts-ignore
+                                              downloadUrlAs(parentIdUrl, name);
+                                            } catch (err) {
+                                              window.open(
+                                                parentIdUrl,
+                                                "_blank"
+                                              );
+                                            }
+                                          }
+                                        }}
+                                        className="text-xs text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-200 underline"
+                                      >
+                                        Download
+                                      </button>
+                                    </div>
                                   </div>
                                 </div>
                               );

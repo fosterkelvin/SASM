@@ -24,6 +24,62 @@ export default function LeaveDetailsModal({ leave, open, onClose }: Props) {
     return diffDays;
   };
 
+  const handleDownload = async () => {
+    if (!leave.proofUrl) return;
+
+    try {
+      const res = await fetch(leave.proofUrl);
+      if (!res.ok) throw new Error("Network response was not ok");
+
+      const blob = await res.blob();
+
+      // Start with provided filename or default
+      let finalName =
+        leave.proofFileName || `leave-proof-${leave.name.replace(/\s+/g, "-")}`;
+
+      // Check if filename already has a valid extension
+      const hasExt = /\.[a-z0-9]{1,6}$/i.test(finalName);
+
+      if (!hasExt) {
+        // Get content type from stored mimeType, response headers, or blob
+        const contentType =
+          leave.proofMimeType ||
+          res.headers.get("content-type") ||
+          blob.type ||
+          "";
+
+        // Add appropriate extension based on content type
+        if (/application\/pdf/i.test(contentType)) {
+          finalName = `${finalName}.pdf`;
+        } else if (/image\/(jpeg|jpg)/i.test(contentType)) {
+          finalName = `${finalName}.jpg`;
+        } else if (/image\/png/i.test(contentType)) {
+          finalName = `${finalName}.png`;
+        } else if (/image\/gif/i.test(contentType)) {
+          finalName = `${finalName}.gif`;
+        } else if (/image\//i.test(contentType)) {
+          // Generic image type
+          const ext = contentType.split("/")[1]?.split(";")[0];
+          if (ext) finalName = `${finalName}.${ext}`;
+        }
+      }
+
+      // Create download
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = finalName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+      // Fallback to direct download
+      window.open(leave.proofUrl, "_blank");
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -139,10 +195,8 @@ export default function LeaveDetailsModal({ leave, open, onClose }: Props) {
                 Proof Document
               </label>
               <div className="space-y-3">
-                <a
-                  href={leave.proofUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={handleDownload}
                   className="inline-flex items-center gap-2 px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
                 >
                   <svg
@@ -155,11 +209,11 @@ export default function LeaveDetailsModal({ leave, open, onClose }: Props) {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  Open in New Tab
-                </a>
+                  Download Document
+                </button>
                 <div className="border rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800">
                   <img
                     src={leave.proofUrl}
@@ -171,9 +225,7 @@ export default function LeaveDetailsModal({ leave, open, onClose }: Props) {
                       const parent = target.parentElement;
                       if (parent) {
                         parent.innerHTML =
-                          '<div class="p-8 text-center"><svg class="w-16 h-16 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg><p class="text-sm text-gray-600 dark:text-gray-400">Preview not available</p><a href="' +
-                          leave.proofUrl +
-                          '" target="_blank" class="inline-block mt-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline">Download Document</a></div>';
+                          '<div class="p-8 text-center"><svg class="w-16 h-16 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg><p class="text-sm text-gray-600 dark:text-gray-400">Preview not available</p></div>';
                       }
                     }}
                   />

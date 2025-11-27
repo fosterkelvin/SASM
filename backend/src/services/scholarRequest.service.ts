@@ -4,6 +4,8 @@ import ScholarRequest, {
 import mongoose from "mongoose";
 import appError from "../utils/appError";
 import { UNAUTHORIZED, NOT_FOUND, BAD_REQUEST } from "../constants/http";
+import UserModel from "../models/user.model";
+import { createNotification } from "./notification.service";
 
 /**
  * Create a new scholar request
@@ -30,6 +32,30 @@ export async function createScholarRequest(data: {
   }
 
   const scholarRequest = await ScholarRequest.create(data);
+
+  // Get the requesting office information
+  const requestingUser = await UserModel.findById(data.requestedBy);
+  const officeName = requestingUser?.officeName || "An office";
+
+  // Notify all HR users about the new scholar request
+  try {
+    const hrUsers = await UserModel.find({ role: "hr" });
+
+    const notificationPromises = hrUsers.map((hrUser) =>
+      createNotification({
+        userID: (hrUser._id as mongoose.Types.ObjectId).toString(),
+        title: "New Scholar Request",
+        message: `${officeName} has submitted a new scholar request for ${data.totalScholars} ${data.scholarType}(s) (${data.maleScholars} male, ${data.femaleScholars} female).`,
+        type: "info",
+      })
+    );
+
+    await Promise.all(notificationPromises);
+  } catch (error) {
+    console.error("Error creating notifications for HR users:", error);
+    // Don't fail the request creation if notifications fail
+  }
+
   return scholarRequest;
 }
 

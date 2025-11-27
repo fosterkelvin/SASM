@@ -1,5 +1,6 @@
 // React JSX runtime used — no named React imports needed
 import { LeaveRecord } from "./types";
+import { FileText } from "lucide-react";
 
 interface Props {
   leaves: LeaveRecord[];
@@ -9,7 +10,12 @@ interface Props {
 export default function LeaveList({ leaves, onView }: Props) {
   if (!leaves.length)
     return (
-      <div className="text-sm text-gray-500">No leave requests found.</div>
+      <div className="flex flex-col items-center justify-center py-12">
+        <FileText className="h-12 w-12 text-gray-400 mb-4" />
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          No leave requests found.
+        </p>
+      </div>
     );
 
   const calculateTotalDays = (startDate: string, endDate: string) => {
@@ -21,30 +27,35 @@ export default function LeaveList({ leaves, onView }: Props) {
   };
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead>
-          <tr className="text-left text-sm text-gray-600 dark:text-gray-400">
-            <th className="px-4 py-3">Scholar/Trainee</th>
-            <th className="px-4 py-3">Type</th>
-            <th className="px-4 py-3">Date Range</th>
-            <th className="px-4 py-3">Total Days</th>
-            <th className="px-4 py-3">Status</th>
-            <th className="px-4 py-3">Actions</th>
+        <thead className="bg-gray-50 dark:bg-gray-800/50">
+          <tr className="text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+            <th className="px-6 py-3">Scholar/Trainee</th>
+            <th className="px-6 py-3">Type</th>
+            <th className="px-6 py-3">Date Range</th>
+            <th className="px-6 py-3">Total Days</th>
+            <th className="px-6 py-3">Status</th>
+            <th className="px-6 py-3">Actions</th>
           </tr>
         </thead>
-        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+        <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
           {leaves.map((l) => (
-            <tr key={l.id} className="text-sm text-gray-700 dark:text-gray-300">
-              <td className="px-4 py-3">
-                <div className="font-medium">{l.name}</div>
+            <tr
+              key={l.id}
+              className="text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+            >
+              <td className="px-6 py-4">
+                <div className="font-medium text-gray-900 dark:text-gray-100">
+                  {l.name}
+                </div>
               </td>
-              <td className="px-4 py-3">
-                <span className="text-xs text-gray-600 dark:text-gray-400">
+              <td className="px-6 py-4">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 capitalize">
                   {l.type}
                 </span>
               </td>
-              <td className="px-4 py-3">
+              <td className="px-6 py-4">
                 <div className="text-sm">
                   {new Date(l.startDate).toLocaleDateString("en-US", {
                     month: "short",
@@ -59,17 +70,17 @@ export default function LeaveList({ leaves, onView }: Props) {
                   })}
                 </div>
               </td>
-              <td className="px-4 py-3">
-                <span className="font-medium">
+              <td className="px-6 py-4">
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
                   {calculateTotalDays(l.startDate, l.endDate)}{" "}
                   {calculateTotalDays(l.startDate, l.endDate) === 1
                     ? "day"
                     : "days"}
                 </span>
               </td>
-              <td className="px-4 py-3">
+              <td className="px-6 py-4">
                 <span
-                  className={`px-2 py-1 rounded text-xs capitalize ${
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
                     l.status === "pending"
                       ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
                       : l.status === "approved"
@@ -82,10 +93,10 @@ export default function LeaveList({ leaves, onView }: Props) {
                   {l.status}
                 </span>
               </td>
-              <td className="px-4 py-3">
+              <td className="px-6 py-4">
                 <button
                   onClick={() => onView(l)}
-                  className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow-md"
                 >
                   View
                 </button>

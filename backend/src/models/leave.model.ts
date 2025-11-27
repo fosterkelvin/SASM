@@ -15,6 +15,8 @@ export interface ILeave extends Document {
   signatureName?: string;
   signatureDate?: Date;
   proofUrl?: string; // URL to uploaded proof document (optional)
+  proofFileName?: string; // Original filename with extension
+  proofMimeType?: string; // MIME type of the uploaded file
   status: LeaveStatus;
   remarks?: string;
   decidedBy?: mongoose.Types.ObjectId; // office user id
@@ -44,6 +46,8 @@ const LeaveSchema = new Schema<ILeave>(
     signatureName: { type: String },
     signatureDate: { type: Date },
     proofUrl: { type: String },
+    proofFileName: { type: String },
+    proofMimeType: { type: String },
     status: {
       type: String,
       enum: ["pending", "approved", "disapproved"],

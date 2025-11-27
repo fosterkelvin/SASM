@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { LeaveRequest, LeaveStatus } from "./types";
 import { Button } from "@/components/ui/button";
-import { FileText, ExternalLink } from "lucide-react";
+import { FileText } from "lucide-react";
 
 interface Props {
   request: LeaveRequest | null;
@@ -22,6 +22,58 @@ export const LeaveActionsModal: React.FC<Props> = ({
   const [remarks, setRemarks] = useState("");
   const [status, setStatus] = useState<LeaveStatus>("pending");
   const [allowResubmit, setAllowResubmit] = useState(false);
+
+  const handleDownloadProof = async (
+    url: string,
+    filename?: string,
+    mimeType?: string
+  ) => {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Network response was not ok");
+
+      const blob = await res.blob();
+
+      // Start with provided filename or default
+      let finalName = filename || "proof-document";
+
+      // Check if filename already has a valid extension
+      const hasExt = /\.[a-z0-9]{1,6}$/i.test(finalName);
+
+      if (!hasExt) {
+        // Get content type from stored mimeType, response headers, or blob
+        const contentType =
+          mimeType || res.headers.get("content-type") || blob.type || "";
+
+        // Add appropriate extension based on content type
+        if (/application\/pdf/i.test(contentType)) {
+          finalName = `${finalName}.pdf`;
+        } else if (/image\/(jpeg|jpg)/i.test(contentType)) {
+          finalName = `${finalName}.jpg`;
+        } else if (/image\/png/i.test(contentType)) {
+          finalName = `${finalName}.png`;
+        } else if (/image\/gif/i.test(contentType)) {
+          finalName = `${finalName}.gif`;
+        } else if (/image\//i.test(contentType)) {
+          // Generic image type
+          const ext = contentType.split("/")[1]?.split(";")[0];
+          if (ext) finalName = `${finalName}.${ext}`;
+        }
+      }
+
+      // Create download
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = finalName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Failed to download proof document:", error);
+    }
+  };
 
   React.useEffect(() => {
     if (request) {
@@ -67,16 +119,19 @@ export const LeaveActionsModal: React.FC<Props> = ({
           {request.proofUrl && (
             <div>
               <strong>Proof Document:</strong>
-              <a
-                href={request.proofUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() =>
+                  handleDownloadProof(
+                    request.proofUrl!,
+                    request.proofFileName,
+                    request.proofMimeType
+                  )
+                }
                 className="ml-2 inline-flex items-center gap-1 text-red-600 hover:text-red-700 underline"
               >
                 <FileText className="w-4 h-4" />
                 View Document
-                <ExternalLink className="w-3 h-3" />
-              </a>
+              </button>
             </div>
           )}
         </div>

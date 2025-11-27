@@ -16,6 +16,22 @@ const Analytics: React.FC = () => {
   const [start, setStart] = useState<string | undefined>(undefined);
   const [end, setEnd] = useState<string | undefined>(undefined);
 
+  // Validate that end date is not before start date
+  const handleStartChange = (value: string) => {
+    setStart(value || undefined);
+    // If end date exists and is before new start date, clear it
+    if (end && value && new Date(end) < new Date(value)) {
+      setEnd(undefined);
+    }
+  };
+
+  const handleEndChange = (value: string) => {
+    // Only set end date if it's not before start date
+    if (!start || !value || new Date(value) >= new Date(start)) {
+      setEnd(value || undefined);
+    }
+  };
+
   const fetchAll = useCallback(async (s?: string, e?: string) => {
     setLoading(true);
     try {
@@ -152,7 +168,7 @@ const Analytics: React.FC = () => {
                 <input
                   type="date"
                   value={start || ""}
-                  onChange={(e) => setStart(e.target.value || undefined)}
+                  onChange={(e) => handleStartChange(e.target.value)}
                   aria-label="Filter start date"
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-200"
                 />
@@ -164,9 +180,11 @@ const Analytics: React.FC = () => {
                 <input
                   type="date"
                   value={end || ""}
-                  onChange={(e) => setEnd(e.target.value || undefined)}
+                  min={start || ""}
+                  onChange={(e) => handleEndChange(e.target.value)}
                   aria-label="Filter end date"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-200"
+                  disabled={!start}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-800 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               <div className="flex items-end">

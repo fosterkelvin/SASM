@@ -319,21 +319,51 @@ const ScholarManagement = () => {
     return acc;
   }, []);
 
+  // Get unique offices for dropdown
+  const uniqueOffices = Array.from(
+    new Set(
+      uniqueScholars
+        .map((scholar: any) => scholar.scholarOffice || scholar.traineeOffice)
+        .filter((office: string) => office) // Remove empty/null values
+    )
+  ).sort();
+
   // Filter scholars by search term
   const filteredScholars = uniqueScholars.filter((scholar: any) => {
     const searchLower = searchTerm.toLowerCase();
     const fullName =
       `${scholar.userID?.firstname} ${scholar.userID?.lastname}`.toLowerCase();
-    const office = (
-      scholar.scholarOffice ||
-      scholar.traineeOffice ||
-      ""
-    ).toLowerCase();
+    const office = scholar.scholarOffice || scholar.traineeOffice || "";
     const type = (scholar.position || "").toLowerCase();
-    return (
+
+    // Check search term matches name or office or type (only if search term is provided)
+    const matchesSearch =
+      searchTerm === "" ||
       fullName.includes(searchLower) ||
-      office.includes(searchLower) ||
-      type.includes(searchLower)
+      office.toLowerCase().includes(searchLower) ||
+      type.includes(searchLower);
+
+    // Check office filter (exact match)
+    const matchesOfficeFilter =
+      filters.office === "" || office === filters.office;
+
+    // Check status filter
+    const matchesStatusFilter =
+      filters.status === "" || scholar.status === filters.status;
+
+    // Check scholar type filter (handle both database formats)
+    const matchesTypeFilter =
+      filters.scholarType === "" ||
+      scholar.position === filters.scholarType ||
+      (filters.scholarType === "SA" &&
+        scholar.position === "student_assistant") ||
+      (filters.scholarType === "SM" && scholar.position === "student_marshal");
+
+    return (
+      matchesSearch &&
+      matchesOfficeFilter &&
+      matchesStatusFilter &&
+      matchesTypeFilter
     );
   });
 
@@ -497,14 +527,21 @@ const ScholarManagement = () => {
                 </div>
                 <div>
                   <Label htmlFor="office">Filter by Office</Label>
-                  <Input
+                  <select
                     id="office"
-                    placeholder="Office name..."
                     value={filters.office}
                     onChange={(e) =>
                       setFilters({ ...filters, office: e.target.value })
                     }
-                  />
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800"
+                  >
+                    <option value="">All Offices</option>
+                    {uniqueOffices.map((office: string) => (
+                      <option key={office} value={office}>
+                        {office}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <Label htmlFor="scholarType">Scholar Type</Label>

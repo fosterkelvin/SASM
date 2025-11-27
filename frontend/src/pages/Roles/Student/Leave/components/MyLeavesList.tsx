@@ -24,6 +24,8 @@ interface Leave {
   remarks?: string;
   createdAt: string;
   proofUrl?: string;
+  proofFileName?: string;
+  proofMimeType?: string;
   allowResubmit?: boolean;
 }
 
@@ -95,6 +97,95 @@ const MyLeavesList: React.FC<MyLeavesListProps> = ({
   const openCancelDialog = (leave: Leave) => {
     setLeaveToCancel(leave);
     setShowCancelDialog(true);
+  };
+
+  const handleDownloadProof = async (
+    url: string,
+    filename?: string,
+    mimeType?: string
+  ) => {
+    try {
+      console.log("Download started:", { url, filename, mimeType });
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Network response was not ok");
+
+      const blob = await res.blob();
+      const responseContentType = res.headers.get("content-type");
+
+      console.log("Response details:", {
+        blobType: blob.type,
+        responseContentType,
+        blobSize: blob.size,
+      });
+
+      // Start with provided filename or default
+      let finalName = filename || "proof-document";
+
+      // Check if filename already has a valid extension
+      const hasExt = /\.[a-z0-9]{1,6}$/i.test(finalName);
+      console.log("Has extension?", hasExt, "Filename:", finalName);
+
+      if (!hasExt) {
+        // Get content type from stored mimeType, response headers, or blob
+        const contentType = mimeType || responseContentType || blob.type || "";
+        console.log("Content type to use:", contentType);
+
+        // Add appropriate extension based on content type
+        if (
+          /application\/pdf/i.test(contentType) ||
+          contentType.includes("pdf")
+        ) {
+          finalName = `${finalName}.pdf`;
+        } else if (
+          /image\/(jpeg|jpg)/i.test(contentType) ||
+          contentType.includes("jpeg") ||
+          contentType.includes("jpg")
+        ) {
+          finalName = `${finalName}.jpg`;
+        } else if (
+          /image\/png/i.test(contentType) ||
+          contentType.includes("png")
+        ) {
+          finalName = `${finalName}.png`;
+        } else if (
+          /image\/gif/i.test(contentType) ||
+          contentType.includes("gif")
+        ) {
+          finalName = `${finalName}.gif`;
+        } else if (/image\//i.test(contentType)) {
+          // Generic image type
+          const ext = contentType.split("/")[1]?.split(";")[0];
+          if (ext) finalName = `${finalName}.${ext}`;
+        } else {
+          // Last resort - try to extract from URL
+          const urlMatch = url.match(/\.([a-zA-Z0-9]+)(?:\?|#|$)/);
+          if (urlMatch && urlMatch[1]) {
+            finalName = `${finalName}.${urlMatch[1]}`;
+          } else {
+            // Default to pdf if we can't determine
+            finalName = `${finalName}.pdf`;
+          }
+        }
+      }
+
+      console.log("Final filename:", finalName);
+
+      // Create download
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = finalName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+
+      addToast("Document downloaded successfully", "success");
+    } catch (error) {
+      console.error("Download failed:", error);
+      addToast("Failed to download proof document", "error");
+    }
   };
 
   const calculateDays = (from: string, to: string) => {
@@ -192,15 +283,19 @@ const MyLeavesList: React.FC<MyLeavesListProps> = ({
                     )}
                     {leave.proofUrl && (
                       <div className="mt-2">
-                        <a
-                          href={leave.proofUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() =>
+                            handleDownloadProof(
+                              leave.proofUrl!,
+                              leave.proofFileName,
+                              leave.proofMimeType
+                            )
+                          }
                           className="inline-flex items-center gap-1 text-red-600 hover:text-red-700 text-sm"
                         >
                           <FileText className="w-4 h-4" />
                           View Proof Document
-                        </a>
+                        </button>
                       </div>
                     )}
                   </div>

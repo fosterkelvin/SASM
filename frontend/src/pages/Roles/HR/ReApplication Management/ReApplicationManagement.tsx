@@ -96,17 +96,9 @@ const ReApplicationManagement: React.FC = () => {
 
   const handleUpdateStatus = () => {
     if (selected) {
-      // Convert present tense to past tense for saving
-      let statusToSave = selected.status;
-      if (selected.status === "approve") {
-        statusToSave = "approved";
-      } else if (selected.status === "reject") {
-        statusToSave = "rejected";
-      }
-
       updateStatusMutation.mutate({
         id: selected._id,
-        status: statusToSave,
+        status: selected.status,
       });
     }
   };
@@ -188,6 +180,7 @@ const ReApplicationManagement: React.FC = () => {
                   <Label htmlFor="status">Status</Label>
                   <select
                     id="status"
+                    title="Filter by status"
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="w-full px-3 py-2 border rounded"
@@ -195,7 +188,7 @@ const ReApplicationManagement: React.FC = () => {
                     <option value="">All statuses</option>
                     <option value="pending">Pending</option>
                     <option value="under_review">Under Review</option>
-                    <option value="accepted">Accepted</option>
+                    <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
                   </select>
                 </div>
@@ -204,6 +197,7 @@ const ReApplicationManagement: React.FC = () => {
                   <Label htmlFor="scholarship">Scholarship</Label>
                   <select
                     id="scholarship"
+                    title="Filter by scholarship type"
                     value={scholarshipFilter}
                     onChange={(e) => setScholarshipFilter(e.target.value)}
                     className="w-full px-3 py-2 border rounded"
@@ -440,8 +434,8 @@ const ReApplicationManagement: React.FC = () => {
                 >
                   <option value="pending">Pending</option>
                   <option value="under_review">Under Review</option>
-                  <option value="approve">Approve</option>
-                  <option value="reject">Reject</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
                 </select>
               </div>
             </div>

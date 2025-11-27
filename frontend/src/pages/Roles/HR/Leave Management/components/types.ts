@@ -20,6 +20,8 @@ export interface LeaveRecord {
   hrNote?: string;
   createdAt: string;
   proofUrl?: string;
+  proofFileName?: string;
+  proofMimeType?: string;
 }
 
 export interface LeaveFilters {

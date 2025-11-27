@@ -738,7 +738,12 @@ const HRDTRCheck: React.FC = () => {
                             </td>
                             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
                               <div className="flex items-center justify-center gap-2">
-                                {entry.excusedStatus === "excused" ? (
+                                {entry.status === "Absent" ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                                    <X className="h-3 w-3" />
+                                    Absent
+                                  </span>
+                                ) : entry.excusedStatus === "excused" ? (
                                   <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
                                     <ShieldCheck className="h-3 w-3" />
                                     Excused

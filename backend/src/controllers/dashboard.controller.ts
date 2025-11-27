@@ -193,6 +193,9 @@ export const getAnalyticsHandler = catchErrors(
     // Get application pipeline stats
     const pipelineStats = await ApplicationModel.aggregate([
       {
+        $match: dateFilter,
+      },
+      {
         $group: {
           _id: null,
           applied: {

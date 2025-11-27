@@ -353,13 +353,37 @@ const TraineeManagement = () => {
 
   const trainees = traineesData?.trainees || [];
 
+  // Get unique offices for dropdown
+  const uniqueOffices = Array.from(
+    new Set(
+      trainees
+        .map((trainee: any) => trainee.traineeOffice)
+        .filter((office: string) => office) // Remove empty/null values
+    )
+  ).sort();
+
   // Filter trainees by search term
   const filteredTrainees = trainees.filter((trainee: any) => {
     const searchLower = searchTerm.toLowerCase();
     const fullName =
       `${trainee.userID?.firstname} ${trainee.userID?.lastname}`.toLowerCase();
-    const office = (trainee.traineeOffice || "").toLowerCase();
-    return fullName.includes(searchLower) || office.includes(searchLower);
+    const office = trainee.traineeOffice || "";
+
+    // Check search term matches name or office (only if search term is provided)
+    const matchesSearch =
+      searchTerm === "" ||
+      fullName.includes(searchLower) ||
+      office.toLowerCase().includes(searchLower);
+
+    // Check office filter (exact match)
+    const matchesOfficeFilter =
+      filters.office === "" || office === filters.office;
+
+    // Check status filter
+    const matchesStatusFilter =
+      filters.status === "" || trainee.status === filters.status;
+
+    return matchesSearch && matchesOfficeFilter && matchesStatusFilter;
   });
 
   const formatDate = (date: string) => {
@@ -427,14 +451,21 @@ const TraineeManagement = () => {
                 </div>
                 <div>
                   <Label htmlFor="office">Filter by Office</Label>
-                  <Input
+                  <select
                     id="office"
-                    placeholder="Office name..."
                     value={filters.office}
                     onChange={(e) =>
                       setFilters({ ...filters, office: e.target.value })
                     }
-                  />
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800"
+                  >
+                    <option value="">All Offices</option>
+                    {uniqueOffices.map((office: string) => (
+                      <option key={office} value={office}>
+                        {office}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <Label htmlFor="status">Filter by Status</Label>
@@ -518,7 +549,7 @@ const TraineeManagement = () => {
                           </span>
                         </div>
                       )}
-                      {trainee.requiredHours && (
+                      {trainee.requiredHours && trainee.traineeOffice && (
                         <div className="flex items-center gap-2 text-sm">
                           <Clock className="w-4 h-4 text-gray-500" />
                           <span className="text-gray-700 dark:text-gray-300">
@@ -533,7 +564,7 @@ const TraineeManagement = () => {
                     </div>
 
                     {/* Hours Progress Bar */}
-                    {trainee.requiredHours && (
+                    {trainee.requiredHours && trainee.traineeOffice && (
                       <div className="mb-4">
                         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                           <div
@@ -1103,7 +1134,9 @@ const TraineeManagement = () => {
                                   <td className="px-4 py-3">
                                     <span
                                       className={`px-2 py-1 rounded text-xs ${
-                                        entry.excusedStatus === "excused"
+                                        entry.status === "Absent"
+                                          ? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                                          : entry.excusedStatus === "excused"
                                           ? "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
                                           : entry.confirmationStatus ===
                                             "confirmed"
@@ -1111,7 +1144,9 @@ const TraineeManagement = () => {
                                           : "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
                                       }`}
                                     >
-                                      {entry.excusedStatus === "excused"
+                                      {entry.status === "Absent"
+                                        ? "Absent"
+                                        : entry.excusedStatus === "excused"
                                         ? "Excused"
                                         : entry.confirmationStatus ===
                                           "confirmed"

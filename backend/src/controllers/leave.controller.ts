@@ -132,6 +132,8 @@ export const submitLeave = catchErrors(async (req: Request, res: Response) => {
 
   // Get uploaded proof URL from Cloudinary (if uploaded)
   const proofUrl = (req.file as any)?.path || body.proofUrl;
+  const proofFileName = req.file?.originalname;
+  const proofMimeType = req.file?.mimetype;
 
   const leave = await LeaveModel.create({
     userId: userID,
@@ -144,6 +146,8 @@ export const submitLeave = catchErrors(async (req: Request, res: Response) => {
     daysHours: body.daysHours,
     reasons: body.reasons,
     proofUrl: proofUrl,
+    proofFileName: proofFileName,
+    proofMimeType: proofMimeType,
     status: "pending",
   });
 
@@ -322,6 +326,8 @@ export const updateLeave = catchErrors(async (req: Request, res: Response) => {
 
   // Get uploaded proof URL from Cloudinary (if uploaded)
   const proofUrl = (req.file as any)?.path || body.proofUrl || leave.proofUrl;
+  const proofFileName = req.file?.originalname || leave.proofFileName;
+  const proofMimeType = req.file?.mimetype || leave.proofMimeType;
 
   // Update the leave request
   leave.name = body.name;
@@ -333,6 +339,8 @@ export const updateLeave = catchErrors(async (req: Request, res: Response) => {
   leave.daysHours = body.daysHours;
   leave.reasons = body.reasons;
   leave.proofUrl = proofUrl;
+  leave.proofFileName = proofFileName;
+  leave.proofMimeType = proofMimeType;
   leave.status = "pending"; // Reset to pending
   leave.remarks = undefined; // Clear previous remarks
   leave.decidedBy = undefined;

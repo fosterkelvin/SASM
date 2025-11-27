@@ -236,8 +236,21 @@ export const generateMasterlistPDF = (data: MasterlistData) => {
     },
   };
 
-  // Generate and download PDF
-  pdfMake
-    .createPdf(docDefinition)
-    .download(`Scholar_Masterlist_${currentDate.replace(/\s/g, "_")}.pdf`);
+  try {
+    // Validate data before generating PDF
+    if (!data.scholars || data.scholars.length === 0) {
+      throw new Error("No scholar data available to generate PDF");
+    }
+
+    // Generate and open PDF in new tab (view in browser)
+    const pdfDocGenerator = pdfMake.createPdf(docDefinition);
+
+    // Open PDF in new browser tab for viewing
+    pdfDocGenerator.open();
+
+    console.log(`✅ PDF opened successfully in new tab`);
+  } catch (error) {
+    console.error("❌ Error generating PDF:", error);
+    throw error;
+  }
 };

@@ -11,6 +11,8 @@ export interface LeaveRequest {
   status: LeaveStatus;
   submittedAt: string;
   proofUrl?: string; // URL to uploaded proof document (optional)
+  proofFileName?: string; // Original filename with extension
+  proofMimeType?: string; // MIME type of the uploaded file
   decidedByProfile?: string;
   decidedAt?: string;
   allowResubmit?: boolean; // Allow student to resubmit this request

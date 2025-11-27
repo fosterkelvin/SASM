@@ -61,8 +61,12 @@ export default function LeaveManagement() {
   }, [filters.status, filters.query]);
 
   const filtered = leaves.filter((l) => {
-    if (filters.type && filters.type !== "all" && l.type !== filters.type)
-      return false;
+    // Type filter with case-insensitive comparison
+    if (filters.type && filters.type !== "all") {
+      const filterType = filters.type.toLowerCase();
+      const leaveType = (l.type || "").toLowerCase();
+      if (leaveType !== filterType) return false;
+    }
     return true;
   });
 
@@ -90,26 +94,31 @@ export default function LeaveManagement() {
         </div>
 
         <div className="p-6 md:p-10">
-          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                  Leave Management
-                </h2>
-                <p className="text-sm text-gray-500">
-                  View scholar and trainee leave requests and HR notes
-                </p>
-              </div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-lg">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                    Leave Management
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    View scholar and trainee leave requests and HR notes
+                  </p>
+                </div>
 
-              <div className="flex items-center gap-3">
-                <LeaveFilters filters={filters} onChange={setFilters} />
+                <div className="flex items-center gap-3">
+                  <LeaveFilters filters={filters} onChange={setFilters} />
+                </div>
               </div>
             </div>
 
-            <div className="mt-4">
+            <div className="p-6">
               {loading ? (
-                <div className="text-center py-8 text-gray-500">
-                  Loading leave requests...
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mb-4"></div>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Loading leave requests...
+                  </p>
                 </div>
               ) : (
                 <LeaveList leaves={filtered} onView={setSelectedLeave} />
