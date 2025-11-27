@@ -12,6 +12,19 @@ try {
   pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 }
 
+// Suppress PDF.js warnings in console (optional - helps keep console clean)
+const originalConsoleWarn = console.warn;
+console.warn = (...args: any[]) => {
+  // Filter out known PDF.js font warnings
+  if (
+    args[0]?.includes?.("TT: undefined function") ||
+    args[0]?.includes?.("pdf.worker")
+  ) {
+    return; // Suppress these specific warnings
+  }
+  originalConsoleWarn.apply(console, args);
+};
+
 interface ScheduleClass {
   section: string;
   subjectCode: string;
@@ -24,7 +37,15 @@ interface ScheduleClass {
 export async function parseSchedulePDF(file: File): Promise<ScheduleClass[]> {
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    // Configure PDF.js to ignore font errors
+    const pdf = await pdfjsLib.getDocument({
+      data: arrayBuffer,
+      verbosity: 0, // Suppress warnings (0 = errors only, 1 = warnings, 5 = all)
+      isEvalSupported: false, // Disable eval for security
+      disableFontFace: false, // Keep font rendering enabled
+      standardFontDataUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`,
+    }).promise;
 
     let allItems: any[] = [];
 

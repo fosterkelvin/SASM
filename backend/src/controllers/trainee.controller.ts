@@ -18,10 +18,13 @@ export const getAllTraineesHandler = catchErrors(
   async (req: Request, res: Response) => {
     const { office, status, position, scholarStatus } = req.query;
 
-    // If scholarStatus is provided, fetch scholars from Scholar collection
+    // If scholarStatus is provided, fetch scholars from both Scholar collection and accepted Applications
     if (scholarStatus) {
-      console.log("🔍 [HR] Fetching scholars from Scholar collection");
+      console.log(
+        "🔍 [HR] Fetching scholars from Scholar collection AND accepted Applications"
+      );
 
+      // 1. Fetch deployed scholars from Scholar collection
       const scholarFilter: any = { status: "active" };
       if (office) {
         scholarFilter.scholarOffice = office;
@@ -35,13 +38,32 @@ export const getAllTraineesHandler = catchErrors(
         .sort({ semesterStartDate: -1 });
 
       console.log(
-        `📊 [HR] Found ${scholars.length} scholars in Scholar collection`
+        `📊 [HR] Found ${scholars.length} deployed scholars in Scholar collection`
+      );
+
+      // 2. Fetch accepted applications (scholars not yet deployed)
+      const applicationFilter: any = { status: "accepted" };
+      if (office) {
+        applicationFilter.scholarOffice = office;
+      }
+      if (position) {
+        applicationFilter.position = position;
+      }
+
+      const acceptedApplications = await ApplicationModel.find(
+        applicationFilter
+      )
+        .populate("userID", "firstname lastname email status")
+        .sort({ updatedAt: -1 });
+
+      console.log(
+        `📊 [HR] Found ${acceptedApplications.length} accepted applications (not yet deployed)`
       );
 
       // Import DTR model
       const DTRModel = require("../models/dtr.model").default;
 
-      // For each scholar, get their DTR hours and application data
+      // Process deployed scholars
       const scholarsWithDetails = await Promise.all(
         scholars.map(async (scholar) => {
           if (!scholar.userId || !scholar.userId._id) {
@@ -72,19 +94,87 @@ export const getAllTraineesHandler = catchErrors(
             dtrCompletedHours: dtrHoursInHours,
             semesterStartDate: scholar.semesterStartDate,
             scholarRecord: scholar.toObject(),
+            isDeployed: true,
+          };
+        })
+      );
+
+      // Process accepted applications (not yet deployed)
+      const acceptedApplicationsWithDetails = await Promise.all(
+        acceptedApplications.map(async (application) => {
+          if (!application.userID || !application.userID._id) {
+            console.warn(
+              `⚠️  Application ${application._id} has no valid userID`
+            );
+            return null;
+          }
+
+          // Check if this user is already in scholars (to avoid duplicates)
+          const applicationUserId = application.userID._id.toString();
+          const alreadyDeployed = scholars.some((s) => {
+            if (!s.userId) return false;
+            const scholarUserId =
+              typeof s.userId === "object" && s.userId._id
+                ? s.userId._id.toString()
+                : s.userId.toString();
+            return scholarUserId === applicationUserId;
+          });
+
+          if (alreadyDeployed) {
+            console.log(
+              `⏭️  Skipping application ${application._id} - user ${applicationUserId} is already deployed`
+            );
+            return null; // Skip to avoid duplicate
+          }
+
+          // Get DTR hours
+          const dtrs = await DTRModel.find({ userId: application.userID._id });
+          const dtrHours = dtrs.reduce((sum: number, dtr: any) => {
+            return sum + (dtr.totalMonthlyHours || 0);
+          }, 0);
+          const dtrHoursInHours = Math.floor(dtrHours / 60);
+
+          return {
+            _id: application._id,
+            userID: application.userID,
+            position: application.position,
+            status: "accepted",
+            scholarOffice: application.scholarOffice || null,
+            scholarNotes: application.scholarNotes || null,
+            dtrCompletedHours: dtrHoursInHours,
+            semesterStartDate: application.updatedAt,
+            scholarRecord: null,
+            isDeployed: false,
           };
         })
       );
 
       const validScholars = scholarsWithDetails.filter((s) => s !== null);
+      const validAcceptedApps = acceptedApplicationsWithDetails.filter(
+        (s) => s !== null
+      );
+
+      // Final deduplication check: remove duplicates based on userID
+      const seenUserIds = new Set<string>();
+      const allScholars = [...validScholars, ...validAcceptedApps].filter(
+        (scholar) => {
+          const userId = scholar.userID._id.toString();
+          if (seenUserIds.has(userId)) {
+            console.log(`🔍 Removing duplicate for user ${userId}`);
+            return false;
+          }
+          seenUserIds.add(userId);
+          return true;
+        }
+      );
 
       console.log(
-        `✅ [HR] Returning ${validScholars.length} scholars with details`
+        `✅ [HR] Returning ${allScholars.length} scholars total (${validScholars.length} deployed + ${validAcceptedApps.length} accepted but not deployed, after deduplication)`
       );
 
       return res.status(OK).json({
-        trainees: validScholars,
-        totalCount: validScholars.length,
+        trainees: allScholars,
+        totalCount: allScholars.length,
       });
     }
 
