@@ -91,13 +91,6 @@ const ApplicationSuccessScreen: React.FC<ApplicationSuccessScreenProps> = ({
                     <FileText className="w-4 h-4" />
                     Submit Requirements Now
                   </Button>
-                  <Button
-                    onClick={onOkay}
-                    variant="outline"
-                    className="border-gray-300 dark:border-gray-700"
-                  >
-                    I'll Do It Later
-                  </Button>
                 </div>
               </div>
             </CardContent>

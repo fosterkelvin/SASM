@@ -13,6 +13,7 @@ import useSeminars from "./hooks/useSeminars";
 import useFileUpload from "./hooks/useFileUpload";
 // signature removed: replaced with conformity checkbox
 import useCertificatesUpload from "./hooks/useCertificatesUpload";
+import { z } from "zod";
 import {
   ApplicationFormData,
   applicationSchemaWithConditional,
@@ -89,6 +90,10 @@ function Application() {
     seminars: [],
     agreedToTerms: false,
     conformity: false,
+    fatherNameUnknown: false,
+    motherNameUnknown: false,
+    fatherOccupationUnknown: false,
+    motherOccupationUnknown: false,
   });
 
   // Auto-populate form data from userData when it's loaded
@@ -179,15 +184,50 @@ function Application() {
   };
 
   const handleInputChange = (field: keyof ApplicationFormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
+
     if (field === "hasRelativeWorking") {
       setHasRelativeWorking(value);
       if (value && relatives.length === 0) {
         setRelatives([{ name: "", department: "", relationship: "" }]);
       }
     }
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
+
+    // Perform real-time validation
+    try {
+      // Create a temporary object with the updated field
+      const dataToValidate = { ...newFormData };
+
+      // Validate the entire form to catch conditional validations
+      applicationSchemaWithConditional.parse(dataToValidate);
+
+      // If validation passes, clear the error for this field
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // Find ALL errors related to this specific field
+        const fieldErrors = error.errors.filter(
+          (err: any) => err.path[0] === field
+        );
+
+        if (fieldErrors.length > 0) {
+          // Show the first error for this field
+          const fieldError = fieldErrors[0];
+          setErrors((prev) => ({ ...prev, [field]: fieldError.message }));
+        } else {
+          // No errors for this specific field, clear it
+          setErrors((prev) => {
+            const newErrors = { ...prev };
+            delete newErrors[field];
+            return newErrors;
+          });
+        }
+      }
     }
   };
 
@@ -322,65 +362,30 @@ function Application() {
     setIsSubmitting(true);
     setSubmitMessage("");
     setErrors({});
-    console.log("Profile photo before submit:", uploadedFiles.profilePhoto);
-    if (!uploadedFiles.profilePhoto) {
-      setErrors((prev) => ({
-        ...prev,
-        profilePhoto: "2x2 picture is required",
-      }));
-      setSubmitMessage("Please upload your 2x2 picture before submitting.");
-      setIsSubmitting(false);
-      // Scroll to file upload section
-      const fileSection = document.querySelector('[data-section="fileUpload"]');
-      if (fileSection) {
-        fileSection.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-      return;
-    }
 
-    if (hasRelativeWorking) {
-      if (
-        relatives.length === 0 ||
-        !relatives[0].name.trim() ||
-        !relatives[0].department.trim() ||
-        !relatives[0].relationship.trim()
-      ) {
-        setErrors((prev) => ({
-          ...prev,
-          relativeName: "Relative's name is required",
-          relativeDepartment: "Relative's department is required",
-          relativeRelationship: "Relative's relationship is required",
-        }));
-        setSubmitMessage(
-          "Please provide at least one relative with all fields filled."
-        );
-        setIsSubmitting(false);
-        // Scroll to relatives section
-        const relativesSection = document.querySelector(
-          '[data-section="relatives"]'
-        );
-        if (relativesSection) {
-          relativesSection.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        }
-        return;
-      }
-    }
-
+    // Validate form fields FIRST before checking files
     try {
       const seminarsToSubmit = seminars.filter(
         (s) => s.title || s.sponsoringAgency || s.inclusiveDate || s.place
       );
-      const parsed = applicationSchemaWithConditional.safeParse({
+      const dataToValidate = {
         ...formData,
         seminars: seminarsToSubmit,
         age: formData.age ? Number(formData.age) : undefined,
-        profilePhoto: uploadedFiles.profilePhoto,
-        parentID: formData.parentID,
+        profilePhoto: uploadedFiles.profilePhoto || null,
+        parentID: formData.parentID || null,
         relatives: hasRelativeWorking ? relatives : [],
+      };
+
+      // Debug: Log the unknown flags
+      console.log("Validating with flags:", {
+        fatherNameUnknown: dataToValidate.fatherNameUnknown,
+        motherNameUnknown: dataToValidate.motherNameUnknown,
+        fatherName: dataToValidate.fatherName,
+        motherName: dataToValidate.motherName,
       });
+
+      const parsed = applicationSchemaWithConditional.safeParse(dataToValidate);
       if (!parsed.success) {
         const newErrors: Partial<Record<keyof ApplicationFormData, string>> =
           {};
@@ -462,6 +467,56 @@ function Application() {
               (element as HTMLElement).focus();
             }
           }, 600);
+        }
+        return;
+      }
+
+      // Check for relatives if needed
+      if (hasRelativeWorking) {
+        if (
+          relatives.length === 0 ||
+          !relatives[0].name.trim() ||
+          !relatives[0].department.trim() ||
+          !relatives[0].relationship.trim()
+        ) {
+          setErrors((prev) => ({
+            ...prev,
+            relativeName: "Relative's name is required",
+            relativeDepartment: "Relative's department is required",
+            relativeRelationship: "Relative's relationship is required",
+          }));
+          setSubmitMessage(
+            "Please provide at least one relative with all fields filled."
+          );
+          setIsSubmitting(false);
+          // Scroll to relatives section
+          const relativesSection = document.querySelector(
+            '[data-section="relatives"]'
+          );
+          if (relativesSection) {
+            relativesSection.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }
+          return;
+        }
+      }
+
+      // NOW check for file uploads AFTER all form validation passes
+      if (!uploadedFiles.profilePhoto) {
+        setErrors((prev) => ({
+          ...prev,
+          profilePhoto: "2x2 picture is required",
+        }));
+        setSubmitMessage("Please upload your 2x2 picture before submitting.");
+        setIsSubmitting(false);
+        // Scroll to file upload section
+        const fileSection = document.querySelector(
+          '[data-section="fileUpload"]'
+        );
+        if (fileSection) {
+          fileSection.scrollIntoView({ behavior: "smooth", block: "center" });
         }
         return;
       }
@@ -860,7 +915,7 @@ function Application() {
 
                 <form
                   onSubmit={handleSubmit}
-                  className="space-y-6 md:space-y-8"
+                  className="space-y-4 md:space-y-5"
                 >
                   <div data-section="position">
                     <PositionSection
@@ -882,6 +937,7 @@ function Application() {
                       formData={formData}
                       errors={errors}
                       handleInputChange={handleInputChange}
+                      setFormData={setFormData}
                     />
                   </div>
                   <div data-section="contact">
@@ -897,6 +953,7 @@ function Application() {
                       formData={formData}
                       errors={errors}
                       handleInputChange={handleInputChange}
+                      setFormData={setFormData}
                     />
                   </div>
                   <div data-section="relatives">
@@ -915,6 +972,7 @@ function Application() {
                       formData={formData}
                       errors={errors}
                       handleInputChange={handleInputChange}
+                      setFormData={setFormData}
                     />
                   </div>
                   <div data-section="seminars">

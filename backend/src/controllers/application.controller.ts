@@ -505,12 +505,39 @@ export const getAllApplicationsHandler = catchErrors(
       .skip(skip)
       .limit(limit);
 
+    // Fetch requirements submission review status for each application
+    const RequirementsSubmissionModel = (
+      await import("../models/requirementsSubmission.model")
+    ).default;
+
+    const applicationsWithRequirements = await Promise.all(
+      applications.map(async (app) => {
+        const appObj = app.toObject();
+
+        // Find the most recent requirements submission for this user
+        const requirementsSubmission =
+          await RequirementsSubmissionModel.findOne({
+            userID: app.userID._id,
+            status: "submitted",
+          })
+            .sort({ submittedAt: -1 })
+            .limit(1);
+
+        // Add the review status to the application object
+        return {
+          ...appObj,
+          requirementsReviewStatus:
+            requirementsSubmission?.reviewStatus || "pending",
+        };
+      })
+    );
+
     // Get total count for pagination
     const totalCount = await ApplicationModel.countDocuments(filter);
     const totalPages = Math.ceil(totalCount / limit);
 
     return res.status(OK).json({
-      applications,
+      applications: applicationsWithRequirements,
       pagination: {
         currentPage: page,
         totalPages,

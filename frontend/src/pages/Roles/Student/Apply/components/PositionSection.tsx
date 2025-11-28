@@ -7,10 +7,14 @@ interface PositionSectionProps {
   error?: string;
 }
 
-export default function PositionSection({ position, onChange, error }: PositionSectionProps) {
+export default function PositionSection({
+  position,
+  onChange,
+  error,
+}: PositionSectionProps) {
   return (
     <div className="p-4 md:p-6 rounded-lg border">
-      <h3 className="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
+      <h3 className="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2 border-b pb-2">
         <svg
           className="h-4 w-4 md:h-5 md:w-5 text-gray-600"
           fill="none"
@@ -36,7 +40,7 @@ export default function PositionSection({ position, onChange, error }: PositionS
           />
           <Label
             htmlFor="student_assistant"
-            className="text-sm md:text-base text-gray-700 dark:text-gray-300"
+            className="text-base md:text-lg text-gray-700 dark:text-gray-300"
           >
             Student Assistant
           </Label>
@@ -53,7 +57,7 @@ export default function PositionSection({ position, onChange, error }: PositionS
           />
           <Label
             htmlFor="student_marshal"
-            className="text-sm md:text-base text-gray-700 dark:text-gray-300"
+            className="text-base md:text-lg text-gray-700 dark:text-gray-300"
           >
             Student Marshal
           </Label>

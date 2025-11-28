@@ -228,15 +228,7 @@ export const createApplicationSchemaWithConditional =
         });
       }
     }
-    if (!data.fatherOccupationUnknown) {
-      if (!data.fatherOccupation || data.fatherOccupation.trim().length < 2) {
-        ctx.addIssue({
-          path: ["fatherOccupation"],
-          message: "Father's occupation is required",
-          code: z.ZodIssueCode.custom,
-        });
-      }
-    }
+    // fatherOccupation - now optional, no validation
     if (!data.motherNameUnknown) {
       if (!data.motherName || data.motherName.trim().length < 2) {
         ctx.addIssue({
@@ -246,15 +238,7 @@ export const createApplicationSchemaWithConditional =
         });
       }
     }
-    if (!data.motherOccupationUnknown) {
-      if (!data.motherOccupation || data.motherOccupation.trim().length < 2) {
-        ctx.addIssue({
-          path: ["motherOccupation"],
-          message: "Mother's occupation is required",
-          code: z.ZodIssueCode.custom,
-        });
-      }
-    }
+    // motherOccupation - now optional, no validation
   });
 export type UpdateApplicationStatusData = z.infer<
   typeof updateApplicationStatusSchema

@@ -45,6 +45,7 @@ export default function ContactInfoSection({
             id="homeContact"
             value={formData.homeContact || ""}
             onChange={(e) => handleInputChange("homeContact", e.target.value)}
+            onBlur={(e) => handleInputChange("homeContact", e.target.value)}
             className={errors.homeContact ? "border-red-500" : ""}
             placeholder="+63 XXX XXX XXXX"
           />
@@ -65,6 +66,9 @@ export default function ContactInfoSection({
                 id="baguioContact"
                 value={formData.baguioContact || ""}
                 onChange={(e) =>
+                  handleInputChange("baguioContact", e.target.value)
+                }
+                onBlur={(e) =>
                   handleInputChange("baguioContact", e.target.value)
                 }
                 className={errors.baguioContact ? "border-red-500" : ""}
@@ -112,6 +116,7 @@ export default function ContactInfoSection({
             id="citizenship"
             value={formData.citizenship || ""}
             onChange={(e) => handleInputChange("citizenship", e.target.value)}
+            onBlur={(e) => handleInputChange("citizenship", e.target.value)}
             className={errors.citizenship ? "border-red-500" : ""}
             placeholder="e.g., Filipino"
           />

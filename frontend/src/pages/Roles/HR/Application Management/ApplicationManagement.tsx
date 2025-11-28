@@ -24,6 +24,7 @@ import StudentSidebar from "@/components/sidebar/Student/StudentSidebar";
 import HRSidebar from "@/components/sidebar/HR/HRSidebar";
 import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
 import ApplicationTimeline from "@/components/ui/application-timeline";
+import { useNavigate } from "react-router-dom";
 
 // Custom Alert Modal Component
 const AlertModal = ({
@@ -83,6 +84,7 @@ const ApplicationManagement = () => {
   const queryClient = useQueryClient();
   const { triggerNotificationUpdate } = useNotificationUpdater();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const navigate = useNavigate();
 
   // Alert modal state
   const [alertModal, setAlertModal] = useState({
@@ -101,10 +103,12 @@ const ApplicationManagement = () => {
 
   // Filters and pagination
   const [filters, setFilters] = useState({
-    status: "",
+    status: "pending",
     position: "",
     page: 1,
     limit: 10,
+    sortBy: "createdAt",
+    sortOrder: "asc" as "asc" | "desc",
   });
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -652,12 +656,37 @@ const ApplicationManagement = () => {
                     <option value="">All Statuses</option>
                     <option value="pending">New Applications</option>
                     <option value="under_review">Being Reviewed</option>
+                    <option value="psychometric_scheduled">
+                      Psychometric Test Scheduled
+                    </option>
+                    <option value="psychometric_completed">
+                      Psychometric Test Completed
+                    </option>
+                    <option value="psychometric_passed">
+                      Psychometric Test Passed
+                    </option>
+                    <option value="psychometric_failed">
+                      Psychometric Test Failed
+                    </option>
                     <option value="interview_scheduled">
                       Interview Scheduled
                     </option>
-                    <option value="passed_interview">Interview Passed</option>
+                    <option value="interview_completed">
+                      Interview Completed
+                    </option>
+                    <option value="interview_passed">Interview Passed</option>
+                    <option value="interview_failed">Interview Failed</option>
+                    <option value="pending_office_interview">
+                      Pending Office Interview
+                    </option>
+                    <option value="office_interview_scheduled">
+                      Office Interview Scheduled
+                    </option>
+                    <option value="trainee">Trainee</option>
+                    <option value="training_completed">
+                      Training Completed
+                    </option>
                     <option value="hours_completed">Hours Completed</option>
-                    <option value="failed_interview">Interview Failed</option>
                     <option value="accepted">Accepted</option>
                     <option value="on_hold">Put On Hold</option>
                     <option value="withdrawn">Withdrawn by Applicant</option>
@@ -684,6 +713,27 @@ const ApplicationManagement = () => {
                     <option value="">All Scholarships</option>
                     <option value="student_assistant">Student Assistant</option>
                     <option value="student_marshal">Student Marshal</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label
+                    htmlFor="sortOrder"
+                    className="text-gray-700 dark:text-gray-300"
+                  >
+                    Sort by Date
+                  </Label>
+                  <select
+                    id="sortOrder"
+                    value={filters.sortOrder}
+                    onChange={(e) =>
+                      handleFilterChange("sortOrder", e.target.value)
+                    }
+                    aria-label="Sort by date"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  >
+                    <option value="asc">Oldest First</option>
+                    <option value="desc">Newest First</option>
                   </select>
                 </div>
               </div>
@@ -956,6 +1006,32 @@ const ApplicationManagement = () => {
                                   >
                                     <Eye className="h-4 w-4 mr-1" />
                                     View Only
+                                  </Button>
+                                ) : application.status === "pending" &&
+                                  !application.requirementsCompleted ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled
+                                    className="text-gray-400 border-gray-200 cursor-not-allowed"
+                                    title="Waiting for applicant to submit requirements"
+                                  >
+                                    <Clock className="h-4 w-4 mr-1" />
+                                    Awaiting Requirements
+                                  </Button>
+                                ) : application.status === "pending" &&
+                                  application.requirementsCompleted &&
+                                  application.requirementsReviewStatus !==
+                                    "approved" ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => navigate("/hr/requirements")}
+                                    className="text-amber-600 border-amber-300 hover:bg-amber-100 bg-amber-50"
+                                    title="Click to review and approve requirements"
+                                  >
+                                    <AlertCircle className="h-4 w-4 mr-1" />
+                                    Pending Requirements Review
                                   </Button>
                                 ) : (
                                   <Button

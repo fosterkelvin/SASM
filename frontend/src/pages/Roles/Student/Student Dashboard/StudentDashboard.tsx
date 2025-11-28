@@ -9,6 +9,7 @@ import {
   PersonalInfoAlert,
   AcademicInfoAlert,
   StatsGrid,
+  ApplicationStatusWidget,
 } from "./components";
 import {
   isPersonalInfoComplete,
@@ -98,6 +99,9 @@ const StudentDashboard = () => {
           {user && user.verified && !academicInfoComplete && isScholar && (
             <AcademicInfoAlert missingFields={missingAcademicFields} />
           )}
+
+          {/* Application Status Widget */}
+          <ApplicationStatusWidget />
 
           <StatsGrid />
         </div>

@@ -87,16 +87,12 @@ export const LeaveActionsModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center p-4"
+      className="fixed inset-0 flex items-center justify-center p-4 bg-black/25 z-[60]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="leave-actions-title"
-      style={{ backgroundColor: "rgba(0,0,0,0.24)", zIndex: 60 }}
     >
-      <div
-        className="bg-white rounded shadow-lg max-w-md w-full p-4"
-        style={{ zIndex: 70 }}
-      >
+      <div className="bg-white rounded shadow-lg max-w-md w-full p-4 z-[70]">
         <div className="flex justify-between items-center">
           <h3 id="leave-actions-title" className="text-lg font-semibold">
             Actions - {request.studentName}

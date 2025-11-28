@@ -8,25 +8,49 @@ interface AddressSectionProps {
   formData: Partial<ApplicationFormData>;
   errors: Partial<Record<keyof ApplicationFormData, string>>;
   handleInputChange: (field: keyof ApplicationFormData, value: any) => void;
+  setFormData: React.Dispatch<
+    React.SetStateAction<Partial<ApplicationFormData>>
+  >;
 }
 export default function ParentsInfoSection({
   formData,
   errors,
   handleInputChange,
+  setFormData,
 }: AddressSectionProps) {
   // Local state to handle "Father Unknown / N/A" checkbox and preserve previous values
-  const [isFatherUnknown, setIsFatherUnknown] = useState<boolean>(false);
+  const [isFatherUnknown, setIsFatherUnknown] = useState<boolean>(
+    formData.fatherNameUnknown || false
+  );
   const prevFather = useRef<{ name?: string; occ?: string }>({
     name: formData.fatherName,
     occ: formData.fatherOccupation,
   });
-  const [isMotherOccUnknown, setIsMotherOccUnknown] = useState<boolean>(false);
+  const [isMotherOccUnknown, setIsMotherOccUnknown] = useState<boolean>(
+    formData.motherOccupationUnknown || false
+  );
   const prevMotherOcc = useRef<string | undefined>(formData.motherOccupation);
-  const [isFatherOccUnknown, setIsFatherOccUnknown] = useState<boolean>(false);
+  const [isFatherOccUnknown, setIsFatherOccUnknown] = useState<boolean>(
+    formData.fatherOccupationUnknown || false
+  );
   const prevFatherOcc = useRef<string | undefined>(formData.fatherOccupation);
-  const [isMotherNameUnknown, setIsMotherNameUnknown] =
-    useState<boolean>(false);
+  const [isMotherNameUnknown, setIsMotherNameUnknown] = useState<boolean>(
+    formData.motherNameUnknown || false
+  );
   const prevMotherName = useRef<string | undefined>(formData.motherName);
+
+  // Sync local state with formData on mount and when formData changes
+  useEffect(() => {
+    setIsFatherUnknown(formData.fatherNameUnknown || false);
+    setIsMotherNameUnknown(formData.motherNameUnknown || false);
+    setIsFatherOccUnknown(formData.fatherOccupationUnknown || false);
+    setIsMotherOccUnknown(formData.motherOccupationUnknown || false);
+  }, [
+    formData.fatherNameUnknown,
+    formData.motherNameUnknown,
+    formData.fatherOccupationUnknown,
+    formData.motherOccupationUnknown,
+  ]);
 
   useEffect(() => {
     // keep prevFather up to date if formData changes while not unknown
@@ -40,22 +64,32 @@ export default function ParentsInfoSection({
 
   function toggleFatherUnknown(checked: boolean) {
     setIsFatherUnknown(checked);
-    setIsFatherOccUnknown(checked); // Also check/uncheck father occupation
-    // store/restore values
+    setIsFatherOccUnknown(checked);
+
     if (checked) {
+      // Store current values
       prevFather.current = {
         name: formData.fatherName,
         occ: formData.fatherOccupation,
       };
-      handleInputChange("fatherName", "");
-      handleInputChange("fatherOccupation", "");
-      handleInputChange("fatherNameUnknown", true);
-      handleInputChange("fatherOccupationUnknown", true);
+
+      // Batch update all fields at once
+      setFormData((prev) => ({
+        ...prev,
+        fatherNameUnknown: true,
+        fatherOccupationUnknown: true,
+        fatherName: "",
+        fatherOccupation: "",
+      }));
     } else {
-      handleInputChange("fatherName", prevFather.current.name || "");
-      handleInputChange("fatherOccupation", prevFather.current.occ || "");
-      handleInputChange("fatherNameUnknown", false);
-      handleInputChange("fatherOccupationUnknown", false);
+      // Restore values
+      setFormData((prev) => ({
+        ...prev,
+        fatherNameUnknown: false,
+        fatherOccupationUnknown: false,
+        fatherName: prevFather.current.name || "",
+        fatherOccupation: prevFather.current.occ || "",
+      }));
     }
   }
 
@@ -63,11 +97,11 @@ export default function ParentsInfoSection({
     setIsMotherOccUnknown(checked);
     if (checked) {
       prevMotherOcc.current = formData.motherOccupation;
-      handleInputChange("motherOccupation", "");
       handleInputChange("motherOccupationUnknown", true);
+      handleInputChange("motherOccupation", "");
     } else {
-      handleInputChange("motherOccupation", prevMotherOcc.current || "");
       handleInputChange("motherOccupationUnknown", false);
+      handleInputChange("motherOccupation", prevMotherOcc.current || "");
     }
   }
 
@@ -75,29 +109,40 @@ export default function ParentsInfoSection({
     setIsFatherOccUnknown(checked);
     if (checked) {
       prevFatherOcc.current = formData.fatherOccupation;
-      handleInputChange("fatherOccupation", "");
       handleInputChange("fatherOccupationUnknown", true);
+      handleInputChange("fatherOccupation", "");
     } else {
-      handleInputChange("fatherOccupation", prevFatherOcc.current || "");
       handleInputChange("fatherOccupationUnknown", false);
+      handleInputChange("fatherOccupation", prevFatherOcc.current || "");
     }
   }
 
   function toggleMotherNameUnknown(checked: boolean) {
     setIsMotherNameUnknown(checked);
-    setIsMotherOccUnknown(checked); // Also check/uncheck mother occupation
+    setIsMotherOccUnknown(checked);
+
     if (checked) {
+      // Store current values
       prevMotherName.current = formData.motherName;
       prevMotherOcc.current = formData.motherOccupation;
-      handleInputChange("motherName", "");
-      handleInputChange("motherNameUnknown", true);
-      handleInputChange("motherOccupation", "");
-      handleInputChange("motherOccupationUnknown", true);
+
+      // Batch update all fields at once
+      setFormData((prev) => ({
+        ...prev,
+        motherNameUnknown: true,
+        motherOccupationUnknown: true,
+        motherName: "",
+        motherOccupation: "",
+      }));
     } else {
-      handleInputChange("motherName", prevMotherName.current || "");
-      handleInputChange("motherNameUnknown", false);
-      handleInputChange("motherOccupation", prevMotherOcc.current || "");
-      handleInputChange("motherOccupationUnknown", false);
+      // Restore values
+      setFormData((prev) => ({
+        ...prev,
+        motherNameUnknown: false,
+        motherOccupationUnknown: false,
+        motherName: prevMotherName.current || "",
+        motherOccupation: prevMotherOcc.current || "",
+      }));
     }
   }
 
@@ -123,14 +168,17 @@ export default function ParentsInfoSection({
                 onChange={(e) => toggleFatherUnknown(e.target.checked)}
                 className="w-4 h-4"
               />
-              <span>Unknown / Not Applicable</span>
+              <span>Not Applicable</span>
             </label>
           </div>
           <Input
             id="fatherName"
             value={formData.fatherName || ""}
             onChange={(e) => handleInputChange("fatherName", e.target.value)}
-            className={errors.fatherName ? "border-red-500" : ""}
+            onBlur={(e) => handleInputChange("fatherName", e.target.value)}
+            className={
+              !isFatherUnknown && errors.fatherName ? "border-red-500" : ""
+            }
             disabled={isFatherUnknown}
           />
           {!isFatherUnknown && errors.fatherName && (
@@ -145,7 +193,7 @@ export default function ParentsInfoSection({
             >
               Father's Occupation
             </Label>
-            <label className="flex items-center gap-2 text-sm text-gray-600">
+            <label className="hidden items-center gap-2 text-sm text-gray-600">
               <input
                 type="checkbox"
                 checked={isFatherOccUnknown}
@@ -161,7 +209,12 @@ export default function ParentsInfoSection({
             onChange={(e) =>
               handleInputChange("fatherOccupation", e.target.value)
             }
-            className={errors.fatherOccupation ? "border-red-500" : ""}
+            className={
+              !(isFatherUnknown || isFatherOccUnknown) &&
+              errors.fatherOccupation
+                ? "border-red-500"
+                : ""
+            }
             disabled={isFatherUnknown || isFatherOccUnknown}
           />
           {!(isFatherUnknown || isFatherOccUnknown) &&
@@ -186,14 +239,17 @@ export default function ParentsInfoSection({
                 onChange={(e) => toggleMotherNameUnknown(e.target.checked)}
                 className="w-4 h-4"
               />
-              <span>Unknown / Not Applicable</span>
+              <span>Not Applicable</span>
             </label>
           </div>
           <Input
             id="motherName"
             value={formData.motherName || ""}
             onChange={(e) => handleInputChange("motherName", e.target.value)}
-            className={errors.motherName ? "border-red-500" : ""}
+            onBlur={(e) => handleInputChange("motherName", e.target.value)}
+            className={
+              !isMotherNameUnknown && errors.motherName ? "border-red-500" : ""
+            }
             disabled={isMotherNameUnknown}
           />
           {!isMotherNameUnknown && errors.motherName && (
@@ -208,7 +264,7 @@ export default function ParentsInfoSection({
             >
               Mother's Occupation
             </Label>
-            <label className="flex items-center gap-2 text-sm text-gray-600">
+            <label className="hidden items-center gap-2 text-sm text-gray-600">
               <input
                 type="checkbox"
                 checked={isMotherOccUnknown}
@@ -224,7 +280,11 @@ export default function ParentsInfoSection({
             onChange={(e) =>
               handleInputChange("motherOccupation", e.target.value)
             }
-            className={errors.motherOccupation ? "border-red-500" : ""}
+            className={
+              !isMotherOccUnknown && errors.motherOccupation
+                ? "border-red-500"
+                : ""
+            }
             disabled={isMotherOccUnknown}
           />
           {!isMotherOccUnknown && errors.motherOccupation && (
@@ -254,6 +314,9 @@ export default function ParentsInfoSection({
               onChange={(e) =>
                 handleInputChange("emergencyContact", e.target.value)
               }
+              onBlur={(e) =>
+                handleInputChange("emergencyContact", e.target.value)
+              }
               className={errors.emergencyContact ? "border-red-500" : ""}
             />
             {errors.emergencyContact && (
@@ -273,6 +336,9 @@ export default function ParentsInfoSection({
               id="emergencyContactNumber"
               value={formData.emergencyContactNumber || ""}
               onChange={(e) =>
+                handleInputChange("emergencyContactNumber", e.target.value)
+              }
+              onBlur={(e) =>
                 handleInputChange("emergencyContactNumber", e.target.value)
               }
               className={errors.emergencyContactNumber ? "border-red-500" : ""}

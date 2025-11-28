@@ -49,16 +49,176 @@ export const applicationSchema = z.object({
   relativeDepartment: z.string().optional(),
   relativeRelationship: z.string().optional(),
   elementary: z.string().min(2, "Elementary school is required"),
-  elementaryFrom: z.string().min(4, "Elementary start year is required"),
-  elementaryTo: z.string().min(4, "Elementary end year is required"),
+  elementaryFrom: z
+    .string()
+    .min(4, "Elementary start year is required")
+    .refine(
+      (val) => {
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        return !isNaN(year) && year <= currentYear && year >= 1900;
+      },
+      (val) => {
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        if (isNaN(year))
+          return { message: "Elementary start year must be a valid year" };
+        if (year > currentYear)
+          return {
+            message: `Elementary start year cannot be in the future (current year: ${currentYear})`,
+          };
+        if (year < 1900)
+          return { message: "Elementary start year must be after 1900" };
+        return { message: "Invalid year" };
+      }
+    ),
+  elementaryTo: z
+    .string()
+    .min(4, "Elementary end year is required")
+    .refine(
+      (val) => {
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        return !isNaN(year) && year <= currentYear && year >= 1900;
+      },
+      (val) => {
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        if (isNaN(year))
+          return { message: "Elementary end year must be a valid year" };
+        if (year > currentYear)
+          return {
+            message: `Elementary end year cannot be in the future (current year: ${currentYear})`,
+          };
+        if (year < 1900)
+          return { message: "Elementary end year must be after 1900" };
+        return { message: "Invalid year" };
+      }
+    ),
   highSchool: z.string().min(2, "High school is required"),
-  highSchoolFrom: z.string().min(4, "High school start year is required"),
-  highSchoolTo: z.string().min(4, "High school end year is required"),
+  highSchoolFrom: z
+    .string()
+    .min(4, "High school start year is required")
+    .refine(
+      (val) => {
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        return !isNaN(year) && year <= currentYear && year >= 1900;
+      },
+      (val) => {
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        if (isNaN(year))
+          return { message: "High school start year must be a valid year" };
+        if (year > currentYear)
+          return {
+            message: `High school start year cannot be in the future (current year: ${currentYear})`,
+          };
+        if (year < 1900)
+          return { message: "High school start year must be after 1900" };
+        return { message: "Invalid year" };
+      }
+    ),
+  highSchoolTo: z
+    .string()
+    .min(4, "High school end year is required")
+    .refine(
+      (val) => {
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        return !isNaN(year) && year <= currentYear && year >= 1900;
+      },
+      (val) => {
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        if (isNaN(year))
+          return { message: "High school end year must be a valid year" };
+        if (year > currentYear)
+          return {
+            message: `High school end year cannot be in the future (current year: ${currentYear})`,
+          };
+        if (year < 1900)
+          return { message: "High school end year must be after 1900" };
+        return { message: "Invalid year" };
+      }
+    ),
   college: z.string().optional(),
-  collegeFrom: z.string().optional(),
-  collegeTo: z.string().optional(),
+  collegeFrom: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val) return true;
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        return !isNaN(year) && year <= currentYear && year >= 1900;
+      },
+      (val) => {
+        if (!val) return { message: "" };
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        if (isNaN(year))
+          return { message: "College start year must be a valid year" };
+        if (year > currentYear)
+          return {
+            message: `College start year cannot be in the future (current year: ${currentYear})`,
+          };
+        if (year < 1900)
+          return { message: "College start year must be after 1900" };
+        return { message: "Invalid year" };
+      }
+    ),
+  collegeTo: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val) return true;
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        return !isNaN(year) && year <= currentYear && year >= 1900;
+      },
+      (val) => {
+        if (!val) return { message: "" };
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        if (isNaN(year))
+          return { message: "College end year must be a valid year" };
+        if (year > currentYear)
+          return {
+            message: `College end year cannot be in the future (current year: ${currentYear})`,
+          };
+        if (year < 1900)
+          return { message: "College end year must be after 1900" };
+        return { message: "Invalid year" };
+      }
+    ),
   others: z.string().optional(),
-  othersFrom: z.string().optional(),
+  othersFrom: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val) return true;
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        return !isNaN(year) && year <= currentYear && year >= 1900;
+      },
+      (val) => {
+        if (!val) return { message: "" };
+        const year = parseInt(val);
+        const currentYear = new Date().getFullYear();
+        if (isNaN(year))
+          return { message: "Others start year must be a valid year" };
+        if (year > currentYear)
+          return {
+            message: `Others start year cannot be in the future (current year: ${currentYear})`,
+          };
+        if (year < 1900)
+          return { message: "Others start year must be after 1900" };
+        return { message: "Invalid year" };
+      }
+    ),
   othersTo: z.string().optional(),
   seminars: z
     .array(
@@ -85,12 +245,8 @@ export const applicationSchema = z.object({
     .string()
     .min(2, "Parent/Guardian name is required")
     .max(100),
-  parentID: z.any().refine((file) => file !== null && file !== undefined, {
-    message: "Parent/Guardian ID is required",
-  }),
-  profilePhoto: z.any().refine((file) => file !== null && file !== undefined, {
-    message: "2x2 picture is required",
-  }),
+  parentID: z.any().optional(),
+  profilePhoto: z.any().optional(),
   idDocument: z.any().optional(),
   certificates: z.any().optional(),
 });
@@ -98,8 +254,10 @@ export const applicationSchema = z.object({
 // Add cross-field validation to enforce required fields only when not marked Unknown
 export const applicationSchemaWithConditional = applicationSchema.superRefine(
   (data, ctx) => {
-    // fatherName
-    if (!data.fatherNameUnknown) {
+    const currentYear = new Date().getFullYear();
+
+    // fatherName - only required if NOT marked as unknown
+    if (data.fatherNameUnknown !== true) {
       if (!data.fatherName || data.fatherName.trim().length < 2) {
         ctx.addIssue({
           path: ["fatherName"],
@@ -108,18 +266,9 @@ export const applicationSchemaWithConditional = applicationSchema.superRefine(
         });
       }
     }
-    // fatherOccupation
-    if (!data.fatherOccupationUnknown) {
-      if (!data.fatherOccupation || data.fatherOccupation.trim().length < 2) {
-        ctx.addIssue({
-          path: ["fatherOccupation"],
-          message: "Father's occupation is required",
-          code: z.ZodIssueCode.custom,
-        });
-      }
-    }
-    // motherName
-    if (!data.motherNameUnknown) {
+    // fatherOccupation - now optional, no validation
+    // motherName - only required if NOT marked as unknown
+    if (data.motherNameUnknown !== true) {
       if (!data.motherName || data.motherName.trim().length < 2) {
         ctx.addIssue({
           path: ["motherName"],
@@ -128,15 +277,121 @@ export const applicationSchemaWithConditional = applicationSchema.superRefine(
         });
       }
     }
-    // motherOccupation
-    if (!data.motherOccupationUnknown) {
-      if (!data.motherOccupation || data.motherOccupation.trim().length < 2) {
-        ctx.addIssue({
-          path: ["motherOccupation"],
-          message: "Mother's occupation is required",
-          code: z.ZodIssueCode.custom,
-        });
+    // motherOccupation - now optional, no validation
+
+    // Year validation for education fields
+    const validateYearField = (field: string, value: any, label: string) => {
+      if (value) {
+        const year = parseInt(value.toString());
+        if (isNaN(year)) {
+          ctx.addIssue({
+            path: [field],
+            message: `${label} must be a valid year`,
+            code: z.ZodIssueCode.custom,
+          });
+        } else if (year > currentYear) {
+          ctx.addIssue({
+            path: [field],
+            message: `${label} cannot be in the future (current year: ${currentYear})`,
+            code: z.ZodIssueCode.custom,
+          });
+        } else if (year < 1900) {
+          ctx.addIssue({
+            path: [field],
+            message: `${label} must be after 1900`,
+            code: z.ZodIssueCode.custom,
+          });
+        }
       }
+    };
+
+    // Validate year ranges
+    const validateYearRange = (
+      fromField: string,
+      toField: string,
+      fromValue: any,
+      toValue: any,
+      level: string
+    ) => {
+      if (fromValue && toValue) {
+        const fromYear = parseInt(fromValue);
+        const toYear = parseInt(toValue);
+        if (!isNaN(fromYear) && !isNaN(toYear) && fromYear > toYear) {
+          ctx.addIssue({
+            path: [toField],
+            message: `${level} end year must be after start year`,
+            code: z.ZodIssueCode.custom,
+          });
+        }
+      }
+    };
+
+    // Elementary validation
+    validateYearField(
+      "elementaryFrom",
+      data.elementaryFrom,
+      "Elementary start year"
+    );
+    validateYearField("elementaryTo", data.elementaryTo, "Elementary end year");
+    validateYearRange(
+      "elementaryFrom",
+      "elementaryTo",
+      data.elementaryFrom,
+      data.elementaryTo,
+      "Elementary"
+    );
+
+    // High School validation
+    validateYearField(
+      "highSchoolFrom",
+      data.highSchoolFrom,
+      "High school start year"
+    );
+    validateYearField(
+      "highSchoolTo",
+      data.highSchoolTo,
+      "High school end year"
+    );
+    validateYearRange(
+      "highSchoolFrom",
+      "highSchoolTo",
+      data.highSchoolFrom,
+      data.highSchoolTo,
+      "High school"
+    );
+
+    // College validation (optional)
+    if (data.collegeFrom) {
+      validateYearField("collegeFrom", data.collegeFrom, "College start year");
+    }
+    if (data.collegeTo) {
+      validateYearField("collegeTo", data.collegeTo, "College end year");
+    }
+    if (data.collegeFrom && data.collegeTo) {
+      validateYearRange(
+        "collegeFrom",
+        "collegeTo",
+        data.collegeFrom,
+        data.collegeTo,
+        "College"
+      );
+    }
+
+    // Others validation (optional)
+    if (data.othersFrom) {
+      validateYearField("othersFrom", data.othersFrom, "Others start year");
+    }
+    if (data.othersTo) {
+      validateYearField("othersTo", data.othersTo, "Others end year");
+    }
+    if (data.othersFrom && data.othersTo) {
+      validateYearRange(
+        "othersFrom",
+        "othersTo",
+        data.othersFrom,
+        data.othersTo,
+        "Others"
+      );
     }
   }
 );
