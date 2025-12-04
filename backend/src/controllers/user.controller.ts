@@ -3,6 +3,7 @@ import { NOT_FOUND, OK } from "../constants/http";
 import UserModel from "../models/user.model";
 import OfficeProfileModel from "../models/officeProfile.model";
 import ApplicationModel from "../models/application.model";
+import ReApplicationModel from "../models/reapplication.model";
 import ArchivedApplicationModel from "../models/archivedApplication.model";
 import ScheduleModel from "../models/schedule.model";
 import ScholarModel from "../models/scholar.model";
@@ -102,19 +103,26 @@ export const updateUserHandler = catchErrors(
     );
 
     const { userId } = req.params;
-    const { role, status, officeName, maxProfiles } = req.body;
+    const { role, status, officeName, maxProfiles, blocked } = req.body;
 
     const user = await UserModel.findById(userId);
     appAssert(user, NOT_FOUND, "User not found");
 
     console.log("=== UPDATE USER DEBUG ===");
     console.log("Updating user:", userId);
-    console.log("Update data:", { role, status, officeName, maxProfiles });
+    console.log("Update data:", {
+      role,
+      status,
+      officeName,
+      maxProfiles,
+      blocked,
+    });
 
     // Update fields if provided
     if (role !== undefined) user.role = role;
     if (status !== undefined) user.status = status;
     if (officeName !== undefined) user.officeName = officeName;
+    if (blocked !== undefined) user.blocked = blocked;
     if (maxProfiles !== undefined && user.role === "office") {
       // Validate maxProfiles is a number between 1 and 20
       const max = parseInt(maxProfiles);
@@ -178,6 +186,15 @@ export const resetScholarsToApplicantsHandler = catchErrors(
     });
     console.log("Found accepted applications:", acceptedApplications.length);
 
+    // Find all re-applications with status "approved"
+    const approvedReApplications = await ReApplicationModel.find({
+      status: "approved",
+    });
+    console.log(
+      "Found approved re-applications:",
+      approvedReApplications.length
+    );
+
     // Get current semester year for archiving
     const now = new Date();
     const year = now.getFullYear();
@@ -201,11 +218,34 @@ export const resetScholarsToApplicantsHandler = catchErrors(
       originalStatus: app.status,
     }));
 
+    // Archive all approved re-applications (treating them as applications)
+    const archivedReApplications = approvedReApplications.map((reapp) => ({
+      originalApplication: reapp.toObject(),
+      archivedBy: req.userID,
+      archivedReason: "End of Semester - Scholar Reset (Re-application)",
+      semesterYear,
+      userID: reapp.userID,
+      firstName: reapp.firstName,
+      lastName: reapp.lastName,
+      position: reapp.position,
+      email: reapp.email,
+      originalStatus: reapp.status,
+    }));
+
+    // Combine both for archiving
+    const allArchivedApplications = [
+      ...archivedApplications,
+      ...archivedReApplications,
+    ];
+
     let archivedCount = 0;
-    if (archivedApplications.length > 0) {
-      await ArchivedApplicationModel.insertMany(archivedApplications);
-      archivedCount = archivedApplications.length;
-      console.log("Applications archived:", archivedCount);
+    if (allArchivedApplications.length > 0) {
+      await ArchivedApplicationModel.insertMany(allArchivedApplications);
+      archivedCount = allArchivedApplications.length;
+      console.log(
+        "Total applications/re-applications archived:",
+        archivedCount
+      );
     }
 
     // Get all user IDs from scholar users for deletion operations
@@ -258,6 +298,11 @@ export const resetScholarsToApplicantsHandler = catchErrors(
       status: "accepted",
     });
 
+    // Delete the approved re-applications (they're now archived)
+    const reApplicationDeleteResult = await ReApplicationModel.deleteMany({
+      status: "approved",
+    });
+
     const totalUpdated = userUpdateResult.modifiedCount;
 
     console.log("Users updated:", userUpdateResult.modifiedCount);
@@ -265,14 +310,20 @@ export const resetScholarsToApplicantsHandler = catchErrors(
       "Applications archived and deleted:",
       applicationDeleteResult.deletedCount
     );
+    console.log(
+      "Re-applications archived and deleted:",
+      reApplicationDeleteResult.deletedCount
+    );
     console.log("Total records updated:", totalUpdated);
 
     return res.status(OK).json({
       success: true,
-      message: `Successfully reset ${userUpdateResult.modifiedCount} scholars to reapplicant status and archived ${archivedCount} applications`,
+      message: `Successfully reset ${userUpdateResult.modifiedCount} scholars to reapplicant status and archived ${archivedCount} applications/re-applications`,
       details: {
         usersUpdated: userUpdateResult.modifiedCount,
-        applicationsArchived: archivedCount,
+        applicationsArchived: acceptedApplications.length,
+        reApplicationsArchived: approvedReApplications.length,
+        totalArchived: archivedCount,
         scholarsDeleted: scholarDeleteResult.deletedCount,
         schedulesDeleted: scheduleDeleteResult.deletedCount,
         semesterYear,

@@ -12,6 +12,10 @@ export interface IEvaluation extends Document {
   officeName: string;
   evaluatorName: string;
   items: ICriterionEvaluation[];
+  areasOfStrength?: string;
+  areasOfImprovement?: string;
+  recommendedForNextSemester?: boolean;
+  justification?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +46,10 @@ const EvaluationSchema = new Schema<IEvaluation>(
     officeName: { type: String, required: true },
     evaluatorName: { type: String, required: true },
     items: { type: [CriterionEvaluationSchema], required: true },
+    areasOfStrength: { type: String },
+    areasOfImprovement: { type: String },
+    recommendedForNextSemester: { type: Boolean },
+    justification: { type: String },
   },
   { timestamps: true }
 );

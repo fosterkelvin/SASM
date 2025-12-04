@@ -106,6 +106,53 @@ const OfficeEvaluationPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Evaluation Instructions */}
+              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                  Evaluation Guidelines
+                </h3>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                  Please evaluate your Student Assistant objectively as you can.
+                  Select the number corresponding to the rating of your choice.
+                  Below is the equivalent rating of the number of choices you
+                  will use to rate your SA. Be guided by the rubrics.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <span className="font-bold text-gray-800 dark:text-gray-200 min-w-[20px]">
+                      1
+                    </span>
+                    <span className="text-gray-700 dark:text-gray-300">
+                      (Not demonstrated)
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="font-bold text-gray-800 dark:text-gray-200 min-w-[20px]">
+                      2
+                    </span>
+                    <span className="text-gray-700 dark:text-gray-300">
+                      (Fairly demonstrated)
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="font-bold text-gray-800 dark:text-gray-200 min-w-[20px]">
+                      3
+                    </span>
+                    <span className="text-gray-700 dark:text-gray-300">
+                      (Adequately demonstrated)
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="font-bold text-gray-800 dark:text-gray-200 min-w-[20px]">
+                      4
+                    </span>
+                    <span className="text-gray-700 dark:text-gray-300">
+                      (Extensively demonstrated)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <div className="mt-4">
                 {isLoading ? (
                   <div className="text-center py-8">

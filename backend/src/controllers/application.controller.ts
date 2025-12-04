@@ -99,6 +99,13 @@ export const createApplicationHandler = catchErrors(
     const user = await UserModel.findById(userID);
     appAssert(user, NOT_FOUND, "User not found");
 
+    // Check if user is blocked
+    appAssert(
+      !user.blocked,
+      FORBIDDEN,
+      "Your account has been blocked. You cannot submit applications. Please contact HR for assistance."
+    );
+
     // Check if user already has a pending or approved application
     const existingApplication = await ApplicationModel.findOne({
       userID,

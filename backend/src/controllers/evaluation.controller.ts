@@ -18,6 +18,10 @@ const criterionEvaluationSchema = z.object({
 const createEvaluationSchema = z.object({
   scholarId: z.string().min(1),
   items: z.array(criterionEvaluationSchema).min(1),
+  areasOfStrength: z.string().optional(),
+  areasOfImprovement: z.string().optional(),
+  recommendedForNextSemester: z.boolean().optional(),
+  justification: z.string().optional(),
 });
 
 // Office: Submit evaluation for a scholar
@@ -52,7 +56,14 @@ export const submitEvaluation = catchErrors(
     const parsed = createEvaluationSchema.safeParse(req.body);
     appAssert(parsed.success, BAD_REQUEST, "Invalid payload");
 
-    const { scholarId, items } = parsed.data;
+    const {
+      scholarId,
+      items,
+      areasOfStrength,
+      areasOfImprovement,
+      recommendedForNextSemester,
+      justification,
+    } = parsed.data;
 
     // Verify scholar exists
     const scholar = await ScholarModel.findById(scholarId);
@@ -67,6 +78,10 @@ export const submitEvaluation = catchErrors(
       officeName: officeName,
       evaluatorName: profile.profileName,
       items,
+      areasOfStrength,
+      areasOfImprovement,
+      recommendedForNextSemester,
+      justification,
     });
 
     return res

@@ -1039,6 +1039,7 @@ export const resetScholarsToApplicants = async () => {
 
 // Archived Applications API
 export const getArchivedApplications = async (params?: {
+  type?: string;
   semesterYear?: string;
   search?: string;
   position?: string;
@@ -1046,6 +1047,7 @@ export const getArchivedApplications = async (params?: {
   limit?: number;
 }) => {
   const searchParams = new URLSearchParams();
+  if (params?.type) searchParams.append("type", params.type);
   if (params?.semesterYear)
     searchParams.append("semesterYear", params.semesterYear);
   if (params?.search) searchParams.append("search", params.search);

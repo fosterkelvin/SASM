@@ -6,6 +6,7 @@ export type UserRow = {
   role?: string;
   status?: string;
   verified?: boolean;
+  blocked?: boolean;
   createdAt?: string;
   updatedAt?: string;
   office?: string;

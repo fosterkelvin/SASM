@@ -7,9 +7,25 @@ import catchErrors from "../utils/catchErrors";
 // Get all archived applications
 export const getArchivedApplicationsHandler = catchErrors(
   async (req: Request, res: Response) => {
-    const { semesterYear, search, position, page = 1, limit = 50 } = req.query;
+    const {
+      type,
+      semesterYear,
+      search,
+      position,
+      page = 1,
+      limit = 50,
+    } = req.query;
 
     const query: any = {};
+
+    // Filter by type (application or reapplication)
+    if (type === "reapplication") {
+      query.archivedReason = { $regex: "Re-application", $options: "i" };
+    } else if (type === "application") {
+      query.archivedReason = {
+        $not: { $regex: "Re-application", $options: "i" },
+      };
+    }
 
     if (semesterYear) {
       query.semesterYear = semesterYear;

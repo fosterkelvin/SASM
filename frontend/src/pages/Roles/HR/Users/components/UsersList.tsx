@@ -1,12 +1,13 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, Eye, Calendar, FileText } from "lucide-react";
+import { User, Eye, Calendar, FileText, Ban, CheckCircle } from "lucide-react";
 import type { UserRow } from "../types";
 
 type Props = {
   data: UserRow[];
   onOpen: (u: UserRow) => void;
+  onBlockToggle?: (u: UserRow) => void;
 };
 
 const getStatusColor = (status?: string) => {
@@ -25,7 +26,7 @@ const getStatusColor = (status?: string) => {
 const formatDate = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString() : "-";
 
-const UsersList: React.FC<Props> = ({ data, onOpen }) => {
+const UsersList: React.FC<Props> = ({ data, onOpen, onBlockToggle }) => {
   return (
     <Card>
       <CardContent className="p-0">
@@ -60,13 +61,31 @@ const UsersList: React.FC<Props> = ({ data, onOpen }) => {
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                          <User className="h-5 w-5 text-red-600" />
+                        <div
+                          className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                            u.blocked
+                              ? "bg-gray-400 dark:bg-gray-600"
+                              : "bg-red-100 dark:bg-red-900/30"
+                          }`}
+                        >
+                          <User
+                            className={`h-5 w-5 ${
+                              u.blocked ? "text-white" : "text-red-600"
+                            }`}
+                          />
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {u.firstName || u.firstname}{" "}
-                            {u.lastName || u.lastname}
+                          <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                            <span>
+                              {u.firstName || u.firstname}{" "}
+                              {u.lastName || u.lastname}
+                            </span>
+                            {u.blocked && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                <Ban className="h-3 w-3 mr-1" />
+                                Blocked
+                              </span>
+                            )}
                           </div>
                           <div className="text-sm text-gray-500">{u.email}</div>
                         </div>
@@ -104,6 +123,28 @@ const UsersList: React.FC<Props> = ({ data, onOpen }) => {
                         >
                           <Eye className="h-4 w-4 mr-1" /> View
                         </Button>
+                        {u.role === "student" && onBlockToggle && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onBlockToggle(u)}
+                            className={
+                              u.blocked
+                                ? "text-green-600 border-green-300"
+                                : "text-orange-600 border-orange-300"
+                            }
+                          >
+                            {u.blocked ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-1" /> Unblock
+                              </>
+                            ) : (
+                              <>
+                                <Ban className="h-4 w-4 mr-1" /> Block
+                              </>
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>

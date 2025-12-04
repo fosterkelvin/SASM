@@ -1680,7 +1680,7 @@ export const uploadClassScheduleHandler = catchErrors(
     schedule.classSchedule = file.path;
     schedule.uploadedAt = new Date();
 
-    // Store parsed schedule data if provided
+    // Store parsed schedule data if provided, otherwise clear existing data
     if (scheduleData) {
       try {
         const parsedData =
@@ -1688,9 +1688,15 @@ export const uploadClassScheduleHandler = catchErrors(
             ? JSON.parse(scheduleData)
             : scheduleData;
         schedule.classScheduleData = parsedData;
+        console.log(`📊 Saved ${parsedData.length} schedule entries`);
       } catch (error) {
         console.error("Error parsing schedule data:", error);
+        // If parsing fails, clear the data
+        schedule.classScheduleData = [];
       }
+    } else {
+      // No schedule data provided - keep existing data if any, or set to empty
+      console.log("ℹ️ No schedule data provided with upload");
     }
 
     // Clear any existing duty hours when a new schedule is uploaded
@@ -1712,7 +1718,8 @@ export const uploadClassScheduleHandler = catchErrors(
     return res.status(OK).json({
       message: "Schedule uploaded successfully",
       scheduleUrl: file.path,
-      scheduleData: schedule.classScheduleData,
+      scheduleData: schedule.classScheduleData || [],
+      dutyHours: schedule.dutyHours || [],
       userType,
     });
   }
@@ -1733,9 +1740,26 @@ export const getClassScheduleHandler = catchErrors(
 
     if (user.role === "student") {
       // Students can only view their own schedule
-      schedule = await ScheduleModel.findOne({
+      // Check if user is a scholar first, then look for appropriate schedule
+      const scholar = await ScholarModel.findOne({
         userId: userID,
+        status: "active",
       });
+
+      if (scholar) {
+        // User is a scholar - get scholar schedule
+        console.log("🎓 User is a scholar, fetching schedule by scholarId");
+        schedule = await ScheduleModel.findOne({
+          scholarId: scholar._id,
+        }).sort({ updatedAt: -1 }); // Get most recent
+      } else {
+        // User is a trainee - get trainee schedule
+        console.log("📚 User is a trainee, fetching schedule by userId");
+        schedule = await ScheduleModel.findOne({
+          userId: userID,
+          userType: "trainee",
+        }).sort({ updatedAt: -1 }); // Get most recent
+      }
     } else if (user.role === "office" || user.role === "hr") {
       // Office/HR can view any trainee/scholar's schedule
       const { applicationId } = req.params;

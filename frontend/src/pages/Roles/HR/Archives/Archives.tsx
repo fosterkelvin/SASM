@@ -37,6 +37,7 @@ const Archives = () => {
   const { data: archivedData, isLoading } = useQuery({
     queryKey: [
       "archived-applications",
+      activeTab,
       selectedSemester,
       searchTerm,
       selectedPosition,
@@ -44,12 +45,14 @@ const Archives = () => {
     ],
     queryFn: () =>
       getArchivedApplications({
+        type: activeTab === "reapplications" ? "reapplication" : "application",
         semesterYear: selectedSemester || undefined,
         search: searchTerm || undefined,
         position: selectedPosition || undefined,
         page,
         limit: 20,
       }),
+    enabled: activeTab === "applications" || activeTab === "reapplications",
   });
 
   // Fetch semester years for filter

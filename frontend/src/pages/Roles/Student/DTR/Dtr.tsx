@@ -389,14 +389,13 @@ const Dtr: React.FC = () => {
 
       // Start new week on Sunday
       if (dayOfWeek === 0 && currentWeek.length > 0) {
-        // Calculate hours for the completed week (only confirmed entries)
+        // Calculate actual hours for the completed week (only confirmed entries)
         const weekHours = currentWeek.reduce((sum, day) => {
           const e = entries.find((ent) => ent.id === day);
           // Only count hours if the entry is confirmed
           if (e?.confirmationStatus === "confirmed") {
-            // Apply 5-hour (300 minutes) daily limit for official total
-            const cappedHours = Math.min(e?.totalHours || 0, 300);
-            return sum + cappedHours;
+            // Use actual hours (not capped) for display
+            return sum + (e?.totalHours || 0);
           }
           return sum;
         }, 0);
@@ -423,9 +422,8 @@ const Dtr: React.FC = () => {
         const e = entries.find((ent) => ent.id === day);
         // Only count hours if the entry is confirmed
         if (e?.confirmationStatus === "confirmed") {
-          // Apply 5-hour (300 minutes) daily limit for official total
-          const cappedHours = Math.min(e?.totalHours || 0, 300);
-          return sum + cappedHours;
+          // Use actual hours (not capped) for display
+          return sum + (e?.totalHours || 0);
         }
         return sum;
       }, 0);

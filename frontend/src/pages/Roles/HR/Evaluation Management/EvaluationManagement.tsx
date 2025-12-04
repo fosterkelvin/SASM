@@ -34,6 +34,10 @@ const EvaluationManagement: React.FC = () => {
           submittedAt: e.createdAt,
           evaluatorName: e.evaluatorName,
           items: e.items,
+          areasOfStrength: e.areasOfStrength,
+          areasOfImprovement: e.areasOfImprovement,
+          recommendedForNextSemester: e.recommendedForNextSemester,
+          justification: e.justification,
         })
       );
       setData(evaluations);
@@ -46,6 +50,11 @@ const EvaluationManagement: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Get unique offices from data
+  const availableOffices = Array.from(
+    new Set(data.map((d) => d.office).filter(Boolean))
+  ).sort();
 
   const filtered = data.filter((d) => {
     const s = searchTerm.trim().toLowerCase();
@@ -63,8 +72,7 @@ const EvaluationManagement: React.FC = () => {
         return false;
       }
     }
-    if (officeFilter && d.office.toLowerCase() !== officeFilter.toLowerCase())
-      return false;
+    if (officeFilter && d.office !== officeFilter) return false;
     return true;
   });
 
@@ -98,6 +106,7 @@ const EvaluationManagement: React.FC = () => {
             onScholarshipChange={setScholarshipFilter}
             officeFilter={officeFilter}
             onOfficeChange={setOfficeFilter}
+            availableOffices={availableOffices}
           />
 
           {loading ? (

@@ -9,6 +9,7 @@ export interface UserDocument extends mongoose.Document {
   role: "student" | "hr" | "office";
   status: string;
   verified: boolean;
+  blocked: boolean;
   pendingEmail?: string;
   office?: string;
   officeName?: string; // For office users: "OSAS", "OSA", etc.
@@ -25,6 +26,7 @@ export interface UserDocument extends mongoose.Document {
     | "role"
     | "status"
     | "verified"
+    | "blocked"
     | "pendingEmail"
     | "office"
     | "officeName"
@@ -48,6 +50,10 @@ const userSchema = new mongoose.Schema<UserDocument>(
       required: true,
     },
     verified: {
+      type: Boolean,
+      default: false,
+    },
+    blocked: {
       type: Boolean,
       default: false,
     },

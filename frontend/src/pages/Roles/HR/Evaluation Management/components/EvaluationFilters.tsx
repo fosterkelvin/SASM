@@ -10,6 +10,7 @@ type Props = {
   onScholarshipChange: (v: string) => void;
   officeFilter: string;
   onOfficeChange: (v: string) => void;
+  availableOffices: string[];
 };
 
 const EvaluationFilters: React.FC<Props> = ({
@@ -19,6 +20,7 @@ const EvaluationFilters: React.FC<Props> = ({
   onScholarshipChange,
   officeFilter,
   onOfficeChange,
+  availableOffices,
 }) => {
   return (
     <div className="mb-6">
@@ -60,9 +62,11 @@ const EvaluationFilters: React.FC<Props> = ({
             className="w-full px-3 py-2 border rounded"
           >
             <option value="">All offices</option>
-            <option value="registrar">Registrar</option>
-            <option value="library">Library</option>
-            <option value="it">IT</option>
+            {availableOffices.map((office) => (
+              <option key={office} value={office}>
+                {office}
+              </option>
+            ))}
           </select>
         </div>
       </div>

@@ -54,6 +54,15 @@ const EvaluationModal: React.FC<Props> = ({ evaluation, onClose }) => {
           </div>
 
           {evaluation.items && evaluation.items.length > 0 && (
+            <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded">
+              <div className="text-sm text-muted-foreground">Average Score</div>
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                {averageScore.toFixed(1)}/4
+              </div>
+            </div>
+          )}
+
+          {evaluation.items && evaluation.items.length > 0 && (
             <div>
               <div className="text-sm text-muted-foreground mb-2">
                 Evaluation Criteria
@@ -68,7 +77,7 @@ const EvaluationModal: React.FC<Props> = ({ evaluation, onClose }) => {
                       <span className="font-medium">{item.criterion}</span>
                       {item.rating && (
                         <span className="text-sm px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded">
-                          {item.rating}/5
+                          {item.rating}/4
                         </span>
                       )}
                     </div>
@@ -80,14 +89,68 @@ const EvaluationModal: React.FC<Props> = ({ evaluation, onClose }) => {
                   </div>
                 ))}
               </div>
-              <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded">
-                <div className="text-sm text-muted-foreground">
-                  Average Score
-                </div>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                  {averageScore.toFixed(1)}/5
-                </div>
+            </div>
+          )}
+
+          {/* General Comment Section */}
+          {(evaluation.areasOfStrength ||
+            evaluation.areasOfImprovement ||
+            evaluation.recommendedForNextSemester !== undefined ||
+            evaluation.justification) && (
+            <div className="mt-4 pt-4 border-t">
+              <div className="text-sm text-muted-foreground mb-3">
+                General Comment
               </div>
+
+              {evaluation.areasOfStrength && (
+                <div className="mb-3">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Areas of Strength
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded text-sm">
+                    {evaluation.areasOfStrength}
+                  </div>
+                </div>
+              )}
+
+              {evaluation.areasOfImprovement && (
+                <div className="mb-3">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Areas of Improvement
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded text-sm">
+                    {evaluation.areasOfImprovement}
+                  </div>
+                </div>
+              )}
+
+              {evaluation.recommendedForNextSemester !== undefined && (
+                <div className="mb-3">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Recommended for Next Semester/Summer
+                  </div>
+                  <div
+                    className={`inline-block px-3 py-1 rounded text-sm font-medium ${
+                      evaluation.recommendedForNextSemester
+                        ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
+                        : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"
+                    }`}
+                  >
+                    {evaluation.recommendedForNextSemester ? "Yes" : "No"}
+                  </div>
+                </div>
+              )}
+
+              {evaluation.justification && (
+                <div className="mb-3">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Justification
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded text-sm">
+                    {evaluation.justification}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

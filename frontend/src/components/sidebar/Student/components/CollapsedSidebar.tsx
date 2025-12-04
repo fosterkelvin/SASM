@@ -98,66 +98,79 @@ const CollapsedSidebar: React.FC<Props> = ({
               )}
             </button>
           </div>
-          {/* Show DTR, Leave, and Schedule for deployed trainees (but NOT re-applicants) */}
-          {isVerified && isDeployedToOffice && !isReapplicant && (
-            <>
-              <div className="group relative">
-                <button
-                  onClick={isEmailUpdateRequired ? undefined : handlers.dtr}
-                  disabled={isEmailUpdateRequired}
-                  className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
-                    isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  aria-label="DTR"
-                  title={
-                    isEmailUpdateRequired
-                      ? "DTR (Blocked - Update email required)"
-                      : "DTR"
-                  }
-                >
-                  <CalendarClock size={16} />
-                </button>
-              </div>
-              <div className="group relative">
-                <button
-                  onClick={isEmailUpdateRequired ? undefined : handlers.leave}
-                  disabled={isEmailUpdateRequired}
-                  className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
-                    isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  aria-label="Leave"
-                  title={
-                    isEmailUpdateRequired
-                      ? "Leave (Blocked - Update email required)"
-                      : "Leave"
-                  }
-                >
-                  <CalendarMinus size={16} />
-                </button>
-              </div>
-              <div className="group relative">
-                <button
-                  onClick={
-                    isEmailUpdateRequired ? undefined : handlers.schedule
-                  }
-                  disabled={isEmailUpdateRequired}
-                  className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
-                    isEmailUpdateRequired ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                  aria-label="Schedule"
-                  title={
-                    isEmailUpdateRequired
-                      ? "Schedule (Blocked - Update email required)"
-                      : "Schedule"
-                  }
-                >
-                  <Calendar size={16} />
-                </button>
-              </div>
-            </>
-          )}
-          {/* Show Apply only for applicants without accepted status and not re-applicants */}
-          {!isAccepted && !hasActiveApplication && !isReapplicant && (
+          {/* Show DTR and Schedule for deployed trainees OR scholars (but NOT re-applicants) */}
+          {/* Show Leave only for deployed scholars (NOT trainees) */}
+          {isVerified &&
+            (isDeployedToOffice || isScholar) &&
+            !isReapplicant && (
+              <>
+                <div className="group relative">
+                  <button
+                    onClick={isEmailUpdateRequired ? undefined : handlers.dtr}
+                    disabled={isEmailUpdateRequired}
+                    className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
+                      isEmailUpdateRequired
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
+                    aria-label="DTR"
+                    title={
+                      isEmailUpdateRequired
+                        ? "DTR (Blocked - Update email required)"
+                        : "DTR"
+                    }
+                  >
+                    <CalendarClock size={16} />
+                  </button>
+                </div>
+                {isScholar && (
+                  <div className="group relative">
+                    <button
+                      onClick={
+                        isEmailUpdateRequired ? undefined : handlers.leave
+                      }
+                      disabled={isEmailUpdateRequired}
+                      className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
+                        isEmailUpdateRequired
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                      }`}
+                      aria-label="Leave"
+                      title={
+                        isEmailUpdateRequired
+                          ? "Leave (Blocked - Update email required)"
+                          : "Leave"
+                      }
+                    >
+                      <CalendarMinus size={16} />
+                    </button>
+                  </div>
+                )}
+                <div className="group relative">
+                  <button
+                    onClick={
+                      isEmailUpdateRequired ? undefined : handlers.schedule
+                    }
+                    disabled={isEmailUpdateRequired}
+                    className={`p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ${
+                      isEmailUpdateRequired
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
+                    aria-label="Schedule"
+                    title={
+                      isEmailUpdateRequired
+                        ? "Schedule (Blocked - Update email required)"
+                        : "Schedule"
+                    }
+                  >
+                    <Calendar size={16} />
+                  </button>
+                </div>
+              </>
+            )}
+          {/* Show Apply for applicants who are not re-applicants - allow access even with active application for viewing/withdrawing */}
+          {isApplicant && !isReapplicant && (
             <div className="group relative">
               <button
                 onClick={isEmailUpdateRequired ? undefined : handlers.apply}

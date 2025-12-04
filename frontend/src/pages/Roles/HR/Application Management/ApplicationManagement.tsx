@@ -241,6 +241,23 @@ const ApplicationManagement = () => {
     enabled: user?.role === "hr" || user?.role === "office",
   });
 
+  // Extract unique "What to Bring" values for autocomplete
+  const uniqueInterviewWhatToBring = Array.from(
+    new Set(
+      applicationsData?.applications
+        ?.map((app: any) => app.interviewWhatToBring)
+        .filter((val: string) => val && val.trim())
+    )
+  );
+
+  const uniquePsychometricWhatToBring = Array.from(
+    new Set(
+      applicationsData?.applications
+        ?.map((app: any) => app.psychometricTestWhatToBring)
+        .filter((val: string) => val && val.trim())
+    )
+  );
+
   // Update application status mutation
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
@@ -3182,9 +3199,10 @@ const ApplicationManagement = () => {
                                 >
                                   What to Bring *
                                 </Label>
-                                <textarea
+                                <input
+                                  type="text"
                                   id="psychometricTestWhatToBring"
-                                  rows={3}
+                                  list="psychometricWhatToBringList"
                                   value={
                                     statusUpdateData.psychometricTestWhatToBring
                                   }
@@ -3199,6 +3217,13 @@ const ApplicationManagement = () => {
                                   placeholder="e.g., Valid ID, Pencil, Eraser, Calculator (if needed)..."
                                   required
                                 />
+                                <datalist id="psychometricWhatToBringList">
+                                  {uniquePsychometricWhatToBring.map(
+                                    (value: string, index: number) => (
+                                      <option key={index} value={value} />
+                                    )
+                                  )}
+                                </datalist>
                               </div>
 
                               {/* Test Email Preview */}
@@ -3212,7 +3237,7 @@ const ApplicationManagement = () => {
                                     <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                                     <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                                   </svg>
-                                  Email Preview - Test Notification
+                                  Email Preview - Psychometric Test Notification
                                 </h6>
                                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                                   <div className="text-sm">
@@ -3222,55 +3247,122 @@ const ApplicationManagement = () => {
                                       "student_assistant"
                                         ? "Student Assistant"
                                         : "Student Marshal"}{" "}
-                                      Position
+                                      Scholarship
                                     </p>
-                                    <div className="mt-3 space-y-2 text-gray-700 dark:text-gray-300">
-                                      <p>Dear Applicant,</p>
+                                    <div className="mt-3 text-gray-700 dark:text-gray-300 leading-relaxed">
                                       <p>
-                                        Your psychometric test has been
-                                        scheduled. Please find the details
-                                        below:
+                                        Dear {selectedApplication?.firstName}{" "}
+                                        {selectedApplication?.lastName},
                                       </p>
-                                      <div className="space-y-2">
-                                        <p>
-                                          <strong>📆 Date:</strong>{" "}
-                                          {statusUpdateData.psychometricTestDate
-                                            ? new Date(
-                                                statusUpdateData.psychometricTestDate
-                                              ).toLocaleDateString("en-US", {
-                                                weekday: "long",
-                                                year: "numeric",
-                                                month: "long",
-                                                day: "numeric",
-                                              })
-                                            : "[Test date not set]"}
+                                      <p className="mt-2">
+                                        Congratulations! Your application for
+                                        the{" "}
+                                        {selectedApplication?.position ===
+                                        "student_assistant"
+                                          ? "Student Assistant"
+                                          : "Student Marshal"}{" "}
+                                        scholarship has been reviewed and we
+                                        would like to invite you for a
+                                        psychometric test.
+                                      </p>
+
+                                      <div className="mt-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded border-l-4 border-blue-400 dark:border-blue-600">
+                                        <p className="font-semibold text-blue-800 dark:text-blue-200 text-lg mb-3">
+                                          📋 Psychometric Test Details:
                                         </p>
-                                        <p>
-                                          <strong>🕐 Time:</strong>{" "}
-                                          {statusUpdateData.psychometricTestTime
-                                            ? new Date(
-                                                `2000-01-01T${statusUpdateData.psychometricTestTime}`
-                                              ).toLocaleTimeString("en-US", {
-                                                hour: "numeric",
-                                                minute: "2-digit",
-                                                hour12: true,
-                                              })
-                                            : "[Test time not set]"}
+                                        <div className="space-y-2">
+                                          <p>
+                                            <strong>📆 Date:</strong>{" "}
+                                            {statusUpdateData.psychometricTestDate
+                                              ? new Date(
+                                                  statusUpdateData.psychometricTestDate
+                                                ).toLocaleDateString("en-US", {
+                                                  weekday: "long",
+                                                  year: "numeric",
+                                                  month: "long",
+                                                  day: "numeric",
+                                                })
+                                              : "[Date not set]"}
+                                          </p>
+                                          <p>
+                                            <strong>🕐 Time:</strong>{" "}
+                                            {statusUpdateData.psychometricTestTime
+                                              ? new Date(
+                                                  `2000-01-01T${statusUpdateData.psychometricTestTime}`
+                                                ).toLocaleTimeString("en-US", {
+                                                  hour: "numeric",
+                                                  minute: "2-digit",
+                                                  hour12: true,
+                                                })
+                                              : "[Time not set]"}
+                                          </p>
+                                          <p>
+                                            <strong>📍 Location:</strong>{" "}
+                                            {statusUpdateData.psychometricTestLocation ||
+                                              "[Location not set]"}
+                                          </p>
+                                          <p>
+                                            <strong>👤 Scholarship:</strong>{" "}
+                                            {selectedApplication?.position ===
+                                            "student_assistant"
+                                              ? "Student Assistant"
+                                              : "Student Marshal"}
+                                          </p>
+                                        </div>
+                                      </div>
+
+                                      <div className="mt-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded border-l-4 border-gray-400 dark:border-gray-600">
+                                        <p className="font-semibold text-gray-800 dark:text-gray-200">
+                                          💼 What to Bring:
                                         </p>
-                                        <p>
-                                          <strong>📍 Location:</strong>{" "}
-                                          {statusUpdateData.psychometricTestLocation ||
-                                            "[Location not set]"}
-                                        </p>
-                                        <p>
-                                          <strong>🎒 What to Bring:</strong>{" "}
+                                        <p className="mt-1 text-sm whitespace-pre-line">
                                           {statusUpdateData.psychometricTestWhatToBring ||
-                                            "[Requirements not specified]"}
+                                            "[Not specified]"}
                                         </p>
                                       </div>
+
+                                      <div className="mt-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded border-l-4 border-gray-400 dark:border-gray-600">
+                                        <p className="font-semibold text-gray-800 dark:text-gray-200">
+                                          ℹ️ Test Information:
+                                        </p>
+                                        <ul className="mt-1 space-y-1 text-sm">
+                                          <li>
+                                            • Please arrive 15 minutes early
+                                          </li>
+                                          <li>
+                                            • The test will last approximately
+                                            30-45 minutes
+                                          </li>
+                                          <li>
+                                            • Dress code: Business casual or
+                                            formal attire
+                                          </li>
+                                          <li>
+                                            • Be prepared to answer questions
+                                            honestly and thoughtfully
+                                          </li>
+                                        </ul>
+                                      </div>
+
                                       <p className="mt-3">
-                                        Please arrive 15 minutes before the
-                                        scheduled time.
+                                        We look forward to meeting with you at
+                                        the scheduled time. If you have any
+                                        questions or need to reschedule, please
+                                        contact our HR Department immediately at
+                                        hr@ub.edu.ph or call us during business
+                                        hours.
+                                      </p>
+
+                                      <p className="mt-4">
+                                        Best regards,
+                                        <br />
+                                        <strong>HR Department</strong>
+                                        <br />
+                                        University of Baguio
+                                        <br />
+                                        📞 Phone: [Contact Number]
+                                        <br />
+                                        📧 Email: hr@ub.edu.ph
                                       </p>
                                     </div>
                                   </div>
@@ -3486,9 +3578,10 @@ const ApplicationManagement = () => {
                                 >
                                   What to Bring *
                                 </Label>
-                                <textarea
+                                <input
+                                  type="text"
                                   id="interviewWhatToBring"
-                                  rows={3}
+                                  list="interviewWhatToBringList"
                                   value={statusUpdateData.interviewWhatToBring}
                                   onChange={(e) =>
                                     setStatusUpdateData((prev) => ({
@@ -3500,6 +3593,13 @@ const ApplicationManagement = () => {
                                   placeholder="e.g., Valid ID, Resume, Portfolio (if applicable)..."
                                   required
                                 />
+                                <datalist id="interviewWhatToBringList">
+                                  {uniqueInterviewWhatToBring.map(
+                                    (value: string, index: number) => (
+                                      <option key={index} value={value} />
+                                    )
+                                  )}
+                                </datalist>
                               </div>
 
                               <div className="mb-4">
@@ -3624,19 +3724,10 @@ const ApplicationManagement = () => {
                                         <p className="font-semibold text-gray-800 dark:text-gray-200">
                                           💼 What to Bring:
                                         </p>
-                                        <ul className="mt-1 space-y-1 text-sm">
-                                          <li>• Valid government-issued ID</li>
-                                          <li>
-                                            • Original documents and
-                                            certificates (if not previously
-                                            submitted)
-                                          </li>
-                                          <li>• Pen and notepad</li>
-                                          <li>
-                                            • This email confirmation (printed
-                                            or on your phone)
-                                          </li>
-                                        </ul>
+                                        <p className="mt-1 text-sm whitespace-pre-line">
+                                          {statusUpdateData.interviewWhatToBring ||
+                                            "[Not specified]"}
+                                        </p>
                                       </div>
 
                                       <div className="mt-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded border-l-4 border-gray-400 dark:border-gray-600">

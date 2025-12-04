@@ -24,14 +24,21 @@ interface DutyHourEntry {
   location: string;
 }
 
+interface DutyHourFormData {
+  days: string[];
+  startTime: string;
+  endTime: string;
+  location: string;
+}
+
 const TraineeSchedule: React.FC = () => {
   const { applicationId } = useParams<{ applicationId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showAddDutyForm, setShowAddDutyForm] = useState(false);
-  const [dutyHourEntry, setDutyHourEntry] = useState<DutyHourEntry>({
-    day: "",
+  const [dutyHourForm, setDutyHourForm] = useState<DutyHourFormData>({
+    days: [],
     startTime: "",
     endTime: "",
     location: "",
@@ -117,8 +124,8 @@ const TraineeSchedule: React.FC = () => {
       });
       setShowAddDutyForm(false);
       setPendingDutyHours([]);
-      setDutyHourEntry({
-        day: "",
+      setDutyHourForm({
+        days: [],
         startTime: "",
         endTime: "",
         location: "",
@@ -174,22 +181,22 @@ const TraineeSchedule: React.FC = () => {
 
   const handleAddDutyHours = () => {
     if (
-      !dutyHourEntry.day ||
-      !dutyHourEntry.startTime ||
-      !dutyHourEntry.endTime ||
-      !dutyHourEntry.location
+      dutyHourForm.days.length === 0 ||
+      !dutyHourForm.startTime ||
+      !dutyHourForm.endTime ||
+      !dutyHourForm.location
     ) {
       showAlert(
         "Validation Error",
-        "Please fill in all required fields.",
+        "Please fill in all required fields (select at least one day).",
         "warning"
       );
       return;
     }
 
     // Validate start < end
-    const startMin = timeToMinutes(dutyHourEntry.startTime);
-    const endMin = timeToMinutes(dutyHourEntry.endTime);
+    const startMin = timeToMinutes(dutyHourForm.startTime);
+    const endMin = timeToMinutes(dutyHourForm.endTime);
     if (endMin <= startMin) {
       showAlert(
         "Invalid Time",
@@ -199,104 +206,125 @@ const TraineeSchedule: React.FC = () => {
       return;
     }
 
-    const dayUpper = dutyHourEntry.day.toUpperCase();
+    // Check each selected day for conflicts
+    const conflictingDays: string[] = [];
 
-    // 1) Check overlap with existing duty hours
-    const dutyOverlap = (scheduleData?.dutyHours || []).some((dh: any) => {
-      if (!dh?.day) return false;
-      const sameDay = (dh.day as string).toUpperCase() === dayUpper;
-      if (!sameDay) return false;
-      const s = timeToMinutes(dh.startTime);
-      const e = timeToMinutes(dh.endTime);
-      // Overlap if newStart < existEnd && newEnd > existStart
-      return startMin < e && endMin > s;
-    });
-    if (dutyOverlap) {
-      showAlert(
-        "Schedule Conflict",
-        "The duty hours you entered conflict with existing duty hours for this day. Please choose a different time.",
-        "warning"
-      );
-      return;
-    }
+    for (const selectedDay of dutyHourForm.days) {
+      const dayUpper = selectedDay.toUpperCase();
 
-    // 2) Check overlap with pending duty hours
-    const pendingOverlap = pendingDutyHours.some((pdh) => {
-      const sameDay = pdh.day.toUpperCase() === dayUpper;
-      if (!sameDay) return false;
-      const s = timeToMinutes(pdh.startTime);
-      const e = timeToMinutes(pdh.endTime);
-      return startMin < e && endMin > s;
-    });
-    if (pendingOverlap) {
-      showAlert(
-        "Schedule Conflict",
-        "The duty hours you entered conflict with pending duty hours for this day. Please choose a different time.",
-        "warning"
-      );
-      return;
-    }
+      // 1) Check overlap with existing duty hours
+      const dutyOverlap = (scheduleData?.dutyHours || []).some((dh: any) => {
+        if (!dh?.day) return false;
+        const sameDay = (dh.day as string).toUpperCase() === dayUpper;
+        if (!sameDay) return false;
+        const s = timeToMinutes(dh.startTime);
+        const e = timeToMinutes(dh.endTime);
+        // Overlap if newStart < existEnd && newEnd > existStart
+        return startMin < e && endMin > s;
+      });
+      if (dutyOverlap) {
+        conflictingDays.push(selectedDay);
+        continue;
+      }
 
-    // 2) Check overlap with class/work schedules in scheduleData.scheduleData
-    // Parse schedule strings like "T/Th 8:00 AM-9:30 AM / F215"
-    const parseSchedule = (schedule: string) => {
-      const results: Array<{ day: string; start: number; end: number }> = [];
-      if (!schedule) return results;
-      const dayMap: Record<string, string> = {
-        M: "MONDAY",
-        T: "TUESDAY",
-        W: "WEDNESDAY",
-        Th: "THURSDAY",
-        F: "FRIDAY",
-        S: "SATURDAY",
-        Su: "SUNDAY",
+      // 2) Check overlap with pending duty hours
+      const pendingOverlap = pendingDutyHours.some((pdh) => {
+        const sameDay = pdh.day.toUpperCase() === dayUpper;
+        if (!sameDay) return false;
+        const s = timeToMinutes(pdh.startTime);
+        const e = timeToMinutes(pdh.endTime);
+        return startMin < e && endMin > s;
+      });
+      if (pendingOverlap) {
+        conflictingDays.push(selectedDay);
+        continue;
+      }
+
+      // 3) Check overlap with class/work schedules in scheduleData.scheduleData
+      // Parse schedule strings like "T/Th 8:00 AM-9:30 AM / F215"
+      const parseSchedule = (schedule: string) => {
+        const results: Array<{ day: string; start: number; end: number }> = [];
+        if (!schedule) return results;
+        const dayMap: Record<string, string> = {
+          M: "MONDAY",
+          T: "TUESDAY",
+          W: "WEDNESDAY",
+          Th: "THURSDAY",
+          F: "FRIDAY",
+          S: "SATURDAY",
+          Su: "SUNDAY",
+        };
+
+        // Split segments by comma
+        const segments = schedule.split(",").map((s) => s.trim());
+        for (const seg of segments) {
+          const daysMatch = seg.match(
+            /^((?:[MTWFS]|Th|Su)(?:\/(?:[MTWFS]|Th|Su))*)\s+/
+          );
+          const timeMatch = seg.match(
+            /(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/i
+          );
+          if (!daysMatch || !timeMatch) continue;
+          const dayTokens = daysMatch[1].split("/").map((d) => d.trim());
+          const start = timeToMinutes(timeMatch[1].trim());
+          const end = timeToMinutes(timeMatch[2].trim());
+          for (const token of dayTokens) {
+            const mapped = dayMap[token];
+            if (mapped) results.push({ day: mapped, start, end });
+          }
+        }
+        return results;
       };
 
-      // Split segments by comma
-      const segments = schedule.split(",").map((s) => s.trim());
-      for (const seg of segments) {
-        const daysMatch = seg.match(
-          /^((?:[MTWFS]|Th|Su)(?:\/(?:[MTWFS]|Th|Su))*)\s+/
-        );
-        const timeMatch = seg.match(
-          /(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/i
-        );
-        if (!daysMatch || !timeMatch) continue;
-        const dayTokens = daysMatch[1].split("/").map((d) => d.trim());
-        const start = timeToMinutes(timeMatch[1].trim());
-        const end = timeToMinutes(timeMatch[2].trim());
-        for (const token of dayTokens) {
-          const mapped = dayMap[token];
-          if (mapped) results.push({ day: mapped, start, end });
+      const classOverlap = (scheduleData?.scheduleData || []).some(
+        (cls: any) => {
+          const parsed = parseSchedule(cls?.schedule || "");
+          return parsed.some((p) => {
+            if (p.day !== dayUpper) return false;
+            return startMin < p.end && endMin > p.start;
+          });
         }
-      }
-      return results;
-    };
-
-    const classOverlap = (scheduleData?.scheduleData || []).some((cls: any) => {
-      const parsed = parseSchedule(cls?.schedule || "");
-      return parsed.some((p) => {
-        if (p.day !== dayUpper) return false;
-        return startMin < p.end && endMin > p.start;
-      });
-    });
-
-    if (classOverlap) {
-      showAlert(
-        "Schedule Conflict",
-        "The duty hours you entered conflict with an existing class/work schedule. Please choose a different time.",
-        "warning"
       );
-      return;
+
+      if (classOverlap) {
+        conflictingDays.push(selectedDay);
+      }
     }
 
-    // Add to pending list instead of immediately saving
-    setPendingDutyHours([...pendingDutyHours, dutyHourEntry]);
+    if (conflictingDays.length > 0) {
+      showAlert(
+        "Schedule Conflict",
+        `The duty hours conflict with existing schedules for: ${conflictingDays.join(
+          ", "
+        )}. These days were skipped.`,
+        "warning"
+      );
+    }
+
+    // Add entries for non-conflicting days
+    const validDays = dutyHourForm.days.filter(
+      (day) => !conflictingDays.includes(day)
+    );
+
+    if (validDays.length === 0) {
+      return; // All days had conflicts
+    }
+
+    const newEntries: DutyHourEntry[] = validDays.map((day) => ({
+      day,
+      startTime: dutyHourForm.startTime,
+      endTime: dutyHourForm.endTime,
+      location: dutyHourForm.location,
+    }));
+
+    // Add to pending list
+    setPendingDutyHours([...pendingDutyHours, ...newEntries]);
 
     // Reset the form for the next entry
-    setDutyHourEntry({
-      day: "",
+    setDutyHourForm({
+      days: [],
       startTime: "",
+      endTime: "",
       endTime: "",
       location: "",
     });
@@ -321,8 +349,8 @@ const TraineeSchedule: React.FC = () => {
   const handleCancelAddDutyForm = () => {
     setShowAddDutyForm(false);
     setPendingDutyHours([]);
-    setDutyHourEntry({
-      day: "",
+    setDutyHourForm({
+      days: [],
       startTime: "",
       endTime: "",
       location: "",
@@ -494,36 +522,49 @@ const TraineeSchedule: React.FC = () => {
                         )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="day">Day of Week</Label>
-                            <select
-                              id="day"
-                              aria-label="Select day of week"
-                              value={dutyHourEntry.day}
-                              onChange={(e) =>
-                                setDutyHourEntry({
-                                  ...dutyHourEntry,
-                                  day: e.target.value,
-                                })
-                              }
-                              className="w-full mt-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2"
-                            >
-                              <option value="">Select a day</option>
+                          <div className="md:col-span-2">
+                            <Label>Days of Week (select multiple)</Label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2 p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800">
                               {daysOfWeek.map((day) => (
-                                <option key={day} value={day}>
-                                  {day}
-                                </option>
+                                <label
+                                  key={day}
+                                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={dutyHourForm.days.includes(day)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setDutyHourForm({
+                                          ...dutyHourForm,
+                                          days: [...dutyHourForm.days, day],
+                                        });
+                                      } else {
+                                        setDutyHourForm({
+                                          ...dutyHourForm,
+                                          days: dutyHourForm.days.filter(
+                                            (d) => d !== day
+                                          ),
+                                        });
+                                      }
+                                    }}
+                                    className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                                  />
+                                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    {day}
+                                  </span>
+                                </label>
                               ))}
-                            </select>
+                            </div>
                           </div>
                           <div>
                             <Label htmlFor="location">Location</Label>
                             <Input
                               id="location"
-                              value={dutyHourEntry.location}
+                              value={dutyHourForm.location}
                               onChange={(e) =>
-                                setDutyHourEntry({
-                                  ...dutyHourEntry,
+                                setDutyHourForm({
+                                  ...dutyHourForm,
                                   location: e.target.value,
                                 })
                               }
@@ -535,10 +576,10 @@ const TraineeSchedule: React.FC = () => {
                             <Input
                               id="startTime"
                               type="time"
-                              value={dutyHourEntry.startTime}
+                              value={dutyHourForm.startTime}
                               onChange={(e) =>
-                                setDutyHourEntry({
-                                  ...dutyHourEntry,
+                                setDutyHourForm({
+                                  ...dutyHourForm,
                                   startTime: e.target.value,
                                 })
                               }
@@ -549,10 +590,10 @@ const TraineeSchedule: React.FC = () => {
                             <Input
                               id="endTime"
                               type="time"
-                              value={dutyHourEntry.endTime}
+                              value={dutyHourForm.endTime}
                               onChange={(e) =>
-                                setDutyHourEntry({
-                                  ...dutyHourEntry,
+                                setDutyHourForm({
+                                  ...dutyHourForm,
                                   endTime: e.target.value,
                                 })
                               }

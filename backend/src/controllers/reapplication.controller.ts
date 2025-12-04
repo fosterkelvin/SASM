@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { OK, CREATED, BAD_REQUEST } from "../constants/http";
+import { OK, CREATED, BAD_REQUEST, FORBIDDEN } from "../constants/http";
 import ReApplicationModel from "../models/reapplication.model";
 import ArchivedApplicationModel from "../models/archivedApplication.model";
 import ApplicationModel from "../models/application.model";
@@ -47,6 +47,13 @@ export const submitReApplicationHandler = catchErrors(
     // Get user info from User model
     const user = await UserModel.findById(userID);
     appAssert(user, BAD_REQUEST, "User not found");
+
+    // Check if user is blocked
+    appAssert(
+      !user.blocked,
+      FORBIDDEN,
+      "Your account has been blocked. You cannot submit re-applications. Please contact HR for assistance."
+    );
 
     // Try to find the most recent application (active or archived) - optional for reference
     let previousApplication = await ApplicationModel.findOne({

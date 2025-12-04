@@ -23,6 +23,13 @@ interface DutyHourEntry {
   location: string;
 }
 
+interface DutyHourFormData {
+  days: string[];
+  startTime: string;
+  endTime: string;
+  location: string;
+}
+
 const ScholarSchedule: React.FC = () => {
   const params = useParams<{ scholarId: string }>();
   const scholarIdParam = params.scholarId;
@@ -30,8 +37,8 @@ const ScholarSchedule: React.FC = () => {
   const queryClient = useQueryClient();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showAddDutyForm, setShowAddDutyForm] = useState(false);
-  const [dutyHourEntry, setDutyHourEntry] = useState<DutyHourEntry>({
-    day: "",
+  const [dutyHourForm, setDutyHourForm] = useState<DutyHourFormData>({
+    days: [],
     startTime: "",
     endTime: "",
     location: "",
@@ -106,14 +113,7 @@ const ScholarSchedule: React.FC = () => {
       queryClient.invalidateQueries({
         queryKey: ["classSchedule", applicationId],
       });
-      setShowAddDutyForm(false);
-      setDutyHourEntry({
-        day: "",
-        startTime: "",
-        endTime: "",
-        location: "",
-      });
-      showAlert("Success", "Duty hours added successfully!", "success");
+      // Note: Form reset is handled in handleAddDutyHours
     },
     onError: (error: any) => {
       console.error("❌ Failed to add duty hours:", error);
@@ -156,18 +156,65 @@ const ScholarSchedule: React.FC = () => {
   const handleAddDutyHours = (e: React.FormEvent) => {
     e.preventDefault();
     if (
-      !dutyHourEntry.day ||
-      !dutyHourEntry.startTime ||
-      !dutyHourEntry.endTime
+      dutyHourForm.days.length === 0 ||
+      !dutyHourForm.startTime ||
+      !dutyHourForm.endTime
     ) {
       showAlert(
         "Validation Error",
-        "Please fill in all required fields.",
+        "Please fill in all required fields (select at least one day).",
         "warning"
       );
       return;
     }
-    addDutyHoursMutation.mutate(dutyHourEntry);
+
+    // Create entries for each selected day
+    const entries: DutyHourEntry[] = dutyHourForm.days.map((day) => ({
+      day,
+      startTime: dutyHourForm.startTime,
+      endTime: dutyHourForm.endTime,
+      location: dutyHourForm.location,
+    }));
+
+    // Add each entry sequentially
+    let successCount = 0;
+    const addNext = (index: number) => {
+      if (index >= entries.length) {
+        // All done
+        if (successCount > 0) {
+          showAlert(
+            "Success",
+            `Added duty hours for ${successCount} day(s)!`,
+            "success"
+          );
+          setShowAddDutyForm(false);
+          setDutyHourForm({
+            days: [],
+            startTime: "",
+            endTime: "",
+            location: "",
+          });
+        }
+        return;
+      }
+
+      addDutyHoursMutation.mutate(entries[index], {
+        onSuccess: () => {
+          successCount++;
+          addNext(index + 1);
+        },
+        onError: (error: any) => {
+          // Show error but continue with remaining days
+          console.error(
+            `Failed to add duty hours for ${entries[index].day}:`,
+            error
+          );
+          addNext(index + 1);
+        },
+      });
+    };
+
+    addNext(0);
   };
 
   const handleRemoveDutyHours = (dutyHour: {
@@ -285,36 +332,50 @@ const ScholarSchedule: React.FC = () => {
                           onSubmit={handleAddDutyHours}
                           className="grid grid-cols-1 md:grid-cols-2 gap-4"
                         >
-                          <div>
-                            <Label htmlFor="day">Day</Label>
-                            <select
-                              id="day"
-                              value={dutyHourEntry.day}
-                              onChange={(e) =>
-                                setDutyHourEntry({
-                                  ...dutyHourEntry,
-                                  day: e.target.value,
-                                })
-                              }
-                              className="w-full mt-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2"
-                            >
-                              <option value="">Select day</option>
+                          <div className="md:col-span-2">
+                            <Label>Days of Week (select multiple)</Label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2 p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800">
                               {daysOfWeek.map((day) => (
-                                <option key={day} value={day}>
-                                  {day}
-                                </option>
+                                <label
+                                  key={day}
+                                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={dutyHourForm.days.includes(day)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setDutyHourForm({
+                                          ...dutyHourForm,
+                                          days: [...dutyHourForm.days, day],
+                                        });
+                                      } else {
+                                        setDutyHourForm({
+                                          ...dutyHourForm,
+                                          days: dutyHourForm.days.filter(
+                                            (d) => d !== day
+                                          ),
+                                        });
+                                      }
+                                    }}
+                                    className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                                  />
+                                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    {day}
+                                  </span>
+                                </label>
                               ))}
-                            </select>
+                            </div>
                           </div>
 
                           <div>
                             <Label htmlFor="location">Location</Label>
                             <Input
                               id="location"
-                              value={dutyHourEntry.location}
+                              value={dutyHourForm.location}
                               onChange={(e) =>
-                                setDutyHourEntry({
-                                  ...dutyHourEntry,
+                                setDutyHourForm({
+                                  ...dutyHourForm,
                                   location: e.target.value,
                                 })
                               }
@@ -327,10 +388,10 @@ const ScholarSchedule: React.FC = () => {
                             <Input
                               id="startTime"
                               type="time"
-                              value={dutyHourEntry.startTime}
+                              value={dutyHourForm.startTime}
                               onChange={(e) =>
-                                setDutyHourEntry({
-                                  ...dutyHourEntry,
+                                setDutyHourForm({
+                                  ...dutyHourForm,
                                   startTime: e.target.value,
                                 })
                               }
@@ -342,10 +403,10 @@ const ScholarSchedule: React.FC = () => {
                             <Input
                               id="endTime"
                               type="time"
-                              value={dutyHourEntry.endTime}
+                              value={dutyHourForm.endTime}
                               onChange={(e) =>
-                                setDutyHourEntry({
-                                  ...dutyHourEntry,
+                                setDutyHourForm({
+                                  ...dutyHourForm,
                                   endTime: e.target.value,
                                 })
                               }
@@ -484,36 +545,50 @@ const ScholarSchedule: React.FC = () => {
                           onSubmit={handleAddDutyHours}
                           className="grid grid-cols-1 md:grid-cols-2 gap-4"
                         >
-                          <div>
-                            <Label htmlFor="day">Day</Label>
-                            <select
-                              id="day"
-                              value={dutyHourEntry.day}
-                              onChange={(e) =>
-                                setDutyHourEntry({
-                                  ...dutyHourEntry,
-                                  day: e.target.value,
-                                })
-                              }
-                              className="w-full mt-1 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2"
-                            >
-                              <option value="">Select day</option>
+                          <div className="md:col-span-2">
+                            <Label>Days of Week (select multiple)</Label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2 p-3 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800">
                               {daysOfWeek.map((day) => (
-                                <option key={day} value={day}>
-                                  {day}
-                                </option>
+                                <label
+                                  key={day}
+                                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={dutyHourForm.days.includes(day)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setDutyHourForm({
+                                          ...dutyHourForm,
+                                          days: [...dutyHourForm.days, day],
+                                        });
+                                      } else {
+                                        setDutyHourForm({
+                                          ...dutyHourForm,
+                                          days: dutyHourForm.days.filter(
+                                            (d) => d !== day
+                                          ),
+                                        });
+                                      }
+                                    }}
+                                    className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                                  />
+                                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    {day}
+                                  </span>
+                                </label>
                               ))}
-                            </select>
+                            </div>
                           </div>
 
                           <div>
                             <Label htmlFor="location">Location</Label>
                             <Input
                               id="location"
-                              value={dutyHourEntry.location}
+                              value={dutyHourForm.location}
                               onChange={(e) =>
-                                setDutyHourEntry({
-                                  ...dutyHourEntry,
+                                setDutyHourForm({
+                                  ...dutyHourForm,
                                   location: e.target.value,
                                 })
                               }
@@ -526,10 +601,10 @@ const ScholarSchedule: React.FC = () => {
                             <Input
                               id="startTime"
                               type="time"
-                              value={dutyHourEntry.startTime}
+                              value={dutyHourForm.startTime}
                               onChange={(e) =>
-                                setDutyHourEntry({
-                                  ...dutyHourEntry,
+                                setDutyHourForm({
+                                  ...dutyHourForm,
                                   startTime: e.target.value,
                                 })
                               }
@@ -541,10 +616,10 @@ const ScholarSchedule: React.FC = () => {
                             <Input
                               id="endTime"
                               type="time"
-                              value={dutyHourEntry.endTime}
+                              value={dutyHourForm.endTime}
                               onChange={(e) =>
-                                setDutyHourEntry({
-                                  ...dutyHourEntry,
+                                setDutyHourForm({
+                                  ...dutyHourForm,
                                   endTime: e.target.value,
                                 })
                               }

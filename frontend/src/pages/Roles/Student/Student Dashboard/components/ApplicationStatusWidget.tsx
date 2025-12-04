@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getUserApplications } from "@/lib/api";
+import { getUserApplications, getUserReApplications } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -103,14 +103,39 @@ const ApplicationStatusWidget = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const { data: userApplicationsData, isLoading } = useQuery({
-    queryKey: ["userApplications"],
-    queryFn: getUserApplications,
-    enabled: !!user,
-  });
+  // Check if user is a reapplicant specifically
+  const isReapplicant =
+    user?.status === "reapplicant" || user?.status === "Re-Applicant";
 
-  // Find the most recent application
-  const latestApplication = userApplicationsData?.applications?.[0];
+  // Check if user is a scholar (SA, SM, active status)
+  const isScholar =
+    user?.status === "SA" || user?.status === "SM" || user?.status === "active";
+
+  const { data: userApplicationsData, isLoading: isLoadingApplications } =
+    useQuery({
+      queryKey: ["userApplications"],
+      queryFn: getUserApplications,
+      enabled: !!user && !isScholar && !isReapplicant, // Only fetch applications if not a scholar or reapplicant
+    });
+
+  const { data: userReApplicationsData, isLoading: isLoadingReApplications } =
+    useQuery({
+      queryKey: ["userReApplications"],
+      queryFn: getUserReApplications,
+      enabled: !!user && isReapplicant, // Only fetch re-applications if user is a reapplicant
+    });
+
+  const isLoading = isLoadingApplications || isLoadingReApplications;
+
+  // Find the most recent application or re-application based on user status
+  const latestApplication = isReapplicant
+    ? userReApplicationsData?.reApplications?.[0]
+    : userApplicationsData?.applications?.[0];
+
+  // Don't show the widget at all for scholars (only show for students and reapplicants)
+  if (isScholar) {
+    return null;
+  }
 
   // Check if status has scheduled details
   const hasInterviewDetails =
@@ -142,7 +167,7 @@ const ApplicationStatusWidget = () => {
         <Card className="border-red-200 dark:border-red-800/60 bg-gradient-to-br from-white via-red-50 to-red-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg font-bold text-gray-800 dark:text-white">
-              Application Status
+              {isReapplicant ? "Reapplication Status" : "Application Status"}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
@@ -161,19 +186,23 @@ const ApplicationStatusWidget = () => {
         <Card className="border-red-200 dark:border-red-800/60 bg-gradient-to-br from-white via-red-50 to-red-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg font-bold text-gray-800 dark:text-white">
-              Application Status
+              {isReapplicant ? "Reapplication Status" : "Application Status"}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-center py-4">
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                You haven't submitted an application yet.
+                {isReapplicant
+                  ? "You haven't submitted a re-application yet."
+                  : "You haven't submitted an application yet."}
               </p>
               <Button
-                onClick={() => navigate("/apply")}
+                onClick={() =>
+                  navigate(isReapplicant ? "/re-apply" : "/application")
+                }
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
-                Apply Now
+                {isReapplicant ? "Re-apply Now" : "Apply Now"}
               </Button>
             </div>
           </CardContent>
@@ -187,12 +216,13 @@ const ApplicationStatusWidget = () => {
       <Card className="pb-4 border-red-200 dark:border-red-800/60 shadow-lg bg-gradient-to-br from-white via-red-50 to-red-100 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-bold text-gray-800 dark:text-white">
-            Application Status
+            {isReapplicant ? "Reapplication Status" : "Application Status"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 pt-0">
-          {/* Requirements Warning Banner - Show for pending applications without completed requirements */}
-          {latestApplication.status === "pending" &&
+          {/* Requirements Warning Banner - Show for pending applications without completed requirements (non-reapplicants only) */}
+          {!isReapplicant &&
+            latestApplication.status === "pending" &&
             !latestApplication.requirementsCompleted && (
               <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 dark:border-amber-600 rounded-lg p-3">
                 <div className="flex items-start gap-3">
@@ -228,11 +258,13 @@ const ApplicationStatusWidget = () => {
               <p className="font-semibold text-sm">
                 {getStatusLabel(latestApplication.status)}
               </p>
-              <p className="text-xs opacity-80">
-                {latestApplication.position === "student_assistant"
-                  ? "Student Assistant"
-                  : "Student Marshal"}
-              </p>
+              {!isScholar && (
+                <p className="text-xs opacity-80">
+                  {latestApplication.position === "student_assistant"
+                    ? "Student Assistant"
+                    : "Student Marshal"}
+                </p>
+              )}
             </div>
           </div>
 

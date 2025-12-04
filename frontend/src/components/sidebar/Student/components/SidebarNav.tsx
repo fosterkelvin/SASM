@@ -66,7 +66,8 @@ const SidebarNav: React.FC<NavProps> = ({
             disabled={false}
           />
         </li>
-        {/* Show DTR, Schedule, and Leave for deployed trainees OR scholars (but NOT re-applicants) */}
+        {/* Show DTR and Schedule for deployed trainees OR scholars (but NOT re-applicants) */}
+        {/* Show Leave only for deployed scholars (NOT trainees) */}
         {isVerified && (isDeployedToOffice || isScholar) && !isReapplicant && (
           <>
             <li>
@@ -77,14 +78,16 @@ const SidebarNav: React.FC<NavProps> = ({
                 disabled={isEmailUpdateRequired}
               />
             </li>
-            <li>
-              <SidebarItem
-                label="Leave"
-                onClick={handlers.leave}
-                IconComponent={CalendarMinus}
-                disabled={isEmailUpdateRequired}
-              />
-            </li>
+            {isScholar && (
+              <li>
+                <SidebarItem
+                  label="Leave"
+                  onClick={handlers.leave}
+                  IconComponent={CalendarMinus}
+                  disabled={isEmailUpdateRequired}
+                />
+              </li>
+            )}
             <li>
               <SidebarItem
                 label="Schedule"

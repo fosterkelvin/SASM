@@ -100,6 +100,33 @@ const Users: React.FC = () => {
     }
   };
 
+  const handleBlockToggle = async (u: UserRow) => {
+    try {
+      const newBlockedState = !u.blocked;
+
+      // Call API to update user
+      const response = await API.patch(`/users/${u._id}`, {
+        blocked: newBlockedState,
+      });
+
+      console.log("User block status updated:", response.data);
+
+      // Update local state
+      setData((prev) =>
+        prev.map((p) =>
+          p._id === u._id ? { ...p, blocked: newBlockedState } : p
+        )
+      );
+    } catch (err: any) {
+      console.error("Error updating block status:", err);
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to update block status"
+      );
+    }
+  };
+
   const updateSelected = (patch: Partial<UserRow>) => {
     setSelected((s) => (s ? { ...s, ...patch } : s));
   };
@@ -146,7 +173,11 @@ const Users: React.FC = () => {
               <div className="mb-4 text-sm text-gray-600">
                 Found {data.length} users ({filtered.length} after filters)
               </div>
-              <UsersList data={filtered} onOpen={openUser} />
+              <UsersList
+                data={filtered}
+                onOpen={openUser}
+                onBlockToggle={handleBlockToggle}
+              />
             </>
           )}
         </div>

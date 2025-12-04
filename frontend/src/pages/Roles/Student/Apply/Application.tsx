@@ -711,6 +711,73 @@ function Application() {
       </>
     );
   }
+
+  // Check if user is blocked
+  if (user && user.blocked) {
+    return (
+      <>
+        <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">
+          <StudentSidebar onCollapseChange={setIsSidebarCollapsed} />
+          <div
+            className={`flex-1 pt-16 md:pt-0 transition-all duration-300 ${
+              isSidebarCollapsed ? "md:ml-20" : "md:ml-64"
+            }`}
+          >
+            {/* Top header bar - only visible on desktop */}
+            <div
+              className="hidden md:block fixed top-0 right-0 bg-gradient-to-r from-red-600 to-red-700 dark:from-red-800 dark:to-red-900 shadow-lg border-b border-red-200 dark:border-red-800 p-4 md:p-6 z-40 transition-all duration-300"
+              style={{
+                left: isSidebarCollapsed ? "5rem" : "16rem",
+              }}
+            >
+              <h1 className="text-2xl font-bold text-white dark:text-white">
+                Application
+              </h1>
+            </div>
+
+            <div className="p-4 md:p-10 md:pt-24 flex items-center justify-center min-h-screen">
+              <Card className="max-w-2xl w-full mx-4">
+                <CardContent className="p-6 md:p-8 text-center">
+                  <div className="flex flex-col items-center gap-6">
+                    <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                      <AlertTriangle className="w-10 h-10 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div className="space-y-4">
+                      <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+                        Account Blocked
+                      </h1>
+                      <p className="text-lg text-gray-600 dark:text-gray-400 max-w-md">
+                        Your account has been blocked and you cannot submit
+                        applications at this time.
+                      </p>
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                        <div className="text-sm text-red-800 dark:text-red-200">
+                          <strong>What this means:</strong>
+                          <ul className="list-disc list-inside mt-2 text-left">
+                            <li>You cannot submit new applications</li>
+                            <li>You cannot access application forms</li>
+                            <li>
+                              This restriction was set by HR administration
+                            </li>
+                          </ul>
+                          <br />
+                          <strong>Need help?</strong>
+                          <br />
+                          Please contact the HR office for assistance and more
+                          information about your account status.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   if (activeApplication) {
     return (
       <div className="flex min-h-screen bg-gradient-to-br from-red-50 via-white to-red-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900/80">

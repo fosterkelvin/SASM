@@ -12,6 +12,10 @@ export type EvaluationRow = {
     rating?: number;
     comment?: string;
   }[];
+  areasOfStrength?: string;
+  areasOfImprovement?: string;
+  recommendedForNextSemester?: boolean;
+  justification?: string;
 };
 
 type Props = {
@@ -36,6 +40,7 @@ const EvaluationsList: React.FC<Props> = ({ data, onOpen }) => {
             <th className="px-4 py-3">Student</th>
             <th className="px-4 py-3">Scholarship</th>
             <th className="px-4 py-3">Office</th>
+            <th className="px-4 py-3">Recommended</th>
             <th className="px-4 py-3">Submitted</th>
             <th className="px-4 py-3">Actions</th>
           </tr>
@@ -46,6 +51,21 @@ const EvaluationsList: React.FC<Props> = ({ data, onOpen }) => {
               <td className="px-4 py-3">{r.studentName}</td>
               <td className="px-4 py-3">{r.scholarship}</td>
               <td className="px-4 py-3">{r.office}</td>
+              <td className="px-4 py-3">
+                {r.recommendedForNextSemester !== undefined ? (
+                  <span
+                    className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                      r.recommendedForNextSemester
+                        ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
+                        : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"
+                    }`}
+                  >
+                    {r.recommendedForNextSemester ? "Yes" : "No"}
+                  </span>
+                ) : (
+                  <span className="text-gray-400">N/A</span>
+                )}
+              </td>
               <td className="px-4 py-3">
                 {new Date(r.submittedAt).toLocaleString()}
               </td>

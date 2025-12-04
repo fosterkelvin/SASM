@@ -30,7 +30,8 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
   const { user, logout, addToast } = useAuth();
   const navigate = useNavigate();
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const unreadCount = useUnreadNotificationCount();
+  const { data: unreadData } = useUnreadNotificationCount();
+  const unreadCount = unreadData?.unreadCount || 0;
 
   // Fetch user applications to check if any application is accepted
   const { data: userApplicationsData } = useQuery({
@@ -141,14 +142,6 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
 
   const handleApplyClick = () => {
     if (!personalInfoComplete) {
-      const missingFields = getMissingPersonalInfoFields(userData);
-      addToast(
-        `Please complete your personal information before applying. Missing: ${missingFields.join(
-          ", "
-        )}`,
-        "error",
-        6000
-      );
       navigate("/profile");
       setIsOpen(false);
       return;
@@ -215,14 +208,6 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
 
   const handleCollapsedApplyClick = () => {
     if (!personalInfoComplete) {
-      const missingFields = getMissingPersonalInfoFields(userData);
-      addToast(
-        `Please complete your personal information before applying. Missing: ${missingFields.join(
-          ", "
-        )}`,
-        "error",
-        6000
-      );
       navigate("/profile");
       return;
     }
@@ -299,18 +284,19 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
   // Now define menuItems after handlers
   const menuItems = [
     { label: "Dashboard", handler: handleDashboardClick },
-    // Show DTR, Leave, and Schedule if user is a trainee
+    // Show DTR and Schedule for trainees, but NOT Leave
     ...(isTrainee
       ? [
           { label: "DTR", handler: handleDtrClick },
-          { label: "Leave", handler: handleLeaveClick },
           { label: "Schedule", handler: handleScheduleClick },
         ]
       : []),
+    // Show Leave only for scholars, not trainees
+    ...(isScholar ? [{ label: "Leave", handler: handleLeaveClick }] : []),
     { label: "Profile", handler: handleProfileClick },
     { label: "Notifications", handler: handleNotificationsClick },
-    // Show Apply only for students with status 'applicant'
-    ...(user?.status === "applicant" && !hasAcceptedApplication
+    // Show Apply for students who are not scholars, trainees, or re-applicants
+    ...(!isScholar && !isTrainee && user?.status !== "reapplicant"
       ? [{ label: "Apply", handler: handleApplyClick }]
       : []),
     ...(user?.verified
@@ -448,7 +434,7 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
                   unreadCount={unreadCount}
                   isVerified={!!user?.verified}
                   isApplicant={
-                    user?.status === "applicant" || user?.status === "trainee"
+                    !isScholar && !isTrainee && user?.status !== "reapplicant"
                   }
                   isTrainee={isTrainee}
                   isDeployedToOffice={isDeployedToOffice}
@@ -490,7 +476,7 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
               }}
               isVerified={!!user?.verified}
               isApplicant={
-                user?.status === "applicant" || user?.status === "trainee"
+                !isScholar && !isTrainee && user?.status !== "reapplicant"
               }
               isTrainee={isTrainee}
               isDeployedToOffice={isDeployedToOffice}

@@ -69,8 +69,9 @@ const Schedule: React.FC = () => {
           }`}
         >
           <h1 className="text-2xl font-bold text-white ml-4">
-            {((existingSchedule?.scheduleData &&
-              existingSchedule.scheduleData.length > 0) ||
+            {(existingSchedule?.scheduleUrl ||
+              (existingSchedule?.scheduleData &&
+                existingSchedule.scheduleData.length > 0) ||
               (existingSchedule?.dutyHours &&
                 existingSchedule.dutyHours.length > 0)) &&
             !showUploadForm
@@ -91,8 +92,9 @@ const Schedule: React.FC = () => {
                 </p>
               </div>
             </div>
-          ) : ((existingSchedule?.scheduleData &&
-              existingSchedule.scheduleData.length > 0) ||
+          ) : (existingSchedule?.scheduleUrl ||
+              (existingSchedule?.scheduleData &&
+                existingSchedule.scheduleData.length > 0) ||
               (existingSchedule?.dutyHours &&
                 existingSchedule.dutyHours.length > 0)) &&
             !showUploadForm ? (
@@ -184,7 +186,7 @@ const Schedule: React.FC = () => {
                     </div>
                   </div>
                   <ScheduleVisualization
-                    scheduleClasses={existingSchedule.scheduleData}
+                    scheduleClasses={existingSchedule.scheduleData || []}
                     dutyHours={existingSchedule.dutyHours || []}
                   />
                 </CardContent>
