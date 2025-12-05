@@ -103,7 +103,7 @@ const ApplicationManagement = () => {
 
   // Filters and pagination
   const [filters, setFilters] = useState({
-    status: "pending",
+    status: "",
     position: "",
     page: 1,
     limit: 10,

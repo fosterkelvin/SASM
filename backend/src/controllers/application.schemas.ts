@@ -185,6 +185,7 @@ export const updateApplicationStatusSchema = z.object({
 export const getApplicationsSchema = z.object({
   status: z
     .enum([
+      "",
       "pending",
       "under_review",
       "psychometric_scheduled",
@@ -203,7 +204,7 @@ export const getApplicationsSchema = z.object({
       "on_hold",
     ])
     .optional(),
-  position: z.enum(["student_assistant", "student_marshal"]).optional(),
+  position: z.enum(["", "student_assistant", "student_marshal"]).optional(),
   page: z.string().regex(/^\d+$/).transform(Number).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).optional(),
   assignedTo: z.string().optional(),

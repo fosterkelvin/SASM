@@ -522,13 +522,15 @@ export const getAllApplicationsHandler = catchErrors(
         const appObj = app.toObject();
 
         // Find the most recent requirements submission for this user
-        const requirementsSubmission =
-          await RequirementsSubmissionModel.findOne({
-            userID: app.userID._id,
-            status: "submitted",
-          })
-            .sort({ submittedAt: -1 })
-            .limit(1);
+        // Skip if userID is null (deleted user)
+        const requirementsSubmission = app.userID
+          ? await RequirementsSubmissionModel.findOne({
+              userID: app.userID._id,
+              status: "submitted",
+            })
+              .sort({ submittedAt: -1 })
+              .limit(1)
+          : null;
 
         // Add the review status to the application object
         return {
