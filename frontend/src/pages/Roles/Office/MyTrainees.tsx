@@ -20,7 +20,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getOfficeTrainees,
   updateTraineeHoursOffice,
-  scheduleDeploymentInterview,
   acceptDeployment,
   rejectDeployment,
 } from "@/lib/api";
@@ -128,15 +127,8 @@ const MyTrainees = () => {
   const [hoveredRating, setHoveredRating] = useState(0);
 
   // Interview workflow states
-  const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [interviewData, setInterviewData] = useState({
-    deploymentInterviewDate: "",
-    deploymentInterviewTime: "",
-    deploymentInterviewLocation: "",
-    deploymentInterviewWhatToBring: "",
-  });
   const [acceptNotes, setAcceptNotes] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
 
@@ -232,40 +224,6 @@ const MyTrainees = () => {
     });
   };
 
-  // Interview scheduling mutation
-  const scheduleInterviewMutation = useMutation({
-    mutationFn: ({
-      applicationId,
-      data,
-    }: {
-      applicationId: string;
-      data: any;
-    }) => scheduleDeploymentInterview(applicationId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["office-trainees"] });
-      setShowInterviewModal(false);
-      setSelectedTrainee(null);
-      setInterviewData({
-        deploymentInterviewDate: "",
-        deploymentInterviewTime: "",
-        deploymentInterviewLocation: "",
-        deploymentInterviewWhatToBring: "",
-      });
-      showAlert(
-        "Success",
-        "Interview scheduled successfully! The trainee will be notified via email.",
-        "success"
-      );
-    },
-    onError: (error: any) => {
-      showAlert(
-        "Error",
-        error.response?.data?.message || "Failed to schedule interview",
-        "error"
-      );
-    },
-  });
-
   // Accept deployment mutation
   const acceptDeploymentMutation = useMutation({
     mutationFn: ({
@@ -323,66 +281,6 @@ const MyTrainees = () => {
       );
     },
   });
-
-  const handleScheduleInterview = (trainee: any) => {
-    setSelectedTrainee(trainee);
-    setShowInterviewModal(true);
-  };
-
-  const handleSubmitInterview = () => {
-    if (!selectedTrainee) return;
-
-    if (
-      !interviewData.deploymentInterviewDate ||
-      !interviewData.deploymentInterviewTime
-    ) {
-      showAlert(
-        "Validation Error",
-        "Please provide both interview date and time.",
-        "warning"
-      );
-      return;
-    }
-
-    // Validate future date
-    const selectedDate = new Date(interviewData.deploymentInterviewDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (selectedDate < today) {
-      showAlert(
-        "Invalid Date",
-        "Interview date must be in the future.",
-        "warning"
-      );
-      return;
-    }
-
-    // Validate time range (8:00 AM - 5:00 PM)
-    const [hours, minutes] = interviewData.deploymentInterviewTime
-      .split(":")
-      .map(Number);
-    const timeInMinutes = hours * 60 + minutes;
-    const minTime = 8 * 60; // 8:00 AM
-    const maxTime = 17 * 60; // 5:00 PM
-
-    if (timeInMinutes < minTime || timeInMinutes > maxTime) {
-      showAlert(
-        "Invalid Time",
-        "Interview time must be between 8:00 AM and 5:00 PM.",
-        "warning"
-      );
-      return;
-    }
-
-    scheduleInterviewMutation.mutate({
-      applicationId: selectedTrainee._id,
-      data: {
-        ...interviewData,
-        deploymentInterviewMode: "in-person", // Always in-person
-      },
-    });
-  };
 
   const handleAcceptClick = (trainee: any) => {
     setSelectedTrainee(trainee);
@@ -695,15 +593,14 @@ const MyTrainees = () => {
                       </div>
                     )}
 
-                    {/* Pending Interview - Schedule Interview Button */}
+                    {/* Pending Interview - Show waiting message (HR schedules interviews now) */}
                     {trainee.status === "pending_office_interview" && (
-                      <Button
-                        onClick={() => handleScheduleInterview(trainee)}
-                        className="w-full bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white flex items-center justify-center gap-2"
-                      >
-                        <Calendar className="w-4 h-4" />
-                        Schedule Interview
-                      </Button>
+                      <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800/30">
+                        <p className="text-sm text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          Waiting for HR to schedule interview
+                        </p>
+                      </div>
                     )}
 
                     {/* Interview Scheduled - Accept/Reject Buttons */}
@@ -711,16 +608,33 @@ const MyTrainees = () => {
                       <>
                         {trainee.deploymentInterviewDate && (
                           <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800/30">
-                            <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">
-                              Interview Scheduled:
+                            <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-2">
+                              Interview Scheduled by HR:
                             </p>
-                            <p className="text-sm text-gray-700 dark:text-gray-300">
-                              {formatDate(trainee.deploymentInterviewDate)} at{" "}
-                              {trainee.deploymentInterviewTime}
-                            </p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                              Mode: {trainee.deploymentInterviewMode}
-                            </p>
+                            <div className="space-y-1">
+                              <p className="text-sm text-gray-700 dark:text-gray-300">
+                                📅 {formatDate(trainee.deploymentInterviewDate)} at{" "}
+                                {trainee.deploymentInterviewTime}
+                              </p>
+                              {trainee.deploymentInterviewLocation && (
+                                <p className="text-sm text-gray-700 dark:text-gray-300">
+                                  📍 {trainee.deploymentInterviewLocation}
+                                </p>
+                              )}
+                              <p className="text-xs text-gray-600 dark:text-gray-400">
+                                Mode: {trainee.deploymentInterviewMode || "In-person"}
+                              </p>
+                              {trainee.deploymentInterviewWhatToBring && (
+                                <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-700">
+                                  <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                                    What to Bring:
+                                  </p>
+                                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                                    {trainee.deploymentInterviewWhatToBring}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                         <div className="flex gap-2">
@@ -783,141 +697,6 @@ const MyTrainees = () => {
           )}
         </div>
       </div>
-
-      {/* Schedule Interview Modal */}
-      {showInterviewModal && selectedTrainee && (
-        <div className="fixed inset-0 bg-gray-900/20 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border-2 border-yellow-200 dark:border-yellow-800 p-6 w-full max-w-md relative max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => {
-                setShowInterviewModal(false);
-                setSelectedTrainee(null);
-              }}
-              className="absolute top-4 right-4 p-2 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/30 transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            </button>
-
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-yellow-600 to-yellow-700 bg-clip-text text-transparent mb-6">
-              Schedule Deployment Interview
-            </h2>
-
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                Trainee
-              </p>
-              <p className="font-semibold text-gray-900 dark:text-white">
-                {selectedTrainee.userID?.firstname}{" "}
-                {selectedTrainee.userID?.lastname}
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="interview-date">
-                  Interview Date <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="interview-date"
-                  type="date"
-                  min={new Date().toISOString().split("T")[0]}
-                  value={interviewData.deploymentInterviewDate}
-                  onChange={(e) =>
-                    setInterviewData({
-                      ...interviewData,
-                      deploymentInterviewDate: e.target.value,
-                    })
-                  }
-                  className="mt-1"
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Must be a future date
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="interview-time">
-                  Interview Time <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="interview-time"
-                  type="time"
-                  min="08:00"
-                  max="17:00"
-                  value={interviewData.deploymentInterviewTime}
-                  onChange={(e) =>
-                    setInterviewData({
-                      ...interviewData,
-                      deploymentInterviewTime: e.target.value,
-                    })
-                  }
-                  className="mt-1"
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Between 8:00 AM and 5:00 PM
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="interview-location">Location</Label>
-                <Input
-                  id="interview-location"
-                  value={interviewData.deploymentInterviewLocation}
-                  onChange={(e) =>
-                    setInterviewData({
-                      ...interviewData,
-                      deploymentInterviewLocation: e.target.value,
-                    })
-                  }
-                  placeholder="e.g., Office Room 101"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="interview-what-to-bring">
-                  What to Bring (Optional)
-                </Label>
-                <Textarea
-                  id="interview-what-to-bring"
-                  rows={3}
-                  value={interviewData.deploymentInterviewWhatToBring}
-                  onChange={(e) =>
-                    setInterviewData({
-                      ...interviewData,
-                      deploymentInterviewWhatToBring: e.target.value,
-                    })
-                  }
-                  placeholder="e.g., Resume, ID, pen, notebook..."
-                  className="mt-1"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4 mt-6">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowInterviewModal(false);
-                  setSelectedTrainee(null);
-                }}
-                className="border-yellow-200 hover:bg-yellow-50 dark:border-yellow-800 dark:hover:bg-yellow-900/20"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSubmitInterview}
-                disabled={scheduleInterviewMutation.isPending}
-                className="bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white"
-              >
-                {scheduleInterviewMutation.isPending
-                  ? "Scheduling..."
-                  : "Schedule Interview"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Accept Deployment Modal */}
       {showAcceptModal && selectedTrainee && (

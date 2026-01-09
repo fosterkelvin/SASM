@@ -329,9 +329,9 @@ const EnhancedApplicationManagement = () => {
       await setAsTrainee(selectedApplication._id, data);
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       setTraineeModal(false);
-      toast.success("Set as trainee successfully!");
+      toast.success("Deployed as trainee successfully!");
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to set as trainee");
+      toast.error(error.response?.data?.message || "Failed to deploy as trainee");
     } finally {
       setWorkflowLoading(false);
     }
@@ -498,7 +498,7 @@ const EnhancedApplicationManagement = () => {
             className="bg-teal-600 hover:bg-teal-700 text-white"
           >
             <Users className="h-4 w-4 mr-1" />
-            Set as Trainee
+            Deploy as Trainee
           </Button>
         );
         break;

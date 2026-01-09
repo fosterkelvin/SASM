@@ -57,7 +57,7 @@ const FileUploadSection: React.FC<FileUploadSectionProps> = ({
               Upload 2x2 Picture *
             </span>
             <p className="text-xs text-gray-500 mt-1">
-              Accepted: .jpg, .jpeg, .png
+              Accepted: .jpg, .jpeg, .png (Max 10MB)
             </p>
           </label>
         )}

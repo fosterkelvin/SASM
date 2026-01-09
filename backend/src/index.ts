@@ -29,6 +29,7 @@ import archivedApplicationRoutes from "./routes/archivedApplication.route";
 import reapplicationRoutes from "./routes/reapplication.route";
 import serviceDurationRoutes from "./routes/serviceDuration.routes";
 import masterlistRoutes from "./routes/masterlist.route";
+import scholarRecordRoutes from "./routes/scholarRecord.route";
 
 const app = express();
 
@@ -129,6 +130,8 @@ app.use("/dashboard", dashboardRoutes);
 app.use("/service-duration", serviceDurationRoutes);
 // Masterlist data for PDF generation
 app.use("/masterlist", authenticate, masterlistRoutes);
+// Scholar records (permanent history of deployed scholars)
+app.use("/scholar-records", authenticate, scholarRecordRoutes);
 
 app.use(errorHandler);
 

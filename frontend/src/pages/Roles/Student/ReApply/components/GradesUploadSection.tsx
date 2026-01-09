@@ -32,10 +32,10 @@ const GradesUploadSection: React.FC<Props> = ({ data, onFileChange }) => {
       return;
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      alert("File size must be less than 5MB!");
+      alert("File size must be less than 10MB!");
       return;
     }
 

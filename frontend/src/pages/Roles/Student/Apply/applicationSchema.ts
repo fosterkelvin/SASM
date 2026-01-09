@@ -19,12 +19,17 @@ export const applicationSchema = z.object({
   homeAddress: z.string().min(5, "Home address is required"),
   homeStreet: z.string().optional(),
   homeBarangay: z.string().min(2, "Barangay is required"),
+  homeBarangayCode: z.string().optional(), // PSGC code for barangay
   homeCity: z.string().min(2, "City/Municipality is required"),
+  homeCityCode: z.string().optional(), // PSGC code for city/municipality
   homeProvince: z.string().min(2, "Province/State is required"),
+  homeProvinceCode: z.string().optional(), // PSGC code for province
   baguioAddress: z.string().min(5, "Baguio/Benguet address is required"),
   baguioStreet: z.string().optional(),
   baguioBarangay: z.string().min(2, "Barangay is required"),
+  baguioBarangayCode: z.string().optional(), // PSGC code for barangay
   baguioCity: z.string().min(2, "City/Municipality is required"),
+  baguioCityCode: z.string().optional(), // PSGC code for city/municipality
   homeContact: z.string().min(10, "Home contact number is required"),
   baguioContact: z
     .string()
@@ -305,7 +310,7 @@ export const applicationSchemaWithConditional = applicationSchema.superRefine(
       }
     };
 
-    // Validate year ranges
+    // Validate year ranges (From must be strictly less than To)
     const validateYearRange = (
       fromField: string,
       toField: string,
@@ -316,7 +321,7 @@ export const applicationSchemaWithConditional = applicationSchema.superRefine(
       if (fromValue && toValue) {
         const fromYear = parseInt(fromValue);
         const toYear = parseInt(toValue);
-        if (!isNaN(fromYear) && !isNaN(toYear) && fromYear > toYear) {
+        if (!isNaN(fromYear) && !isNaN(toYear) && fromYear >= toYear) {
           ctx.addIssue({
             path: [toField],
             message: `${level} end year must be after start year`,
@@ -360,6 +365,19 @@ export const applicationSchemaWithConditional = applicationSchema.superRefine(
       "High school"
     );
 
+    // Validate chronological order: High School must start on or after Elementary ends
+    if (data.elementaryTo && data.highSchoolFrom) {
+      const elemTo = parseInt(data.elementaryTo);
+      const hsFrom = parseInt(data.highSchoolFrom);
+      if (!isNaN(elemTo) && !isNaN(hsFrom) && hsFrom < elemTo) {
+        ctx.addIssue({
+          path: ["highSchoolFrom"],
+          message: `High school start year must be on or after Elementary end year (${elemTo})`,
+          code: z.ZodIssueCode.custom,
+        });
+      }
+    }
+
     // College validation (optional)
     if (data.collegeFrom) {
       validateYearField("collegeFrom", data.collegeFrom, "College start year");
@@ -375,6 +393,19 @@ export const applicationSchemaWithConditional = applicationSchema.superRefine(
         data.collegeTo,
         "College"
       );
+    }
+
+    // Validate chronological order: College must start on or after High School ends
+    if (data.highSchoolTo && data.collegeFrom) {
+      const hsTo = parseInt(data.highSchoolTo);
+      const colFrom = parseInt(data.collegeFrom);
+      if (!isNaN(hsTo) && !isNaN(colFrom) && colFrom < hsTo) {
+        ctx.addIssue({
+          path: ["collegeFrom"],
+          message: `College start year must be on or after High School end year (${hsTo})`,
+          code: z.ZodIssueCode.custom,
+        });
+      }
     }
 
     // Others validation (optional)

@@ -644,7 +644,7 @@ export const InterviewResultModal = ({
   );
 };
 
-// Set as Trainee Modal
+// Deploy as Trainee Modal
 interface SetAsTraineeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -693,7 +693,7 @@ export const SetAsTraineeModal = ({
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>
             <Users className="h-5 w-5 inline mr-2" />
-            Set as Trainee
+            Deploy as Trainee
           </CardTitle>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
@@ -786,10 +786,8 @@ export const SetAsTraineeModal = ({
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>Note:</strong> Once set as trainee, you'll need to
-                regularly update their completed hours. The system will
-                automatically mark training as complete when they reach the
-                required hours.
+                <strong>Note:</strong> Once deployed as trainee, they will appear in
+                Trainee Management. HR can then schedule the office interview.
               </p>
             </div>
 
@@ -807,7 +805,7 @@ export const SetAsTraineeModal = ({
                 disabled={loading}
                 className="bg-teal-600 hover:bg-teal-700"
               >
-                {loading ? "Setting..." : "Set as Trainee"}
+                {loading ? "Deploying..." : "Deploy as Trainee"}
               </Button>
             </div>
           </form>

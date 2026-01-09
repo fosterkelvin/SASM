@@ -134,7 +134,7 @@ const Requirements: React.FC = () => {
     return `${start}...${end}${ext}`;
   };
 
-  const MAX_BYTES = 5 * 1024 * 1024; // 5 MB global limit
+  const MAX_BYTES = 10 * 1024 * 1024; // 10 MB global limit
 
   // Handler to import lines (used by UploadArea or localStorage restore)
   const importLines = (lines: string[]) => {
@@ -260,11 +260,11 @@ const Requirements: React.FC = () => {
     if (!files || files.length === 0) return;
     const file = files[0];
 
-    // Per-item limits: Letter of Application limited to 5MB, others up to 25MB
+    // Per-item limits: Letter of Application limited to 10MB, others up to 25MB
     const curItem = items.find((it) => it.id === id);
     const MAX_BYTES =
       curItem && curItem.text === "Letter of Application"
-        ? 5 * 1024 * 1024
+        ? 10 * 1024 * 1024
         : 25 * 1024 * 1024;
     if (file.size > MAX_BYTES) {
       setErrors((prev) => ({
@@ -667,7 +667,7 @@ const Requirements: React.FC = () => {
       if (oversizedIds.length > 0) {
         const newErrors: Record<string, string> = {};
         oversizedIds.forEach((id) => {
-          newErrors[id] = "File too large. Maximum allowed size is 5 MB.";
+          newErrors[id] = "File too large. Maximum allowed size is 10 MB.";
         });
         setErrors((prev) => ({ ...prev, ...newErrors }));
         setSubmitSuccess(null);

@@ -145,7 +145,41 @@ const TraineeManagement = () => {
     requiredHours: "130",
     completedHours: "",
     traineeNotes: "",
+    // Office interview scheduling fields
+    deploymentInterviewDate: "",
+    deploymentInterviewTime: "",
+    deploymentInterviewLocation: "",
+    deploymentInterviewNotes: "",
+    deploymentInterviewWhatToBring: "",
   });
+
+  // Predefined options for autocomplete dropdowns
+  const predefinedLocations = [
+    "HR Office",
+    "Administration Building",
+    "Conference Room A",
+    "Conference Room B",
+    "Meeting Room 1",
+    "Meeting Room 2",
+    "Main Office",
+    "SIT Building",
+    "CITE Building",
+    "Library",
+    "Student Center",
+  ];
+
+  const predefinedWhatToBring = [
+    "Valid ID",
+    "Valid ID, Resume",
+    "Valid ID, Resume, Portfolio",
+    "Valid ID, Resume, Certificate of Grades",
+    "Valid ID, 2x2 Photo, Resume",
+    "Valid ID, Pen, Resume",
+    "Pen and Paper",
+    "School ID",
+    "School ID, Resume",
+    "Government-issued ID",
+  ];
 
   // DTR and Schedule data
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -227,6 +261,11 @@ const TraineeManagement = () => {
       requiredHours: "130",
       completedHours: "",
       traineeNotes: "",
+      deploymentInterviewDate: "",
+      deploymentInterviewTime: "",
+      deploymentInterviewLocation: "",
+      deploymentInterviewNotes: "",
+      deploymentInterviewWhatToBring: "",
     });
   };
 
@@ -239,6 +278,12 @@ const TraineeManagement = () => {
       requiredHours: "130",
       completedHours: trainee.dtrCompletedHours?.toString() || "0",
       traineeNotes: trainee.traineeNotes || "",
+      // Load existing interview data if any
+      deploymentInterviewDate: trainee.deploymentInterviewDate || "",
+      deploymentInterviewTime: trainee.deploymentInterviewTime || "",
+      deploymentInterviewLocation: trainee.deploymentInterviewLocation || "",
+      deploymentInterviewNotes: trainee.deploymentInterviewNotes || "",
+      deploymentInterviewWhatToBring: trainee.deploymentInterviewWhatToBring || "",
     });
     setShowDeployModal(true);
   };
@@ -334,6 +379,15 @@ const TraineeManagement = () => {
       data.traineeSupervisor = deploymentData.traineeSupervisor;
     if (deploymentData.traineeNotes)
       data.traineeNotes = deploymentData.traineeNotes;
+    
+    // Include interview scheduling fields if provided
+    if (deploymentData.deploymentInterviewDate) {
+      data.deploymentInterviewDate = deploymentData.deploymentInterviewDate;
+      data.deploymentInterviewTime = deploymentData.deploymentInterviewTime;
+      data.deploymentInterviewLocation = deploymentData.deploymentInterviewLocation;
+      data.deploymentInterviewNotes = deploymentData.deploymentInterviewNotes;
+      data.deploymentInterviewWhatToBring = deploymentData.deploymentInterviewWhatToBring;
+    }
 
     // Check if already deployed (update) or new deployment
     if (selectedTrainee.traineeOffice) {
@@ -528,7 +582,61 @@ const TraineeManagement = () => {
                           {trainee.userID?.email}
                         </p>
                       </div>
+                      {/* Status Badge */}
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        trainee.status === "office_interview_scheduled"
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                          : trainee.status === "pending_office_interview"
+                            ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                            : trainee.status === "trainee"
+                              ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                              : trainee.status === "training_completed"
+                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                                : "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400"
+                      }`}>
+                        {trainee.status === "office_interview_scheduled"
+                          ? "Interview Scheduled"
+                          : trainee.status === "pending_office_interview"
+                            ? "Pending Interview"
+                            : trainee.status === "trainee"
+                              ? "Active Trainee"
+                              : trainee.status === "training_completed"
+                                ? "Training Completed"
+                                : trainee.status?.replace(/_/g, " ")}
+                      </span>
                     </div>
+
+                    {/* Scheduled Interview Info */}
+                    {trainee.status === "office_interview_scheduled" && trainee.deploymentInterviewDate && (
+                      <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800/30">
+                        <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-2">
+                          📅 Office Interview Scheduled:
+                        </p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {formatDate(trainee.deploymentInterviewDate)} at {trainee.deploymentInterviewTime}
+                        </p>
+                        {trainee.deploymentInterviewLocation && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            📍 {trainee.deploymentInterviewLocation}
+                          </p>
+                        )}
+                        {trainee.deploymentInterviewWhatToBring && (
+                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                            What to bring: {trainee.deploymentInterviewWhatToBring}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Pending Interview Notice */}
+                    {trainee.status === "pending_office_interview" && (
+                      <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800/30">
+                        <p className="text-sm text-yellow-700 dark:text-yellow-400 flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          Interview not yet scheduled
+                        </p>
+                      </div>
+                    )}
 
                     <div className="space-y-3 mb-4">
                       <div className="flex items-center gap-2 text-sm">
@@ -851,6 +959,111 @@ const TraineeManagement = () => {
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800"
                   placeholder="Any additional notes about the deployment..."
                 />
+              </div>
+
+              {/* Office Interview Scheduling Section */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-red-600" />
+                  Schedule Office Interview
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Schedule an interview with the office where the trainee will be deployed.
+                </p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="interviewDate">Interview Date</Label>
+                    <Input
+                      id="interviewDate"
+                      type="date"
+                      value={deploymentData.deploymentInterviewDate}
+                      onChange={(e) =>
+                        setDeploymentData({
+                          ...deploymentData,
+                          deploymentInterviewDate: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="interviewTime">Interview Time</Label>
+                    <Input
+                      id="interviewTime"
+                      type="time"
+                      value={deploymentData.deploymentInterviewTime}
+                      onChange={(e) =>
+                        setDeploymentData({
+                          ...deploymentData,
+                          deploymentInterviewTime: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <Label htmlFor="interviewLocation">Location</Label>
+                  <input
+                    type="text"
+                    id="interviewLocation"
+                    list="deploymentLocationList"
+                    value={deploymentData.deploymentInterviewLocation}
+                    onChange={(e) =>
+                      setDeploymentData({
+                        ...deploymentData,
+                        deploymentInterviewLocation: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800"
+                    placeholder="Select or type a location..."
+                  />
+                  <datalist id="deploymentLocationList">
+                    {predefinedLocations.map((location, index) => (
+                      <option key={index} value={location} />
+                    ))}
+                  </datalist>
+                </div>
+
+                <div className="mt-4">
+                  <Label htmlFor="whatToBring">What to Bring (Optional)</Label>
+                  <input
+                    type="text"
+                    id="whatToBring"
+                    list="deploymentWhatToBringList"
+                    value={deploymentData.deploymentInterviewWhatToBring}
+                    onChange={(e) =>
+                      setDeploymentData({
+                        ...deploymentData,
+                        deploymentInterviewWhatToBring: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800"
+                    placeholder="Select or type what to bring..."
+                  />
+                  <datalist id="deploymentWhatToBringList">
+                    {predefinedWhatToBring.map((item, index) => (
+                      <option key={index} value={item} />
+                    ))}
+                  </datalist>
+                </div>
+
+                <div className="mt-4">
+                  <Label htmlFor="interviewNotes">Interview Notes (Optional)</Label>
+                  <textarea
+                    id="interviewNotes"
+                    rows={2}
+                    value={deploymentData.deploymentInterviewNotes}
+                    onChange={(e) =>
+                      setDeploymentData({
+                        ...deploymentData,
+                        deploymentInterviewNotes: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800"
+                    placeholder="Any additional instructions for the interview..."
+                  />
+                </div>
               </div>
             </div>
 

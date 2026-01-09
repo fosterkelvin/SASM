@@ -494,6 +494,12 @@ export const deployTraineeHandler = catchErrors(
       traineeEndDate,
       // requiredHours is ignored; we use DEFAULT_REQUIRED_HOURS
       traineeNotes,
+      // Interview scheduling fields (HR sets these when deploying)
+      deploymentInterviewDate,
+      deploymentInterviewTime,
+      deploymentInterviewLocation,
+      deploymentInterviewNotes,
+      deploymentInterviewWhatToBring,
     } = req.body;
 
     const application = await ApplicationModel.findById(applicationId);
@@ -621,13 +627,32 @@ export const deployTraineeHandler = catchErrors(
       application.requiredHours = DEFAULT_REQUIRED_HOURS;
       application.completedHours = 0;
       application.traineeNotes = traineeNotes || "";
+      
+      // Set interview scheduling fields (HR sets these when deploying)
+      if (deploymentInterviewDate) {
+        application.deploymentInterviewDate = deploymentInterviewDate;
+        application.deploymentInterviewTime = deploymentInterviewTime || "";
+        application.deploymentInterviewLocation = deploymentInterviewLocation || "";
+        application.deploymentInterviewMode = "in-person"; // Always in-person
+        application.deploymentInterviewNotes = deploymentInterviewNotes || "";
+        application.deploymentInterviewWhatToBring = deploymentInterviewWhatToBring || "";
+        // If interview is scheduled, set status to office_interview_scheduled
+        application.status = "office_interview_scheduled";
+      }
     }
 
     // Update student's user status
     const student = await UserModel.findById(application.userID);
-    const targetUserStatus = isScholar ? "active" : "pending_office_interview";
+    // If interview is scheduled, the status should reflect that
+    const hasScheduledInterview = !!(deploymentInterviewDate && !isScholar);
+    const targetUserStatus = isScholar 
+      ? "active" 
+      : hasScheduledInterview 
+        ? "office_interview_scheduled" 
+        : "pending_office_interview";
     console.log(`🔍 Updating student status to ${targetUserStatus}:`, {
       isScholar,
+      hasScheduledInterview,
     });
     console.log("- Student found:", !!student);
     console.log("- Student ID:", application.userID);
@@ -641,13 +666,24 @@ export const deployTraineeHandler = catchErrors(
     }
 
     // Add timeline entry
-    const newStatus = isScholar ? "accepted" : "pending_office_interview";
-    const actionNotes = isScholar
-      ? `Scholar deployed to ${traineeOffice}${traineeNotes ? `. Notes: ${traineeNotes}` : ""}`
-      : `Deployed to ${traineeOffice}. Pending office interview. Required hours: ${DEFAULT_REQUIRED_HOURS}`;
+    const newStatus = isScholar 
+      ? "accepted" 
+      : hasScheduledInterview 
+        ? "office_interview_scheduled" 
+        : "pending_office_interview";
+    
+    // Build action notes based on whether interview is scheduled
+    let actionNotes: string;
+    if (isScholar) {
+      actionNotes = `Scholar deployed to ${traineeOffice}${traineeNotes ? `. Notes: ${traineeNotes}` : ""}`;
+    } else if (hasScheduledInterview) {
+      actionNotes = `Deployed to ${traineeOffice}. Office interview scheduled for ${deploymentInterviewDate} at ${deploymentInterviewTime}. Required hours: ${DEFAULT_REQUIRED_HOURS}`;
+    } else {
+      actionNotes = `Deployed to ${traineeOffice}. Pending office interview. Required hours: ${DEFAULT_REQUIRED_HOURS}`;
+    }
 
     const timelineEntry = {
-      action: isScholar ? "scholar_deployed" : "deployed_to_office",
+      action: isScholar ? "scholar_deployed" : hasScheduledInterview ? "deployed_interview_scheduled" : "deployed_to_office",
       performedBy: userID,
       performedByName: hrName,
       timestamp: new Date(),
@@ -674,11 +710,18 @@ export const deployTraineeHandler = catchErrors(
 
       const notificationTitle = isScholar
         ? `New Scholar Deployed to ${traineeOffice}`
-        : `New Trainee Deployed to ${traineeOffice}`;
+        : hasScheduledInterview
+          ? `New Trainee Deployed with Interview Scheduled`
+          : `New Trainee Deployed to ${traineeOffice}`;
 
-      const notificationMessage = isScholar
-        ? `${studentName} has been deployed to your office as a Scholar (${application.position}).${traineeNotes ? ` Notes: ${traineeNotes}` : ""}`
-        : `${studentName} has been deployed to your office as a Trainee and is pending office interview. Required hours: ${DEFAULT_REQUIRED_HOURS}.${traineeNotes ? ` Notes: ${traineeNotes}` : ""}`;
+      let notificationMessage: string;
+      if (isScholar) {
+        notificationMessage = `${studentName} has been deployed to your office as a Scholar (${application.position}).${traineeNotes ? ` Notes: ${traineeNotes}` : ""}`;
+      } else if (hasScheduledInterview) {
+        notificationMessage = `${studentName} has been deployed to your office as a Trainee. Interview scheduled for ${deploymentInterviewDate} at ${deploymentInterviewTime}${deploymentInterviewLocation ? ` at ${deploymentInterviewLocation}` : ""}. Please accept or reject the deployment.`;
+      } else {
+        notificationMessage = `${studentName} has been deployed to your office as a Trainee and is pending office interview. Required hours: ${DEFAULT_REQUIRED_HOURS}.${traineeNotes ? ` Notes: ${traineeNotes}` : ""}`;
+      }
 
       // Create notification for each office user
       const notificationPromises = officeUsers.map((officeUser) =>
@@ -703,6 +746,37 @@ export const deployTraineeHandler = catchErrors(
       // Don't fail the deployment if notifications fail
     }
 
+    // Send email to trainee if interview was scheduled
+    if (hasScheduledInterview && student && student.email) {
+      try {
+        const { sendMail } = require("../utils/sendMail");
+        const {
+          getDeploymentInterviewEmailTemplate,
+        } = require("../utils/emailTemplate");
+
+        const applicantName = `${student.firstname} ${student.lastname}`;
+        const emailTemplate = getDeploymentInterviewEmailTemplate(
+          applicantName,
+          traineeOffice,
+          deploymentInterviewDate,
+          deploymentInterviewTime,
+          deploymentInterviewLocation,
+          deploymentInterviewWhatToBring
+        );
+
+        await sendMail({
+          to: student.email,
+          subject: emailTemplate.subject,
+          text: emailTemplate.text,
+          html: emailTemplate.html,
+        });
+        console.log(`✅ Interview email sent to ${student.email}`);
+      } catch (emailError) {
+        console.error("❌ Failed to send interview email:", emailError);
+        // Don't fail the deployment if email fails
+      }
+    }
+
     // Populate for response
     await application.populate("userID", "firstname lastname email");
     await application.populate("traineeSupervisor", "firstname lastname email");
@@ -710,7 +784,9 @@ export const deployTraineeHandler = catchErrors(
     return res.status(OK).json({
       message: isScholar
         ? "Scholar deployed successfully"
-        : "Trainee deployed successfully",
+        : hasScheduledInterview
+          ? "Trainee deployed and interview scheduled successfully"
+          : "Trainee deployed successfully",
       application,
     });
   }
@@ -730,6 +806,12 @@ export const updateTraineeDeploymentHandler = catchErrors(
       completedHours,
       traineeNotes,
       traineePerformanceRating,
+      // Interview scheduling fields
+      deploymentInterviewDate,
+      deploymentInterviewTime,
+      deploymentInterviewLocation,
+      deploymentInterviewNotes,
+      deploymentInterviewWhatToBring,
     } = req.body;
 
     // First check if this is a Scholar ID (for scholars created via re-application)
@@ -770,9 +852,11 @@ export const updateTraineeDeploymentHandler = catchErrors(
     appAssert(
       application.status === "trainee" ||
         application.status === "training_completed" ||
-        application.status === "accepted",
+        application.status === "accepted" ||
+        application.status === "pending_office_interview" ||
+        application.status === "office_interview_scheduled",
       BAD_REQUEST,
-      "Application must be in trainee, training_completed, or accepted status"
+      "Application must be in trainee, training_completed, accepted, pending_office_interview, or office_interview_scheduled status"
     );
 
     // Get HR user info for timeline
@@ -874,6 +958,88 @@ export const updateTraineeDeploymentHandler = catchErrors(
       if (traineeNotes !== undefined) application.traineeNotes = traineeNotes;
       if (traineePerformanceRating !== undefined)
         application.traineePerformanceRating = traineePerformanceRating;
+      
+      // Update interview scheduling fields if provided (check for truthy value, not just !== undefined)
+      if (deploymentInterviewDate) {
+        const previousInterviewDate = application.deploymentInterviewDate;
+        
+        application.deploymentInterviewDate = deploymentInterviewDate;
+        application.deploymentInterviewTime = deploymentInterviewTime || "";
+        application.deploymentInterviewLocation = deploymentInterviewLocation || "";
+        application.deploymentInterviewMode = "in-person"; // Always in-person
+        application.deploymentInterviewNotes = deploymentInterviewNotes || "";
+        application.deploymentInterviewWhatToBring = deploymentInterviewWhatToBring || "";
+        
+        // If interview date is set and status is pending_office_interview, update to scheduled
+        if (application.status === "pending_office_interview") {
+          application.status = "office_interview_scheduled";
+          
+          // Update student's user status too
+          const student = await UserModel.findById(application.userID);
+          if (student) {
+            student.status = "office_interview_scheduled";
+            await student.save();
+          }
+          
+          // Add timeline entry for interview scheduling
+          const timelineEntry = {
+            action: "office_interview_scheduled",
+            performedBy: userID,
+            performedByName: hrName,
+            timestamp: new Date(),
+            previousStatus: "pending_office_interview",
+            newStatus: "office_interview_scheduled",
+            notes: `Office interview scheduled for ${deploymentInterviewDate} at ${deploymentInterviewTime}${deploymentInterviewLocation ? ` at ${deploymentInterviewLocation}` : ""}`,
+          };
+          application.timeline = application.timeline || [];
+          application.timeline.push(timelineEntry as any);
+        } else if (application.status === "office_interview_scheduled" && previousInterviewDate !== deploymentInterviewDate) {
+          // Interview was rescheduled
+          const timelineEntry = {
+            action: "office_interview_rescheduled",
+            performedBy: userID,
+            performedByName: hrName,
+            timestamp: new Date(),
+            previousStatus: "office_interview_scheduled",
+            newStatus: "office_interview_scheduled",
+            notes: `Office interview rescheduled to ${deploymentInterviewDate} at ${deploymentInterviewTime}${deploymentInterviewLocation ? ` at ${deploymentInterviewLocation}` : ""}`,
+          };
+          application.timeline = application.timeline || [];
+          application.timeline.push(timelineEntry as any);
+        }
+        
+        // Send email to trainee about the scheduled/rescheduled interview
+        try {
+          const student = await UserModel.findById(application.userID);
+          if (student && student.email) {
+            const { sendMail } = require("../utils/sendMail");
+            const {
+              getDeploymentInterviewEmailTemplate,
+            } = require("../utils/emailTemplate");
+
+            const applicantName = `${student.firstname} ${student.lastname}`;
+            const emailTemplate = getDeploymentInterviewEmailTemplate(
+              applicantName,
+              application.traineeOffice,
+              deploymentInterviewDate,
+              deploymentInterviewTime,
+              deploymentInterviewLocation,
+              deploymentInterviewWhatToBring
+            );
+
+            await sendMail({
+              to: student.email,
+              subject: emailTemplate.subject,
+              text: emailTemplate.text,
+              html: emailTemplate.html,
+            });
+            console.log(`✅ Interview email sent to ${student.email}`);
+          }
+        } catch (emailError) {
+          console.error("❌ Failed to send interview email:", emailError);
+          // Don't fail the update if email fails
+        }
+      }
     }
 
     // Check if training is completed

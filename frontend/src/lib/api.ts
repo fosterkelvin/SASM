@@ -1076,6 +1076,54 @@ export const getArchivedStats = async () => {
   return response.data;
 };
 
+// Scholar Records API (permanent scholar deployment history)
+export const getScholarRecords = async (params?: {
+  semesterYear?: string;
+  search?: string;
+  scholarType?: string;
+  office?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.semesterYear)
+    searchParams.append("semesterYear", params.semesterYear);
+  if (params?.search) searchParams.append("search", params.search);
+  if (params?.scholarType)
+    searchParams.append("scholarType", params.scholarType);
+  if (params?.office) searchParams.append("office", params.office);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+
+  const response = await API.get(`/scholar-records?${searchParams.toString()}`);
+  return response.data;
+};
+
+export const getScholarRecordSemesterYears = async () => {
+  const response = await API.get("/scholar-records/semester-years");
+  return response.data;
+};
+
+export const getScholarRecordOffices = async () => {
+  const response = await API.get("/scholar-records/offices");
+  return response.data;
+};
+
+export const getScholarRecordById = async (id: string) => {
+  const response = await API.get(`/scholar-records/${id}`);
+  return response.data;
+};
+
+export const getScholarRecordStats = async () => {
+  const response = await API.get("/scholar-records/stats");
+  return response.data;
+};
+
+export const getScholarRecordsByUser = async (userId: string) => {
+  const response = await API.get(`/scholar-records/user/${userId}`);
+  return response.data;
+};
+
 // Masterlist
 export const getMasterlistData = async () => {
   const response = await API.get("/masterlist");

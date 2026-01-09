@@ -38,7 +38,7 @@ export default function useCertificatesUpload() {
     setUploadedCertificates({ certificates: [] });
   }, []);
 
-  const MAX_CERTIFICATE_SIZE_MB = 5; // 5MB limit
+  const MAX_CERTIFICATE_SIZE_MB = 10; // 10MB limit
   const handleCertificatesUpload = useCallback((files: FileList) => {
     const newFiles = Array.from(files);
     const validFiles: File[] = [];

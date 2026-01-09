@@ -30,7 +30,7 @@ const CertificatesSection: React.FC<CertificatesSectionProps> = ({
               Upload Certificates
             </span>
             <span className="text-xs text-gray-500 dark:text-gray-400">
-              Accepted: .jpg, .jpeg, .png, .pdf. You may upload multiple certificates.
+              Accepted: .jpg, .jpeg, .png, .pdf (Max 10MB per file). You may upload multiple certificates.
             </span>
             <input
               id="certificates-upload"

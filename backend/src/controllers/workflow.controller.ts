@@ -435,9 +435,9 @@ export const setAsTraineeHandler = catchErrors(
     appAssert(application, NOT_FOUND, "Application not found");
 
     appAssert(
-      application.status === "interview_passed",
+      application.status === "interview_passed" || application.status === "interview_failed",
       BAD_REQUEST,
-      "Applicant must pass interview before being set as trainee"
+      "Applicant must complete interview before being deployed as trainee"
     );
 
     appAssert(traineeStartDate, BAD_REQUEST, "Start date is required");
@@ -461,7 +461,7 @@ export const setAsTraineeHandler = catchErrors(
       timestamp: new Date(),
       previousStatus,
       newStatus: "trainee",
-      notes: `Set as trainee. Required hours: ${DEFAULT_REQUIRED_HOURS}. Start date: ${traineeStartDate}`,
+      notes: `Deployed as trainee. Required hours: ${DEFAULT_REQUIRED_HOURS}. Start date: ${traineeStartDate}`,
     } as any);
 
     await application.save();
@@ -476,8 +476,8 @@ export const setAsTraineeHandler = catchErrors(
       if (applicant && applicant._id) {
         await createNotification({
           userID: String(applicant._id),
-          title: "Welcome! You're now a Trainee",
-          message: `Congratulations! You have been set as a trainee. You need to complete ${DEFAULT_REQUIRED_HOURS} hours starting from ${traineeStartDate}. ${
+          title: "Welcome! You've been Deployed as Trainee",
+          message: `Congratulations! You have been deployed as a trainee. You need to complete ${DEFAULT_REQUIRED_HOURS} hours starting from ${traineeStartDate}. ${
             traineeOffice ? `Office: ${traineeOffice}` : ""
           }`,
           type: "success",
@@ -489,7 +489,7 @@ export const setAsTraineeHandler = catchErrors(
     }
 
     return res.status(OK).json({
-      message: "Applicant set as trainee successfully",
+      message: "Applicant deployed as trainee successfully",
       application,
     });
   }

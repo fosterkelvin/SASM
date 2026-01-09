@@ -5,8 +5,10 @@ import OfficeProfileModel from "../models/officeProfile.model";
 import ApplicationModel from "../models/application.model";
 import ReApplicationModel from "../models/reapplication.model";
 import ArchivedApplicationModel from "../models/archivedApplication.model";
+import ScholarRecordModel from "../models/scholarRecord.model";
 import ScheduleModel from "../models/schedule.model";
 import ScholarModel from "../models/scholar.model";
+import DTRModel from "../models/dtr.model";
 import appAssert from "../utils/appAssert";
 import catchErrors from "../utils/catchErrors";
 
@@ -204,11 +206,72 @@ export const resetScholarsToApplicantsHandler = catchErrors(
       month >= 8 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
     const semesterYear = `${academicYear} ${semester} Semester`;
 
-    // Archive all accepted applications
-    const archivedApplications = acceptedApplications.map((app) => ({
+    // IMPORTANT: Save deployed scholars to ScholarRecords (permanent records)
+    // These are accepted/deployed scholars that should NOT be deleted
+    console.log("Creating permanent scholar records for deployed scholars...");
+    const scholarRecords = [];
+
+    for (const scholar of activeScholars) {
+      // Find the corresponding application
+      const application = await ApplicationModel.findOne({
+        userID: scholar.userId,
+        status: "accepted",
+      });
+
+      // Get user info
+      const user = await UserModel.findById(scholar.userId);
+
+      // Get completed DTR hours for this scholar
+      const dtrs = await DTRModel.find({ userId: scholar.userId });
+      const totalMinutes = dtrs.reduce((sum: number, dtr: any) => {
+        return sum + (dtr.totalMonthlyHours || 0);
+      }, 0);
+      const completedHours = Math.floor(totalMinutes / 60);
+
+      if (user) {
+        scholarRecords.push({
+          userId: scholar.userId,
+          firstName: user.firstname,
+          lastName: user.lastname,
+          email: user.email,
+          scholarType: scholar.scholarType,
+          scholarOffice: scholar.scholarOffice,
+          deployedBy: scholar.deployedBy,
+          deployedAt: scholar.deployedAt,
+          semesterStartDate: scholar.semesterStartDate,
+          semesterEndDate: new Date(),
+          requiredHours: application?.requiredHours,
+          completedHours: completedHours,
+          scholarNotes: scholar.scholarNotes,
+          applicationId: scholar.applicationId,
+          originalApplication: application ? application.toObject() : null,
+          semesterYear,
+          recordedAt: new Date(),
+          recordedBy: req.userID,
+          recordReason: "End of Semester - Scholar Completed",
+          finalStatus: "completed",
+        });
+      }
+    }
+
+    let scholarRecordsCount = 0;
+    if (scholarRecords.length > 0) {
+      await ScholarRecordModel.insertMany(scholarRecords);
+      scholarRecordsCount = scholarRecords.length;
+      console.log("Scholar records created:", scholarRecordsCount);
+    }
+
+    // Archive ONLY non-deployed applications (pending, not yet deployed) to ArchivedApplications
+    // These are applications that were accepted but never deployed to an office
+    const deployedUserIds = activeScholars.map((s) => s.userId.toString());
+    const nonDeployedApplications = acceptedApplications.filter(
+      (app) => !deployedUserIds.includes(app.userID.toString())
+    );
+
+    const archivedApplications = nonDeployedApplications.map((app) => ({
       originalApplication: app.toObject(),
       archivedBy: req.userID,
-      archivedReason: "End of Semester - Scholar Reset",
+      archivedReason: "End of Semester - Accepted but Not Deployed",
       semesterYear,
       userID: app.userID,
       firstName: app.firstName,
@@ -232,7 +295,7 @@ export const resetScholarsToApplicantsHandler = catchErrors(
       originalStatus: reapp.status,
     }));
 
-    // Combine both for archiving
+    // Combine for archiving (only non-deployed applications and reapplications)
     const allArchivedApplications = [
       ...archivedApplications,
       ...archivedReApplications,
@@ -243,7 +306,7 @@ export const resetScholarsToApplicantsHandler = catchErrors(
       await ArchivedApplicationModel.insertMany(allArchivedApplications);
       archivedCount = allArchivedApplications.length;
       console.log(
-        "Total applications/re-applications archived:",
+        "Non-deployed applications/re-applications archived:",
         archivedCount
       );
     }
@@ -318,10 +381,11 @@ export const resetScholarsToApplicantsHandler = catchErrors(
 
     return res.status(OK).json({
       success: true,
-      message: `Successfully reset ${userUpdateResult.modifiedCount} scholars to reapplicant status and archived ${archivedCount} applications/re-applications`,
+      message: `Successfully reset ${userUpdateResult.modifiedCount} scholars to reapplicant status. Created ${scholarRecordsCount} permanent scholar records and archived ${archivedCount} applications/re-applications`,
       details: {
         usersUpdated: userUpdateResult.modifiedCount,
-        applicationsArchived: acceptedApplications.length,
+        scholarRecordsCreated: scholarRecordsCount,
+        applicationsArchived: archivedApplications.length,
         reApplicationsArchived: approvedReApplications.length,
         totalArchived: archivedCount,
         scholarsDeleted: scholarDeleteResult.deletedCount,

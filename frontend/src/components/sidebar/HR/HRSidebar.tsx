@@ -126,6 +126,11 @@ const HRSidebar = ({
     setIsOpen(false);
   };
 
+  const handleScholarRecordsClick = () => {
+    navigate("/hr/scholar-records");
+    setIsOpen(false);
+  };
+
   const handleUsersClick = () => {
     navigate("/hr/users");
     setIsOpen(false);
@@ -176,6 +181,8 @@ const HRSidebar = ({
   const handleCollapsedRequirementsClick = () => navigate("/hr/requirements");
   const handleCollapsedReapplicationsClick = () => navigate("/reapplications");
   const handleCollapsedArchivesClick = () => navigate("/archives");
+  const handleCollapsedScholarRecordsClick = () =>
+    navigate("/hr/scholar-records");
   const handleCollapsedEvaluationsClick = () => navigate("/hr/evaluations");
   const handleCollapsedUsersClick = () => navigate("/hr/users");
   const handleCollapsedTraineesClick = () => navigate("/hr/trainees");
@@ -193,6 +200,7 @@ const HRSidebar = ({
     { label: "Applications", handler: handleApplicationsClick },
     { label: "Reapplications", handler: handleReapplicationsClick },
     { label: "Archives", handler: handleArchivesClick },
+    { label: "Scholar Records", handler: handleScholarRecordsClick },
     { label: "Trainees", handler: handleTraineesClick },
     { label: "Scholars", handler: handleScholarsClick },
     { label: "Scholar Requests", handler: handleScholarRequestsClick },
@@ -297,6 +305,7 @@ const HRSidebar = ({
                     applications: handleApplicationsClick,
                     reapplications: handleReapplicationsClick,
                     archives: handleArchivesClick,
+                    scholarRecords: handleScholarRecordsClick,
                     requirements: handleRequirementsClick,
                     users: handleUsersClick,
                     trainees: handleTraineesClick,
@@ -320,6 +329,7 @@ const HRSidebar = ({
                 applications: handleCollapsedApplicationsClick,
                 reapplications: handleCollapsedReapplicationsClick,
                 archives: handleCollapsedArchivesClick,
+                scholarRecords: handleCollapsedScholarRecordsClick,
                 requirements: handleCollapsedRequirementsClick,
                 evaluations: handleCollapsedEvaluationsClick,
                 users: handleCollapsedUsersClick,

@@ -16,6 +16,7 @@ import {
   UserPlus,
   Archive,
   ClipboardList,
+  Award,
 } from "lucide-react";
 
 interface Props {
@@ -120,6 +121,17 @@ const CollapsedSidebar: React.FC<Props> = ({
               title="Archives"
             >
               <Archive size={16} />
+            </button>
+          </div>
+
+          <div className="group relative">
+            <button
+              onClick={handlers.scholarRecords}
+              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+              aria-label="Scholar Records"
+              title="Scholar Records"
+            >
+              <Award size={16} />
             </button>
           </div>
 

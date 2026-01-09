@@ -736,40 +736,17 @@ function Application() {
             </div>
 
             <div className="p-4 md:p-10 md:pt-24 flex items-center justify-center min-h-screen">
-              <Card className="max-w-2xl w-full mx-4">
-                <CardContent className="p-6 md:p-8 text-center">
-                  <div className="flex flex-col items-center gap-6">
-                    <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-                      <AlertTriangle className="w-10 h-10 text-red-600 dark:text-red-400" />
+              <Card className="max-w-md w-full mx-4 shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 p-10">
+                  <div className="flex flex-col items-center">
+                    <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-5">
+                      <AlertTriangle className="w-10 h-10 text-amber-500 dark:text-amber-400" />
                     </div>
-                    <div className="space-y-4">
-                      <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
-                        Account Blocked
-                      </h1>
-                      <p className="text-lg text-gray-600 dark:text-gray-400 max-w-md">
-                        Your account has been blocked and you cannot submit
-                        applications at this time.
-                      </p>
-                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                        <div className="text-sm text-red-800 dark:text-red-200">
-                          <strong>What this means:</strong>
-                          <ul className="list-disc list-inside mt-2 text-left">
-                            <li>You cannot submit new applications</li>
-                            <li>You cannot access application forms</li>
-                            <li>
-                              This restriction was set by HR administration
-                            </li>
-                          </ul>
-                          <br />
-                          <strong>Need help?</strong>
-                          <br />
-                          Please contact the HR office for assistance and more
-                          information about your account status.
-                        </div>
-                      </div>
-                    </div>
+                    <h1 className="text-2xl font-semibold text-gray-700 dark:text-gray-300">
+                      Restricted
+                    </h1>
                   </div>
-                </CardContent>
+                </div>
               </Card>
             </div>
           </div>

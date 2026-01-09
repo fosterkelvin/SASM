@@ -90,7 +90,7 @@ export interface ApplicationDocument extends mongoose.Document {
     | "interview_failed" // Failed interview, rejected
     | "pending_office_interview" // Deployed to office, awaiting interview scheduling
     | "office_interview_scheduled" // Office interview scheduled
-    | "trainee" // Set as trainee, training in progress
+    | "trainee" // Deployed as trainee, training in progress
     | "training_completed" // Completed required hours
     | "accepted" // Final acceptance
     | "rejected" // Rejected at any stage

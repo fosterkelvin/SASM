@@ -79,6 +79,157 @@ const AlertModal = ({
   );
 };
 
+// Helper function to get the first valid status option for a given current status
+const getFirstValidStatusOption = (currentStatus: string, timeline?: any[]): string => {
+  // For on_hold, find the previous status from timeline
+  if (currentStatus === "on_hold" && timeline && timeline.length > 0) {
+    // Find the timeline entry where the status changed to on_hold
+    for (let i = timeline.length - 1; i >= 0; i--) {
+      if (timeline[i].newStatus === "on_hold" && timeline[i].previousStatus) {
+        return timeline[i].previousStatus;
+      }
+    }
+  }
+  
+  const statusOptions: Record<string, string> = {
+    pending: "under_review",
+    under_review: "under_review", // Continue Review is still first option
+    psychometric_scheduled: "psychometric_completed",
+    psychometric_completed: "psychometric_passed",
+    psychometric_passed: "interview_scheduled",
+    psychometric_failed: "interview_scheduled", // Proceed to interview
+    interview_scheduled: "interview_completed",
+    interview_completed: "interview_passed",
+    interview_passed: "trainee",
+    interview_failed: "trainee", // Proceed to trainee
+    trainee: "training_completed",
+    training_completed: "accepted",
+    on_hold: "under_review", // Default fallback
+    accepted: "accepted",
+    rejected: "rejected",
+    withdrawn: "withdrawn",
+  };
+  return statusOptions[currentStatus] || currentStatus;
+};
+
+// Helper function to get the previous status before on_hold from timeline
+const getPreviousStatusBeforeHold = (timeline?: any[]): string | null => {
+  if (!timeline || timeline.length === 0) return null;
+  
+  // Find the timeline entry where the status changed to on_hold
+  for (let i = timeline.length - 1; i >= 0; i--) {
+    if (timeline[i].newStatus === "on_hold" && timeline[i].previousStatus) {
+      return timeline[i].previousStatus;
+    }
+  }
+  return null;
+};
+
+// Helper to format status for display
+const formatStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    pending: "Pending",
+    under_review: "Under Review",
+    psychometric_scheduled: "Psychometric Scheduled",
+    psychometric_completed: "Psychometric Completed",
+    psychometric_passed: "Psychometric Passed",
+    psychometric_failed: "Psychometric Failed",
+    interview_scheduled: "Interview Scheduled",
+    interview_completed: "Interview Completed",
+    interview_passed: "Interview Passed",
+    interview_failed: "Interview Failed",
+    trainee: "Trainee",
+    training_completed: "Training Completed",
+    accepted: "Accepted",
+    pending_office_interview: "Pending Office Interview",
+    office_interview_scheduled: "Office Interview Scheduled",
+  };
+  return labels[status] || status.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+};
+
+// Helper function to get available quick status options for inline dropdown
+const getQuickStatusOptions = (currentStatus: string, timeline?: any[]): { value: string; label: string }[] => {
+  // For on_hold, dynamically build options based on previous status
+  if (currentStatus === "on_hold") {
+    const prevStatus = getPreviousStatusBeforeHold(timeline);
+    const options: { value: string; label: string }[] = [];
+    
+    if (prevStatus) {
+      options.push({ value: prevStatus, label: `Resume (${formatStatusLabel(prevStatus)})` });
+    } else {
+      options.push({ value: "under_review", label: "Resume Review" });
+    }
+    options.push({ value: "rejected", label: "Reject" });
+    return options;
+  }
+
+  const options: Record<string, { value: string; label: string }[]> = {
+    pending: [
+      { value: "under_review", label: "Continue Review" },
+      { value: "on_hold", label: "Put on Hold" },
+      { value: "rejected", label: "Reject" },
+    ],
+    under_review: [
+      { value: "psychometric_scheduled", label: "Schedule Psychometric" },
+      { value: "on_hold", label: "Put on Hold" },
+      { value: "rejected", label: "Reject" },
+    ],
+    psychometric_scheduled: [
+      { value: "psychometric_completed", label: "Test Completed" },
+      { value: "on_hold", label: "Put on Hold" },
+      { value: "rejected", label: "Reject" },
+    ],
+    psychometric_completed: [
+      { value: "psychometric_passed", label: "Test Passed" },
+      { value: "psychometric_failed", label: "Test Failed" },
+      { value: "on_hold", label: "Put on Hold" },
+      { value: "rejected", label: "Reject" },
+    ],
+    psychometric_passed: [
+      { value: "interview_scheduled", label: "Schedule Interview" },
+      { value: "on_hold", label: "Put on Hold" },
+      { value: "rejected", label: "Reject" },
+    ],
+    psychometric_failed: [
+      { value: "interview_scheduled", label: "Schedule Interview" },
+      { value: "on_hold", label: "Put on Hold" },
+      { value: "rejected", label: "Reject" },
+    ],
+    interview_scheduled: [
+      { value: "interview_completed", label: "Interview Completed" },
+      { value: "on_hold", label: "Put on Hold" },
+      { value: "rejected", label: "Reject" },
+    ],
+    interview_completed: [
+      { value: "interview_passed", label: "Interview Passed" },
+      { value: "interview_failed", label: "Interview Failed" },
+      { value: "on_hold", label: "Put on Hold" },
+      { value: "rejected", label: "Reject" },
+    ],
+    interview_passed: [
+      { value: "trainee", label: "Deploy as Trainee" },
+      { value: "on_hold", label: "Put on Hold" },
+      { value: "rejected", label: "Reject" },
+    ],
+    interview_failed: [
+      { value: "trainee", label: "Deploy as Trainee" },
+      { value: "on_hold", label: "Put on Hold" },
+      { value: "rejected", label: "Reject" },
+    ],
+    trainee: [
+      { value: "training_completed", label: "Training Completed" },
+      { value: "on_hold", label: "Put on Hold" },
+      { value: "rejected", label: "Reject" },
+    ],
+    training_completed: [
+      { value: "accepted", label: "Accept" },
+      { value: "on_hold", label: "Put on Hold" },
+      { value: "rejected", label: "Reject" },
+    ],
+  };
+  return options[currentStatus] || [];
+};
+
 const ApplicationManagement = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -242,21 +393,70 @@ const ApplicationManagement = () => {
   });
 
   // Extract unique "What to Bring" values for autocomplete
+  // Predefined "What to Bring" options
+  const predefinedWhatToBring = [
+    "Valid ID",
+    "Valid ID, Resume",
+    "Valid ID, Resume, Portfolio",
+    "Valid ID, Resume, Certificate of Grades",
+    "Valid ID, 2x2 Photo, Resume",
+    "Valid ID, Pen, Resume",
+    "Pen and Paper",
+    "School ID",
+    "School ID, Resume",
+    "Government-issued ID",
+  ];
+
   const uniqueInterviewWhatToBring = Array.from(
-    new Set(
-      applicationsData?.applications
+    new Set([
+      ...predefinedWhatToBring,
+      ...(applicationsData?.applications
         ?.map((app: any) => app.interviewWhatToBring)
-        .filter((val: string) => val && val.trim())
-    )
-  );
+        .filter((val: string) => val && val.trim()) || []),
+    ])
+  ).sort();
 
   const uniquePsychometricWhatToBring = Array.from(
-    new Set(
-      applicationsData?.applications
+    new Set([
+      ...predefinedWhatToBring,
+      ...(applicationsData?.applications
         ?.map((app: any) => app.psychometricTestWhatToBring)
-        .filter((val: string) => val && val.trim())
-    )
-  );
+        .filter((val: string) => val && val.trim()) || []),
+    ])
+  ).sort();
+
+  // Extract unique locations for autocomplete (combining predefined + used locations)
+  const predefinedLocations = [
+    "HR Office",
+    "Administration Building",
+    "Conference Room A",
+    "Conference Room B",
+    "Meeting Room 1",
+    "Meeting Room 2",
+    "Main Office",
+    "SIT Building",
+    "CITE Building",
+    "Library",
+    "Student Center",
+  ];
+
+  const uniqueInterviewLocations = Array.from(
+    new Set([
+      ...predefinedLocations,
+      ...(applicationsData?.applications
+        ?.map((app: any) => app.interviewLocation)
+        .filter((val: string) => val && val.trim()) || []),
+    ])
+  ).sort();
+
+  const uniquePsychometricLocations = Array.from(
+    new Set([
+      ...predefinedLocations,
+      ...(applicationsData?.applications
+        ?.map((app: any) => app.psychometricTestLocation)
+        .filter((val: string) => val && val.trim()) || []),
+    ])
+  ).sort();
 
   // Update application status mutation
   const updateStatusMutation = useMutation({
@@ -342,9 +542,8 @@ const ApplicationManagement = () => {
       return; // Don't auto-update or allow changes
     }
 
-    // Automatically set status to "under_review" if application is currently "pending"
-    const initialStatus =
-      application.status === "pending" ? "under_review" : application.status;
+    // Get the first valid status option for the dropdown (pass timeline for on_hold)
+    const initialStatus = getFirstValidStatusOption(application.status, application.timeline);
 
     setStatusUpdateData({
       status: initialStatus,
@@ -699,14 +898,13 @@ const ApplicationManagement = () => {
                     <option value="office_interview_scheduled">
                       Office Interview Scheduled
                     </option>
-                    <option value="trainee">Trainee</option>
+                    <option value="trainee">Deployed / For Deployment</option>
                     <option value="training_completed">
                       Training Completed
                     </option>
-                    <option value="hours_completed">Hours Completed</option>
-                    <option value="accepted">Accepted</option>
-                    <option value="on_hold">Put On Hold</option>
-                    <option value="withdrawn">Withdrawn by Applicant</option>
+                    <option value="accepted">Newly Accepted</option>
+                    <option value="on_hold">On Hold</option>
+                    <option value="withdrawn">Withdrawn</option>
                     <option value="rejected">Rejected</option>
                   </select>
                 </div>
@@ -991,16 +1189,62 @@ const ApplicationManagement = () => {
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-                                  application.status
-                                )}`}
-                              >
-                                {getStatusIcon(application.status)}
-                                {application.status
-                                  .replace("_", " ")
-                                  .toUpperCase()}
-                              </span>
+                              {/* Editable status as styled select */}
+                              {application.status !== "accepted" &&
+                                application.status !== "rejected" &&
+                                application.status !== "withdrawn" &&
+                                application.status !== "failed_interview" &&
+                                !(application.status === "pending" && !application.requirementsCompleted) &&
+                                getQuickStatusOptions(application.status, application.timeline).length > 0 ? (
+                                  <select
+                                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border cursor-pointer appearance-none pr-6 bg-no-repeat bg-[length:12px] bg-[right_6px_center] ${getStatusColor(application.status)}`}
+                                    style={{
+                                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                                    }}
+                                    value={application.status}
+                                    onChange={(e) => {
+                                      const newStatus = e.target.value;
+                                      if (newStatus && newStatus !== application.status) {
+                                        if (newStatus === "psychometric_scheduled" || newStatus === "interview_scheduled") {
+                                          handleStatusUpdate(application);
+                                          setTimeout(() => {
+                                            setStatusUpdateData((prev) => ({
+                                              ...prev,
+                                              status: newStatus,
+                                            }));
+                                          }, 100);
+                                        } else {
+                                          updateStatusMutation.mutate({
+                                            id: application._id,
+                                            data: {
+                                              status: newStatus,
+                                              hrComments: `Status changed to ${newStatus.replace(/_/g, " ")}`,
+                                            },
+                                          });
+                                        }
+                                      }
+                                    }}
+                                    title="Click to change status"
+                                  >
+                                    <option value={application.status}>
+                                      {application.status.replace(/_/g, " ").toUpperCase()}
+                                    </option>
+                                    {getQuickStatusOptions(application.status, application.timeline).map((opt) => (
+                                      <option key={opt.value} value={opt.value}>
+                                        → {opt.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <span
+                                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
+                                      application.status
+                                    )}`}
+                                  >
+                                    {getStatusIcon(application.status)}
+                                    {application.status.replace(/_/g, " ").toUpperCase()}
+                                  </span>
+                                )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                               <div className="flex items-center gap-1">
@@ -2420,9 +2664,6 @@ const ApplicationManagement = () => {
                             {/* Status workflow based on current status */}
                             {selectedApplication.status === "pending" && (
                               <>
-                                <option value="pending">
-                                  Keep as New Application
-                                </option>
                                 <option value="under_review">
                                   Continue Review
                                 </option>
@@ -2451,9 +2692,6 @@ const ApplicationManagement = () => {
                             {selectedApplication.status ===
                               "psychometric_scheduled" && (
                               <>
-                                <option value="psychometric_scheduled">
-                                  Keep Test Scheduled
-                                </option>
                                 <option value="psychometric_completed">
                                   Mark Test as Completed
                                 </option>
@@ -2467,9 +2705,6 @@ const ApplicationManagement = () => {
                             {selectedApplication.status ===
                               "psychometric_completed" && (
                               <>
-                                <option value="psychometric_completed">
-                                  Keep as Test Completed
-                                </option>
                                 <option value="psychometric_passed">
                                   Mark Test as Passed
                                 </option>
@@ -2486,9 +2721,6 @@ const ApplicationManagement = () => {
                             {selectedApplication.status ===
                               "psychometric_passed" && (
                               <>
-                                <option value="psychometric_passed">
-                                  Keep as Test Passed
-                                </option>
                                 <option value="interview_scheduled">
                                   Schedule Interview
                                 </option>
@@ -2502,12 +2734,10 @@ const ApplicationManagement = () => {
                             {selectedApplication.status ===
                               "psychometric_failed" && (
                               <>
-                                <option value="psychometric_failed">
-                                  Keep as Test Failed
+                                <option value="interview_scheduled">
+                                  Schedule Interview
                                 </option>
-                                <option value="psychometric_scheduled">
-                                  Reschedule Test
-                                </option>
+                                <option value="on_hold">Put on Hold</option>
                                 <option value="rejected">
                                   Reject Application
                                 </option>
@@ -2517,9 +2747,6 @@ const ApplicationManagement = () => {
                             {selectedApplication.status ===
                               "interview_scheduled" && (
                               <>
-                                <option value="interview_scheduled">
-                                  Keep Interview Scheduled
-                                </option>
                                 <option value="interview_completed">
                                   Mark Interview as Completed
                                 </option>
@@ -2533,9 +2760,6 @@ const ApplicationManagement = () => {
                             {selectedApplication.status ===
                               "interview_completed" && (
                               <>
-                                <option value="interview_completed">
-                                  Keep as Interview Completed
-                                </option>
                                 <option value="interview_passed">
                                   Mark Interview as Passed
                                 </option>
@@ -2552,10 +2776,7 @@ const ApplicationManagement = () => {
                             {selectedApplication.status ===
                               "interview_passed" && (
                               <>
-                                <option value="interview_passed">
-                                  Keep as Interview Passed
-                                </option>
-                                <option value="trainee">Set as Trainee</option>
+                                <option value="trainee">Deploy as Trainee</option>
                                 <option value="on_hold">Put on Hold</option>
                                 <option value="rejected">
                                   Reject Application
@@ -2566,12 +2787,8 @@ const ApplicationManagement = () => {
                             {selectedApplication.status ===
                               "interview_failed" && (
                               <>
-                                <option value="interview_failed">
-                                  Keep as Interview Failed
-                                </option>
-                                <option value="interview_scheduled">
-                                  Reschedule Interview
-                                </option>
+                                <option value="trainee">Deploy as Trainee</option>
+                                <option value="on_hold">Put on Hold</option>
                                 <option value="rejected">
                                   Reject Application
                                 </option>
@@ -2580,7 +2797,6 @@ const ApplicationManagement = () => {
 
                             {selectedApplication.status === "trainee" && (
                               <>
-                                <option value="trainee">Keep as Trainee</option>
                                 <option value="training_completed">
                                   Mark Training as Completed
                                 </option>
@@ -2594,9 +2810,6 @@ const ApplicationManagement = () => {
                             {selectedApplication.status ===
                               "training_completed" && (
                               <>
-                                <option value="training_completed">
-                                  Keep as Training Completed
-                                </option>
                                 <option value="accepted">
                                   Accept Applicant
                                 </option>
@@ -2613,13 +2826,21 @@ const ApplicationManagement = () => {
 
                             {selectedApplication.status === "on_hold" && (
                               <>
-                                <option value="on_hold">Keep on Hold</option>
-                                <option value="under_review">
-                                  Resume Review
-                                </option>
-                                <option value="interview_scheduled">
-                                  Schedule Interview
-                                </option>
+                                {(() => {
+                                  const prevStatus = getPreviousStatusBeforeHold(selectedApplication.timeline);
+                                  if (prevStatus) {
+                                    return (
+                                      <option value={prevStatus}>
+                                        Resume ({formatStatusLabel(prevStatus)})
+                                      </option>
+                                    );
+                                  }
+                                  return (
+                                    <option value="under_review">
+                                      Resume Review
+                                    </option>
+                                  );
+                                })()}
                                 <option value="rejected">
                                   Reject Application
                                 </option>
@@ -3177,6 +3398,7 @@ const ApplicationManagement = () => {
                                 <input
                                   type="text"
                                   id="psychometricTestLocation"
+                                  list="psychometricLocationList"
                                   value={
                                     statusUpdateData.psychometricTestLocation
                                   }
@@ -3187,9 +3409,16 @@ const ApplicationManagement = () => {
                                     }))
                                   }
                                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 dark:bg-gray-800 dark:text-gray-100"
-                                  placeholder="e.g., Testing Center, Room 301, Main Building"
+                                  placeholder="Select or type a location..."
                                   required
                                 />
+                                <datalist id="psychometricLocationList">
+                                  {uniquePsychometricLocations.map(
+                                    (value: string, index: number) => (
+                                      <option key={index} value={value} />
+                                    )
+                                  )}
+                                </datalist>
                               </div>
 
                               <div className="mb-4">
@@ -3214,7 +3443,7 @@ const ApplicationManagement = () => {
                                     }))
                                   }
                                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 dark:bg-gray-800 dark:text-gray-100"
-                                  placeholder="e.g., Valid ID, Pencil, Eraser, Calculator (if needed)..."
+                                  placeholder="Select or type items to bring..."
                                   required
                                 />
                                 <datalist id="psychometricWhatToBringList">
@@ -3558,6 +3787,7 @@ const ApplicationManagement = () => {
                                 <input
                                   type="text"
                                   id="interviewLocation"
+                                  list="interviewLocationList"
                                   value={statusUpdateData.interviewLocation}
                                   onChange={(e) =>
                                     setStatusUpdateData((prev) => ({
@@ -3566,9 +3796,16 @@ const ApplicationManagement = () => {
                                     }))
                                   }
                                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
-                                  placeholder="e.g., HR Office, Room 201, Administration Building"
+                                  placeholder="Select or type a location..."
                                   required
                                 />
+                                <datalist id="interviewLocationList">
+                                  {uniqueInterviewLocations.map(
+                                    (value: string, index: number) => (
+                                      <option key={index} value={value} />
+                                    )
+                                  )}
+                                </datalist>
                               </div>
 
                               <div className="mb-4">
@@ -3590,7 +3827,7 @@ const ApplicationManagement = () => {
                                     }))
                                   }
                                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-800 dark:text-gray-100"
-                                  placeholder="e.g., Valid ID, Resume, Portfolio (if applicable)..."
+                                  placeholder="Select or type items to bring..."
                                   required
                                 />
                                 <datalist id="interviewWhatToBringList">

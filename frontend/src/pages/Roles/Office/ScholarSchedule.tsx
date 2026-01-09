@@ -43,6 +43,7 @@ const ScholarSchedule: React.FC = () => {
     endTime: "",
     location: "",
   });
+  const [pendingDutyHours, setPendingDutyHours] = useState<DutyHourEntry[]>([]);
   const { alertState, showAlert, closeAlert } = useCustomAlert();
 
   useEffect(() => {
@@ -153,34 +154,318 @@ const ScholarSchedule: React.FC = () => {
     },
   });
 
-  const handleAddDutyHours = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (
-      dutyHourForm.days.length === 0 ||
-      !dutyHourForm.startTime ||
-      !dutyHourForm.endTime
-    ) {
+  // Calculate total weekly hours from duty hours
+  const calculateTotalWeeklyHours = () => {
+    if (!scheduleData?.dutyHours || scheduleData.dutyHours.length === 0) {
+      return 0;
+    }
+
+    let totalMinutes = 0;
+    scheduleData.dutyHours.forEach((dh: any) => {
+      const [startHour, startMin] = dh.startTime.split(":").map(Number);
+      const [endHour, endMin] = dh.endTime.split(":").map(Number);
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+      totalMinutes += endMinutes - startMinutes;
+    });
+
+    return totalMinutes / 60;
+  };
+
+  const totalWeeklyHours = calculateTotalWeeklyHours();
+  const REQUIRED_HOURS = 30;
+  const hoursRemaining = Math.max(0, REQUIRED_HOURS - totalWeeklyHours);
+
+  // Calculate hours from pending list
+  const calculatePendingHours = () => {
+    let totalMinutes = 0;
+    pendingDutyHours.forEach((dh) => {
+      const [startHour, startMin] = dh.startTime.split(":").map(Number);
+      const [endHour, endMin] = dh.endTime.split(":").map(Number);
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+      totalMinutes += endMinutes - startMinutes;
+    });
+    return totalMinutes / 60;
+  };
+
+  const pendingHours = calculatePendingHours();
+
+  // Calculate hours that would be added by current form selection
+  const calculateFormHours = () => {
+    if (!dutyHourForm.startTime || !dutyHourForm.endTime || dutyHourForm.days.length === 0) {
+      return 0;
+    }
+    const [startHour, startMin] = dutyHourForm.startTime.split(":").map(Number);
+    const [endHour, endMin] = dutyHourForm.endTime.split(":").map(Number);
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    const hoursPerDay = (endMinutes - startMinutes) / 60;
+    return hoursPerDay * dutyHourForm.days.length;
+  };
+
+  const formHours = calculateFormHours();
+  const projectedTotalHours = totalWeeklyHours + pendingHours + formHours;
+  const canAddToList = dutyHourForm.days.length > 0 && dutyHourForm.startTime && dutyHourForm.endTime && dutyHourForm.location;
+
+  // Convert time string to minutes since midnight (handles both 24-hour and 12-hour formats)
+  const timeToMinutes = (time: string): number => {
+    if (!time) return 0;
+    
+    // Handle 24-hour format (HH:MM) from time input
+    if (!time.includes("AM") && !time.includes("PM") && !time.includes("am") && !time.includes("pm")) {
+      const [hours, minutes] = time.split(":").map(Number);
+      return hours * 60 + (minutes || 0);
+    }
+
+    // Handle 12-hour format (HH:MM AM/PM)
+    const [timePart, meridiem] = time.split(/\s+/);
+    let [hours, minutes] = timePart.split(":").map(Number);
+
+    if (meridiem && meridiem.toUpperCase() === "PM" && hours !== 12) {
+      hours += 12;
+    } else if (meridiem && meridiem.toUpperCase() === "AM" && hours === 12) {
+      hours = 0;
+    }
+
+    return hours * 60 + (minutes || 0);
+  };
+
+  // Check if two time ranges overlap
+  const timesOverlap = (start1: string, end1: string, start2: string, end2: string) => {
+    const start1Min = timeToMinutes(start1);
+    const end1Min = timeToMinutes(end1);
+    const start2Min = timeToMinutes(start2);
+    const end2Min = timeToMinutes(end2);
+    
+    // Two ranges overlap if one starts before the other ends
+    return start1Min < end2Min && start2Min < end1Min;
+  };
+
+  // Normalize day name for comparison (handles "Monday" vs "MONDAY")
+  const normalizeDay = (day: string): string => {
+    return day?.toUpperCase() || "";
+  };
+
+  // Parse schedule string to extract day and time info (same as ScheduleVisualization)
+  const parseScheduleString = (schedule: string) => {
+    const classes: Array<{
+      day: string;
+      startTime: string;
+      endTime: string;
+    }> = [];
+
+    if (!schedule) return classes;
+
+    const dayMap: { [key: string]: string } = {
+      M: "MONDAY",
+      T: "TUESDAY",
+      W: "WEDNESDAY",
+      Th: "THURSDAY",
+      F: "FRIDAY",
+      S: "SATURDAY",
+      Su: "SUNDAY",
+    };
+
+    // Split by comma to handle multiple schedules
+    const scheduleSegments = schedule.split(",").map((s) => s.trim());
+
+    for (const segment of scheduleSegments) {
+      // Extract days pattern (e.g., "T/Th" or "M/W/F") - must be at START of string
+      const daysMatch = segment.match(
+        /^((?:[MTWFS]|Th|Su)(?:\/(?:[MTWFS]|Th|Su))*)\s+/
+      );
+      const timeMatch = segment.match(
+        /(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/i
+      );
+
+      if (daysMatch && timeMatch) {
+        const daysStr = daysMatch[1];
+        const startTime = timeMatch[1].trim();
+        const endTime = timeMatch[2].trim();
+
+        // Parse individual days
+        const dayTokens = daysStr.split("/");
+
+        dayTokens.forEach((token) => {
+          const trimmedToken = token.trim();
+          const day = dayMap[trimmedToken];
+          if (day) {
+            classes.push({ day, startTime, endTime });
+          }
+        });
+      }
+    }
+
+    return classes;
+  };
+
+  // Add current form to pending list
+  const handleAddToList = () => {
+    if (!canAddToList) {
       showAlert(
         "Validation Error",
-        "Please fill in all required fields (select at least one day).",
+        "Please fill in all required fields (days, location, start time, end time).",
         "warning"
       );
       return;
     }
 
+    // Check for conflicts with class schedule
+    const classSchedule = scheduleData?.scheduleData || [];
+    const conflictsWithClasses: string[] = [];
+    
+    dutyHourForm.days.forEach((day) => {
+      classSchedule.forEach((classItem: any) => {
+        // Parse the schedule string to get individual day/time entries
+        const parsedClasses = parseScheduleString(classItem.schedule || "");
+        
+        // Also check if day/startTime/endTime fields exist directly
+        if (classItem.day && classItem.startTime && classItem.endTime) {
+          parsedClasses.push({
+            day: classItem.day,
+            startTime: classItem.startTime,
+            endTime: classItem.endTime,
+          });
+        }
+
+        parsedClasses.forEach((parsed) => {
+          if (normalizeDay(parsed.day) === normalizeDay(day) && timesOverlap(dutyHourForm.startTime, dutyHourForm.endTime, parsed.startTime, parsed.endTime)) {
+            conflictsWithClasses.push(`${day} ${parsed.startTime}-${parsed.endTime} [${classItem.subjectCode || classItem.subjectName || 'Class'}]`);
+          }
+        });
+      });
+    });
+
+    if (conflictsWithClasses.length > 0) {
+      showAlert(
+        "Class Schedule Conflict",
+        `This time slot conflicts with class schedule: ${conflictsWithClasses.join(", ")}. Duty hours cannot overlap with classes.`,
+        "error"
+      );
+      return;
+    }
+
+    // Check for conflicts with existing saved duty hours
+    const existingDutyHours = scheduleData?.dutyHours || [];
+    const conflictsWithSaved: string[] = [];
+    
+    dutyHourForm.days.forEach((day) => {
+      existingDutyHours.forEach((dh: any) => {
+        if (dh.day === day && timesOverlap(dutyHourForm.startTime, dutyHourForm.endTime, dh.startTime, dh.endTime)) {
+          conflictsWithSaved.push(`${day} (${dh.startTime}-${dh.endTime})`);
+        }
+      });
+    });
+
+    if (conflictsWithSaved.length > 0) {
+      showAlert(
+        "Schedule Conflict",
+        `This time slot conflicts with existing saved duty hours: ${conflictsWithSaved.join(", ")}. Please choose a different time.`,
+        "error"
+      );
+      return;
+    }
+
+    // Check for conflicts with pending duty hours
+    const conflictsWithPending: string[] = [];
+    
+    dutyHourForm.days.forEach((day) => {
+      pendingDutyHours.forEach((dh) => {
+        if (dh.day === day && timesOverlap(dutyHourForm.startTime, dutyHourForm.endTime, dh.startTime, dh.endTime)) {
+          conflictsWithPending.push(`${day} (${dh.startTime}-${dh.endTime})`);
+        }
+      });
+    });
+
+    if (conflictsWithPending.length > 0) {
+      showAlert(
+        "Schedule Conflict",
+        `This time slot conflicts with pending entries: ${conflictsWithPending.join(", ")}. Please choose a different time or remove the conflicting entry.`,
+        "error"
+      );
+      return;
+    }
+
     // Create entries for each selected day
-    const entries: DutyHourEntry[] = dutyHourForm.days.map((day) => ({
+    const newEntries: DutyHourEntry[] = dutyHourForm.days.map((day) => ({
       day,
       startTime: dutyHourForm.startTime,
       endTime: dutyHourForm.endTime,
       location: dutyHourForm.location,
     }));
 
-    // Add each entry sequentially
+    setPendingDutyHours([...pendingDutyHours, ...newEntries]);
+    
+    // Reset form but keep it open
+    setDutyHourForm({
+      days: [],
+      startTime: "",
+      endTime: "",
+      location: "",
+    });
+
+    showAlert(
+      "Added to List",
+      `Added ${newEntries.length} duty hour entry(ies) to the list. Total pending: ${(pendingHours + formHours).toFixed(1)} hours.`,
+      "success"
+    );
+  };
+
+  // Remove from pending list
+  const handleRemoveFromPending = (index: number) => {
+    const newPending = [...pendingDutyHours];
+    newPending.splice(index, 1);
+    setPendingDutyHours(newPending);
+  };
+
+  // Submit all pending duty hours
+  const handleSubmitAllDutyHours = () => {
+    const allEntries = [...pendingDutyHours];
+    
+    // Also add current form if it has valid data
+    if (canAddToList) {
+      dutyHourForm.days.forEach((day) => {
+        allEntries.push({
+          day,
+          startTime: dutyHourForm.startTime,
+          endTime: dutyHourForm.endTime,
+          location: dutyHourForm.location,
+        });
+      });
+    }
+
+    if (allEntries.length === 0) {
+      showAlert(
+        "No Entries",
+        "Please add duty hours to the list first.",
+        "warning"
+      );
+      return;
+    }
+
+    // Calculate total hours
+    let totalMinutes = 0;
+    allEntries.forEach((dh) => {
+      const [startHour, startMin] = dh.startTime.split(":").map(Number);
+      const [endHour, endMin] = dh.endTime.split(":").map(Number);
+      totalMinutes += (endHour * 60 + endMin) - (startHour * 60 + startMin);
+    });
+    const totalHours = totalMinutes / 60;
+
+    if (totalWeeklyHours + totalHours < REQUIRED_HOURS) {
+      showAlert(
+        "Insufficient Hours",
+        `Total duty hours must be at least ${REQUIRED_HOURS} hours. Current total: ${(totalWeeklyHours + totalHours).toFixed(1)} hours. Need ${(REQUIRED_HOURS - totalWeeklyHours - totalHours).toFixed(1)} more hours.`,
+        "warning"
+      );
+      return;
+    }
+
+    // Submit all entries sequentially
     let successCount = 0;
     const addNext = (index: number) => {
-      if (index >= entries.length) {
-        // All done
+      if (index >= allEntries.length) {
         if (successCount > 0) {
           showAlert(
             "Success",
@@ -188,6 +473,7 @@ const ScholarSchedule: React.FC = () => {
             "success"
           );
           setShowAddDutyForm(false);
+          setPendingDutyHours([]);
           setDutyHourForm({
             days: [],
             startTime: "",
@@ -198,23 +484,24 @@ const ScholarSchedule: React.FC = () => {
         return;
       }
 
-      addDutyHoursMutation.mutate(entries[index], {
+      addDutyHoursMutation.mutate(allEntries[index], {
         onSuccess: () => {
           successCount++;
           addNext(index + 1);
         },
         onError: (error: any) => {
-          // Show error but continue with remaining days
-          console.error(
-            `Failed to add duty hours for ${entries[index].day}:`,
-            error
-          );
+          console.error(`Failed to add duty hours for ${allEntries[index].day}:`, error);
           addNext(index + 1);
         },
       });
     };
 
     addNext(0);
+  };
+
+  const handleAddDutyHours = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSubmitAllDutyHours();
   };
 
   const handleRemoveDutyHours = (dutyHour: {
@@ -231,6 +518,25 @@ const ScholarSchedule: React.FC = () => {
     }
   };
 
+  // Predefined location options for duty hours
+  const locationOptions = [
+    "SIT Office",
+    "OSAS Office",
+    "Registrar Office",
+    "Library",
+    "Computer Lab",
+    "Main Building",
+    "Student Center",
+    "Admin Building",
+    "Guidance Office",
+    "Clinic",
+    "Cashier",
+    "Accounting Office",
+    "HR Office",
+    "Dean's Office",
+    "Faculty Room",
+  ];
+
   const daysOfWeek = [
     "Monday",
     "Tuesday",
@@ -238,7 +544,6 @@ const ScholarSchedule: React.FC = () => {
     "Thursday",
     "Friday",
     "Saturday",
-    "Sunday",
   ];
 
   return (
@@ -368,61 +673,149 @@ const ScholarSchedule: React.FC = () => {
                             </div>
                           </div>
 
-                          <div>
-                            <Label htmlFor="location">Location</Label>
-                            <Input
-                              id="location"
-                              value={dutyHourForm.location}
-                              onChange={(e) =>
-                                setDutyHourForm({
-                                  ...dutyHourForm,
-                                  location: e.target.value,
-                                })
-                              }
-                              placeholder="e.g., Main Office"
-                            />
-                          </div>
-
-                          <div>
-                            <Label htmlFor="startTime">Start Time</Label>
-                            <Input
-                              id="startTime"
-                              type="time"
-                              value={dutyHourForm.startTime}
-                              onChange={(e) =>
-                                setDutyHourForm({
-                                  ...dutyHourForm,
-                                  startTime: e.target.value,
-                                })
-                              }
-                            />
-                          </div>
-
-                          <div>
-                            <Label htmlFor="endTime">End Time</Label>
-                            <Input
-                              id="endTime"
-                              type="time"
-                              value={dutyHourForm.endTime}
-                              onChange={(e) =>
-                                setDutyHourForm({
-                                  ...dutyHourForm,
-                                  endTime: e.target.value,
-                                })
-                              }
-                            />
-                          </div>
-
                           <div className="md:col-span-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                              <div>
+                                <Label htmlFor="location">Location</Label>
+                                <select
+                                  id="location"
+                                  title="Select duty location"
+                                  value={dutyHourForm.location}
+                                  onChange={(e) =>
+                                    setDutyHourForm({
+                                      ...dutyHourForm,
+                                      location: e.target.value,
+                                    })
+                                  }
+                                  className="w-full h-10 px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                >
+                                  <option value="">Select a location...</option>
+                                  {locationOptions.map((loc) => (
+                                    <option key={loc} value={loc}>
+                                      {loc}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <Label htmlFor="startTime">Start Time</Label>
+                                <Input
+                                  id="startTime"
+                                  type="time"
+                                  value={dutyHourForm.startTime}
+                                  onChange={(e) =>
+                                    setDutyHourForm({
+                                      ...dutyHourForm,
+                                      startTime: e.target.value,
+                                    })
+                                  }
+                                />
+                              </div>
+
+                              <div>
+                                <Label htmlFor="endTime">End Time</Label>
+                                <Input
+                                  id="endTime"
+                                  type="time"
+                                  value={dutyHourForm.endTime}
+                                  onChange={(e) =>
+                                    setDutyHourForm({
+                                      ...dutyHourForm,
+                                      endTime: e.target.value,
+                                    })
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Hours Summary */}
+                          <div className="md:col-span-2">
+                            <div className={`p-3 rounded-md ${projectedTotalHours >= REQUIRED_HOURS ? 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800'}`}>
+                              <div className="flex items-center justify-between text-sm flex-wrap gap-2">
+                                <div>
+                                  <span className="text-gray-600 dark:text-gray-400">Saved: </span>
+                                  <span className="font-semibold">{totalWeeklyHours.toFixed(1)} hrs</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600 dark:text-gray-400">Pending: </span>
+                                  <span className="font-semibold text-orange-600 dark:text-orange-400">+{pendingHours.toFixed(1)} hrs</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600 dark:text-gray-400">Form: </span>
+                                  <span className="font-semibold text-blue-600 dark:text-blue-400">+{formHours.toFixed(1)} hrs</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600 dark:text-gray-400">Total: </span>
+                                  <span className={`font-bold ${projectedTotalHours >= REQUIRED_HOURS ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                                    {projectedTotalHours.toFixed(1)} / {REQUIRED_HOURS} hrs
+                                  </span>
+                                </div>
+                              </div>
+                              {projectedTotalHours < REQUIRED_HOURS && (
+                                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                                  ⚠️ Need at least {REQUIRED_HOURS} hours. Add {(REQUIRED_HOURS - projectedTotalHours).toFixed(1)} more hours.
+                                </p>
+                              )}
+                              {projectedTotalHours >= REQUIRED_HOURS && (
+                                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                  ✓ Meets the {REQUIRED_HOURS}-hour requirement!
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Pending Duty Hours List */}
+                          {pendingDutyHours.length > 0 && (
+                            <div className="md:col-span-2">
+                              <Label className="mb-2 block">Pending Entries ({pendingDutyHours.length})</Label>
+                              <div className="space-y-2 max-h-40 overflow-y-auto p-2 border border-orange-200 dark:border-orange-800 rounded-md bg-orange-50 dark:bg-orange-950">
+                                {pendingDutyHours.map((dh, index) => (
+                                  <div key={index} className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                                    <div className="text-sm">
+                                      <span className="font-semibold">{dh.day}</span>
+                                      <span className="text-gray-500 mx-2">|</span>
+                                      <span>{dh.startTime} - {dh.endTime}</span>
+                                      <span className="text-gray-500 mx-2">|</span>
+                                      <span className="text-gray-600 dark:text-gray-400">{dh.location}</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      title="Remove from pending list"
+                                      onClick={() => handleRemoveFromPending(index)}
+                                      className="text-red-500 hover:text-red-700 p-1"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="md:col-span-2 flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="flex-1 border-blue-500 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                              onClick={handleAddToList}
+                              disabled={!canAddToList}
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add to List
+                            </Button>
                             <Button
                               type="submit"
-                              className="w-full bg-red-600 hover:bg-red-700"
-                              disabled={addDutyHoursMutation.isPending}
+                              className="flex-1 bg-red-600 hover:bg-red-700"
+                              disabled={addDutyHoursMutation.isPending || projectedTotalHours < REQUIRED_HOURS}
                             >
                               <Save className="w-4 h-4 mr-2" />
                               {addDutyHoursMutation.isPending
-                                ? "Adding..."
-                                : "Add Duty Hours"}
+                                ? "Saving..."
+                                : projectedTotalHours < REQUIRED_HOURS
+                                ? `Need ${(REQUIRED_HOURS - projectedTotalHours).toFixed(1)} More Hours`
+                                : "Save All Duty Hours"}
                             </Button>
                           </div>
                         </form>
@@ -581,61 +974,149 @@ const ScholarSchedule: React.FC = () => {
                             </div>
                           </div>
 
-                          <div>
-                            <Label htmlFor="location">Location</Label>
-                            <Input
-                              id="location"
-                              value={dutyHourForm.location}
-                              onChange={(e) =>
-                                setDutyHourForm({
-                                  ...dutyHourForm,
-                                  location: e.target.value,
-                                })
-                              }
-                              placeholder="e.g., Main Office"
-                            />
-                          </div>
-
-                          <div>
-                            <Label htmlFor="startTime">Start Time</Label>
-                            <Input
-                              id="startTime"
-                              type="time"
-                              value={dutyHourForm.startTime}
-                              onChange={(e) =>
-                                setDutyHourForm({
-                                  ...dutyHourForm,
-                                  startTime: e.target.value,
-                                })
-                              }
-                            />
-                          </div>
-
-                          <div>
-                            <Label htmlFor="endTime">End Time</Label>
-                            <Input
-                              id="endTime"
-                              type="time"
-                              value={dutyHourForm.endTime}
-                              onChange={(e) =>
-                                setDutyHourForm({
-                                  ...dutyHourForm,
-                                  endTime: e.target.value,
-                                })
-                              }
-                            />
-                          </div>
-
                           <div className="md:col-span-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                              <div>
+                                <Label htmlFor="location2">Location</Label>
+                                <select
+                                  id="location2"
+                                  title="Select duty location"
+                                  value={dutyHourForm.location}
+                                  onChange={(e) =>
+                                    setDutyHourForm({
+                                      ...dutyHourForm,
+                                      location: e.target.value,
+                                    })
+                                  }
+                                  className="w-full h-10 px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                >
+                                  <option value="">Select a location...</option>
+                                  {locationOptions.map((loc) => (
+                                    <option key={loc} value={loc}>
+                                      {loc}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <Label htmlFor="startTime2">Start Time</Label>
+                                <Input
+                                  id="startTime2"
+                                  type="time"
+                                  value={dutyHourForm.startTime}
+                                  onChange={(e) =>
+                                    setDutyHourForm({
+                                      ...dutyHourForm,
+                                      startTime: e.target.value,
+                                    })
+                                  }
+                                />
+                              </div>
+
+                              <div>
+                                <Label htmlFor="endTime2">End Time</Label>
+                                <Input
+                                  id="endTime2"
+                                  type="time"
+                                  value={dutyHourForm.endTime}
+                                  onChange={(e) =>
+                                    setDutyHourForm({
+                                      ...dutyHourForm,
+                                      endTime: e.target.value,
+                                    })
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Hours Summary */}
+                          <div className="md:col-span-2">
+                            <div className={`p-3 rounded-md ${projectedTotalHours >= REQUIRED_HOURS ? 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800'}`}>
+                              <div className="flex items-center justify-between text-sm flex-wrap gap-2">
+                                <div>
+                                  <span className="text-gray-600 dark:text-gray-400">Saved: </span>
+                                  <span className="font-semibold">{totalWeeklyHours.toFixed(1)} hrs</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600 dark:text-gray-400">Pending: </span>
+                                  <span className="font-semibold text-orange-600 dark:text-orange-400">+{pendingHours.toFixed(1)} hrs</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600 dark:text-gray-400">Form: </span>
+                                  <span className="font-semibold text-blue-600 dark:text-blue-400">+{formHours.toFixed(1)} hrs</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600 dark:text-gray-400">Total: </span>
+                                  <span className={`font-bold ${projectedTotalHours >= REQUIRED_HOURS ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+                                    {projectedTotalHours.toFixed(1)} / {REQUIRED_HOURS} hrs
+                                  </span>
+                                </div>
+                              </div>
+                              {projectedTotalHours < REQUIRED_HOURS && (
+                                <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                                  ⚠️ Need at least {REQUIRED_HOURS} hours. Add {(REQUIRED_HOURS - projectedTotalHours).toFixed(1)} more hours.
+                                </p>
+                              )}
+                              {projectedTotalHours >= REQUIRED_HOURS && (
+                                <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                  ✓ Meets the {REQUIRED_HOURS}-hour requirement!
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Pending Duty Hours List */}
+                          {pendingDutyHours.length > 0 && (
+                            <div className="md:col-span-2">
+                              <Label className="mb-2 block">Pending Entries ({pendingDutyHours.length})</Label>
+                              <div className="space-y-2 max-h-40 overflow-y-auto p-2 border border-orange-200 dark:border-orange-800 rounded-md bg-orange-50 dark:bg-orange-950">
+                                {pendingDutyHours.map((dh, index) => (
+                                  <div key={index} className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                                    <div className="text-sm">
+                                      <span className="font-semibold">{dh.day}</span>
+                                      <span className="text-gray-500 mx-2">|</span>
+                                      <span>{dh.startTime} - {dh.endTime}</span>
+                                      <span className="text-gray-500 mx-2">|</span>
+                                      <span className="text-gray-600 dark:text-gray-400">{dh.location}</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      title="Remove from pending list"
+                                      onClick={() => handleRemoveFromPending(index)}
+                                      className="text-red-500 hover:text-red-700 p-1"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="md:col-span-2 flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="flex-1 border-blue-500 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950"
+                              onClick={handleAddToList}
+                              disabled={!canAddToList}
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add to List
+                            </Button>
                             <Button
                               type="submit"
-                              className="w-full bg-red-600 hover:bg-red-700"
-                              disabled={addDutyHoursMutation.isPending}
+                              className="flex-1 bg-red-600 hover:bg-red-700"
+                              disabled={addDutyHoursMutation.isPending || projectedTotalHours < REQUIRED_HOURS}
                             >
                               <Save className="w-4 h-4 mr-2" />
                               {addDutyHoursMutation.isPending
-                                ? "Adding..."
-                                : "Add Duty Hours"}
+                                ? "Saving..."
+                                : projectedTotalHours < REQUIRED_HOURS
+                                ? `Need ${(REQUIRED_HOURS - projectedTotalHours).toFixed(1)} More Hours`
+                                : "Save All Duty Hours"}
                             </Button>
                           </div>
                         </form>

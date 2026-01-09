@@ -12,6 +12,7 @@ import {
   UserPlus,
   Archive,
   ClipboardList,
+  Award,
 } from "lucide-react";
 
 interface NavProps {
@@ -67,6 +68,13 @@ const SidebarNav: React.FC<NavProps> = ({ handlers, unreadCount = 0 }) => {
             label="Archives"
             onClick={handlers.archives}
             IconComponent={Archive}
+          />
+        </li>
+        <li>
+          <SidebarItem
+            label="Scholar Records"
+            onClick={handlers.scholarRecords}
+            IconComponent={Award}
           />
         </li>
         <li>

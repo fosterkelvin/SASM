@@ -223,7 +223,7 @@ export const WorkflowProgress = ({ currentStatus }: WorkflowProgressProps) => {
           {currentStatus === "interview_completed" &&
             "Interview completed, awaiting decision"}
           {currentStatus === "interview_passed" &&
-            "Interview passed! Will be set as trainee soon"}
+            "Interview passed! Will be deployed as trainee soon"}
           {currentStatus === "interview_failed" && "Interview not passed"}
           {currentStatus === "trainee" && "Currently in training period"}
           {currentStatus === "training_completed" &&

@@ -4,6 +4,40 @@ import { Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ApplicationFormData } from "../applicationSchema";
 
+// Helper to format phone number with +63 prefix
+const formatPhoneNumber = (value: string): string => {
+  // Remove all non-digit characters
+  let digits = value.replace(/[^\d]/g, "");
+  
+  // Remove leading 63 if user typed it
+  if (digits.startsWith("63")) {
+    digits = digits.slice(2);
+  }
+  
+  // Remove leading 0 if present
+  if (digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
+  
+  // Limit to 10 digits
+  digits = digits.slice(0, 10);
+  
+  return digits ? `+63${digits}` : "";
+};
+
+// Get just the digits after +63
+const getDigitsOnly = (value: string): string => {
+  if (!value) return "";
+  const digits = value.replace(/[^\d]/g, "");
+  if (digits.startsWith("63")) {
+    return digits.slice(2);
+  }
+  if (digits.startsWith("0")) {
+    return digits.slice(1);
+  }
+  return digits.slice(0, 10);
+};
+
 interface AddressSectionProps {
   formData: Partial<ApplicationFormData>;
   errors: Partial<Record<keyof ApplicationFormData, string>>;
@@ -332,18 +366,25 @@ export default function ParentsInfoSection({
             >
               Contact No.
             </Label>
-            <Input
-              id="emergencyContactNumber"
-              value={formData.emergencyContactNumber || ""}
-              onChange={(e) =>
-                handleInputChange("emergencyContactNumber", e.target.value)
-              }
-              onBlur={(e) =>
-                handleInputChange("emergencyContactNumber", e.target.value)
-              }
-              className={errors.emergencyContactNumber ? "border-red-500" : ""}
-              placeholder="+63 XXX XXX XXXX"
-            />
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+                +63
+              </span>
+              <Input
+                id="emergencyContactNumber"
+                value={getDigitsOnly(formData.emergencyContactNumber || "")}
+                onChange={(e) =>
+                  handleInputChange("emergencyContactNumber", formatPhoneNumber(e.target.value))
+                }
+                onBlur={(e) =>
+                  handleInputChange("emergencyContactNumber", formatPhoneNumber(e.target.value))
+                }
+                className={`pl-12 ${errors.emergencyContactNumber ? "border-red-500" : ""}`}
+                placeholder="XXX XXX XXXX"
+                maxLength={10}
+                inputMode="numeric"
+              />
+            </div>
             {errors.emergencyContactNumber && (
               <p className="text-red-600 text-sm mt-1">
                 {errors.emergencyContactNumber}

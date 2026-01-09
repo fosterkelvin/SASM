@@ -5,6 +5,84 @@ import { Button } from "@/components/ui/button";
 import { getUserData, upsertUserData } from "@/lib/api";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
+// List of schools/departments
+const SCHOOLS_DEPARTMENTS = [
+  "School of Business Administration & Accountancy",
+  "School of Criminal Justice & Public Safety",
+  "School of Dentistry",
+  "School of Engineering & Architecture",
+  "School of Information Technology",
+  "School of International Hospitality & Tourism Management",
+  "School of Law",
+  "School of Natural Sciences",
+  "School of Nursing",
+  "School of Teacher Education & Liberal Arts",
+];
+
+// List of year levels
+const YEAR_LEVELS = [
+  "1st Year",
+  "2nd Year",
+  "3rd Year",
+  "4th Year",
+  "5th Year",
+  "Graduate Student",
+];
+
+// Courses mapped to schools/departments
+const COURSES_BY_SCHOOL: Record<string, string[]> = {
+  "School of Business Administration & Accountancy": [
+    "BS Accountancy",
+    "BS Business Administration",
+    "BS Management Accounting",
+    "BS Entrepreneurship",
+  ],
+  "School of Criminal Justice & Public Safety": [
+    "BS Criminology",
+    "BS Industrial Security Management",
+  ],
+  "School of Dentistry": [
+    "Doctor of Dental Medicine",
+  ],
+  "School of Engineering & Architecture": [
+    "BS Civil Engineering",
+    "BS Mechanical Engineering",
+    "BS Electrical Engineering",
+    "BS Electronics Engineering",
+    "BS Computer Engineering",
+    "BS Architecture",
+  ],
+  "School of Information Technology": [
+    "BS Information Technology",
+    "BS Computer Science",
+    "BS Information Systems",
+  ],
+  "School of International Hospitality & Tourism Management": [
+    "BS Hospitality Management",
+    "BS Tourism Management",
+  ],
+  "School of Law": [
+    "Juris Doctor",
+  ],
+  "School of Natural Sciences": [
+    "BS Biology",
+    "BS Chemistry",
+    "BS Mathematics",
+    "BS Psychology",
+  ],
+  "School of Nursing": [
+    "BS Nursing",
+  ],
+  "School of Teacher Education & Liberal Arts": [
+    "Bachelor of Elementary Education",
+    "Bachelor of Secondary Education",
+    "BS Education",
+    "AB Communication",
+    "AB English",
+    "AB Political Science",
+  ],
+};
+
 type Props = {
   user: any;
   colorScheme: { background: string; cardBorder: string };
@@ -12,6 +90,7 @@ type Props = {
 
 type LocalAcademic = {
   college?: string;
+  course?: string;
   courseYear?: string;
 };
 
@@ -19,6 +98,7 @@ export default function AcademicInfoCard({ user, colorScheme }: Props) {
   const [editing, setEditing] = useState(false);
   const [local, setLocal] = useState<LocalAcademic>({
     college: undefined,
+    course: undefined,
     courseYear: undefined,
   });
 
@@ -46,6 +126,7 @@ export default function AcademicInfoCard({ user, colorScheme }: Props) {
     if (userData) {
       setLocal({
         college: userData.college || undefined,
+        course: userData.course || undefined,
         courseYear: userData.courseYear || undefined,
       });
     }
@@ -60,11 +141,15 @@ export default function AcademicInfoCard({ user, colorScheme }: Props) {
     if (userData) {
       setLocal({
         college: userData.college || undefined,
+        course: userData.course || undefined,
         courseYear: userData.courseYear || undefined,
       });
     }
     setEditing(false);
   };
+
+  // Get available courses based on selected school
+  const availableCourses = local.college ? COURSES_BY_SCHOOL[local.college] || [] : [];
 
   // Only show for students
   if (user?.role !== "student") {
@@ -102,7 +187,7 @@ export default function AcademicInfoCard({ user, colorScheme }: Props) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-1">
             <p className="text-sm text-gray-500 dark:text-gray-400">
               School / Department
@@ -112,36 +197,79 @@ export default function AcademicInfoCard({ user, colorScheme }: Props) {
                 {local.college || "Not specified"}
               </p>
             ) : (
-              <input
-                type="text"
-                className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-sm"
+              <select
                 value={local.college || ""}
                 onChange={(e) =>
-                  setLocal((s) => ({ ...s, college: e.target.value }))
+                  setLocal((s) => ({ ...s, college: e.target.value, course: undefined }))
                 }
-                placeholder="e.g. School of Information Technology"
-              />
+                className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200"
+              >
+                <option value="" disabled>
+                  Select your school/department
+                </option>
+                {SCHOOLS_DEPARTMENTS.map((school) => (
+                  <option key={school} value={school}>
+                    {school}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 
           <div className="space-y-1">
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Course & Year
+              Course
+            </p>
+            {!editing ? (
+              <p className="font-medium text-gray-800 dark:text-gray-200">
+                {local.course || "Not specified"}
+              </p>
+            ) : (
+              <select
+                value={local.course || ""}
+                onChange={(e) =>
+                  setLocal((s) => ({ ...s, course: e.target.value }))
+                }
+                disabled={!local.college}
+                className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="" disabled>
+                  {local.college ? "Select your course" : "Select school first"}
+                </option>
+                {availableCourses.map((course) => (
+                  <option key={course} value={course}>
+                    {course}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Year Level
             </p>
             {!editing ? (
               <p className="font-medium text-gray-800 dark:text-gray-200">
                 {local.courseYear || "Not specified"}
               </p>
             ) : (
-              <input
-                type="text"
-                className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-sm"
+              <select
                 value={local.courseYear || ""}
                 onChange={(e) =>
                   setLocal((s) => ({ ...s, courseYear: e.target.value }))
                 }
-                placeholder="e.g. BS Computer Science - 4th Year"
-              />
+                className="w-full rounded border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-200"
+              >
+                <option value="" disabled>
+                  Select your year level
+                </option>
+                {YEAR_LEVELS.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
         </div>

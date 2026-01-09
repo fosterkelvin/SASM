@@ -8,10 +8,15 @@ export default function useFileUpload() {
     profilePhoto: string;
   }>({ profilePhoto: "" });
 
+  const MAX_FILE_SIZE_MB = 10; // 10MB limit
   const handleFileUpload = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return;
     const file = files[0];
     if (file) {
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        alert(`File exceeds the ${MAX_FILE_SIZE_MB}MB limit. Please choose a smaller file.`);
+        return;
+      }
       setUploadedFiles((prev) => ({ ...prev, profilePhoto: file }));
       const url = URL.createObjectURL(file);
       setFilePreviewUrls((prev) => ({ ...prev, profilePhoto: url }));

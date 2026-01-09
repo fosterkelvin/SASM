@@ -121,7 +121,7 @@ const RequirementItem: React.FC<Props> = ({
                 Upload {item.text} *
               </div>
               <div className="text-sm text-gray-500 mt-1">
-                Accepted: Images or PDF. This is required for your application.
+                Accepted: Images or PDF (Max 10MB).
               </div>
             </div>
           </>
@@ -298,20 +298,6 @@ const RequirementItem: React.FC<Props> = ({
             </div>
           </div>
         )}
-      </div>
-
-      <div className="mt-3">
-        <div className="text-sm text-blue-600">
-          Please upload a 2x2 passport-style photograph with a white background.
-          This is required for your application.
-        </div>
-      </div>
-
-      <div className="mt-2 text-xs text-gray-400">
-        You may upload a scanned copy.{" "}
-        {isRequired
-          ? "This is required for your application."
-          : "This is optional and can be left blank."}
       </div>
       {error && <div className="mt-2 text-sm text-red-600">{error}</div>}
     </li>
