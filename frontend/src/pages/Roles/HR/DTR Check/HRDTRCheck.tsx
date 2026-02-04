@@ -683,7 +683,7 @@ const HRDTRCheck: React.FC = () => {
                               {entry.day}
                             </td>
                             {/* Duty Column */}
-                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">>
+                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                               {!hasData ? (
                                 <div className="text-center text-gray-400 text-xs">
                                   -
