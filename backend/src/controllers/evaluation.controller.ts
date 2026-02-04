@@ -66,14 +66,32 @@ export const submitEvaluation = catchErrors(
     } = parsed.data;
 
     // Verify scholar exists
-    const scholar = await ScholarModel.findById(scholarId);
+    const scholar = await ScholarModel.findById(scholarId).populate({
+      path: "userId",
+      select: "firstname lastname",
+    });
     appAssert(scholar, NOT_FOUND, "Scholar not found");
+
+    // Get scholar's name from the populated userId
+    const scholarUser = scholar.userId as any;
+    const scholarName = scholarUser
+      ? `${scholarUser.firstname || ""} ${scholarUser.lastname || ""}`.trim()
+      : "Unknown";
+    const scholarType =
+      scholar.scholarType === "student_assistant"
+        ? "Student Assistant"
+        : scholar.scholarType === "student_marshal"
+          ? "Student Marshal"
+          : "Unknown";
 
     // Get the office name from the user's officeName field
     const officeName = user.officeName || user.office || "Unknown Office";
 
     const evaluation = await EvaluationModel.create({
       scholarId: new mongoose.Types.ObjectId(scholarId),
+      userId: scholar.userId._id || scholar.userId, // Store userId for future lookup
+      scholarName, // Store name directly to persist after semester ends
+      scholarType, // Store type directly
       officeProfileId: new mongoose.Types.ObjectId(profileID),
       officeName: officeName,
       evaluatorName: profile.profileName,
@@ -181,17 +199,21 @@ export const getAllEvaluations = catchErrors(
         const scholarData = evaluationObj.scholarId;
         const userData = scholarData?.userId;
 
+        // Use stored scholarName first (persists after semester ends), fallback to populated data
+        const scholarNameFromPopulate = userData
+          ? `${userData.firstname || ""} ${userData.lastname || ""}`.trim()
+          : null;
+        
+        const scholarTypeFromPopulate = scholarData?.scholarType === "student_assistant"
+          ? "Student Assistant"
+          : scholarData?.scholarType === "student_marshal"
+            ? "Student Marshal"
+            : null;
+
         return {
           ...evaluationObj,
-          scholarName: userData
-            ? `${userData.firstname || ""} ${userData.lastname || ""}`.trim()
-            : "Unknown",
-          scholarshipType:
-            scholarData?.scholarType === "student_assistant"
-              ? "Student Assistant"
-              : scholarData?.scholarType === "student_marshal"
-                ? "Student Marshal"
-                : "Unknown",
+          scholarName: evaluationObj.scholarName || scholarNameFromPopulate || "Unknown",
+          scholarshipType: evaluationObj.scholarType || scholarTypeFromPopulate || "Unknown",
         };
       })
     );

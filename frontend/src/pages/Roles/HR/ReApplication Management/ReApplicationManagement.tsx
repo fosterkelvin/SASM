@@ -187,7 +187,6 @@ const ReApplicationManagement: React.FC = () => {
                   >
                     <option value="">All statuses</option>
                     <option value="pending">Pending</option>
-                    <option value="under_review">Under Review</option>
                     <option value="approved">Approved</option>
                     <option value="rejected">Rejected</option>
                   </select>
@@ -416,6 +415,87 @@ const ReApplicationManagement: React.FC = () => {
                 </div>
               )}
 
+              {/* Last Semester Evaluation */}
+              {selected.lastEvaluation && (
+                <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">
+                    Last Semester Evaluation
+                  </Label>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Recommended for Next Semester
+                      </span>
+                      <span
+                        className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                          selected.lastEvaluation.recommendedForNextSemester
+                            ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
+                            : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"
+                        }`}
+                      >
+                        {selected.lastEvaluation.recommendedForNextSemester
+                          ? "Yes"
+                          : "No"}
+                      </span>
+                    </div>
+                    {selected.lastEvaluation.averageRating && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          Average Rating
+                        </span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          {selected.lastEvaluation.averageRating} / 5
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Evaluated By
+                      </span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">
+                        {selected.lastEvaluation.evaluatorName} ({selected.lastEvaluation.officeName})
+                      </span>
+                    </div>
+                    {selected.lastEvaluation.areasOfStrength && (
+                      <div>
+                        <span className="text-sm text-gray-600 dark:text-gray-400 block mb-1">
+                          Areas of Strength
+                        </span>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 p-2 bg-white dark:bg-gray-800 rounded">
+                          {selected.lastEvaluation.areasOfStrength}
+                        </p>
+                      </div>
+                    )}
+                    {selected.lastEvaluation.areasOfImprovement && (
+                      <div>
+                        <span className="text-sm text-gray-600 dark:text-gray-400 block mb-1">
+                          Areas for Improvement
+                        </span>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 p-2 bg-white dark:bg-gray-800 rounded">
+                          {selected.lastEvaluation.areasOfImprovement}
+                        </p>
+                      </div>
+                    )}
+                    {selected.lastEvaluation.justification && (
+                      <div>
+                        <span className="text-sm text-gray-600 dark:text-gray-400 block mb-1">
+                          Justification
+                        </span>
+                        <p className="text-sm text-gray-900 dark:text-gray-100 p-2 bg-white dark:bg-gray-800 rounded">
+                          {selected.lastEvaluation.justification}
+                        </p>
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
+                      Evaluated on{" "}
+                      {new Date(
+                        selected.lastEvaluation.evaluatedAt
+                      ).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <Label
                   htmlFor="status-select"
@@ -433,9 +513,8 @@ const ReApplicationManagement: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
                   <option value="pending">Pending</option>
-                  <option value="under_review">Under Review</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
+                  <option value="approved">Approve</option>
+                  <option value="rejected">Reject</option>
                 </select>
               </div>
             </div>

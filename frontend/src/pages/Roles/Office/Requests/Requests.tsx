@@ -10,7 +10,7 @@ const RequestsPage: React.FC = () => {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900">
       <OfficeSidebar
-        currentPage="Requests"
+        currentPage="Scholar Request"
         onCollapseChange={setIsSidebarCollapsed}
       />
 
@@ -26,7 +26,7 @@ const RequestsPage: React.FC = () => {
               : "md:w-[calc(100%-16rem)] md:ml-64"
           }`}
         >
-          <h1 className="text-2xl font-bold text-white ml-4">Requests</h1>
+          <h1 className="text-2xl font-bold text-white ml-4">Scholar Request</h1>
         </div>
 
         <div className="p-4 md:p-10 mt-12">
@@ -41,7 +41,7 @@ const RequestsPage: React.FC = () => {
                   />
                   <div className="text-center sm:text-left">
                     <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200">
-                      Requests
+                      Scholar Request
                     </h2>
                     <p className="text-sm sm:text-base md:text-lg font-semibold text-red-600 dark:text-red-400">
                       Create scholar requests. Specify the number of scholars

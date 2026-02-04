@@ -51,9 +51,9 @@ const LeaveDetailsSection: React.FC<Props> = ({ data, onChange }) => {
 
   return (
     <div className="p-6 border rounded bg-white dark:bg-gray-800">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Type of Leave
           </label>
           <select
@@ -93,31 +93,41 @@ const LeaveDetailsSection: React.FC<Props> = ({ data, onChange }) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Date(s) of Leave
           </label>
-          <div className="flex gap-2">
-            <input
-              name="dateFrom"
-              value={data.dateFrom}
-              onChange={onChange}
-              type="date"
-              aria-label="Leave start date"
-              className="mt-1 block w-1/2 rounded-md border-gray-200 shadow-sm p-2"
-            />
-            <input
-              name="dateTo"
-              value={data.dateTo}
-              onChange={onChange}
-              type="date"
-              min={data.dateFrom || undefined}
-              aria-label="Leave end date"
-              className="mt-1 block w-1/2 rounded-md border-gray-200 shadow-sm p-2"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                From
+              </label>
+              <input
+                name="dateFrom"
+                value={data.dateFrom}
+                onChange={onChange}
+                type="date"
+                aria-label="Leave start date"
+                className="block w-full rounded-md border-gray-200 shadow-sm p-2"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                To
+              </label>
+              <input
+                name="dateTo"
+                value={data.dateTo}
+                onChange={onChange}
+                type="date"
+                min={data.dateFrom || undefined}
+                aria-label="Leave end date"
+                className="block w-full rounded-md border-gray-200 shadow-sm p-2"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="md:col-span-2">
+        <div>
           <label className="block text-sm font-medium text-gray-700">
             Number of Days
           </label>

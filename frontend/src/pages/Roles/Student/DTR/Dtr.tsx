@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  CheckCircle,
   CheckCircle2,
   Info,
 } from "lucide-react";
@@ -584,17 +585,11 @@ const Dtr: React.FC = () => {
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                      <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Weekly Hours (30h Limit)
+                        Weekly Hours (30h Quota)
                       </span>
                     </div>
-                    {hasWeeklyViolations && (
-                      <span className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full flex items-center gap-1">
-                        <AlertCircle className="h-3 w-3" />
-                        Limit Exceeded
-                      </span>
-                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
@@ -602,17 +597,14 @@ const Dtr: React.FC = () => {
                       const hours = Math.floor(week.hours / 60);
                       const minutes = week.hours % 60;
                       const percentage = (week.hours / 60 / 30) * 100;
-                      const isWarning = percentage > 80 && percentage <= 100;
-                      const isDanger = percentage > 100;
+                      const isComplete = percentage >= 100;
 
                       return (
                         <div
                           key={week.weekNum}
                           className={`p-3 rounded-lg border-2 transition-all ${
-                            isDanger
-                              ? "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700"
-                              : isWarning
-                              ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700"
+                            isComplete
+                              ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700"
                               : "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"
                           }`}
                         >
@@ -620,17 +612,15 @@ const Dtr: React.FC = () => {
                             <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
                               Week {week.weekNum}
                             </span>
-                            {isDanger && (
-                              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                            {isComplete && (
+                              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                             )}
                           </div>
                           <div className="text-lg font-bold mb-1">
                             <span
                               className={
-                                isDanger
-                                  ? "text-red-700 dark:text-red-300"
-                                  : isWarning
-                                  ? "text-yellow-700 dark:text-yellow-300"
+                                isComplete
+                                  ? "text-green-700 dark:text-green-300"
                                   : "text-gray-800 dark:text-gray-200"
                               }
                             >
@@ -640,11 +630,9 @@ const Dtr: React.FC = () => {
                           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden mb-1">
                             <div
                               className={`h-full transition-all duration-300 ${
-                                isDanger
-                                  ? "bg-gradient-to-r from-red-500 to-red-600"
-                                  : isWarning
-                                  ? "bg-gradient-to-r from-yellow-500 to-yellow-600"
-                                  : "bg-gradient-to-r from-green-500 to-green-600"
+                                isComplete
+                                  ? "bg-gradient-to-r from-green-500 to-green-600"
+                                  : "bg-gradient-to-r from-blue-500 to-blue-600"
                               }`}
                               style={{
                                 width: `${Math.min(percentage, 100)}%`,
@@ -652,9 +640,9 @@ const Dtr: React.FC = () => {
                             ></div>
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {percentage > 100 ? (
-                              <span className="text-red-600 dark:text-red-400 font-semibold">
-                                +{(percentage - 100).toFixed(0)}% over limit
+                            {percentage >= 100 ? (
+                              <span className="text-green-600 dark:text-green-400 font-semibold">
+                                {percentage.toFixed(0)}% of quota
                               </span>
                             ) : (
                               <span>{percentage.toFixed(0)}% of 30h</span>
@@ -668,20 +656,6 @@ const Dtr: React.FC = () => {
                       );
                     })}
                   </div>
-
-                  {hasWeeklyViolations && (
-                    <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                        <div className="text-sm text-red-800 dark:text-red-200">
-                          <span className="font-semibold">Warning:</span> You
-                          have exceeded the 30-hour weekly limit. Please review
-                          your hours to ensure compliance with program
-                          requirements.
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
             </CardContent>

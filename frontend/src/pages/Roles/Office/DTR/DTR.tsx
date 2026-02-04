@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
 import { Card, CardContent } from "@/components/ui/card";
 import OfficeDTRTable from "./components/OfficeDTRTable";
-import { Entry } from "@/pages/Roles/Student/DTR/components/types";
+import EditDutyModal from "./components/EditDutyModal";
+import { Entry, Shift } from "@/pages/Roles/Student/DTR/components/types";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
@@ -196,6 +197,39 @@ const OfficeDTRPage: React.FC = () => {
     setEntries((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...changes } : p))
     );
+  };
+
+  // Edit Duty Modal State
+  const [editDutyModalOpen, setEditDutyModalOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
+
+  const handleEditDuty = (entry: Entry) => {
+    setEditingEntry(entry);
+    setEditDutyModalOpen(true);
+  };
+
+  const handleSaveDuty = (entryId: number, shifts: Shift[]) => {
+    setEntries((prev) =>
+      prev.map((p) =>
+        p.id === entryId
+          ? { ...p, shifts, status: shifts.length > 0 ? "Unconfirmed" : "" }
+          : p
+      )
+    );
+    setEditDutyModalOpen(false);
+    setEditingEntry(null);
+  };
+
+  const handleClearDuty = (entry: Entry) => {
+    if (window.confirm(`Are you sure you want to clear all duties for Day ${entry.id}?`)) {
+      setEntries((prev) =>
+        prev.map((p) =>
+          p.id === entry.id
+            ? { ...p, shifts: [], in1: "", out1: "", in2: "", out2: "", in3: "", out3: "", in4: "", out4: "", status: "" }
+            : p
+        )
+      );
+    }
   };
 
   return (
@@ -398,6 +432,8 @@ const OfficeDTRPage: React.FC = () => {
                       <OfficeDTRTable
                         entries={entries}
                         onChange={handleEntryChange}
+                        onEditDuty={handleEditDuty}
+                        onClearDuty={handleClearDuty}
                         month={selectedMonth}
                         year={selectedYear}
                       />
@@ -411,6 +447,17 @@ const OfficeDTRPage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Edit Duty Modal */}
+      <EditDutyModal
+        isOpen={editDutyModalOpen}
+        entry={editingEntry}
+        onClose={() => {
+          setEditDutyModalOpen(false);
+          setEditingEntry(null);
+        }}
+        onSave={handleSaveDuty}
+      />
     </div>
   );
 };

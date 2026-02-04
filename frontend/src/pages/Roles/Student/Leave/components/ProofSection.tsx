@@ -6,9 +6,10 @@ interface Props {
   data: LeaveFormData;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFileChange?: (file: File | null) => void;
+  isRequired?: boolean;
 }
 
-const ProofSection: React.FC<Props> = ({ data, onChange, onFileChange }) => {
+const ProofSection: React.FC<Props> = ({ data, onChange, onFileChange, isRequired = false }) => {
   const [fileName, setFileName] = React.useState("");
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
 
@@ -53,14 +54,19 @@ const ProofSection: React.FC<Props> = ({ data, onChange, onFileChange }) => {
   };
 
   return (
-    <div className="p-4 md:p-6 border rounded bg-white dark:bg-gray-800">
+    <div className={`p-4 md:p-6 border rounded bg-white dark:bg-gray-800 ${isRequired ? 'border-red-300 dark:border-red-700' : ''}`}>
       <h3 className="text-base md:text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
-        Supporting Document (Optional)
+        Supporting Document {isRequired ? <span className="text-red-500">*</span> : '(Optional)'}
       </h3>
       <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-4">
-        Upload proof or supporting documents (e.g., medical certificate,
-        doctor's note). This is optional but can help expedite approval. Maximum
-        file size: 5MB. Accepted formats: JPG, PNG, PDF
+        {isRequired ? (
+          <span className="text-red-600 dark:text-red-400 font-medium">
+            A medical certificate or doctor's note is required for sick leave.
+          </span>
+        ) : (
+          <>Upload proof or supporting documents (e.g., medical certificate, doctor's note). This is optional but can help expedite approval.</>
+        )}
+        {' '}Maximum file size: 5MB. Accepted formats: JPG, PNG, PDF
       </p>
 
       <div className="space-y-4">

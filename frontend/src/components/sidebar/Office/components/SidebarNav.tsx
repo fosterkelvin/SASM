@@ -7,6 +7,7 @@ import {
   Users,
   ClipboardCheck,
   Bell,
+  BarChart3,
 } from "lucide-react";
 
 interface NavProps {
@@ -40,6 +41,13 @@ const SidebarNav: React.FC<NavProps> = ({
         </li>
         <li>
           <SidebarItem
+            label="DTR Report"
+            onClick={handlers.dtrReport}
+            IconComponent={BarChart3}
+          />
+        </li>
+        <li>
+          <SidebarItem
             label="Evaluation"
             onClick={handlers.evaluation}
             IconComponent={Calendar}
@@ -54,7 +62,7 @@ const SidebarNav: React.FC<NavProps> = ({
         </li>
         <li>
           <SidebarItem
-            label="Requests"
+            label="Scholar Request"
             onClick={handlers.requests}
             IconComponent={FileText}
           />

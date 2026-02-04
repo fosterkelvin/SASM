@@ -157,16 +157,6 @@ export const LeaveActionsModal: React.FC<Props> = ({
             >
               Disapprove
             </button>
-            <button
-              onClick={() => setStatus("pending")}
-              className={`px-3 py-1 rounded ${
-                status === "pending"
-                  ? "bg-yellow-600 text-white"
-                  : "bg-yellow-100 text-yellow-800"
-              }`}
-            >
-              Set Pending
-            </button>
           </div>
         </div>
 
@@ -183,7 +173,7 @@ export const LeaveActionsModal: React.FC<Props> = ({
           />
         </div>
 
-        {status === "disapproved" && (
+        {status === "approved" && (
           <div className="mt-3 flex items-center gap-2">
             <input
               type="checkbox"

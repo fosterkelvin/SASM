@@ -66,9 +66,9 @@ const DynamicDTRTable: React.FC<DynamicDTRTableProps> = ({
                 colSpan={2}
               >
                 <div className="flex flex-col items-center">
-                  <span>Duty Shifts</span>
+                  <span>Duty</span>
                   <span className="text-xs font-normal text-white/80">
-                    IN → OUT times (Add multiple shifts as needed)
+                    IN → OUT times
                   </span>
                 </div>
               </th>
@@ -174,7 +174,7 @@ const DynamicDTRTable: React.FC<DynamicDTRTableProps> = ({
                     d="M12 4v16m8-8H4"
                   />
                 </svg>
-                Add Shift
+                Add Duty
               </button>
               <span>Click to add more duties per day</span>
             </div>

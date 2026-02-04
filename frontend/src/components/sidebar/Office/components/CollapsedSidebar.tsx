@@ -11,6 +11,7 @@ import {
   LogOut,
   ClipboardCheck,
   Bell,
+  BarChart3,
 } from "lucide-react";
 
 interface Props {
@@ -66,6 +67,16 @@ const CollapsedSidebar: React.FC<Props> = ({
               title="DTR Check"
             >
               <ClipboardCheck size={16} />
+            </button>
+          </div>
+          <div className="group relative">
+            <button
+              onClick={handlers.dtrReport}
+              className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200"
+              aria-label="DTR Report"
+              title="DTR Report"
+            >
+              <BarChart3 size={16} />
             </button>
           </div>
           <div className="group relative">

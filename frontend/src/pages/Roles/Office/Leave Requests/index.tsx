@@ -7,6 +7,12 @@ import LeaveFilters from "./LeaveFilters";
 import LeaveTable from "./LeaveTable";
 import { decideLeaveRequest, getOfficeLeaves } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
+import { FileDown } from "lucide-react";
+import pdfMake from "pdfmake/build/pdfmake";
+import * as pdfFonts from "pdfmake/build/vfs_fonts";
+
+// Set fonts for pdfMake
+(pdfMake as any).vfs = pdfFonts;
 
 const LeaveRequestsPage: React.FC = () => {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
@@ -98,6 +104,107 @@ const LeaveRequestsPage: React.FC = () => {
     );
   }, [requests]);
 
+  // Generate Report PDF
+  const generateReport = () => {
+    if (requests.length === 0) {
+      addToast("No leave requests to generate report.", "error");
+      return;
+    }
+
+    try {
+      const currentDate = new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+      const tableBody = [
+        [
+          { text: "Student Name", style: "tableHeader", bold: true },
+          { text: "Leave Type", style: "tableHeader", bold: true },
+          { text: "Start Date", style: "tableHeader", bold: true },
+          { text: "End Date", style: "tableHeader", bold: true },
+          { text: "Reason", style: "tableHeader", bold: true },
+          { text: "Status", style: "tableHeader", bold: true },
+          { text: "Decided By", style: "tableHeader", bold: true },
+        ],
+        ...requests.map((r) => [
+          { text: r.studentName, style: "tableCell" },
+          { text: r.type || "N/A", style: "tableCell" },
+          { text: new Date(r.startDate).toLocaleDateString(), style: "tableCell" },
+          { text: new Date(r.endDate).toLocaleDateString(), style: "tableCell" },
+          { text: r.reason, style: "tableCell", fontSize: 8 },
+          {
+            text: r.status.charAt(0).toUpperCase() + r.status.slice(1),
+            style: "tableCell",
+            color: r.status === "approved" ? "#16a34a" : r.status === "disapproved" ? "#dc2626" : "#ca8a04",
+          },
+          { text: r.decidedByProfile || "-", style: "tableCell", fontSize: 8 },
+        ]),
+      ];
+
+      const docDefinition: any = {
+        pageSize: "A4",
+        pageOrientation: "landscape",
+        pageMargins: [30, 80, 30, 50],
+        header: (currentPage: number, pageCount: number) => ({
+          columns: [
+            { text: "Leave Requests Report", style: "header", margin: [30, 20, 0, 0] },
+            { text: `Page ${currentPage} of ${pageCount}`, alignment: "right", margin: [0, 20, 30, 0], fontSize: 10 },
+          ],
+        }),
+        footer: () => ({
+          text: `Generated on ${currentDate}`,
+          alignment: "center",
+          margin: [0, 10, 0, 0],
+          fontSize: 9,
+          color: "#666",
+        }),
+        content: [
+          { text: "Summary Statistics", style: "subheader", margin: [0, 0, 0, 10] },
+          {
+            columns: [
+              { width: "25%", stack: [{ text: "Total", fontSize: 11, bold: true, color: "#333" }, { text: counts.total.toString(), fontSize: 24, bold: true, color: "#2563eb", margin: [0, 5, 0, 0] }] },
+              { width: "25%", stack: [{ text: "Pending", fontSize: 11, bold: true, color: "#333" }, { text: (counts.pending || 0).toString(), fontSize: 24, bold: true, color: "#ca8a04", margin: [0, 5, 0, 0] }] },
+              { width: "25%", stack: [{ text: "Approved", fontSize: 11, bold: true, color: "#333" }, { text: (counts.approved || 0).toString(), fontSize: 24, bold: true, color: "#16a34a", margin: [0, 5, 0, 0] }] },
+              { width: "25%", stack: [{ text: "Disapproved", fontSize: 11, bold: true, color: "#333" }, { text: (counts.disapproved || 0).toString(), fontSize: 24, bold: true, color: "#dc2626", margin: [0, 5, 0, 0] }] },
+            ],
+            margin: [0, 0, 0, 20],
+          },
+          { canvas: [{ type: "line", x1: 0, y1: 0, x2: 770, y2: 0, lineWidth: 1, lineColor: "#e5e7eb" }], margin: [0, 0, 0, 15] },
+          { text: "Leave Request Details", style: "subheader", margin: [0, 0, 0, 10] },
+          {
+            table: { headerRows: 1, widths: ["*", 60, 55, 55, "*", 60, 70], body: tableBody },
+            layout: {
+              fillColor: (rowIndex: number) => (rowIndex === 0 ? "#f3f4f6" : rowIndex % 2 === 0 ? "#fafafa" : null),
+              hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length ? 1 : 0.5),
+              vLineWidth: () => 0.5,
+              hLineColor: () => "#e5e7eb",
+              vLineColor: () => "#e5e7eb",
+              paddingLeft: () => 6,
+              paddingRight: () => 6,
+              paddingTop: () => 5,
+              paddingBottom: () => 5,
+            },
+          },
+        ],
+        styles: {
+          header: { fontSize: 18, bold: true, color: "#1f2937" },
+          subheader: { fontSize: 14, bold: true, color: "#374151" },
+          tableHeader: { fontSize: 9, bold: true, color: "#374151", alignment: "left" },
+          tableCell: { fontSize: 9, color: "#1f2937" },
+        },
+        defaultStyle: { font: "Roboto" },
+      };
+
+      pdfMake.createPdf(docDefinition).open();
+      addToast("Report generated successfully!", "success");
+    } catch (error) {
+      console.error("Error generating report:", error);
+      addToast("Failed to generate report.", "error");
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-gray-900">
       <OfficeSidebar
@@ -118,9 +225,19 @@ const LeaveRequestsPage: React.FC = () => {
           }`}
         >
           <h1 className="text-2xl font-bold text-white ml-4">Leave Requests</h1>
-          <div className="ml-auto mr-4 text-sm text-red-100">
-            Total: {counts.total} • Pending: {counts.pending} • Approved:{" "}
-            {counts.approved}
+          <div className="ml-auto mr-4 flex items-center gap-4">
+            <button
+              onClick={generateReport}
+              disabled={requests.length === 0}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-white/20 text-white hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <FileDown size={16} />
+              Generate Report
+            </button>
+            <span className="text-sm text-red-100">
+              Total: {counts.total} • Pending: {counts.pending} • Approved:{" "}
+              {counts.approved}
+            </span>
           </div>
         </div>
 

@@ -640,9 +640,9 @@ const HRDTRCheck: React.FC = () => {
                         </th>
                         <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
                           <div className="flex flex-col items-center">
-                            <span>Duty Shifts</span>
+                            <span>Duty</span>
                             <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
-                              IN → OUT times (multiple shifts)
+                              IN → OUT times
                             </span>
                           </div>
                         </th>
@@ -682,8 +682,8 @@ const HRDTRCheck: React.FC = () => {
                             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                               {entry.day}
                             </td>
-                            {/* Duty Shifts Column */}
-                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                            {/* Duty Column */}
+                            <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">>
                               {!hasData ? (
                                 <div className="text-center text-gray-400 text-xs">
                                   -
@@ -698,7 +698,7 @@ const HRDTRCheck: React.FC = () => {
                                         className="flex items-center gap-2 text-xs justify-center"
                                       >
                                         <span className="font-semibold text-gray-600 dark:text-gray-400">
-                                          Shift {index + 1}:
+                                          Duty {index + 1}:
                                         </span>
                                         <span className="font-mono text-gray-700 dark:text-gray-300">
                                           {shift.in || "--:--"}

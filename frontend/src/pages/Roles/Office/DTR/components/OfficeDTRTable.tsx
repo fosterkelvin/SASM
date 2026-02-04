@@ -5,6 +5,8 @@ import { Entry, Shift } from "@/pages/Roles/Student/DTR/components/types";
 interface OfficeDTRTableProps {
   entries: Entry[];
   onChange: (id: number, changes: Partial<Entry>) => void;
+  onEditDuty?: (entry: Entry) => void;
+  onClearDuty?: (entry: Entry) => void;
   month: number;
   year: number;
 }
@@ -12,6 +14,8 @@ interface OfficeDTRTableProps {
 const OfficeDTRTable: React.FC<OfficeDTRTableProps> = ({
   entries,
   onChange,
+  onEditDuty,
+  onClearDuty,
   month,
   year,
 }) => {
@@ -88,8 +92,8 @@ const OfficeDTRTable: React.FC<OfficeDTRTableProps> = ({
         </svg>
         <div className="text-sm text-blue-800 dark:text-blue-200">
           <div className="mb-1">
-            <span className="font-semibold">Dynamic Shift System:</span>{" "}
-            Students can log unlimited duty shifts per day. Each row displays
+            <span className="font-semibold">Dynamic Duty System:</span>{" "}
+            Students can log multiple duties per day. Each row displays
             all IN/OUT times for that day.
           </div>
           <div className="text-xs">
@@ -113,7 +117,7 @@ const OfficeDTRTable: React.FC<OfficeDTRTableProps> = ({
               </th>
               <th className="border border-red-500 dark:border-red-700 px-3 py-3 text-sm font-bold">
                 <div className="flex flex-col items-center">
-                  <span>Duty Shifts</span>
+                  <span>Duty</span>
                   <span className="text-xs font-normal text-white/80">
                     IN → OUT times
                   </span>
@@ -161,32 +165,58 @@ const OfficeDTRTable: React.FC<OfficeDTRTableProps> = ({
 
                   {/* Shifts Column */}
                   <td className="border border-gray-200 dark:border-gray-700 px-3 py-3">
-                    {hasData ? (
-                      <div className="space-y-1">
-                        {shifts.map((shift, index) => {
-                          if (!shift.in && !shift.out) return null;
-                          return (
-                            <div
-                              key={index}
-                              className="flex items-center gap-2 text-sm"
-                            >
-                              <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 w-14">
-                                Shift {index + 1}:
-                              </span>
-                              <span className="font-mono text-gray-700 dark:text-gray-300">
-                                {shift.in || "--:--"}
-                              </span>
-                              <span className="text-gray-400">→</span>
-                              <span className="font-mono text-gray-700 dark:text-gray-300">
-                                {shift.out || "--:--"}
-                              </span>
-                            </div>
-                          );
-                        })}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1">
+                        {hasData ? (
+                          <div className="space-y-1">
+                            {shifts.map((shift, index) => {
+                              if (!shift.in && !shift.out) return null;
+                              return (
+                                <div
+                                  key={index}
+                                  className="flex items-center gap-2 text-sm"
+                                >
+                                  <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 w-14">
+                                    Duty {index + 1}:
+                                  </span>
+                                  <span className="font-mono text-gray-700 dark:text-gray-300">
+                                    {shift.in || "--:--"}
+                                  </span>
+                                  <span className="text-gray-400">→</span>
+                                  <span className="font-mono text-gray-700 dark:text-gray-300">
+                                    {shift.out || "--:--"}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-center text-gray-400">-</div>
+                        )}
                       </div>
-                    ) : (
-                      <div className="text-center text-gray-400">-</div>
-                    )}
+                      {/* Edit/Add Duty Button */}
+                      {!isSundayDay && (
+                        <button
+                          onClick={() => onEditDuty?.(e)}
+                          className="p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-md transition-colors"
+                          title={hasData ? "Edit Duty" : "Add Duty"}
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </td>
 
                   {/* Total Hours */}
@@ -210,31 +240,59 @@ const OfficeDTRTable: React.FC<OfficeDTRTableProps> = ({
 
                   {/* Actions */}
                   <td className="border border-gray-200 dark:border-gray-700 px-2 py-2 text-sm text-center">
-                    <button
-                      className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-1 mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={() => {
-                        const displayed = deriveStatus(e, e.status);
-                        onChange(e.id, { status: displayed });
-                        console.log(
-                          `Saved status for day ${e.id}: ${displayed}`
-                        );
-                      }}
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                    <div className="flex items-center justify-center gap-1">
+                      {/* Confirm Button */}
+                      <button
+                        className="px-2 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-md text-xs font-medium transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => {
+                          const displayed = deriveStatus(e, e.status);
+                          onChange(e.id, { status: displayed });
+                          console.log(
+                            `Saved status for day ${e.id}: ${displayed}`
+                          );
+                        }}
+                        title="Confirm Status"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      Confirm
-                    </button>
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        Confirm
+                      </button>
+                      
+                      {/* Clear Duty Button */}
+                      {hasData && !isSundayDay && (
+                        <button
+                          className="px-2 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-md text-xs font-medium transition-colors flex items-center gap-1"
+                          onClick={() => onClearDuty?.(e)}
+                          title="Clear Duty"
+                        >
+                          <svg
+                            className="w-3.5 h-3.5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                          Clear
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

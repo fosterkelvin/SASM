@@ -25,7 +25,9 @@ import MyTrainees from "./pages/Roles/Office/MyTrainees";
 import TraineeSchedule from "./pages/Roles/Office/TraineeSchedule";
 import ScholarSchedule from "./pages/Roles/Office/ScholarSchedule";
 import OfficeDTRCheck from "./pages/Roles/Office/OfficeDTRCheck";
+import OfficeDTRReport from "./pages/Roles/Office/DTR/OfficeDTRReport";
 import HRDTRCheck from "./pages/Roles/HR/DTR Check/HRDTRCheck";
+import HRDTRReport from "./pages/Roles/HR/DTR Check/HRDTRReport";
 import Notifications from "./pages/Utils/Notifications";
 import Analytics from "./pages/Roles/HR/Analytics/Analytics";
 import PublicRoute from "./routes/PublicRoute";
@@ -118,6 +120,7 @@ function App(): ReactElement {
         <Route path="/hr-dashboard" element={<HRDashboard />} />
         <Route path="/office-dashboard" element={<OfficeDashboard />} />
         <Route path="/office/dtr-check" element={<OfficeDTRCheck />} />
+        <Route path="/office/dtr-report" element={<OfficeDTRReport />} />
         <Route path="/office/evaluation" element={<OfficeEvaluationPage />} />
         <Route path="/office/scholars" element={<Scholars />} />
         <Route path="/office/my-trainees" element={<MyTrainees />} />
@@ -151,6 +154,7 @@ function App(): ReactElement {
           element={<ScholarRequestsManagement />}
         />
         <Route path="/hr/dtr-check" element={<HRDTRCheck />} />
+        <Route path="/hr/dtr-report" element={<HRDTRReport />} />
 
         {/* Netflix-style Profile Selector - Must be outside AppContainer for full-screen effect */}
       </Route>

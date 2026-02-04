@@ -134,6 +134,13 @@ const OfficeSidebar = ({
       },
     },
     {
+      label: "DTR Report",
+      handler: () => {
+        navigate("/office/dtr-report");
+        setIsOpen(false);
+      },
+    },
+    {
       label: "Evaluation",
       handler: () => {
         navigate("/office/evaluation");
@@ -148,7 +155,7 @@ const OfficeSidebar = ({
       },
     },
     {
-      label: "Requests",
+      label: "Scholar Request",
       handler: () => {
         navigate("/office/requests");
         setIsOpen(false);
@@ -254,6 +261,10 @@ const OfficeSidebar = ({
                       navigate("/office/dtr-check");
                       setIsOpen(false);
                     },
+                    dtrReport: () => {
+                      navigate("/office/dtr-report");
+                      setIsOpen(false);
+                    },
                     evaluation: () => {
                       navigate("/office/evaluation");
                       setIsOpen(false);
@@ -286,6 +297,7 @@ const OfficeSidebar = ({
               handlers={{
                 dashboard: () => navigate("/office-dashboard"),
                 dtrCheck: () => navigate("/office/dtr-check"),
+                dtrReport: () => navigate("/office/dtr-report"),
                 evaluation: () => navigate("/office/evaluation"),
                 leave: () => navigate("/office/leave-requests"),
                 requests: () => navigate("/office/requests"),

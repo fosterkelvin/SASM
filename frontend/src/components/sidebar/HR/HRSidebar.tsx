@@ -161,6 +161,11 @@ const HRSidebar = ({
     setIsOpen(false);
   };
 
+  const handleDTRReportClick = () => {
+    navigate("/hr/dtr-report");
+    setIsOpen(false);
+  };
+
   const handleEvaluationsClick = () => {
     navigate("/hr/evaluations");
     setIsOpen(false);
@@ -191,6 +196,7 @@ const HRSidebar = ({
     navigate("/hr/scholar-requests");
   const handleCollapsedLeavesClick = () => navigate("/leave-management");
   const handleCollapsedDTRCheckClick = () => navigate("/hr/dtr-check");
+  const handleCollapsedDTRReportClick = () => navigate("/hr/dtr-report");
   const handleCollapsedNotificationsClick = () => navigate("/notifications");
 
   const menuItems = [
@@ -208,6 +214,7 @@ const HRSidebar = ({
     { label: "Requirements", handler: handleRequirementsClick },
     { label: "Leave Management", handler: handleLeavesClick },
     { label: "DTR Check", handler: handleDTRCheckClick },
+    { label: "DTR Report", handler: handleDTRReportClick },
     { label: "Evaluations", handler: handleEvaluationsClick },
     { label: "Profile", handler: handleProfileClick },
     { label: "Sign out", handler: handleSignout },
@@ -313,6 +320,7 @@ const HRSidebar = ({
                     scholarRequests: handleScholarRequestsClick,
                     leaves: handleLeavesClick,
                     dtrCheck: handleDTRCheckClick,
+                    dtrReport: handleDTRReportClick,
                     evaluations: handleEvaluationsClick,
                     notifications: handleNotificationsClick,
                   }}
@@ -338,6 +346,7 @@ const HRSidebar = ({
                 scholarRequests: handleCollapsedScholarRequestsClick,
                 leaves: handleCollapsedLeavesClick,
                 dtrCheck: handleCollapsedDTRCheckClick,
+                dtrReport: handleCollapsedDTRReportClick,
                 notifications: handleCollapsedNotificationsClick,
                 profile: handleCollapsedProfileClick,
               }}

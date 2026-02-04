@@ -234,8 +234,7 @@ export const decideLeave = catchErrors(async (req: Request, res: Response) => {
   leave.decidedBy = new mongoose.Types.ObjectId(userID);
   leave.decidedByProfile = profileName;
   leave.decidedAt = new Date();
-  leave.allowResubmit =
-    status === "disapproved" ? allowResubmit || false : false;
+  leave.allowResubmit = allowResubmit || false;
   await leave.save();
 
   // If approved, automatically mark dates as excused in DTR
@@ -300,11 +299,11 @@ export const updateLeave = catchErrors(async (req: Request, res: Response) => {
     "You can only update your own leave requests"
   );
 
-  // Only allow updating disapproved requests with allowResubmit flag
+  // Only allow updating requests with allowResubmit flag (approved or disapproved)
   appAssert(
-    leave.status === "disapproved" && leave.allowResubmit,
+    (leave.status === "approved" || leave.status === "disapproved") && leave.allowResubmit,
     BAD_REQUEST,
-    "Only disapproved leave requests with resubmit permission can be updated"
+    "Only leave requests with resubmit permission can be updated"
   );
 
   const parsed = createLeaveSchema.safeParse(req.body);

@@ -8,6 +8,9 @@ export interface ICriterionEvaluation {
 
 export interface IEvaluation extends Document {
   scholarId: mongoose.Types.ObjectId;
+  userId?: mongoose.Types.ObjectId; // Store userId for lookup after scholar deletion
+  scholarName?: string; // Store name directly to persist after semester ends
+  scholarType?: string; // Store type directly to persist after semester ends
   officeProfileId: mongoose.Types.ObjectId;
   officeName: string;
   evaluatorName: string;
@@ -37,6 +40,13 @@ const EvaluationSchema = new Schema<IEvaluation>(
       required: true,
       index: true,
     },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      index: true,
+    },
+    scholarName: { type: String },
+    scholarType: { type: String },
     officeProfileId: {
       type: Schema.Types.ObjectId,
       ref: "OfficeProfile",
@@ -57,6 +67,7 @@ const EvaluationSchema = new Schema<IEvaluation>(
 // Index for efficient queries
 EvaluationSchema.index({ createdAt: -1 });
 EvaluationSchema.index({ scholarId: 1, createdAt: -1 });
+EvaluationSchema.index({ userId: 1, createdAt: -1 }); // For lookup after scholar deletion
 
 const EvaluationModel = mongoose.model<IEvaluation>(
   "Evaluation",

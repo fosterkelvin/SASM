@@ -322,7 +322,7 @@ const MyLeavesList: React.FC<MyLeavesListProps> = ({
                   </div>
                 )}
 
-                {leave.status === "disapproved" && leave.allowResubmit && (
+                {leave.status === "approved" && leave.allowResubmit && (
                   <div className="sm:ml-4">
                     <Button
                       onClick={() => onResubmit?.(leave)}

@@ -15,6 +15,7 @@ import {
   Star,
   AlertCircle,
   CheckCircle2,
+  FileDown,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -26,6 +27,11 @@ import {
 import OfficeSidebar from "@/components/sidebar/Office/OfficeSidebar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import pdfMake from "pdfmake/build/pdfmake";
+import * as pdfFonts from "pdfmake/build/vfs_fonts";
+
+// Set fonts for pdfMake
+(pdfMake as any).vfs = pdfFonts;
 
 // Custom Alert Modal Component
 const CustomAlert = ({
@@ -338,6 +344,114 @@ const MyTrainees = () => {
     return matchesSearch && matchesStatus;
   });
 
+  // Generate Report PDF
+  const generateReport = () => {
+    if (trainees.length === 0) {
+      showAlert("No Data", "No trainees to generate report.", "warning");
+      return;
+    }
+
+    try {
+      const currentDate = new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+      const summary = {
+        total: trainees.length,
+        pending: trainees.filter((t: any) => t.status === "pending" || t.status === "pending_acceptance").length,
+        accepted: trainees.filter((t: any) => t.status === "accepted" || t.status === "active").length,
+        rejected: trainees.filter((t: any) => t.status === "rejected").length,
+      };
+
+      const tableBody = [
+        [
+          { text: "Name", style: "tableHeader", bold: true },
+          { text: "Email", style: "tableHeader", bold: true },
+          { text: "Position", style: "tableHeader", bold: true },
+          { text: "Status", style: "tableHeader", bold: true },
+          { text: "Hours", style: "tableHeader", bold: true },
+          { text: "Rating", style: "tableHeader", bold: true },
+          { text: "Start Date", style: "tableHeader", bold: true },
+        ],
+        ...trainees.map((t: any) => [
+          { text: `${t.userID?.firstname || ""} ${t.userID?.lastname || ""}`.trim() || "N/A", style: "tableCell" },
+          { text: t.userID?.email || "N/A", style: "tableCell", fontSize: 8 },
+          { text: t.position === "student_assistant" ? "SA" : t.position === "student_marshal" ? "SM" : t.position || "N/A", style: "tableCell", alignment: "center" },
+          {
+            text: t.status?.charAt(0).toUpperCase() + t.status?.slice(1) || "N/A",
+            style: "tableCell",
+            color: t.status === "accepted" || t.status === "active" ? "#16a34a" : t.status === "rejected" ? "#dc2626" : "#ca8a04",
+          },
+          { text: `${t.completedHours || 0}/${t.requiredHours || 0}`, style: "tableCell", alignment: "center" },
+          { text: t.traineePerformanceRating ? `${t.traineePerformanceRating}/5` : "-", style: "tableCell", alignment: "center" },
+          { text: t.traineeStartDate ? new Date(t.traineeStartDate).toLocaleDateString() : "-", style: "tableCell" },
+        ]),
+      ];
+
+      const docDefinition: any = {
+        pageSize: "A4",
+        pageOrientation: "landscape",
+        pageMargins: [30, 80, 30, 50],
+        header: (currentPage: number, pageCount: number) => ({
+          columns: [
+            { text: "My Trainees Report", style: "header", margin: [30, 20, 0, 0] },
+            { text: `Page ${currentPage} of ${pageCount}`, alignment: "right", margin: [0, 20, 30, 0], fontSize: 10 },
+          ],
+        }),
+        footer: () => ({
+          text: `Generated on ${currentDate}`,
+          alignment: "center",
+          margin: [0, 10, 0, 0],
+          fontSize: 9,
+          color: "#666",
+        }),
+        content: [
+          { text: "Summary Statistics", style: "subheader", margin: [0, 0, 0, 10] },
+          {
+            columns: [
+              { width: "25%", stack: [{ text: "Total", fontSize: 11, bold: true, color: "#333" }, { text: summary.total.toString(), fontSize: 24, bold: true, color: "#2563eb", margin: [0, 5, 0, 0] }] },
+              { width: "25%", stack: [{ text: "Pending", fontSize: 11, bold: true, color: "#333" }, { text: summary.pending.toString(), fontSize: 24, bold: true, color: "#ca8a04", margin: [0, 5, 0, 0] }] },
+              { width: "25%", stack: [{ text: "Accepted/Active", fontSize: 11, bold: true, color: "#333" }, { text: summary.accepted.toString(), fontSize: 24, bold: true, color: "#16a34a", margin: [0, 5, 0, 0] }] },
+              { width: "25%", stack: [{ text: "Rejected", fontSize: 11, bold: true, color: "#333" }, { text: summary.rejected.toString(), fontSize: 24, bold: true, color: "#dc2626", margin: [0, 5, 0, 0] }] },
+            ],
+            margin: [0, 0, 0, 20],
+          },
+          { canvas: [{ type: "line", x1: 0, y1: 0, x2: 770, y2: 0, lineWidth: 1, lineColor: "#e5e7eb" }], margin: [0, 0, 0, 15] },
+          { text: "Trainee Details", style: "subheader", margin: [0, 0, 0, 10] },
+          {
+            table: { headerRows: 1, widths: ["*", "*", 50, 70, 55, 50, 65], body: tableBody },
+            layout: {
+              fillColor: (rowIndex: number) => (rowIndex === 0 ? "#f3f4f6" : rowIndex % 2 === 0 ? "#fafafa" : null),
+              hLineWidth: (i: number, node: any) => (i === 0 || i === 1 || i === node.table.body.length ? 1 : 0.5),
+              vLineWidth: () => 0.5,
+              hLineColor: () => "#e5e7eb",
+              vLineColor: () => "#e5e7eb",
+              paddingLeft: () => 6,
+              paddingRight: () => 6,
+              paddingTop: () => 5,
+              paddingBottom: () => 5,
+            },
+          },
+        ],
+        styles: {
+          header: { fontSize: 18, bold: true, color: "#1f2937" },
+          subheader: { fontSize: 14, bold: true, color: "#374151" },
+          tableHeader: { fontSize: 9, bold: true, color: "#374151", alignment: "left" },
+          tableCell: { fontSize: 9, color: "#1f2937" },
+        },
+        defaultStyle: { font: "Roboto" },
+      };
+
+      pdfMake.createPdf(docDefinition).open();
+      showAlert("Success", "Report generated successfully!", "success");
+    } catch (error) {
+      console.error("Error generating report:", error);
+      showAlert("Error", "Failed to generate report.", "error");
+    }
+  };
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
@@ -371,6 +485,16 @@ const MyTrainees = () => {
           }`}
         >
           <h1 className="text-2xl font-bold text-white ml-4">My Trainees</h1>
+          <div className="ml-auto mr-4">
+            <button
+              onClick={generateReport}
+              disabled={trainees.length === 0}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-white/20 text-white hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <FileDown size={16} />
+              Generate Report
+            </button>
+          </div>
         </div>
 
         <div className="p-6 md:p-10">

@@ -128,6 +128,18 @@ const LeaveForm: React.FC<LeaveFormProps> = ({
       return;
     }
 
+    // Require supporting document for sick leave
+    if (data.typeOfLeave === "sick" && !proofFile && !data.proofUrl) {
+      addToast("A supporting document (e.g., medical certificate) is required for sick leave.", "error");
+      return;
+    }
+
+    // Require reasons for leave
+    if (!data.reasons || !data.reasons.trim()) {
+      addToast("Please provide a reason for your leave.", "error");
+      return;
+    }
+
     try {
       setSubmitting(true);
 
@@ -271,6 +283,7 @@ const LeaveForm: React.FC<LeaveFormProps> = ({
         data={data}
         onChange={handleChange}
         onFileChange={handleFileChange}
+        isRequired={data.typeOfLeave === "sick"}
       />
 
       <div className="flex justify-end gap-3">

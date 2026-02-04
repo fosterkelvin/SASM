@@ -277,7 +277,7 @@ const DynamicDayRow: React.FC<DynamicDayRowProps> = ({
           {shifts.map((shift, index) => (
             <div key={index} className="flex items-center gap-2">
               <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 w-16">
-                Shift {index + 1}:
+                Duty {index + 1}:
               </span>
               <input
                 type="time"
@@ -340,7 +340,7 @@ const DynamicDayRow: React.FC<DynamicDayRowProps> = ({
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              Add Shift
+              Add Duty
             </button>
           )}
         </div>

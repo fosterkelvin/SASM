@@ -5,6 +5,7 @@ import ArchivedApplicationModel from "../models/archivedApplication.model";
 import ApplicationModel from "../models/application.model";
 import UserModel from "../models/user.model";
 import ScholarModel from "../models/scholar.model";
+import EvaluationModel from "../models/evaluation.model";
 import appAssert from "../utils/appAssert";
 import catchErrors from "../utils/catchErrors";
 import cloudinary from "../config/cloudinary";
@@ -140,8 +141,92 @@ export const getAllReApplicationsHandler = catchErrors(
 
     const total = await ReApplicationModel.countDocuments(query);
 
+    // Get the latest evaluation for each re-applicant
+    const reApplicationsWithEvaluation = await Promise.all(
+      reApplications.map(async (reapp: any) => {
+        const reappObj = reapp.toObject();
+
+        // Get the user ID - could be populated object or ObjectId
+        const userId = reapp.userID?._id || reapp.userID;
+        
+        console.log("🔍 Looking up evaluation for user:", userId, "Name:", reapp.firstName, reapp.lastName);
+
+        let foundEvaluation = false;
+
+        // First, try to find evaluation directly by userId (new evaluations store this)
+        const latestEvaluationByUser = await EvaluationModel.findOne({
+          userId: userId,
+        })
+          .sort({ createdAt: -1 })
+          .limit(1);
+        
+        if (latestEvaluationByUser) {
+          console.log("📝 Found evaluation by userId");
+          const ratings = latestEvaluationByUser.items
+            .filter((item: any) => item.rating)
+            .map((item: any) => item.rating);
+          const averageRating =
+            ratings.length > 0
+              ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length
+              : null;
+
+          reappObj.lastEvaluation = {
+            officeName: latestEvaluationByUser.officeName,
+            evaluatorName: latestEvaluationByUser.evaluatorName,
+            recommendedForNextSemester: latestEvaluationByUser.recommendedForNextSemester,
+            averageRating: averageRating ? Math.round(averageRating * 10) / 10 : null,
+            areasOfStrength: latestEvaluationByUser.areasOfStrength,
+            areasOfImprovement: latestEvaluationByUser.areasOfImprovement,
+            justification: latestEvaluationByUser.justification,
+            evaluatedAt: latestEvaluationByUser.createdAt,
+          };
+          foundEvaluation = true;
+        }
+
+        // Fallback: Find evaluation via scholar records (for older evaluations without userId)
+        if (!foundEvaluation) {
+          const scholars = await ScholarModel.find({ userId: userId }).sort({ createdAt: -1 });
+          console.log("📚 Scholars found:", scholars.length);
+
+          for (const scholar of scholars) {
+            const latestEvaluation = await EvaluationModel.findOne({
+              scholarId: scholar._id,
+            })
+              .sort({ createdAt: -1 })
+              .limit(1);
+            
+            console.log("📝 Checking scholar", scholar._id, "- Evaluation found:", latestEvaluation ? "Yes" : "No");
+
+            if (latestEvaluation) {
+              const ratings = latestEvaluation.items
+                .filter((item: any) => item.rating)
+                .map((item: any) => item.rating);
+              const averageRating =
+                ratings.length > 0
+                  ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length
+                  : null;
+
+              reappObj.lastEvaluation = {
+                officeName: latestEvaluation.officeName,
+                evaluatorName: latestEvaluation.evaluatorName,
+                recommendedForNextSemester: latestEvaluation.recommendedForNextSemester,
+                averageRating: averageRating ? Math.round(averageRating * 10) / 10 : null,
+                areasOfStrength: latestEvaluation.areasOfStrength,
+                areasOfImprovement: latestEvaluation.areasOfImprovement,
+                justification: latestEvaluation.justification,
+                evaluatedAt: latestEvaluation.createdAt,
+              };
+              break;
+            }
+          }
+        }
+
+        return reappObj;
+      })
+    );
+
     return res.status(OK).json({
-      reApplications,
+      reApplications: reApplicationsWithEvaluation,
       total,
       page: Number(page),
       pages: Math.ceil(total / Number(limit)),

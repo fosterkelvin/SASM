@@ -5,6 +5,7 @@ import { useToast } from "@/context/ToastContext";
 import {
   Calendar,
   Loader2,
+  CheckCircle,
   CheckCircle2,
   Clock,
   X,
@@ -1170,17 +1171,11 @@ const OfficeDTRCheck: React.FC = () => {
                       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                            <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              Weekly Hours (30h Limit)
+                              Weekly Hours (30h Quota)
                             </span>
                           </div>
-                          {hasWeeklyViolations && (
-                            <span className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full flex items-center gap-1">
-                              <AlertCircle className="h-3 w-3" />
-                              Limit Exceeded
-                            </span>
-                          )}
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
@@ -1188,18 +1183,14 @@ const OfficeDTRCheck: React.FC = () => {
                             const hours = Math.floor(week.hours / 60);
                             const minutes = week.hours % 60;
                             const percentage = (week.hours / 60 / 30) * 100;
-                            const isWarning =
-                              percentage > 80 && percentage <= 100;
-                            const isDanger = percentage > 100;
+                            const isComplete = percentage >= 100;
 
                             return (
                               <div
                                 key={week.weekNum}
                                 className={`p-3 rounded-lg border-2 transition-all ${
-                                  isDanger
-                                    ? "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700"
-                                    : isWarning
-                                    ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700"
+                                  isComplete
+                                    ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700"
                                     : "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"
                                 }`}
                               >
@@ -1207,17 +1198,15 @@ const OfficeDTRCheck: React.FC = () => {
                                   <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
                                     Week {week.weekNum}
                                   </span>
-                                  {isDanger && (
-                                    <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                                  {isComplete && (
+                                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                                   )}
                                 </div>
                                 <div className="text-lg font-bold mb-1">
                                   <span
                                     className={
-                                      isDanger
-                                        ? "text-red-700 dark:text-red-300"
-                                        : isWarning
-                                        ? "text-yellow-700 dark:text-yellow-300"
+                                      isComplete
+                                        ? "text-green-700 dark:text-green-300"
                                         : "text-gray-800 dark:text-gray-200"
                                     }
                                   >
@@ -1228,11 +1217,9 @@ const OfficeDTRCheck: React.FC = () => {
                                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden mb-1">
                                   <div
                                     className={`h-full transition-all duration-300 ${
-                                      isDanger
-                                        ? "bg-gradient-to-r from-red-500 to-red-600"
-                                        : isWarning
-                                        ? "bg-gradient-to-r from-yellow-500 to-yellow-600"
-                                        : "bg-gradient-to-r from-green-500 to-green-600"
+                                      isComplete
+                                        ? "bg-gradient-to-r from-green-500 to-green-600"
+                                        : "bg-gradient-to-r from-blue-500 to-blue-600"
                                     }`}
                                     style={{
                                       width: `${Math.min(percentage, 100)}%`,
@@ -1240,10 +1227,9 @@ const OfficeDTRCheck: React.FC = () => {
                                   ></div>
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {percentage > 100 ? (
-                                    <span className="text-red-600 dark:text-red-400 font-semibold">
-                                      +{(percentage - 100).toFixed(0)}% over
-                                      limit
+                                  {percentage >= 100 ? (
+                                    <span className="text-green-600 dark:text-green-400 font-semibold">
+                                      {percentage.toFixed(0)}% of quota
                                     </span>
                                   ) : (
                                     <span>{percentage.toFixed(0)}% of 30h</span>
@@ -1257,20 +1243,6 @@ const OfficeDTRCheck: React.FC = () => {
                             );
                           })}
                         </div>
-
-                        {hasWeeklyViolations && (
-                          <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                            <div className="flex items-start gap-2">
-                              <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                              <div className="text-sm text-red-800 dark:text-red-200">
-                                <span className="font-semibold">Warning:</span>{" "}
-                                This trainee/scholar has exceeded the 30-hour
-                                weekly limit. Please review their hours to
-                                ensure compliance with program requirements.
-                              </div>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     ) : null;
                   })()}
@@ -1349,9 +1321,9 @@ const OfficeDTRCheck: React.FC = () => {
                         </th>
                         <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
                           <div className="flex flex-col items-center">
-                            <span>Duty Shifts</span>
+                            <span>Duty</span>
                             <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">
-                              IN → OUT times (multiple shifts)
+                              IN → OUT times
                             </span>
                           </div>
                         </th>
@@ -1418,7 +1390,7 @@ const OfficeDTRCheck: React.FC = () => {
                             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
                               {entry.day}
                             </td>
-                            {/* Duty Shifts Column */}
+                            {/* Duty Column */}
                             <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                               {(() => {
                                 // Edit mode
@@ -1434,7 +1406,7 @@ const OfficeDTRCheck: React.FC = () => {
                                           className="flex items-center gap-2 text-xs"
                                         >
                                           <span className="font-semibold text-gray-600 dark:text-gray-400 w-14">
-                                            Shift {index + 1}:
+                                            Duty {index + 1}:
                                           </span>
                                           <input
                                             type="time"
@@ -1483,7 +1455,7 @@ const OfficeDTRCheck: React.FC = () => {
                                           onClick={handleAddShift}
                                           className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
                                         >
-                                          <span>+ Add Shift</span>
+                                          <span>+ Add Duty</span>
                                         </button>
                                       )}
                                     </div>
@@ -1495,39 +1467,67 @@ const OfficeDTRCheck: React.FC = () => {
                                 const hasData = shifts.some(
                                   (s) => s.in || s.out
                                 );
-
-                                if (!hasData) {
-                                  return (
-                                    <div className="text-center text-gray-400 text-xs">
-                                      -
-                                    </div>
-                                  );
-                                }
+                                const isConfirmed = entry.confirmationStatus === "confirmed";
+                                const isExcused = entry.excusedStatus === "excused";
+                                const isAbsent = entry.status === "Absent";
+                                const canEdit = !isConfirmed && !isExcused && !isAbsent;
 
                                 return (
-                                  <div className="space-y-1">
-                                    {shifts.map((shift, index) => {
-                                      if (!shift.in && !shift.out) return null;
-                                      return (
-                                        <div
-                                          key={index}
-                                          className="flex items-center gap-2 text-xs justify-center"
-                                        >
-                                          <span className="font-semibold text-gray-600 dark:text-gray-400">
-                                            Shift {index + 1}:
-                                          </span>
-                                          <span className="font-mono text-gray-700 dark:text-gray-300">
-                                            {shift.in || "--:--"}
-                                          </span>
-                                          <span className="text-gray-400">
-                                            →
-                                          </span>
-                                          <span className="font-mono text-gray-700 dark:text-gray-300">
-                                            {shift.out || "--:--"}
-                                          </span>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex-1">
+                                      {hasData ? (
+                                        <div className="space-y-1">
+                                          {shifts.map((shift, index) => {
+                                            if (!shift.in && !shift.out) return null;
+                                            return (
+                                              <div
+                                                key={index}
+                                                className="flex items-center gap-2 text-xs justify-center"
+                                              >
+                                                <span className="font-semibold text-gray-600 dark:text-gray-400">
+                                                  Duty {index + 1}:
+                                                </span>
+                                                <span className="font-mono text-gray-700 dark:text-gray-300">
+                                                  {shift.in || "--:--"}
+                                                </span>
+                                                <span className="text-gray-400">
+                                                  →
+                                                </span>
+                                                <span className="font-mono text-gray-700 dark:text-gray-300">
+                                                  {shift.out || "--:--"}
+                                                </span>
+                                              </div>
+                                            );
+                                          })}
                                         </div>
-                                      );
-                                    })}
+                                      ) : (
+                                        <div className="text-center text-gray-400 text-xs">
+                                          -
+                                        </div>
+                                      )}
+                                    </div>
+                                    {/* Edit/Add Duty Button */}
+                                    {canEdit && (
+                                      <button
+                                        onClick={() => handleStartEdit(entry)}
+                                        className="p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-md transition-colors flex-shrink-0"
+                                        title={hasData ? "Edit Duty" : "Add Duty"}
+                                      >
+                                        <svg
+                                          className="w-4 h-4"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                          />
+                                        </svg>
+                                      </button>
+                                    )}
                                   </div>
                                 );
                               })()}
@@ -1708,16 +1708,90 @@ const OfficeDTRCheck: React.FC = () => {
                                   </button>
                                 </div>
                               ) : (
-                                <div className="flex items-center justify-center">
-                                  <button
-                                    onClick={() =>
-                                      setActionsModalDay(entry.day)
-                                    }
-                                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors"
-                                    title="Open actions menu"
-                                  >
-                                    Actions
-                                  </button>
+                                <div className="flex items-center justify-center gap-1 flex-wrap">
+                                  {(() => {
+                                    const hasTimeData = getShifts(entry).some((s) => s.in || s.out);
+                                    const isAbsent = entry.status === "Absent";
+                                    const isExcused = entry.excusedStatus === "excused";
+                                    const isConfirmed = entry.confirmationStatus === "confirmed";
+
+                                    return (
+                                      <>
+                                        {/* Confirm Button */}
+                                        {hasTimeData && !isConfirmed && !isExcused && !isAbsent && (
+                                          <button
+                                            onClick={() => handleConfirmEntry(entry.day)}
+                                            className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium transition-colors flex items-center gap-1"
+                                            title="Confirm Entry"
+                                          >
+                                            <Check className="h-3 w-3" />
+                                            Confirm
+                                          </button>
+                                        )}
+
+                                        {/* Unconfirm Button */}
+                                        {isConfirmed && (
+                                          <button
+                                            onClick={() => handleUnconfirmEntry(entry.day)}
+                                            className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-xs font-medium transition-colors flex items-center gap-1"
+                                            title="Unconfirm Entry"
+                                          >
+                                            <AlertCircle className="h-3 w-3" />
+                                            Unconfirm
+                                          </button>
+                                        )}
+
+                                        {/* Excused Button */}
+                                        {!isConfirmed && !isExcused && !isAbsent && (
+                                          <button
+                                            onClick={() => handleMarkAsExcused(entry.day)}
+                                            className="px-2 py-1 bg-purple-500 hover:bg-purple-600 text-white rounded text-xs font-medium transition-colors flex items-center gap-1"
+                                            title="Mark as Excused"
+                                          >
+                                            <ShieldCheck className="h-3 w-3" />
+                                            Excused
+                                          </button>
+                                        )}
+
+                                        {/* Remove Excused Button */}
+                                        {isExcused && (
+                                          <button
+                                            onClick={() => handleRemoveExcused(entry.day)}
+                                            className="px-2 py-1 bg-purple-500 hover:bg-purple-600 text-white rounded text-xs font-medium transition-colors flex items-center gap-1"
+                                            title="Remove Excused"
+                                          >
+                                            <X className="h-3 w-3" />
+                                            Remove Excused
+                                          </button>
+                                        )}
+
+                                        {/* Absent Button */}
+                                        {!isConfirmed && !isExcused && !isAbsent && (
+                                          <button
+                                            onClick={() => handleMarkAbsent(entry.day)}
+                                            className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-medium transition-colors flex items-center gap-1"
+                                            title="Mark as Absent"
+                                          >
+                                            <X className="h-3 w-3" />
+                                            Absent
+                                          </button>
+                                        )}
+
+                                        {/* Remove Absent Button */}
+                                        {isAbsent && (
+                                          <button
+                                            onClick={() => handleRemoveAbsent(entry.day)}
+                                            disabled={absentLoadingDay === entry.day}
+                                            className="px-2 py-1 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded text-xs font-medium transition-colors flex items-center gap-1"
+                                            title="Remove Absent"
+                                          >
+                                            <X className="h-3 w-3" />
+                                            Remove Absent
+                                          </button>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
                                 </div>
                               )}
                             </td>

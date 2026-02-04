@@ -4,6 +4,7 @@ import {
   Home,
   FileText,
   BarChart,
+  BarChart3,
   Users,
   Calendar,
   GraduationCap,
@@ -124,6 +125,13 @@ const SidebarNav: React.FC<NavProps> = ({ handlers, unreadCount = 0 }) => {
             label="DTR Check"
             onClick={handlers.dtrCheck}
             IconComponent={ClipboardCheck}
+          />
+        </li>
+        <li>
+          <SidebarItem
+            label="DTR Report"
+            onClick={handlers.dtrReport}
+            IconComponent={BarChart3}
           />
         </li>
         <li>
