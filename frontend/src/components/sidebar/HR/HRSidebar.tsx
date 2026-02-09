@@ -151,6 +151,11 @@ const HRSidebar = ({
     setIsOpen(false);
   };
 
+  const handleScholarCategoriesClick = () => {
+    navigate("/hr/scholar-categories");
+    setIsOpen(false);
+  };
+
   const handleLeavesClick = () => {
     navigate("/leave-management");
     setIsOpen(false);
@@ -194,6 +199,8 @@ const HRSidebar = ({
   const handleCollapsedScholarsClick = () => navigate("/hr/scholars");
   const handleCollapsedScholarRequestsClick = () =>
     navigate("/hr/scholar-requests");
+  const handleCollapsedScholarCategoriesClick = () =>
+    navigate("/hr/scholar-categories");
   const handleCollapsedLeavesClick = () => navigate("/leave-management");
   const handleCollapsedDTRCheckClick = () => navigate("/hr/dtr-check");
   const handleCollapsedDTRReportClick = () => navigate("/hr/dtr-report");
@@ -209,6 +216,7 @@ const HRSidebar = ({
     { label: "Scholar Records", handler: handleScholarRecordsClick },
     { label: "Trainees", handler: handleTraineesClick },
     { label: "Scholars", handler: handleScholarsClick },
+    { label: "Scholar Categories", handler: handleScholarCategoriesClick },
     { label: "Scholar Requests", handler: handleScholarRequestsClick },
     { label: "Users", handler: handleUsersClick },
     { label: "Requirements", handler: handleRequirementsClick },
@@ -317,6 +325,7 @@ const HRSidebar = ({
                     users: handleUsersClick,
                     trainees: handleTraineesClick,
                     scholars: handleScholarsClick,
+                    scholarCategories: handleScholarCategoriesClick,
                     scholarRequests: handleScholarRequestsClick,
                     leaves: handleLeavesClick,
                     dtrCheck: handleDTRCheckClick,
@@ -343,6 +352,7 @@ const HRSidebar = ({
                 users: handleCollapsedUsersClick,
                 trainees: handleCollapsedTraineesClick,
                 scholars: handleCollapsedScholarsClick,
+                scholarCategories: handleCollapsedScholarCategoriesClick,
                 scholarRequests: handleCollapsedScholarRequestsClick,
                 leaves: handleCollapsedLeavesClick,
                 dtrCheck: handleCollapsedDTRCheckClick,

@@ -85,7 +85,9 @@ const ReApplicationManagement: React.FC = () => {
   });
 
   const openReview = (row: any) => {
-    setSelected(row);
+    // If status is pending, default to approved since pending is not an option in the dropdown
+    const defaultStatus = row.status === "pending" ? "approved" : row.status;
+    setSelected({ ...row, status: defaultStatus });
     setShowModal(true);
   };
 
@@ -512,7 +514,6 @@ const ReApplicationManagement: React.FC = () => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded mt-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 >
-                  <option value="pending">Pending</option>
                   <option value="approved">Approve</option>
                   <option value="rejected">Reject</option>
                 </select>

@@ -1129,3 +1129,284 @@ export const getMasterlistData = async () => {
   const response = await API.get("/masterlist");
   return response.data;
 };
+
+// Archived ReApplications API
+export const getArchivedReApplications = async (params?: {
+  semesterYear?: string;
+  search?: string;
+  position?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.semesterYear)
+    searchParams.append("semesterYear", params.semesterYear);
+  if (params?.search) searchParams.append("search", params.search);
+  if (params?.position) searchParams.append("position", params.position);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+
+  const response = await API.get(
+    `/archived-reapplications?${searchParams.toString()}`
+  );
+  return response.data;
+};
+
+export const getArchivedReApplicationSemesterYears = async () => {
+  const response = await API.get("/archived-reapplications/semester-years");
+  return response.data;
+};
+
+export const getArchivedReApplicationStats = async () => {
+  const response = await API.get("/archived-reapplications/stats/summary");
+  return response.data;
+};
+
+// Archived Leaves API
+export const getArchivedLeaves = async (params?: {
+  semesterYear?: string;
+  search?: string;
+  typeOfLeave?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.semesterYear)
+    searchParams.append("semesterYear", params.semesterYear);
+  if (params?.search) searchParams.append("search", params.search);
+  if (params?.typeOfLeave)
+    searchParams.append("typeOfLeave", params.typeOfLeave);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+
+  const response = await API.get(`/archived-leaves?${searchParams.toString()}`);
+  return response.data;
+};
+
+export const getArchivedLeaveSemesterYears = async () => {
+  const response = await API.get("/archived-leaves/semester-years");
+  return response.data;
+};
+
+export const getArchivedLeaveStats = async () => {
+  const response = await API.get("/archived-leaves/stats/summary");
+  return response.data;
+};
+
+// Archival Management API
+export const runArchivalTasks = async () => {
+  const response = await API.post("/archival/run");
+  return response.data;
+};
+
+export const getArchivalStatus = async () => {
+  const response = await API.get("/archival/status");
+  return response.data;
+};
+
+// ===== SCHOLAR CATEGORIES API (Archive, Withdrawn, Blacklist) =====
+
+// Get category statistics
+export const getScholarCategoryStats = async () => {
+  const response = await API.get("/scholar-categories/stats");
+  return response.data;
+};
+
+// Get scholars by category
+export const getScholarsByCategory = async (params?: {
+  category?: string;
+  search?: string;
+  office?: string;
+  scholarType?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.category) searchParams.append("category", params.category);
+  if (params?.search) searchParams.append("search", params.search);
+  if (params?.office) searchParams.append("office", params.office);
+  if (params?.scholarType) searchParams.append("scholarType", params.scholarType);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+  
+  const response = await API.get(`/scholar-categories?${searchParams.toString()}`);
+  return response.data;
+};
+
+// Get active scholars
+export const getActiveScholarsList = async (params?: {
+  search?: string;
+  office?: string;
+  scholarType?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.search) searchParams.append("search", params.search);
+  if (params?.office) searchParams.append("office", params.office);
+  if (params?.scholarType) searchParams.append("scholarType", params.scholarType);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+  
+  const response = await API.get(`/scholar-categories/scholars?${searchParams.toString()}`);
+  return response.data;
+};
+
+// Get trainees list
+export const getTraineesListByCategory = async (params?: {
+  search?: string;
+  office?: string;
+  position?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.search) searchParams.append("search", params.search);
+  if (params?.office) searchParams.append("office", params.office);
+  if (params?.position) searchParams.append("position", params.position);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+  
+  const response = await API.get(`/scholar-categories/trainees?${searchParams.toString()}`);
+  return response.data;
+};
+
+// Get archived (graduated) scholars
+export const getArchivedScholarsList = async (params?: {
+  search?: string;
+  office?: string;
+  scholarType?: string;
+  academicYear?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.search) searchParams.append("search", params.search);
+  if (params?.office) searchParams.append("office", params.office);
+  if (params?.scholarType) searchParams.append("scholarType", params.scholarType);
+  if (params?.academicYear) searchParams.append("academicYear", params.academicYear);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+  
+  const response = await API.get(`/scholar-categories/archived?${searchParams.toString()}`);
+  return response.data;
+};
+
+// Get withdrawn applicants
+export const getWithdrawnApplicants = async (params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.search) searchParams.append("search", params.search);
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+  
+  const response = await API.get(`/scholar-categories/withdrawn?${searchParams.toString()}`);
+  return response.data;
+};
+
+// Get blacklisted persons
+export const getBlacklistedPersons = async (params?: {
+  search?: string;
+  includeExpired?: boolean;
+  page?: number;
+  limit?: number;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.search) searchParams.append("search", params.search);
+  if (params?.includeExpired) searchParams.append("includeExpired", "true");
+  if (params?.page) searchParams.append("page", params.page.toString());
+  if (params?.limit) searchParams.append("limit", params.limit.toString());
+  
+  const response = await API.get(`/scholar-categories/blacklisted?${searchParams.toString()}`);
+  return response.data;
+};
+
+// Check if user is blacklisted
+export const checkBlacklist = async (email?: string, userId?: string) => {
+  const searchParams = new URLSearchParams();
+  if (email) searchParams.append("email", email);
+  if (userId) searchParams.append("userId", userId);
+  
+  const response = await API.get(`/scholar-categories/check-blacklist?${searchParams.toString()}`);
+  return response.data;
+};
+
+// Graduate a scholar (move to archive)
+export const graduateScholar = async (
+  scholarId: string,
+  data: {
+    graduationDate?: string;
+    academicYear?: string;
+    notes?: string;
+    totalServiceMonths?: number;
+    completedHours?: number;
+  }
+) => {
+  const response = await API.post(`/scholar-categories/graduate/${scholarId}`, data);
+  return response.data;
+};
+
+// Withdraw an applicant
+export const withdrawApplicant = async (
+  applicationId: string,
+  data: {
+    reason: string;
+    notes?: string;
+  }
+) => {
+  const response = await API.post(`/scholar-categories/withdraw/${applicationId}`, data);
+  return response.data;
+};
+
+// Blacklist a person
+export const blacklistPerson = async (
+  userId: string,
+  data: {
+    reason: string;
+    restrictionPeriod?: number; // 0 = permanent
+    notes?: string;
+    applicationId?: string;
+    scholarId?: string;
+  }
+) => {
+  const response = await API.post(`/scholar-categories/blacklist/${userId}`, data);
+  return response.data;
+};
+
+// Remove from blacklist
+export const removeFromBlacklist = async (recordId: string, reason?: string) => {
+  const response = await API.delete(`/scholar-categories/blacklist/${recordId}`, {
+    data: { reason },
+  });
+  return response.data;
+};
+
+// Get report data for PDF
+export const getCategoryReportData = async (params?: {
+  category?: string;
+  office?: string;
+  scholarType?: string;
+  academicYear?: string;
+  startDate?: string;
+  endDate?: string;
+}) => {
+  const searchParams = new URLSearchParams();
+  if (params?.category) searchParams.append("category", params.category);
+  if (params?.office) searchParams.append("office", params.office);
+  if (params?.scholarType) searchParams.append("scholarType", params.scholarType);
+  if (params?.academicYear) searchParams.append("academicYear", params.academicYear);
+  if (params?.startDate) searchParams.append("startDate", params.startDate);
+  if (params?.endDate) searchParams.append("endDate", params.endDate);
+  
+  const response = await API.get(`/scholar-categories/report-data?${searchParams.toString()}`);
+  return response.data;
+};
+
+// Trigger manual cleanup
+export const triggerCategoryCleanup = async () => {
+  const response = await API.post("/scholar-categories/cleanup");
+  return response.data;
+};

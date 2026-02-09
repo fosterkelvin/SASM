@@ -211,7 +211,18 @@ export const resetScholarsToApplicantsHandler = catchErrors(
     console.log("Creating permanent scholar records for deployed scholars...");
     const scholarRecords = [];
 
+    // Get existing scholar records for this semester to avoid duplicates
+    const existingRecords = await ScholarRecordModel.find({ semesterYear });
+    const existingUserIds = new Set(existingRecords.map(r => r.userId.toString()));
+    console.log(`Found ${existingRecords.length} existing records for ${semesterYear}`);
+
     for (const scholar of activeScholars) {
+      // Skip if record already exists for this user in this semester
+      if (existingUserIds.has(scholar.userId.toString())) {
+        console.log(`Skipping duplicate record for user ${scholar.userId} in ${semesterYear}`);
+        continue;
+      }
+
       // Find the corresponding application
       const application = await ApplicationModel.findOne({
         userID: scholar.userId,

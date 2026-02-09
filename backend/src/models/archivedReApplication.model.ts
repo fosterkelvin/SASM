@@ -1,35 +1,34 @@
 import mongoose from "mongoose";
-import { ApplicationDocument } from "./application.model";
 
-export interface ArchivedApplicationDocument extends mongoose.Document {
-  // Original application data (entire application object)
-  originalApplication: any; // Stores the complete application
+export interface ArchivedReApplicationDocument extends mongoose.Document {
+  // Original reapplication data (entire object)
+  originalReApplication: any;
 
   // Archive metadata
   archivedAt: Date;
-  archivedBy: mongoose.Types.ObjectId; // HR/Office user who archived it
-  archivedReason: string; // e.g., "End of Semester - AY 2024-2025"
-  semesterYear: string; // e.g., "2024-2025 First Semester"
+  archivedBy?: mongoose.Types.ObjectId; // HR/Office user or "system" for auto-archive
+  archivedReason: string;
+  semesterYear: string;
 
-  // Quick access fields (duplicated from original for easier querying)
+  // Quick access fields
   userID: mongoose.Types.ObjectId;
   firstName: string;
   lastName: string;
   position: string;
   email: string;
-  originalStatus: string; // Status before archiving (should be "accepted")
+  originalStatus: string;
 
   // For auto-deletion tracking
-  scheduledDeletionDate?: Date; // 2 years from archivedAt
+  scheduledDeletionDate: Date; // 2 years from archivedAt
 
   createdAt: Date;
   updatedAt: Date;
 }
 
-const archivedApplicationSchema =
-  new mongoose.Schema<ArchivedApplicationDocument>(
+const archivedReApplicationSchema =
+  new mongoose.Schema<ArchivedReApplicationDocument>(
     {
-      originalApplication: {
+      originalReApplication: {
         type: mongoose.Schema.Types.Mixed,
         required: true,
       },
@@ -41,12 +40,11 @@ const archivedApplicationSchema =
       archivedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        required: true,
       },
       archivedReason: {
         type: String,
         required: true,
-        default: "End of Semester",
+        default: "Auto-archived - Rejected over 1 year",
       },
       semesterYear: {
         type: String,
@@ -80,6 +78,7 @@ const archivedApplicationSchema =
       },
       scheduledDeletionDate: {
         type: Date,
+        required: true,
       },
     },
     {
@@ -88,16 +87,17 @@ const archivedApplicationSchema =
   );
 
 // Indexes for efficient querying
-archivedApplicationSchema.index({ userID: 1 });
-archivedApplicationSchema.index({ semesterYear: 1 });
-archivedApplicationSchema.index({ archivedAt: -1 });
-archivedApplicationSchema.index({ scheduledDeletionDate: 1 });
-archivedApplicationSchema.index({ firstName: 1, lastName: 1 });
+archivedReApplicationSchema.index({ userID: 1 });
+archivedReApplicationSchema.index({ semesterYear: 1 });
+archivedReApplicationSchema.index({ archivedAt: -1 });
+archivedReApplicationSchema.index({ scheduledDeletionDate: 1 });
+archivedReApplicationSchema.index({ firstName: 1, lastName: 1 });
 
-const ArchivedApplicationModel = mongoose.model<ArchivedApplicationDocument>(
-  "ArchivedApplication",
-  archivedApplicationSchema,
-  "archivedapplications"
-);
+const ArchivedReApplicationModel =
+  mongoose.model<ArchivedReApplicationDocument>(
+    "ArchivedReApplication",
+    archivedReApplicationSchema,
+    "archivedreapplications"
+  );
 
-export default ArchivedApplicationModel;
+export default ArchivedReApplicationModel;

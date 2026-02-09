@@ -26,10 +26,15 @@ import evaluationRoutes from "./routes/evaluation.route";
 import scholarRequestRoutes from "./routes/scholarRequest.route";
 import dashboardRoutes from "./routes/dashboard.route";
 import archivedApplicationRoutes from "./routes/archivedApplication.route";
+import archivedReApplicationRoutes from "./routes/archivedReApplication.route";
+import archivedLeaveRoutes from "./routes/archivedLeave.route";
+import archivalRoutes from "./routes/archival.route";
 import reapplicationRoutes from "./routes/reapplication.route";
 import serviceDurationRoutes from "./routes/serviceDuration.routes";
 import masterlistRoutes from "./routes/masterlist.route";
 import scholarRecordRoutes from "./routes/scholarRecord.route";
+import scholarCategoryRoutes from "./routes/scholarCategory.route";
+import { runArchivalTasks } from "./services/archival.service";
 
 const app = express();
 
@@ -132,10 +137,38 @@ app.use("/service-duration", serviceDurationRoutes);
 app.use("/masterlist", authenticate, masterlistRoutes);
 // Scholar records (permanent history of deployed scholars)
 app.use("/scholar-records", authenticate, scholarRecordRoutes);
+// Scholar categories (archive, withdrawn, blacklist management)
+app.use("/scholar-categories", authenticate, scholarCategoryRoutes);
+// Archived reapplications and leaves
+app.use("/archived-reapplications", authenticate, archivedReApplicationRoutes);
+app.use("/archived-leaves", authenticate, archivedLeaveRoutes);
+// Archival management (auto-archive and cleanup)
+app.use("/archival", authenticate, archivalRoutes);
 
 app.use(errorHandler);
 
 app.listen(PORT, async () => {
   console.log(`Server listening on port ${PORT} in ${NODE_ENV} environment.`);
   await connectToDatabase();
+
+  // Run archival tasks on server start (after a short delay to ensure DB is ready)
+  setTimeout(async () => {
+    console.log("🗄️ Running initial archival check...");
+    try {
+      await runArchivalTasks();
+    } catch (error) {
+      console.error("Initial archival task failed:", error);
+    }
+  }, 10000); // 10 second delay
+
+  // Schedule daily archival tasks (every 24 hours)
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+  setInterval(async () => {
+    console.log("🗄️ Running scheduled daily archival tasks...");
+    try {
+      await runArchivalTasks();
+    } catch (error) {
+      console.error("Scheduled archival task failed:", error);
+    }
+  }, ONE_DAY_MS);
 });

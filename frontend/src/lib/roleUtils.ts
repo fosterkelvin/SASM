@@ -48,6 +48,7 @@ export const hasRouteAccess = (userRole: string, route: string): boolean => {
       "/hr/scholars",
       "/hr/scholar-requests",
       "/hr/scholar-records",
+      "/hr/scholar-categories",
       "/hr/dtr-check",
       "/hr/dtr-report",
       "/applications",

@@ -155,6 +155,8 @@ scholarRecordSchema.index({ recordedAt: -1 });
 scholarRecordSchema.index({ scholarOffice: 1 });
 scholarRecordSchema.index({ scholarType: 1 });
 scholarRecordSchema.index({ firstName: 1, lastName: 1 });
+// Unique compound index to prevent duplicate records for same user in same semester
+scholarRecordSchema.index({ userId: 1, semesterYear: 1 }, { unique: true });
 
 const ScholarRecordModel = mongoose.model<ScholarRecordDocument>(
   "ScholarRecord",

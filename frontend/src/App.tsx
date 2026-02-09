@@ -20,6 +20,7 @@ import ScholarManagement from "./pages/Roles/HR/Scholar Management/ScholarManage
 import ScholarRequestsManagement from "./pages/Roles/HR/Scholar Requests/ScholarRequestsManagement";
 import Archives from "./pages/Roles/HR/Archives/Archives";
 import ScholarRecords from "./pages/Roles/HR/Scholar Records/ScholarRecords";
+import ScholarCategories from "./pages/Roles/HR/Scholar Categories/ScholarCategories";
 import Scholars from "./pages/Roles/Office/Scholars/Scholars";
 import MyTrainees from "./pages/Roles/Office/MyTrainees";
 import TraineeSchedule from "./pages/Roles/Office/TraineeSchedule";
@@ -155,6 +156,7 @@ function App(): ReactElement {
         />
         <Route path="/hr/dtr-check" element={<HRDTRCheck />} />
         <Route path="/hr/dtr-report" element={<HRDTRReport />} />
+        <Route path="/hr/scholar-categories" element={<ScholarCategories />} />
 
         {/* Netflix-style Profile Selector - Must be outside AppContainer for full-screen effect */}
       </Route>

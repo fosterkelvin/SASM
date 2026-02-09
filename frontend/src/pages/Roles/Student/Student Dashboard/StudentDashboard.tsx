@@ -10,6 +10,7 @@ import {
   AcademicInfoAlert,
   StatsGrid,
   ApplicationStatusWidget,
+  MakeupDutyReminder,
 } from "./components";
 import {
   isPersonalInfoComplete,
@@ -99,6 +100,9 @@ const StudentDashboard = () => {
           {user && user.verified && !academicInfoComplete && isScholar && (
             <AcademicInfoAlert missingFields={missingAcademicFields} />
           )}
+
+          {/* Makeup Duty Reminder - Show only for deployed scholars */}
+          <MakeupDutyReminder />
 
           {/* Application Status Widget */}
           <ApplicationStatusWidget />

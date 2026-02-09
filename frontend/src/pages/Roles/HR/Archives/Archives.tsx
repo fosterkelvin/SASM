@@ -20,6 +20,12 @@ import {
   getArchivedApplications,
   getSemesterYears,
   getArchivedStats,
+  getArchivedReApplications,
+  getArchivedReApplicationSemesterYears,
+  getArchivedReApplicationStats,
+  getArchivedLeaves,
+  getArchivedLeaveSemesterYears,
+  getArchivedLeaveStats,
 } from "@/lib/api";
 
 const Archives = () => {
@@ -30,6 +36,7 @@ const Archives = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSemester, setSelectedSemester] = useState<string>("");
   const [selectedPosition, setSelectedPosition] = useState<string>("");
+  const [selectedLeaveType, setSelectedLeaveType] = useState<string>("");
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -37,7 +44,6 @@ const Archives = () => {
   const { data: archivedData, isLoading } = useQuery({
     queryKey: [
       "archived-applications",
-      activeTab,
       selectedSemester,
       searchTerm,
       selectedPosition,
@@ -45,14 +51,53 @@ const Archives = () => {
     ],
     queryFn: () =>
       getArchivedApplications({
-        type: activeTab === "reapplications" ? "reapplication" : "application",
         semesterYear: selectedSemester || undefined,
         search: searchTerm || undefined,
         position: selectedPosition || undefined,
         page,
         limit: 20,
       }),
-    enabled: activeTab === "applications" || activeTab === "reapplications",
+    enabled: activeTab === "applications",
+  });
+
+  // Fetch archived reapplications
+  const { data: archivedReappData, isLoading: isLoadingReapps } = useQuery({
+    queryKey: [
+      "archived-reapplications",
+      selectedSemester,
+      searchTerm,
+      selectedPosition,
+      page,
+    ],
+    queryFn: () =>
+      getArchivedReApplications({
+        semesterYear: selectedSemester || undefined,
+        search: searchTerm || undefined,
+        position: selectedPosition || undefined,
+        page,
+        limit: 20,
+      }),
+    enabled: activeTab === "reapplications",
+  });
+
+  // Fetch archived leaves
+  const { data: archivedLeaveData, isLoading: isLoadingLeaves } = useQuery({
+    queryKey: [
+      "archived-leaves",
+      selectedSemester,
+      searchTerm,
+      selectedLeaveType,
+      page,
+    ],
+    queryFn: () =>
+      getArchivedLeaves({
+        semesterYear: selectedSemester || undefined,
+        search: searchTerm || undefined,
+        typeOfLeave: selectedLeaveType || undefined,
+        page,
+        limit: 20,
+      }),
+    enabled: activeTab === "leave",
   });
 
   // Fetch semester years for filter
@@ -61,11 +106,40 @@ const Archives = () => {
     queryFn: getSemesterYears,
   });
 
+  // Fetch reapp semester years
+  const { data: reappSemesterYearsData } = useQuery({
+    queryKey: ["reapp-semester-years"],
+    queryFn: getArchivedReApplicationSemesterYears,
+    enabled: activeTab === "reapplications",
+  });
+
+  // Fetch leave semester years
+  const { data: leaveSemesterYearsData } = useQuery({
+    queryKey: ["leave-semester-years"],
+    queryFn: getArchivedLeaveSemesterYears,
+    enabled: activeTab === "leave",
+  });
+
   // Fetch statistics
   const { data: statsData } = useQuery({
     queryKey: ["archived-stats"],
     queryFn: getArchivedStats,
   });
+
+  // Fetch reapp statistics
+  const { data: reappStatsData } = useQuery({
+    queryKey: ["archived-reapp-stats"],
+    queryFn: getArchivedReApplicationStats,
+    enabled: activeTab === "reapplications",
+  });
+
+  // Fetch leave statistics
+  const { data: leaveStatsData } = useQuery({
+    queryKey: ["archived-leave-stats"],
+    queryFn: getArchivedLeaveStats,
+    enabled: activeTab === "leave",
+  });
+
 
   const applications = archivedData?.applications || [];
   const totalPages = archivedData?.totalPages || 1;
@@ -494,6 +568,11 @@ const Archives = () => {
                         className="w-full h-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
                       >
                         <option value="">All Semesters</option>
+                        {(reappSemesterYearsData?.semesterYears || []).map((year: string) => (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -537,18 +616,108 @@ const Archives = () => {
                 </CardContent>
               </Card>
 
+              {/* Statistics Cards */}
+              {reappStatsData?.stats?.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  {reappStatsData.stats.slice(0, 3).map((stat: any) => (
+                    <Card key={stat._id}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {stat._id}
+                            </p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                              {stat.count}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              SA: {stat.saCount} | SM: {stat.smCount}
+                            </p>
+                          </div>
+                          <Archive className="h-8 w-8 text-red-600" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
               {/* Content */}
               <Card>
-                <CardContent className="pt-12 pb-12">
-                  <div className="text-center">
-                    <Archive className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                      No Archived Reapplications
-                    </h3>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Archived reapplications will appear here
-                    </p>
-                  </div>
+                <CardContent className="p-0">
+                  {isLoadingReapps ? (
+                    <div className="flex justify-center items-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
+                    </div>
+                  ) : (archivedReappData?.reapplications || []).length === 0 ? (
+                    <div className="text-center py-12">
+                      <Archive className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        No Archived Reapplications
+                      </h3>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        Rejected reapplications older than 1 year will be archived here
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {(archivedReappData?.reapplications || []).map((reapp: any) => (
+                        <div key={reapp._id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="h-10 w-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center">
+                                <User className="h-5 w-5 text-orange-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white">
+                                  {reapp.firstName} {reapp.lastName}
+                                </p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                                  <Mail className="h-3 w-3" /> {reapp.email}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              {getPositionBadge(reapp.position)}
+                              <span className="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded text-xs">
+                                {reapp.originalStatus}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                Archived: {formatDate(reapp.archivedAt)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Pagination */}
+                  {(archivedReappData?.pagination?.totalPages || 1) > 1 && (
+                    <div className="flex items-center justify-center gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+                      <Button
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Page {page} of {archivedReappData?.pagination?.totalPages || 1}
+                      </span>
+                      <Button
+                        onClick={() =>
+                          setPage((p) => Math.min(archivedReappData?.pagination?.totalPages || 1, p + 1))
+                        }
+                        disabled={page === (archivedReappData?.pagination?.totalPages || 1)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </>
@@ -569,7 +738,7 @@ const Archives = () => {
                         <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         <Input
                           id="leave-search"
-                          placeholder="Search by name or email..."
+                          placeholder="Search by name..."
                           value={searchTerm}
                           onChange={(e) => {
                             setSearchTerm(e.target.value);
@@ -595,26 +764,33 @@ const Archives = () => {
                         className="w-full h-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
                       >
                         <option value="">All Semesters</option>
+                        {(leaveSemesterYearsData?.semesterYears || []).map((year: string) => (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
                     <div>
-                      <Label htmlFor="leave-status" className="mb-2 block">
-                        Status
+                      <Label htmlFor="leave-type" className="mb-2 block">
+                        Leave Type
                       </Label>
                       <select
-                        id="leave-status"
-                        aria-label="Filter by status"
-                        value={selectedPosition}
+                        id="leave-type"
+                        aria-label="Filter by leave type"
+                        value={selectedLeaveType}
                         onChange={(e) => {
-                          setSelectedPosition(e.target.value);
+                          setSelectedLeaveType(e.target.value);
                           setPage(1);
                         }}
                         className="w-full h-10 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
                       >
-                        <option value="">All Statuses</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
+                        <option value="">All Types</option>
+                        <option value="Sick Leave">Sick Leave</option>
+                        <option value="Personal Leave">Personal Leave</option>
+                        <option value="Emergency Leave">Emergency Leave</option>
+                        <option value="Other">Other</option>
                       </select>
                     </div>
 
@@ -623,7 +799,7 @@ const Archives = () => {
                         onClick={() => {
                           setSearchTerm("");
                           setSelectedSemester("");
-                          setSelectedPosition("");
+                          setSelectedLeaveType("");
                           setPage(1);
                         }}
                         variant="outline"
@@ -636,18 +812,107 @@ const Archives = () => {
                 </CardContent>
               </Card>
 
+              {/* Statistics Cards */}
+              {leaveStatsData?.stats?.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  {leaveStatsData.stats.slice(0, 3).map((stat: any) => (
+                    <Card key={stat._id}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {stat._id}
+                            </p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                              {stat.count}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              Disapproved leave requests
+                            </p>
+                          </div>
+                          <FileText className="h-8 w-8 text-red-600" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
               {/* Content */}
               <Card>
-                <CardContent className="pt-12 pb-12">
-                  <div className="text-center">
-                    <Archive className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                      No Archived Leave Requests
-                    </h3>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      Archived leave requests will appear here
-                    </p>
-                  </div>
+                <CardContent className="p-0">
+                  {isLoadingLeaves ? (
+                    <div className="flex justify-center items-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
+                    </div>
+                  ) : (archivedLeaveData?.leaves || []).length === 0 ? (
+                    <div className="text-center py-12">
+                      <Archive className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        No Archived Leave Requests
+                      </h3>
+                      <p className="text-gray-500 dark:text-gray-400">
+                        Disapproved leave requests older than 1 year will be archived here
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {(archivedLeaveData?.leaves || []).map((leave: any) => (
+                        <div key={leave._id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="h-10 w-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+                                <FileText className="h-5 w-5 text-yellow-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-white">
+                                  {leave.name}
+                                </p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  {leave.typeOfLeave} • {formatDate(leave.dateFrom)} - {formatDate(leave.dateTo)}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <span className="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded text-xs">
+                                {leave.originalStatus}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                Archived: {formatDate(leave.archivedAt)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Pagination */}
+                  {(archivedLeaveData?.pagination?.totalPages || 1) > 1 && (
+                    <div className="flex items-center justify-center gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+                      <Button
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        Page {page} of {archivedLeaveData?.pagination?.totalPages || 1}
+                      </span>
+                      <Button
+                        onClick={() =>
+                          setPage((p) => Math.min(archivedLeaveData?.pagination?.totalPages || 1, p + 1))
+                        }
+                        disabled={page === (archivedLeaveData?.pagination?.totalPages || 1)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </>

@@ -14,6 +14,7 @@ import {
   Archive,
   ClipboardList,
   Award,
+  Layers,
 } from "lucide-react";
 
 interface NavProps {
@@ -90,6 +91,13 @@ const SidebarNav: React.FC<NavProps> = ({ handlers, unreadCount = 0 }) => {
             label="Scholars"
             onClick={handlers.scholars}
             IconComponent={GraduationCap}
+          />
+        </li>
+        <li>
+          <SidebarItem
+            label="Scholar Categories"
+            onClick={handlers.scholarCategories}
+            IconComponent={Layers}
           />
         </li>
         <li>

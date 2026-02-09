@@ -4,6 +4,7 @@ import path from "path";
 import catchErrors from "../utils/catchErrors";
 import ApplicationModel from "../models/application.model";
 import UserModel from "../models/user.model";
+import ScholarCategoryModel from "../models/scholarCategory.model";
 import appAssert from "../utils/appAssert";
 import {
   BAD_REQUEST,
@@ -105,6 +106,25 @@ export const createApplicationHandler = catchErrors(
       FORBIDDEN,
       "Your account has been blocked. You cannot submit applications. Please contact HR for assistance."
     );
+
+    // Check if user is blacklisted
+    const blacklistRecord = await ScholarCategoryModel.findOne({
+      userId: userID,
+      category: "blacklisted",
+      $or: [
+        { blacklistExpiresAt: { $exists: false } },
+        { blacklistExpiresAt: null },
+        { blacklistExpiresAt: { $gt: new Date() } }
+      ]
+    });
+    
+    if (blacklistRecord) {
+      const isPermanent = !blacklistRecord.blacklistExpiresAt;
+      const expiryMessage = isPermanent 
+        ? "You have been permanently blacklisted and cannot submit applications."
+        : `You have been blacklisted and cannot submit applications until ${blacklistRecord.blacklistExpiresAt?.toLocaleDateString()}. Reason: ${blacklistRecord.blacklistReason || "Policy violation"}`;
+      appAssert(false, FORBIDDEN, expiryMessage);
+    }
 
     // Check if user already has a pending or approved application
     const existingApplication = await ApplicationModel.findOne({
