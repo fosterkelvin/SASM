@@ -11,6 +11,8 @@ export type FormData = {
   submissionDate: string;
   gradesFile: File | null;
   gradesFileUrl: string;
+  signatureName?: string;
+  signatureDate?: string;
 };
 
 // Helper function to get current academic year
@@ -47,4 +49,6 @@ export const defaultData: FormData = {
   submissionDate: getTodayDate(),
   gradesFile: null,
   gradesFileUrl: "",
+  signatureName: "",
+  signatureDate: "",
 };

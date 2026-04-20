@@ -41,8 +41,7 @@ const MyDeployment = () => {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900/20">
       <StudentSidebar
-        isCollapsed={isSidebarCollapsed}
-        setIsCollapsed={setIsSidebarCollapsed}
+        onCollapseChange={setIsSidebarCollapsed}
       />
 
       <div className={`flex-1 transition-all duration-300`}>

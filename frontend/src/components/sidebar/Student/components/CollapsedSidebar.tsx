@@ -28,6 +28,7 @@ interface Props {
   isAccepted?: boolean;
   isEmailUpdateRequired?: boolean;
   isTrainee?: boolean;
+  isScholar?: boolean;
   isDeployedToOffice?: boolean;
   hasActiveApplication?: boolean;
   isReapplicant?: boolean;
@@ -45,6 +46,7 @@ const CollapsedSidebar: React.FC<Props> = ({
   isAccepted = false,
   isEmailUpdateRequired = false,
   isTrainee = false,
+  isScholar = false,
   isDeployedToOffice = false,
   hasActiveApplication = false,
   isReapplicant = false,

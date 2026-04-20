@@ -8,6 +8,7 @@ export type LeaveFormData = {
   daysHours: string;
   reasons: string;
   proofUrl?: string;
+  signatureName?: string;
 };
 
 export const defaultLeaveData: LeaveFormData = {
@@ -20,4 +21,5 @@ export const defaultLeaveData: LeaveFormData = {
   daysHours: "",
   reasons: "",
   proofUrl: "",
+  signatureName: "",
 };

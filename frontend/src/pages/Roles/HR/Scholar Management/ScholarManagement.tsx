@@ -326,7 +326,7 @@ const ScholarManagement = () => {
         .map((scholar: any) => scholar.scholarOffice || scholar.traineeOffice)
         .filter((office: string) => office) // Remove empty/null values
     )
-  ).sort();
+  ) as string[];
 
   // Filter scholars by search term
   const filteredScholars = uniqueScholars.filter((scholar: any) => {

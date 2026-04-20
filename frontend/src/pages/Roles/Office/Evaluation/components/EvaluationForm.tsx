@@ -168,10 +168,6 @@ const EvaluationForm: React.FC<Props> = ({
       await submitEvaluation({
         scholarId,
         items,
-        areasOfStrength,
-        areasOfImprovement,
-        recommendedForNextSemester,
-        justification,
       });
 
       addToast("Evaluation submitted successfully.", "success");

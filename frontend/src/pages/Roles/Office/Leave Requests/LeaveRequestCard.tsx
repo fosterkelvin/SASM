@@ -15,8 +15,7 @@ export const LeaveRequestCard: React.FC<Props> = ({
       <div className="flex justify-between items-start">
         <div>
           <div className="text-lg font-semibold">
-            {request.studentName}{" "}
-            <span className="text-sm text-gray-500">({request.studentId})</span>
+            {request.studentName}
           </div>
           <div className="text-sm text-gray-600">
             Submitted: {new Date(request.submittedAt).toLocaleString()}

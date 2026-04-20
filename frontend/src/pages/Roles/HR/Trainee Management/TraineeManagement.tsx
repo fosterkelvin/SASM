@@ -408,13 +408,16 @@ const TraineeManagement = () => {
   const trainees = traineesData?.trainees || [];
 
   // Get unique offices for dropdown
-  const uniqueOffices = Array.from(
+  const uniqueOffices: string[] = Array.from(
     new Set(
-      trainees
+      (trainees as any[])
         .map((trainee: any) => trainee.traineeOffice)
-        .filter((office: string) => office) // Remove empty/null values
+        .filter(
+          (office): office is string =>
+            typeof office === "string" && office.trim() !== ""
+        ) // Remove empty/null values
     )
-  ).sort();
+  ) as string[];
 
   // Filter trainees by search term
   const filteredTrainees = trainees.filter((trainee: any) => {
@@ -514,7 +517,7 @@ const TraineeManagement = () => {
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-800"
                   >
                     <option value="">All Offices</option>
-                    {uniqueOffices.map((office: string) => (
+                    {uniqueOffices.map((office) => (
                       <option key={office} value={office}>
                         {office}
                       </option>

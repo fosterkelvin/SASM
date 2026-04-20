@@ -27,7 +27,7 @@ const StudentSidebar: React.FC<StudentSidebarProps> = ({
   onCollapseChange,
   currentPage,
 }) => {
-  const { user, logout, addToast } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { data: unreadData } = useUnreadNotificationCount();
