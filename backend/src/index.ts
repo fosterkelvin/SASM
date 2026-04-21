@@ -48,12 +48,15 @@ let allowedOrigins = APP_ORIGIN?.split(",") || [
   "https://sasm.onrender.com", // keep only if still used for backend
   "https://sasm.site",
   "https://www.sasm.site",
+  "https://sasm.sit.ubaguio.edu",
 ];
 
-// Always ensure https://www.sasm.site is included
-if (!allowedOrigins.includes("https://www.sasm.site")) {
-  allowedOrigins.push("https://www.sasm.site");
-}
+// Always ensure production domains are included
+["https://www.sasm.site", "https://sasm.sit.ubaguio.edu"].forEach((domain) => {
+  if (!allowedOrigins.includes(domain)) {
+    allowedOrigins.push(domain);
+  }
+});
 
 console.log("APP_ORIGIN from env:", APP_ORIGIN);
 console.log("Allowed CORS origins:", allowedOrigins);
