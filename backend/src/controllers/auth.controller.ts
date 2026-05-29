@@ -32,6 +32,9 @@ import SessionModel from "../models/session.model";
 import appAssert from "../utils/appAssert";
 import e from "express";
 
+const isCookieDebugEnabled = () =>
+  process.env.DEBUG_COOKIE_OPTIONS === "true";
+
 // Signup=====================================================
 export const signupHandler = catchErrors(async (req, res) => {
   // Validate request
@@ -217,4 +220,19 @@ export const changeEmailHandler = catchErrors(async (req, res) => {
 export const cancelEmailChangeHandler = catchErrors(async (req, res) => {
   const result = await cancelEmailChange(req.userID!);
   return res.status(OK).json(result);
+});
+
+// Debug cookies (temporary)
+export const debugCookiesHandler = catchErrors(async (req, res) => {
+  if (!isCookieDebugEnabled()) {
+    return res.status(404).json({ message: "Not found" });
+  }
+
+  return res.status(OK).json({
+    cookies: req.cookies,
+    origin: req.headers.origin || null,
+    userAgent: req.headers["user-agent"] || null,
+    host: req.headers.host || null,
+    protocol: req.protocol || null,
+  });
 });

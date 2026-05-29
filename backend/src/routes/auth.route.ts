@@ -11,6 +11,7 @@ import {
   resendVerificationEmailHandler,
   changeEmailHandler,
   cancelEmailChangeHandler,
+  debugCookiesHandler,
 } from "../controllers/auth.controller";
 import authenticate from "../middleware/authenticate";
 
@@ -28,5 +29,6 @@ authRoutes.post("/password/reset", resetPasswordHandler);
 authRoutes.post("/password/change", authenticate, changePasswordHandler);
 authRoutes.post("/email/change", authenticate, changeEmailHandler);
 authRoutes.delete("/email/cancel", authenticate, cancelEmailChangeHandler);
+authRoutes.get("/debug-cookies", debugCookiesHandler);
 
 export default authRoutes;
