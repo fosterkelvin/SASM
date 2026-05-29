@@ -3,7 +3,10 @@ import { fifteenMinutesFromNow, oneWeekFromNow } from "./date";
 import { COOKIE_DOMAIN } from "../constants/env";
 
 export const REFRESH_PATH = "/auth/refresh";
-const secure = process.env.NODE_ENV !== "development";
+// Force secure cookies in production, or allow override with FORCE_COOKIE_SECURE
+const secure =
+  process.env.NODE_ENV === "production" ||
+  process.env.FORCE_COOKIE_SECURE === "true";
 
 // For cross-origin requests (Render backend + Vercel frontend)
 // we need sameSite: "none" and secure: true
@@ -32,13 +35,30 @@ type Params = {
   refreshToken: string;
 };
 
-export const setAuthCookies = ({ res, accessToken, refreshToken }: Params) =>
-  res
+export const setAuthCookies = ({ res, accessToken, refreshToken }: Params) => {
+  // Debug: log cookie flags (do NOT log token values)
+  if (process.env.DEBUG_COOKIE_OPTIONS === "true") {
+    console.log("Setting auth cookies with options:", {
+      access: getAccessTokenCookieOptions(),
+      refresh: getRefreshTokenCookieOptions(),
+    });
+  }
+
+  return res
     .cookie("accessToken", accessToken, getAccessTokenCookieOptions())
     .cookie("refreshToken", refreshToken, getRefreshTokenCookieOptions());
+};
 
-export const clearAuthCookies = (res: Response) =>
-  res
+export const clearAuthCookies = (res: Response) => {
+  // Debug: log clearing cookie flags
+  if (process.env.DEBUG_COOKIE_OPTIONS === "true") {
+    console.log("Clearing auth cookies with options:", {
+      access: { ...defaults },
+      refresh: { ...defaults, path: REFRESH_PATH },
+    });
+  }
+
+  return res
     .clearCookie("accessToken", {
       ...defaults,
     })
@@ -46,3 +66,4 @@ export const clearAuthCookies = (res: Response) =>
       ...defaults,
       path: REFRESH_PATH,
     });
+};
