@@ -45,7 +45,7 @@ let allowedOrigins = APP_ORIGIN?.split(",") || [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
-  "https://sasm.onrender.com", // keep only if still used for backend
+  "https://api.sasm.site", // keep only if still used for backend
   "https://sasm.site",
   "https://www.sasm.site",
   "https://sasm.sit.ubaguio.edu",
